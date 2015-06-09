@@ -34,15 +34,20 @@ to know which part of the document to update.
 Converters
 ==========
 
-Each module, designed in whatever way, will provide a public interface with a single function,
-convert(), that performs conversions as appropriate for that module. Thus arbiter.mei_to_ly.convert()
-will accept an MEI document and produce a LilyPond document.
+Each converter module, designed in the way most suitable for the module author's skills, provides a
+public interface with a single function, convert(), that performs conversions as appropriate for
+that module. Thus for example ``lychee.converters.mei_to_ly.convert()`` accepts an MEI document and
+produces a LilyPond document.
 
-There are some specifications for input/output type:
-    - MEI documents shall always be xml.etree.ElementTree.ElementTree objects (or Element, in the
-      case of partial documents)
-    - LilyPond documents shall always be unicode strings
-    - Abjad documents shall always be ???
+**Inbound converters** result in a Lychee-MEI document as xml.etree.ElementTree.ElementTree objects
+(or Element, in the case of partial documents), along with instructions on what part of the document
+is being updated. (The ``views`` module determines which part of the Lychee-MEI this corresponds to).
+
+**Outbound converters** start with a (portion of a) Lychee-MEI document, along with instructions on
+what part of the document is being updated. (The ``views`` module determines which part of the
+other representation this corresponds to).
+
+LilyPond documents shall always be unicode strings. Abjad documents shall always be ???.
 
 Each converter must be capable of accepting an incomplete document and producing the corresponding
 incomplete output, or signalling when the incomplete input is insufficient to produce any output.

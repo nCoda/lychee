@@ -1,35 +1,88 @@
 Lychee: The MEI Arbiter
 =======================
 
-We need components to do the following functions. The names in this list should be understood as
-module names, so you would access the MEI-to-LilyPond converter with
-``from lychee.converters import mei_to_ly``.
+Lychee manages the MEI document during score editing sessions. Lychee performs nearly-instantaneous
+conversion between various representations (Abjad, LilyPond, and MEI) with optional version control
+integration, and connections to an event-driven notification system for use in GUI applications.
+
+In a sense, Lychee is the core of the user-facing nCoda app, but it's being developed as an
+independent library so it may be used by a wider audience.
+
+We need the following components. The names in this list should be understood as importable Python
+module names.
 
 - converters:
     - mei_to_ly: convert MEI to LilyPond
     - ly_to_mei: convert LilyPond to MEI
     - mei_to_abjad: convert MEI to Abjad
     - abjad_to_mei: convert Abjad to MEI
-    - mei_to_mei: convert arbitrary MEI to arbiter-preferred format, and APF to single-file export
+    - mei_to_mei: convert arbitrary MEI to Lychee-MEI, and L-MEI to a single-file export
 - vcs: manage revisions with Mercurial
 - views: manage partial "views" on a per-format basis
 - signals: coordinate event-driven programming
 - tui: textual interface for commandline, "one-shot" use
 
+For example, you would access the MEI-to-LilyPond converter with
+``from lychee.converters import mei_to_ly``.
+
+Lychee-MEI and "Arbitrary Format"
+---------------------------------
+
+Lychee-MEI is a valid subset of MEI. **Lychee-MEI** restricts MEI to encoding strategies that are
+easier and safer for computers to process. This sub-format will be specified in the future; for now
+it involves the following characteristics:
+
+- file management:
+
+    - every MEI ``<section>`` is kept in its own file, to ease version control
+    - clients are therefore encouraged to use sections generously
+    - a "complete" MEI file holds cross-references to all section files, in an arbitrary order
+    - a "playlist" MEI file holds cross-references to "active" section files, in score order
+
+- others:
+
+    - tupletSpan, beamSpan, slur, and other elements that may refer to object spans with @startid
+      and @endid, and are therefore inherently ambiguous and error-prone, must make use of @plist
+      to reduce the possibility of ambiguity and erors
+
+When this "description" document refers to a music document in an **arbitrary format**, it means the
+music document is encoded in one of the formats supported by Lychee (Abjad, LilyPond, MEI) without a
+restriction on the particular format used at the moment.
+
+One-shot and Interactive Modes
+------------------------------
+
+Depending on the usage situation, Lychee may run in one-shot or interactive mode.
+
+**One-shot mode** loads a complete document in an arbitrary format, optionally creates a new commit
+in the VCS, and saves a complete document in an arbitrary format. The program begins and ends
+execution with a single action. This situation corresponds to Lychee being run from the commandline,
+or as a simple format converter.
+
+**Interactive mode** starts execution and runs as a daemon, waiting for actions. An action is
+initiated by triggering a signal in the ``signals`` module: Lychee accepts a complete or partial
+document along with instructions about which part of the document is being sent; a new commit may
+be created in the VCS, or a patch on the Mercurial Queue stack, or a similar event; finally,
+additional signals are emitted from the ``signals`` module, indicating the updated material and its
+position in the overall document, so that user interface components may update their appearance.
+This situation corresponds to Lychee being run as the core of a GUI application, or in cooperation
+with the core of a GUI application.
+
 Generic Workflow
 ----------------
 
-Regardless of what action is being performed, I *think* we will always use the same three-step
-workflow: inbound, document, outbound.
+Every action Lychee performs will use the same basic workflow with three steps: inbound, document,
+outbound.
 
-The **inbound** step converts from an arbitrary format to Lychee-MEI, and tells the ``views`` module
-what portion of the document is being updated.
+The **inbound** step converts from an arbitrary format to Lychee-MEI. When running in interactive
+mode, the ``views`` module is given information on what portion of the document is being updated.
 
 The **document** step manages a change to the internal MEI document, and (if relevant) enters the
-change to the VCS.
+change in the VCS.
 
-The **outbound** step converts from Lychee-MEI to an arbitrary format, using the ``views`` module
-to know which part of the document to update.
+The **outbound** step converts from Lychee-MEI to (an) arbitrary format(s). When running in
+interactive mode, the ``views`` module produces information on what portion of the document is
+being updated.
 
 Converters
 ==========
@@ -58,17 +111,6 @@ receives only ``Element('slur', {'plist': '#123 #443'})`` as input, there is not
 to produce any sensible output, so the module ought to signal an error.
 
 Future modules will convert data between MEI and MusicXML, and MEI and music21.
-
-Lychee-MEI
-----------
-
-It's a subset of MEI, designed to be easier and faster for Lychee software to process. It also has
-a unique file layout, with every MEI ``<section>`` kept in its own file (and there will probably be
-many sections per score), with a "complete" file that cross-references all the section files (though
-in an arbitrary order), and a "playlist" file that cross-references sections files in order as
-required to produce the "score itself" as it should appear in music notation.
-
-I'll put an example here.
 
 Special Case: MEI-to-MEI Converter
 ----------------------------------

@@ -2,7 +2,7 @@
 
 import signalslot
 
-import inbound  #TODO: from lychee.signals import inbound
+from lychee.signals import inbound
 
 
 ACTION_START = signalslot.Signal()

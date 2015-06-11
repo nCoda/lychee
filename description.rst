@@ -96,19 +96,20 @@ produces a LilyPond document.
 (or Element, in the case of partial documents), along with instructions on what part of the document
 is being updated. (The ``views`` module determines which part of the Lychee-MEI this corresponds to).
 
-**Outbound converters** start with a (portion of a) Lychee-MEI document, along with instructions on
+**Outbound converters** start with (a portion of) a Lychee-MEI document, along with instructions on
 what part of the document is being updated. (The ``views`` module determines which part of the
 other representation this corresponds to).
 
-LilyPond documents shall always be unicode strings. Abjad documents shall always be ???.
+LilyPond documents shall always be unicode strings. Abjad documents shall always be Abjad objects.
 
 Each converter must be capable of accepting an incomplete document and producing the corresponding
-incomplete output, or signalling when the incomplete input is insufficient to produce any output.
-For example, ``Element('note', {'pname': 'c'})`` given to the mei_to_ly module will result in
-``'c'`` as output, even though the single Element is not a complete and valid MEI document, and the
-single-character string is not a complete and valid LilyPond document. Yet if the mei_to_ly module
-receives only ``Element('slur', {'plist': '#123 #443'})`` as input, there is not enough information
-to produce any sensible output, so the module ought to signal an error.
+incomplete output, and of emitting an error signal if the incomplete input is insufficient to
+produce the corresponding valid output. For example, ``Element('note', {'pname': 'c'})`` given to
+the ``mei_to_ly`` module should result in ``'c'`` as output, even though the single Element is not
+a complete and valid MEI document, and the single-character string is not a complete and valid
+LilyPond document. Yet if ``mei_to_ly`` receives ``Element('slur', {'plist': '#123 #443'})`` as
+input, there is not enough information to produce any sensible output, so the module ought to emit
+an error signal.
 
 Future modules will convert data between MEI and MusicXML, and MEI and music21.
 
@@ -117,8 +118,7 @@ Special Case: MEI-to-MEI Converter
 
 We will require an MEI-to-MEI conversion both for inbound and outbound conversions. On the way in,
 this will be to convert (nearly?) any valid MEI document into a valid Lychee-MEI document. On the
-way out, this will probably mostly be to substitute the appropriate files into a "master file" and
-just output it.
+way out, this will probably mostly be to substitute the appropriate files into the "playlist" file.
 
 VCs: Mercurial Integration
 ==========================

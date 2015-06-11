@@ -189,28 +189,30 @@ Signals: Event-Driven Programming
 =================================
 
 Although signalling systems are conventionally used for event-driven programming, and they will
-indeed be used for that in Lychee, they will also control flow through the program during
-non-interactive use. Another way to say this: whether run continuously with an event loop, or in a
-"one-shot" context through the commandline interface, the ``lychee.signals`` module is responsible
-for managing control flow through the program.
+indeed be used for that in Lychee, they will also manage control flow through Lychee during one-shot
+use. Another way to say this: whether run continuously with an event loop, or in a single-action
+context through the commandline interface, the ``lychee.signals`` module is responsible for managing
+how control flows through the program.
 
-The idea is that several "workflows" will be defined, with a corresponding set of signals. Other
-modules will be required to follow a signal specification, so that ``signals`` will know how to
-interact with them.
+The idea is to define a set of moments through the three-step workflow outlined above, with enough
+detail that all required functionality can be triggered by, and will be able to trigger, relevant
+signals.
 
-Undoubtedly, this may potentially cause problems in terms of cyclic execution and the like: what if
-*both* updating the MEI file and updating LilyPond output files cause a commit, and triggering a
-commit causes the LilyPond and MEI files to be updated? So we'll have to think carefully about how
-to design control flow through our signals, and how to eliminate potentially ambiguous and cyclic
-workflows.
+All Lychee modules will be required to follow a signal specification, so that the ``signals`` module
+acts as a central point of coordinated interaction between the modules. This will account for the
+situation where, for example, two different functions must be run before progressing to the next
+step in a workflow, but the order in which they are run is neither important nor deterministic.
+
+Undoubtedly, we will have to design our workflow signals and the ``signals`` module carefully to
+eliminate the possibility of a cyclic workflow.
 
 One of the additional requirements for the ``signals`` module is to integrate cleanly and
 effectively with other similar mechanisms. The most important concerns will be whatever mechanisms
 are used by Frescobaldi (PyQt4 signals) and nCoda (???). For nCoda, we should first try to use
-``signals`` itself as the single signalling mechanism, but I expect we'll have to complement it
-by interacting with a JavaScript-specific signalling library. In both cases however, Lychee's
-``signals`` module should act as the overall controller, so that other signalling mechanisms will
-simply serve as connection points between Lychee's client applications and Lychee itself.
+``signals`` itself as the single signalling mechanism, but I expect we'll have to complement it with
+a JavaScript-specific signalling library. In both cases, Lychee's ``signals`` module should act as
+the overall controller for Lychee-related moments, leaving the other signalling mechanisms to serve
+as connection points between Lychee's client applications and Lychee itself.
 
 Signals-and-Slots: Description
 ------------------------------

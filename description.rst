@@ -120,17 +120,17 @@ We will require an MEI-to-MEI conversion both for inbound and outbound conversio
 this will be to convert (nearly?) any valid MEI document into a valid Lychee-MEI document. On the
 way out, this will probably mostly be to substitute the appropriate files into the "playlist" file.
 
-VCs: Mercurial Integration
+VCS: Mercurial Integration
 ==========================
 
 One of the core nCoda features is integration with the Mercurial VCS (version control system). This
 will happen through the ``lychee.vcs`` module, and it will be a significant advantage for interested
 Frescobaldi users too. In order to be sure we don't tie our projects' success to that of Mercurial,
-to provide a somewhat simpler useage experience for Lychee programmers, and to protect use from
+to provide a somewhat simpler useage experience for Lychee programmers, and to protect us from
 possible changes to Mercurial's Python libraries (which they warn may happen), we should offer this
 functionality through a ``vcs`` wrapper module. This will also allow programmers to replace
-Mercurial with another VCS system, like Git, which is notably more popular than Mercurial, but
-unsuitable for nCoda and suboptimal for integration with Python.
+Mercurial with another VCS, like Git, which is notably more popular than Mercurial, but unsuitable
+for nCoda and suboptimal for any integration with Python.
 
 Views: Does It Go Here?
 =======================

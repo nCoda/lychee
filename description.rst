@@ -185,8 +185,8 @@ But 2: this means users will be faced with useless-to-them, space-consuming comm
 LilyPond files. GUI editor widgets could help us with this, but then we would need two layers of
 abstraction for the same purpose.
 
-Signals: Event-Driven Programming
-=================================
+Signals: Event-Driven Workflow Management
+=========================================
 
 Although signalling systems are conventionally used for event-driven programming, and they will
 indeed be used for that in Lychee, they will also manage control flow through Lychee during one-shot

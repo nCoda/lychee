@@ -3,7 +3,7 @@
 import signalslot
 
 
-CONVERSION_START = signalslot.Signal()
+CONVERSION_START = signalslot.Signal(args=['inbound_format'])
 '''
 Emitted when the inbound conversion will start (i.e., this signal is emitted to cause a converter
 module to start the conversion).

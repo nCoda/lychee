@@ -137,19 +137,23 @@ Views: Does It Go Here?
 
 The largest remaining unsolved problem is how to manage "views" on an MEI document. A "view" is an
 MEI document, or a portion of an MEI document, formatted in the way most suitable for another
-module.
+module's input or output.
+
+Sample Uses
+-----------
 
 Example 1: a user creates a new note with the Verovio point-and-click interface, so the LilyPond
 representation of that moment should be updated with only that single new note---the whole MEI
 document should not need to be converted from scratch. This means sending a single MEI ``<note>``
-element to the mei_to_ly module, including instructions on where the note belongs in the LilyPond
-representation.
+element to the ``mei_to_ly`` module, including instructions on where the note belongs in the
+LilyPond representation.
 
 Example 2: a user selects a two-measure section of music, and asks for nCoda to show it the Abjad
-representation of those measures. The mei_to_abjad module should only be sent two measures of music.
+representation of those measures. The ``mei_to_abjad`` module should only be sent two measures.
 
-Example 3: a user uploads a score from the MEI 2013 sample encodings to nCoda. The mei_to_mei module
-should be able to "break down" that encoding to follow the nCoda MEI conventions.
+Example 3: a user uploads a score from the MEI 2013 sample encodings to nCoda. The ``mei_to_mei``
+module should be able to "break down" that encoding into Lychee-MEI format and update the Verovio,
+LilyPond, and Abjad views of the document.
 
 How It Works
 ------------
@@ -164,13 +168,13 @@ provide to the ``views`` module the location of the modifications currently bein
 Somehow, the ``views`` module will have to retain a bidirectional mapping between locations in
 arbitrary-format documents and the ``@xml:id`` attribute in the Lychee-MEI document collection. For
 example, in LilyPond documents it would probably be a mapping with line and column numbers; for
-Abjad it would probably be a mapping with object ``__id__()`` values.
+Abjad it would probably be a mapping with object ``__id__`` values.
 
 Arbitrary Ideas
 ---------------
 
 This seems rocky still, and potentially very error-prone. It seems like Lychee would have to create
-arbitrary-format documents bit by bit, in order to know the exact correspondence. There are ways to
+arbitrary-format documents bit by bit, in order to know the exact correspondences. There are ways to
 let LilyPond and Abjad documents know the ``@xml:id`` of an MEI note (or similar): in LilyPond you
 might write ``c4) %{id:7229879837498}%`` for example and in Abjad you might add an ``_mei_id``
 attribute at runtime.
@@ -178,7 +182,7 @@ attribute at runtime.
 But 1: this means Abjad documents will have to be largely or partially amended after every update.
 
 But 2: this means users will be faced with useless-to-them, space-consuming comments in their
-LilyPond files. Could editor widgets help us with this? But then we would need two layers of
+LilyPond files. GUI editor widgets could help us with this, but then we would need two layers of
 abstraction for the same purpose.
 
 Signals: Event-Driven Programming

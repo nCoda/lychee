@@ -104,8 +104,15 @@ class WorkflowManager(object):
         '''
         Choose an inbound converter based on self._inbound_format.
         '''
+        # TODO: can I move this import to the top of the file without causing cyclic import errors?
+        from lychee import converters
+        conv_dict = {'lilypond': converters.ly_to_mei.convert}
+
         if self._inbound_format:
-            inbound.CONVERSION_START.connect(mock_converter)
+            if self._inbound_format in conv_dict:
+                inbound.CONVERSION_START.connect(conv_dict[self._inbound_format])
+            else:
+                inbound.CONVERSION_START.connect(mock_converter)
         else:
             self._status = WorkflowManager._INBOUND_CONVERSION_ERROR
 

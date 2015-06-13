@@ -3,4 +3,4 @@
 __all__ = ['inbound']
 
 from lychee.signals import *
-from lychee.signals.signals import WorkflowManager
+from lychee.signals.signals import ACTION_START, WorkflowManager

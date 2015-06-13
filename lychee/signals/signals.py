@@ -47,9 +47,27 @@ class WorkflowManager(object):
         for signal, slot in WorkflowManager._CONNECTIONS:
             signal.connect(getattr(self, slot))
 
+    def end(self):
+        '''
+        Disconnect all signals from this :class:`WorkflowManager` so it can be deleted. Does not
+        attempt to ensure running processes are allowed to finish.
+        '''
+        for signal, slot in WorkflowManager._CONNECTIONS:
+            signal.disconnect(getattr(self, slot))
+
     def run(self):
         '''
         Runs the "action" as required.
+        '''
+        try:
+            self._run()
+        finally:
+            self.end()
+
+    def _run(self):
+        '''
+        Actually does what :meth:`run` says it does. The other method is intended as a wrapper for
+        this method, to ensure that :meth:`end` is always run, regardless of how this method exits.
         '''
         next_step = '(WorkflowManager continues to the next step)\n'
 

@@ -185,8 +185,6 @@ def mock_views(**kwargs):
 def thing(**kwargs):
     workm = WorkflowManager(kwargs)
     workm.run()
+    del workm
 
 ACTION_START.connect(thing)
-
-# this is what starts a test "action"
-ACTION_START.emit(inbound_format='LilyPond')

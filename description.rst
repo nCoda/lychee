@@ -16,7 +16,8 @@ module names.
     - ly_to_mei: convert LilyPond to MEI
     - mei_to_abjad: convert MEI to Abjad
     - abjad_to_mei: convert Abjad to MEI
-    - mei_to_mei: convert arbitrary MEI to Lychee-MEI, and L-MEI to a single-file export
+    - mei_to_lmei: convert arbitrary MEI to Lychee-MEI
+    - lmei_to_mei: convert Lychee-MEI to single-file MEI suitable for export
 - vcs: manage revisions with Mercurial
 - views: manage partial "views" on a per-format basis
 - signals: coordinate event-driven programming

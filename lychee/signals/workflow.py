@@ -1,14 +1,7 @@
 #!/usr/bin/env python3
 
-import signalslot
-
+from lychee import converters
 from lychee.signals import inbound
-
-
-ACTION_START = signalslot.Signal(args=['inbound_format'])
-'''
-Emit this signal to start an "action" through Lychee.
-'''
 
 
 class WorkflowManager(object):
@@ -54,6 +47,8 @@ class WorkflowManager(object):
         '''
         for signal, slot in WorkflowManager._CONNECTIONS:
             signal.disconnect(getattr(self, slot))
+        for slot in [converters.ly_to_mei.convert, converters.abjad_to_mei.convert, converters.mei_to_lmei.convert]:
+            inbound.CONVERSION_START.disconnect(slot)
 
     def run(self):
         '''
@@ -104,15 +99,11 @@ class WorkflowManager(object):
         '''
         Choose an inbound converter based on self._inbound_format.
         '''
-        # TODO: can I move this import to the top of the file without causing cyclic import errors?
-        from lychee import converters
-        conv_dict = {'lilypond': converters.ly_to_mei.convert}
-
         if self._inbound_format:
-            if self._inbound_format in conv_dict:
-                inbound.CONVERSION_START.connect(conv_dict[self._inbound_format])
+            if self._inbound_format in converters.INBOUND_CONVERTERS:
+                inbound.CONVERSION_START.connect(converters.INBOUND_CONVERTERS[self._inbound_format])
             else:
-                inbound.CONVERSION_START.connect(mock_converter)
+                inbound.CONVERSION_ERROR.emit()
         else:
             self._status = WorkflowManager._INBOUND_CONVERSION_ERROR
 
@@ -173,25 +164,9 @@ class WorkflowManager(object):
 # Set up the "inbound" step's workflow.                                                            #
 #--------------------------------------------------------------------------------------------------#
 
-# mocks of other modules
-def mock_converter(**kwargs):
-    inbound.CONVERSION_STARTED.emit()
-    print('mock_converter({})'.format(kwargs))
-    #inbound.CONVERSION_ERROR.emit()
-    inbound.CONVERSION_FINISH.emit()
-    print('mock_converter() after finish signal')
-
 def mock_views(**kwargs):
     inbound.VIEWS_STARTED.emit()
     print('mock_views({})'.format(kwargs))
     #inbound.VIEWS_ERROR.emit()
     inbound.VIEWS_FINISH.emit()
     print('mock_views() after finish signal')
-
-# actual signal connections
-def thing(**kwargs):
-    workm = WorkflowManager(kwargs)
-    workm.run()
-    del workm
-
-ACTION_START.connect(thing)

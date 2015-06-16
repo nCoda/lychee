@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from lychee import converters
-from lychee.signals import inbound
+from lychee import converters, vcs
+from lychee.signals import inbound, document
 
 
 class WorkflowManager(object):
@@ -19,6 +19,10 @@ class WorkflowManager(object):
     _INBOUND_VIEWS_STARTED = 6
     _INBOUND_VIEWS_FINISHED = 7
     _INBOUND_VIEWS_ERROR = 8
+    _DOCUMENT_PRESTART = 100
+    _DOCUMENT_STARTED = 101
+    _DOCUMENT_FINISHED = 102
+    _DOCUMENT_ERROR = 103
 
     # connections
     # NB: they'll be connected as SIGNAL.connect(self.whatever)
@@ -30,6 +34,10 @@ class WorkflowManager(object):
                     (inbound.VIEWS_FINISH, '_inbound_views_finish'),
                     (inbound.VIEWS_FINISHED, '_inbound_views_finished'),
                     (inbound.VIEWS_ERROR, '_inbound_views_error'),
+                    (document.STARTED, '_document_started'),
+                    (document.FINISH, '_document_finish'),
+                    (document.FINISHED, '_document_finished'),
+                    (document.ERROR, '_document_error'),
                    )
 
     def __init__(self, dtype, doc, **kwargs):
@@ -99,6 +107,14 @@ class WorkflowManager(object):
         print(next_step)
 
         # Document ------------------------------------------------------------
+        self._status = WorkflowManager._DOCUMENT_PRESTART
+        document.START.emit()
+
+        if self._status is not WorkflowManager._DOCUMENT_FINISHED:
+            if self._status is not WorkflowManager._DOCUMENT_ERROR:
+                print('ERROR during "document" step')
+            return
+        print(next_step)
 
         # Outbound ------------------------------------------------------------
 
@@ -184,3 +200,31 @@ class WorkflowManager(object):
             print(kwargs['msg'])
         else:
             print('ERROR during inbound views processing')
+
+    def _document_started(self, **kwargs):
+        print('document started')
+        self._status = WorkflowManager._DOCUMENT_STARTED
+
+    def _document_finish(self, **kwargs):
+        print('document finishing'.format(kwargs))
+        if self._status is WorkflowManager._DOCUMENT_STARTED:
+            if 5 is None:  # TODO: put in the appropriate arg here
+                document.ERROR.emit(msg='Document processing did not return views_info')
+            else:
+                self._status = WorkflowManager._DOCUMENT_FINISHED
+        else:
+            print('ERROR during document processing')
+        document.FINISHED.emit()
+
+    def _document_finished(self, **kwargs):
+        '''
+        Called when document.FINISHED is emitted, for logging and debugging.
+        '''
+        print('document processing finished')
+
+    def _document_error(self, **kwargs):
+        self._status = WorkflowManager._DOCUMENT_ERROR
+        if 'msg' in kwargs:
+            print(kwargs['msg'])
+        else:
+            print('ERROR during document processing')

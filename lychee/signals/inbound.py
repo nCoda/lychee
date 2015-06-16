@@ -3,14 +3,13 @@
 import signalslot
 
 
-CONVERSION_START = signalslot.Signal(args=['dtype', 'doc'])
+CONVERSION_START = signalslot.Signal(args=['document'])
 '''
 Emitted when the inbound conversion will start (i.e., this signal is emitted to cause a converter
 module to start the conversion).
 
-:kwarg str dtype: The format (data type) of the inbound musical document. LilyPond, Abjad, etc.
-:kwarg object doc: The inbound musical document. The required type is determined by each converter
-    module individually.
+:kwarg object document: The inbound musical document. The required type is determined by each
+    converter module individually.
 '''
 
 CONVERSION_STARTED = signalslot.Signal()
@@ -19,10 +18,13 @@ Emitted as soon as the inbound conversion has started (i.e., as soon as the conv
 begun to process data).
 '''
 
-CONVERSION_FINISH = signalslot.Signal()
+CONVERSION_FINISH = signalslot.Signal(args=['converted'])
 '''
 Emitted just before the inbound conversion finishes (i.e., emitting this signal is the last action
 of an inbound conversion module).
+
+:kwarg converted: The inbound musical document, converted to Lychee-MEI format.
+:type converted: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
 '''
 
 CONVERSION_FINISHED = signalslot.Signal()

@@ -32,21 +32,18 @@ class WorkflowManager(object):
                     (inbound.VIEWS_ERROR, '_inbound_views_error'),
                    )
 
-    # the following members must be present in "kwargs" to __init__() or it will fail.
-    _REQD_KWARGS = ('dtype', 'doc')
-
-    def __init__(self, kwargs):
+    def __init__(self, dtype, doc, **kwargs):
         self._status = WorkflowManager._PRESTART
-        # check the required kwargs
-        for kwarg in WorkflowManager._REQD_KWARGS:
-            if kwarg not in kwargs:
-                raise KeyError('Missing required kwarg to WorkflowManager: {}'.format(kwarg))
 
         # set instance settings
         # inbound data type
-        self._i_dtype = kwargs['dtype'].lower()
+        self._i_dtype = dtype.lower()
         # inbound document
-        self._i_doc = kwargs['doc'].lower()
+        self._i_doc = doc.lower()
+        # inbound document after conversion
+        self._converted = None
+        # inbound information from the "views" module
+        self._i_views = None
 
         for signal, slot in WorkflowManager._CONNECTIONS:
             signal.connect(getattr(self, slot))
@@ -84,7 +81,7 @@ class WorkflowManager(object):
 
         self._status = WorkflowManager._INBOUND_PRECONVERSION
         self._choose_inbound_converter()
-        inbound.CONVERSION_START.emit(dtype=self._i_dtype, doc=self._i_doc)
+        inbound.CONVERSION_START.emit(document=self._i_doc)
 
         if self._status is not WorkflowManager._INBOUND_CONVERSION_FINISHED:
             if self._status is not WorkflowManager._INBOUND_CONVERSION_ERROR:
@@ -94,7 +91,7 @@ class WorkflowManager(object):
 
         self._status = WorkflowManager._INBOUND_PREVIEWS
         self._choose_inbound_views()
-        inbound.VIEWS_START.emit()
+        inbound.VIEWS_START.emit(dtype=self._i_dtype, doc=self._i_doc, converted=self._converted)
 
         if self._status is not WorkflowManager._INBOUND_VIEWS_FINISHED:
             print('ERROR during inbound views processing')
@@ -123,7 +120,8 @@ class WorkflowManager(object):
         '''
         Choose an inbound views function based on ??? and the conversion result.
         '''
-        inbound.VIEWS_START.connect(mock_views)
+        # TODO: do we need this method?
+        pass
 
     # ----
 
@@ -131,10 +129,15 @@ class WorkflowManager(object):
         print('inbound conversion started')
         self._status = WorkflowManager._INBOUND_CONVERSION_STARTED
 
-    def _inbound_conversion_finish(self, **kwargs):
+    def _inbound_conversion_finish(self, converted, **kwargs):
         print('inbound conversion finishing')
         if self._status is WorkflowManager._INBOUND_CONVERSION_STARTED:
-            self._status = WorkflowManager._INBOUND_CONVERSION_FINISHED
+            if converted is None:
+                inbound.CONVERSION_ERROR.emit(msg='Inbound converter did not return L-MEI document')
+            else:
+                print('\t(we got "{}")'.format(converted))
+                self._converted = converted
+                self._status = WorkflowManager._INBOUND_CONVERSION_FINISHED
         else:
             print('ERROR during inbound conversion')
         inbound.CONVERSION_FINISHED.emit()
@@ -156,10 +159,15 @@ class WorkflowManager(object):
         print('inbound views started')
         self._status = WorkflowManager._INBOUND_VIEWS_STARTED
 
-    def _inbound_views_finish(self, **kwargs):
+    def _inbound_views_finish(self, views_info, **kwargs):
         print('inbound views finishing'.format(kwargs))
         if self._status is WorkflowManager._INBOUND_VIEWS_STARTED:
-            self._status = WorkflowManager._INBOUND_VIEWS_FINISHED
+            if views_info is None:
+                inbound.VIEWS_ERROR.emit(msg='Inbound views processing did not return views_info')
+            else:
+                print('\t(we got "{}")'.format(views_info))
+                self._i_views = views_info
+                self._status = WorkflowManager._INBOUND_VIEWS_FINISHED
         else:
             print('ERROR during inbound views processing')
         inbound.VIEWS_FINISHED.emit()

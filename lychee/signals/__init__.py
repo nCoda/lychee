@@ -21,13 +21,13 @@ Emit this signal to start an "action" through Lychee.
 '''
 
 
-def action_starter(**kwargs):
+def action_starter(dtype, doc, **kwargs):
     '''
     Default connection for the ACTION_START signal.
     '''
     # NB: workflow imported here because, in the main module, it would cause circular import probs
     from . import workflow
-    workm = workflow.WorkflowManager(kwargs)
+    workm = workflow.WorkflowManager(dtype, doc)
     workm.run()
     del workm
 

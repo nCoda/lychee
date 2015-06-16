@@ -12,7 +12,7 @@ def convert(**kwargs):
     :rtype: object
     '''
     inbound.CONVERSION_STARTED.emit()
-    print('lychee.converters.mei_to_abjad.convert({})'.format(5))
+    print('{}.convert(document="{}")'.format(__name__, kwargs['document']))
     #inbound.CONVERSION_ERROR.emit()
-    inbound.CONVERSION_FINISH.emit()
-    print('lychee.converters.mei_to_abjad.convert() after finish signal')
+    inbound.CONVERSION_FINISH.emit(converted='<Abjad stuff>')
+    print('{}.convert() after finish signal'.format(__name__))

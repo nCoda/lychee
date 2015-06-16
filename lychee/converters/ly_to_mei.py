@@ -11,7 +11,7 @@ def convert(**kwargs):
     :rtype: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
     '''
     inbound.CONVERSION_STARTED.emit()
-    print('lychee.converters.ly_to_mei.convert({})'.format(5))
+    print('{}.convert(document="{}")'.format(__name__, kwargs['document']))
     #inbound.CONVERSION_ERROR.emit()
-    inbound.CONVERSION_FINISH.emit()
-    print('lychee.converters.ly_to_mei.convert() after finish signal')
+    inbound.CONVERSION_FINISH.emit(converted='<l-mei stuff>')
+    print('{}.convert() after finish signal'.format(__name__))

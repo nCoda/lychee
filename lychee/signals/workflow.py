@@ -184,15 +184,3 @@ class WorkflowManager(object):
             print(kwargs['msg'])
         else:
             print('ERROR during inbound views processing')
-
-
-#--------------------------------------------------------------------------------------------------#
-# Set up the "inbound" step's workflow.                                                            #
-#--------------------------------------------------------------------------------------------------#
-
-def mock_views(**kwargs):
-    inbound.VIEWS_STARTED.emit()
-    print('mock_views({})'.format(kwargs))
-    #inbound.VIEWS_ERROR.emit()
-    inbound.VIEWS_FINISH.emit()
-    print('mock_views() after finish signal')

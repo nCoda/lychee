@@ -11,9 +11,13 @@ import signalslot
 from lychee.signals import *
 
 
-ACTION_START = signalslot.Signal(args=['inbound_format'])
+ACTION_START = signalslot.Signal(args=['dtype', 'doc'])
 '''
 Emit this signal to start an "action" through Lychee.
+
+:kwarg str dtype: The format (data type) of the inbound musical document. LilyPond, Abjad, etc.
+:kwarg object doc: The inbound musical document. The required type is determined by each converter
+    module individually.
 '''
 
 

@@ -3,10 +3,14 @@
 import signalslot
 
 
-CONVERSION_START = signalslot.Signal(args=['inbound_format'])
+CONVERSION_START = signalslot.Signal(args=['dtype', 'doc'])
 '''
 Emitted when the inbound conversion will start (i.e., this signal is emitted to cause a converter
 module to start the conversion).
+
+:kwarg str dtype: The format (data type) of the inbound musical document. LilyPond, Abjad, etc.
+:kwarg object doc: The inbound musical document. The required type is determined by each converter
+    module individually.
 '''
 
 CONVERSION_STARTED = signalslot.Signal()
@@ -26,9 +30,11 @@ CONVERSION_FINISHED = signalslot.Signal()
 Emitted when the inbound conversion is finished, before any "views" information is processed.
 '''
 
-CONVERSION_ERROR = signalslot.Signal()
+CONVERSION_ERROR = signalslot.Signal(args=['msg'])
 '''
 Emitted when there's an error during the in bound conversion step.
+
+:kwarg str msg: A descriptive error message for the log file.
 '''
 
 VIEWS_START = signalslot.Signal()
@@ -54,7 +60,9 @@ VIEWS_FINISHED = signalslot.Signal()
 Emitted when the inbound views processing is finished.
 '''
 
-VIEWS_ERROR = signalslot.Signal()
+VIEWS_ERROR = signalslot.Signal(args=['msg'])
 '''
 Emitted when there's an error while processing the inbound view.
+
+:kwarg str msg: A descriptive error message for the log file.
 '''

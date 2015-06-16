@@ -8,7 +8,6 @@ class WorkflowManager(object):
     '''
     It manages the workflow.
     '''
-    # TODO: add support for the error states
 
     # statusses
     _PRESTART = 0
@@ -33,9 +32,21 @@ class WorkflowManager(object):
                     (inbound.VIEWS_ERROR, '_inbound_views_error'),
                    )
 
+    # the following members must be present in "kwargs" to __init__() or it will fail.
+    _REQD_KWARGS = ('dtype', 'doc')
+
     def __init__(self, kwargs):
         self._status = WorkflowManager._PRESTART
-        self._inbound_format = kwargs['inbound_format'].lower() if 'inbound_format' in kwargs else None
+        # check the required kwargs
+        for kwarg in WorkflowManager._REQD_KWARGS:
+            if kwarg not in kwargs:
+                raise KeyError('Missing required kwarg to WorkflowManager: {}'.format(kwarg))
+
+        # set instance settings
+        # inbound data type
+        self._i_dtype = kwargs['dtype'].lower()
+        # inbound document
+        self._i_doc = kwargs['doc'].lower()
 
         for signal, slot in WorkflowManager._CONNECTIONS:
             signal.connect(getattr(self, slot))
@@ -73,10 +84,11 @@ class WorkflowManager(object):
 
         self._status = WorkflowManager._INBOUND_PRECONVERSION
         self._choose_inbound_converter()
-        inbound.CONVERSION_START.emit(inbound_format=self._inbound_format)
+        inbound.CONVERSION_START.emit(dtype=self._i_dtype, doc=self._i_doc)
 
         if self._status is not WorkflowManager._INBOUND_CONVERSION_FINISHED:
-            print('ERROR during inbound conversion')
+            if self._status is not WorkflowManager._INBOUND_CONVERSION_ERROR:
+                print('ERROR during inbound conversion')
             return
         print(next_step)
 
@@ -97,15 +109,15 @@ class WorkflowManager(object):
 
     def _choose_inbound_converter(self):
         '''
-        Choose an inbound converter based on self._inbound_format.
+        Choose an inbound converter based on self._i_dtype.
         '''
-        if self._inbound_format:
-            if self._inbound_format in converters.INBOUND_CONVERTERS:
-                inbound.CONVERSION_START.connect(converters.INBOUND_CONVERTERS[self._inbound_format])
+        if self._i_dtype:
+            if self._i_dtype in converters.INBOUND_CONVERTERS:
+                inbound.CONVERSION_START.connect(converters.INBOUND_CONVERTERS[self._i_dtype])
             else:
-                inbound.CONVERSION_ERROR.emit()
+                inbound.CONVERSION_ERROR.emit(msg='Invalid "dtype"')
         else:
-            self._status = WorkflowManager._INBOUND_CONVERSION_ERROR
+            inbound.CONVERSION_ERROR.emit(msg='Missing "dtype"')
 
     def _choose_inbound_views(self):
         '''
@@ -134,8 +146,11 @@ class WorkflowManager(object):
         print('inbound conversion finished')
 
     def _inbound_conversion_error(self, **kwargs):
-        print('ERROR during inbound conversion')
         self._status = WorkflowManager._INBOUND_CONVERSION_ERROR
+        if 'msg' in kwargs:
+            print(kwargs['msg'])
+        else:
+            print('ERROR during inbound conversion')
 
     def _inbound_views_started(self, **kwargs):
         print('inbound views started')
@@ -156,8 +171,11 @@ class WorkflowManager(object):
         print('inbound views finished')
 
     def _inbound_views_error(self, **kwargs):
-        print('ERROR during inbound views processing')
         self._status = WorkflowManager._INBOUND_VIEWS_ERROR
+        if 'msg' in kwargs:
+            print(kwargs['msg'])
+        else:
+            print('ERROR during inbound views processing')
 
 
 #--------------------------------------------------------------------------------------------------#

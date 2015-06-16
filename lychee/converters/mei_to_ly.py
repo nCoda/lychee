@@ -4,11 +4,12 @@ from lychee.signals import inbound
 
 def convert(**kwargs):
     '''
-    Convert a LilyPond document into an MEI document.
+    Convert an MEI document into a LilyPond document.
 
-    :param str document: The LilyPond document. Must be provided as a kwarg.
-    :returns: The corresponding MEI document.
-    :rtype: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
+    :param document: The MEI document. Must be provided as a kwarg.
+    :type document: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
+    :returns: The corresponding LilyPond document.
+    :rtype: str
     '''
     inbound.CONVERSION_STARTED.emit()
     print('lychee.converters.ly_to_mei.convert({})'.format(5))

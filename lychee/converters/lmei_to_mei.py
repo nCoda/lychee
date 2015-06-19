@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from lychee.signals import inbound
+from lychee.signals import outbound
 
 def convert(**kwargs):
     '''
@@ -11,8 +11,8 @@ def convert(**kwargs):
     :returns: The corresponding MEI document.
     :rtype: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
     '''
-    inbound.CONVERSION_STARTED.emit()
+    outbound.CONVERSION_STARTED.emit()
     print('{}.convert(document="{}")'.format(__name__, kwargs['document']))
-    #inbound.CONVERSION_ERROR.emit()
-    inbound.CONVERSION_FINISH.emit(converted='<mei stuff>')
+    #outbound.CONVERSION_ERROR.emit()
+    outbound.CONVERSION_FINISH.emit(converted='<mei stuff>')
     print('{}.convert() after finish signal'.format(__name__))

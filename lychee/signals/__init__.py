@@ -5,7 +5,7 @@ Note that you must import the :mod:`lychee.signals.workflow` separately because 
 by ``from lychee import *`` by default, because it caused too much trouble.
 '''
 
-__all__ = ['inbound']
+__all__ = ['inbound', 'document', 'outbound']
 
 import signalslot
 from lychee.signals import *

@@ -17,7 +17,6 @@ def ly_listener(**kwargs):
 def mei_listener(**kwargs):
     generic_listener('mei')
 
-# TODO: somehow this WHO_IS_LISTENING signal is different from the one in workflow.py...
 outbound.WHO_IS_LISTENING.connect(abj_listener)
 outbound.WHO_IS_LISTENING.connect(ly_listener)
 outbound.WHO_IS_LISTENING.connect(mei_listener)

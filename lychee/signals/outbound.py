@@ -61,13 +61,13 @@ Emitted when there's an error while processing the outbound view.
 :kwarg str msg: A descriptive error message for the log file.
 '''
 
-CONVERSION_START = signalslot.Signal(args=['views_info', 'l_mei'])
+CONVERSION_START = signalslot.Signal(args=['views_info', 'document'])
 '''
 Emitted to being outbound conversion. (This is emitted several times---once per data type).
 
 :kwarg object views_info: The views information required for the "dtype" data format.
-:kwarg l_mei: Whatever document is required to prepare the outbound data.
-:type l_mei: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
+:kwarg document: The Lychee-MEI document required to prepare the outbound data.
+:type document: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
 '''
 
 CONVERSION_STARTED = signalslot.Signal()

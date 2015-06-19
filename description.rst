@@ -71,6 +71,7 @@ Consider this example:
     </section>
 
 From this you can see:
+
 - every element has a unique "r" part
 - elements that determine the id of contained elements have "me" at the level of their id that
   corresponds to that element's tag. For example, the staff has ``-sme-l-r8290395`` in its id. This

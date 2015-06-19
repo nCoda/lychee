@@ -42,10 +42,49 @@ it involves the following characteristics:
     - tupletSpan, beamSpan, slur, and other elements that may refer to object spans with @startid
       and @endid, and are therefore inherently ambiguous and error-prone, must make use of @plist
       to reduce the possibility of ambiguity and erors
+    - use semantic ``@xml:id`` values as described below
 
 When this "description" document refers to a music document in an **arbitrary format**, it means the
 music document is encoded in one of the formats supported by Lychee (Abjad, LilyPond, MEI) without a
 restriction on the particular format used at the moment.
+
+Semantic XML IDs
+^^^^^^^^^^^^^^^^
+
+The ``@xml:id`` of an MEI object should be---partially at least---semantic in terms of describing
+that object's position within the document overall. So I suggest we generate ``@xml:id`` values
+according to a pattern concatenating identifiers for section, measure, staff, layer, and a "random"
+value. A generic ``@xml:id`` could be ``@xml:id="SXXXXXXX-mXXXXXXX-sXXXXXXX-lXXXXXXX-rXXXXXXX"``.
+Consider this example:
+
+.. sourcecode:: xml
+
+    <section xml:id="Sme-m-s-l-r1234567">
+        <measure xml:id="S1234567-mme-s-l-r8974095">
+            <staff xml:id="S1234567-m8974095-sme-l-r8290395">
+                <layer xml:id="S1234567-m8974095-s8290395-lme-r7389825">
+                    <note xml:id="S1234567-m8974095-s8290395-l7389825-r7290542" />
+                </layer>
+            </staff>
+            <slur xml:id="S1234567-m8974095-s-l-r3729884" />
+        </measure>
+    </section>
+
+From this you can see:
+- every element has a unique "r" part
+- elements that determine the id of contained elements have "me" at the level of their id that
+  corresponds to that element's tag. For example, the staff has ``-sme-l-r8290395`` in its id. This
+  is saying "the staff is me, and elements I contain should have '8290395' in their id."
+- the ``<slur>`` not inside a ``<staff>`` or ``<layer>`` simply has "s" and "l" without identifiers
+- seven-digit unique identifiers for every object in the "r" part. We could use shorter ones too,
+  because the "r" part doesn't need to be unique across all elements in the document---only within
+  that combination of the document hierarchy. It's feasible but probably unnecessary to ensure
+  uniqueness of the whole id by iterating through all the objects at a particular hierarchic level.
+  Adding a second ``<note>`` to the example above would involve checking only the existing
+  ``<note>`` for an id clash.
+
+And what you can't see is that this also gives Lychee a systematic way to name files. This section
+could be named "Sme-m-s-l-r1234567.mei".
 
 One-shot and Interactive Modes
 ------------------------------
@@ -182,6 +221,12 @@ But 1: this means Abjad documents will have to be largely or partially amended a
 But 2: this means users will be faced with useless-to-them, space-consuming comments in their
 LilyPond files. GUI editor widgets could help us with this, but then we would need two layers of
 abstraction for the same purpose.
+
+But 3: tracking correspondence by ``@xml:id`` alone is an inefficient way to search documents for
+affected objects. The fact is, these document formats are all hierarchic to some extent, and we
+should use that characteristic to help with views-tracking. (Thus the "semantic XML IDs" I suggest
+for Lychee-MEI). But that only solves the problem for MEI; it doesn't help us locate objects in a
+LilyPond file, and it especially doesn't help us find an Abjad object.
 
 Signals: Event-Driven Workflow Management
 =========================================

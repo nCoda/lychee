@@ -5,7 +5,7 @@ from signals import outbound
 
 # register these fake "listeners" that will pretend they want data in whatever formats
 def generic_listener(dtype):
-    print("I'm listening for {}!".format(dtype))
+    #print("I'm listening for {}!".format(dtype))
     outbound.I_AM_LISTENING.emit(dtype=dtype)
 
 def abj_listener(**kwargs):

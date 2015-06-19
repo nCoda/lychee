@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from lychee import converters, vcs
-from lychee.signals import inbound, document
+from lychee.signals import inbound, document, outbound
 
 
 class WorkflowManager(object):
@@ -23,6 +23,15 @@ class WorkflowManager(object):
     _DOCUMENT_STARTED = 101
     _DOCUMENT_FINISHED = 102
     _DOCUMENT_ERROR = 103
+    _OUTBOUND_PRESTART = 200
+    _OUTBOUND_HAVE_LISTENERS = 201
+    _OUTBOUND_VIEWS_STARTED = 202
+    _OUTBOUND_VIEWS_FINISHED = 203
+    _OUTBOUND_VIEWS_ERROR = 204
+    _OUTBOUND_CONVERSIONS_STARTED = 205
+    _OUTBOUND_CONVERSIONS_FINISHED = 206
+    _OUTBOUND_CONVERSIONS_ERROR = 207
+    _OUTBOUND_FINISHING = 208
 
     # connections
     # NB: they'll be connected as SIGNAL.connect(self.whatever)
@@ -38,6 +47,9 @@ class WorkflowManager(object):
                     (document.FINISH, '_document_finish'),
                     (document.FINISHED, '_document_finished'),
                     (document.ERROR, '_document_error'),
+                    (outbound.I_AM_LISTENING, '_outbound_register_listener'),
+                    (outbound.VIEWS_ERROR, '_outbound_views_error'),
+                    (outbound.CONVERSION_ERROR, '_outbound_conversion_error'),
                    )
 
     def __init__(self, dtype, doc, **kwargs):
@@ -52,6 +64,15 @@ class WorkflowManager(object):
         self._converted = None
         # inbound information from the "views" module
         self._i_views = None
+
+        # list of output "dtype" required
+        self._o_dtypes = []
+        # mapping from dtype to its outbound views_info
+        self._o_views_info = {}
+        # mapping from dtype to its outbound converted form
+        self._o_converted = {}
+        # dtype of the currently running outbound converter
+        self._o_running_converter = None
 
         for signal, slot in WorkflowManager._CONNECTIONS:
             signal.connect(getattr(self, slot))
@@ -117,6 +138,74 @@ class WorkflowManager(object):
         print(next_step)
 
         # Outbound ------------------------------------------------------------
+        self._status = WorkflowManager._OUTBOUND_PRESTART
+        outbound.WHO_IS_LISTENING.emit()
+
+        # determine which formats are required
+        if self._status is not WorkflowManager._OUTBOUND_HAVE_LISTENERS:
+            if self._status is not WorkflowManager._OUTBOUND_VIEWS_ERROR:
+                print('nobody was listening')
+            return
+
+        # do the views processing
+        successful_dtypes = []
+        for each_dtype in self._o_dtypes:
+            outbound.VIEWS_START.emit(dtype=each_dtype)
+            if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:
+                self._status = WorkflowManager._OUTBOUND_VIEWS_STARTED
+                continue
+            elif each_dtype not in self._o_views_info:
+                print('ERROR: {} did not return outbound views info'.format(each_dtype))
+                continue
+            else:
+                successful_dtypes.append(each_dtype)
+
+        # see if everything worked
+        if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:
+            # can't happen?
+            pass
+        if len(successful_dtypes) != len(self._o_dtypes):
+            if 0 == len(successful_dtypes):
+                outbound.VIEWS_ERROR.emit('No registered outbound dtypes passed through views processing')
+            else:
+                print('ERROR: some registered outbound dtypes failed views processing')
+                self._o_dtypes = successful_dtypes
+        else:
+            outbound.VIEWS_FINISHED.emit()
+
+        if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:
+            return
+        print(next_step)
+
+        # do the outbound conversion
+        successful_dtypes = []
+        for each_dtype in self._o_dtypes:
+            self._choose_outbound_converter(each_dtype)
+            self._o_running_converter = each_dtype
+            outbound.CONVERSION_START.emit(views_info=self._o_views_info[each_dtype],
+                                           l_mei='<Lychee-MEI snippet>')
+            if self._status is WorkflowManager._OUTBOUND_CONVERSION_ERROR:
+                self._status = WorkflowManager._OUTBOUND_CONVERSION_STARTED
+                continue
+            else:
+                successful_dtypes.append(each_dtype)
+
+        # see if everything worked
+        if self._status is WorkflowManager._OUTBOUND_CONVERSION_ERROR:
+            # can't happen?
+            pass
+        if len(successful_dtypes) != len(self._o_dtypes):
+            if 0 == len(successful_dtypes):
+                outbound.CONVERSION_ERROR.emit('No outbound converters succeeded')
+            else:
+                print('ERROR: some registered outbound dtypes failed conversion')
+                self._o_dtypes = successful_dtypes
+
+        # emit one signal per things returned
+        for each_dtype in successful_dtypes:
+            outbound.CONVERSION_FINISHED.emit(dtype=each_dtype,
+                                              placement=self._o_views_info[each_dtype],
+                                              document=self._o_converted[each_dtype])
 
     # ----
 
@@ -138,6 +227,16 @@ class WorkflowManager(object):
         '''
         # TODO: do we need this method?
         pass
+
+    def _choose_outbound_converter(self, dtype):
+        '''
+        Choose an outbound converter based on the "dtype" argument. This should be called once for
+        every outbound converter format required.
+        '''
+        if dtype in converter.OUTBOUND_CONVERTERS:
+            outbound.CONVERSION_START.connect(converters.OUTBOUND_CONVERTERS[dtype])
+        else:
+            outbound.CONVERSION_ERROR.emit(msg='Invalid "dtype" ({})'.format(dtype))
 
     # ----
 
@@ -201,6 +300,8 @@ class WorkflowManager(object):
         else:
             print('ERROR during inbound views processing')
 
+    # ----
+
     def _document_started(self, **kwargs):
         print('document started')
         self._status = WorkflowManager._DOCUMENT_STARTED
@@ -228,3 +329,72 @@ class WorkflowManager(object):
             print(kwargs['msg'])
         else:
             print('ERROR during document processing')
+
+    # ----
+
+    def _outbound_register_listener(self, dtype, **kwargs):
+        '''
+        Slot for the :const:`outbound.I_AM_LISTENING` signal.
+        '''
+        if dtype not in self._o_dtypes:
+            print('registering {} for outbound conversion'.format(dtype))
+            self._status = WorkflowManager._OUTBOUND_HAVE_LISTENERS
+            self._o_dtypes.append(dtype)
+
+    def _outbound_views_started(self, **kwargs):
+        print('outbound views started')
+        self._status = WorkflowManager._OUTBOUND_VIEWS_STARTED
+
+    def _outbound_views_finish(self, dtype, views_info, **kwargs):
+        '''
+        Slot for outbound.VIEWS_FINISH
+        '''
+        print('outbound views finishing'.format(kwargs))
+        if self._status is WorkflowManager._OUTBOUND_VIEWS_STARTED:
+            self._o_views_info[dtype] = views_info
+            self._status = WorkflowManager._OUTBOUND_VIEWS_FINISHED
+        else:
+            print('ERROR during outbound views processing')
+        outbound.VIEWS_FINISHED.emit()
+
+    def _outbound_views_finished(self, **kwargs):
+        '''
+        Called when outbound.VIEWS_FINISHED is emitted, for logging and debugging.
+        '''
+        print('outbound views finished')
+
+    def _outbound_views_error(self, **kwargs):
+        self._status = WorkflowManager._OUTBOUND_VIEWS_ERROR
+        if 'msg' in kwargs:
+            print(kwargs['msg'])
+        else:
+            print('ERROR during outbound views processing')
+
+    def _outbound_conversion_started(self, **kwargs):
+        print('outbound conversion started')
+        self._status = WorkflowManager._OUTBOUND_CONVERSION_STARTED
+
+    def _outbound_conversion_finish(self, converted, **kwargs):
+        print('outbound conversion finishing')
+        if self._status is WorkflowManager._OUTBOUND_CONVERSION_STARTED:
+            if converted is None:
+                outbound.CONVERSION_ERROR.emit(msg='Outbound converter did not return a document')
+            else:
+                print('\t(we got "{}")'.format(converted))
+                self._o_converted[self._o_running_converter] = converted
+                self._status = WorkflowManager._OUTBOUND_CONVERSION_FINISHED
+        else:
+            print('ERROR during outbound conversion')
+
+    def _outbound_conversion_finished(self, dtype, placement, document, **kwargs):
+        '''
+        Called when outbound.CONVERSION_FINISHED is emitted, for logging and debugging.
+        '''
+        print('outbound conversion finished\n\tdtype: {}\n\tplacement: {}\n\tdocument: {}\n'.format(dtype, placement, document))
+
+    def _outbound_conversion_error(self, **kwargs):
+        self._status = WorkflowManager._OUTBOUND_CONVERSION_ERROR
+        if 'msg' in kwargs:
+            print(kwargs['msg'])
+        else:
+            print('ERROR during outbound conversion')

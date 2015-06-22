@@ -18,6 +18,8 @@ module names.
     - abjad_to_mei: convert Abjad to MEI
     - mei_to_lmei: convert arbitrary MEI to Lychee-MEI
     - lmei_to_mei: convert Lychee-MEI to single-file MEI suitable for export
+    - mei_to_ui: output info about the user interface from MEI (see "Converting to UI" below)
+    - ui_to_mei: collect info about the user interface from the UI
 - vcs: manage revisions with Mercurial
 - views: manage partial "views" on a per-format basis
 - signals: coordinate event-driven programming
@@ -43,6 +45,8 @@ it involves the following characteristics:
       and @endid, and are therefore inherently ambiguous and error-prone, must make use of @plist
       to reduce the possibility of ambiguity and erors
     - use semantic ``@xml:id`` values as described below
+    - MEI extension to incorporate overrides and other visual aspects specific to LilyPond
+    - MEI extension to incorporate user metadata (about editing sessions, UI settings, etc.)
 
 When this "description" document refers to a music document in an **arbitrary format**, it means the
 music document is encoded in one of the formats supported by Lychee (Abjad, LilyPond, MEI) without a
@@ -157,6 +161,24 @@ Special Case: MEI-to-MEI Converter
 We will require an MEI-to-MEI conversion both for inbound and outbound conversions. On the way in,
 this will be to convert (nearly?) any valid MEI document into a valid Lychee-MEI document. On the
 way out, this will probably mostly be to substitute the appropriate files into the "playlist" file.
+
+Special Case: Converting to UI
+------------------------------
+
+Another unusual situation is the storage of user interface settings and usage data in MEI. We will
+need to extend MEI to deal with this information. It may then still be application-specific (not
+transferrable between application shtat use Lychee) and will not likely be incorporated into the
+MEI standard proper.
+
+We can store all sorts of things here, so every musical document is like a "session" in an IDE (or
+at least a "session" in the Kate text editor, if that helps anyone). We can even store things to
+the detail of what proportion of the screen is occupied by various interface components. We can
+still manage this with the generic workflow, and maybe in the style of the *React.js* GUI framework:
+a user will make the motion to change a dial, and they'll think they changed the dial, but really
+they caused a change that was put into Lychee, stored in the MEI file, and then the dial was told
+by Lychee that it should update its state.
+
+These "conversions" will be handled by the ``mei_to_ui`` and ``ui_to_mei`` modules.
 
 VCS: Mercurial Integration
 ==========================

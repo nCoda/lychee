@@ -5,8 +5,8 @@ Lychee manages the MEI document during score editing sessions. Lychee performs n
 conversion between various representations (Abjad, LilyPond, and MEI) with optional version control
 integration, and connections to an event-driven notification system for use in GUI applications.
 
-In a sense, Lychee is the core of the user-facing nCoda app, but it's being developed as an
-independent library so it may be used by a wider audience.
+In a sense, Lychee is the core of the user-facing nCoda app, but it's being developed with
+stand-alone use in mind so it may be used by a wider audience.
 
 We need the following components. The names in this list should be understood as importable Python
 module names.
@@ -32,8 +32,8 @@ Lychee-MEI and "Arbitrary Format"
 ---------------------------------
 
 Lychee-MEI is a valid subset of MEI. **Lychee-MEI** restricts MEI to encoding strategies that are
-easier and safer for computers to process. This sub-format will be specified in the future; for now
-it involves the following characteristics:
+easier and safer for computers to process. We will discover new qualifications for Lychee-MEI as we
+go along; for now it involves the following characteristics:
 
 - file management:
     - every MEI ``<section>`` is kept in its own file, to ease version control
@@ -45,7 +45,7 @@ it involves the following characteristics:
       and @endid, and are therefore inherently ambiguous and error-prone, must make use of @plist
       to reduce the possibility of ambiguity and erors
     - use semantic ``@xml:id`` values as described below
-    - MEI extension to incorporate overrides and other visual aspects specific to LilyPond
+    - MEI extension to incorporate commands specific to LilyPond
     - MEI extension to incorporate user metadata (about editing sessions, UI settings, etc.)
 
 When this "description" document refers to a music document in an **arbitrary format**, it means the
@@ -56,40 +56,40 @@ Semantic XML IDs
 ^^^^^^^^^^^^^^^^
 
 The ``@xml:id`` of an MEI object should be---partially at least---semantic in terms of describing
-that object's position within the document overall. So I suggest we generate ``@xml:id`` values
-according to a pattern concatenating identifiers for section, measure, staff, layer, and a "random"
-value. A generic ``@xml:id`` could be ``@xml:id="SXXXXXXX-mXXXXXXX-sXXXXXXX-lXXXXXXX-rXXXXXXX"``.
+that object's position within the complete document. We will generate ``@xml:id`` values according
+to a pattern concatenating identifiers for section, measure, staff, layer, and an "element" value.
+A generic ``@xml:id`` could be ``@xml:id="SXXXXXXX-mXXXXXXX-sXXXXXXX-lXXXXXXX-eXXXXXXX"``.
 Consider this example:
 
 .. sourcecode:: xml
 
-    <section xml:id="Sme-m-s-l-r1234567">
-        <measure xml:id="S1234567-mme-s-l-r8974095">
-            <staff xml:id="S1234567-m8974095-sme-l-r8290395">
-                <layer xml:id="S1234567-m8974095-s8290395-lme-r7389825">
-                    <note xml:id="S1234567-m8974095-s8290395-l7389825-r7290542" />
+    <section xml:id="Sme-m-s-l-e1234567">
+        <measure xml:id="S1234567-mme-s-l-e8974095">
+            <staff xml:id="S1234567-m8974095-sme-l-e8290395">
+                <layer xml:id="S1234567-m8974095-s8290395-lme-e7389825">
+                    <note xml:id="S1234567-m8974095-s8290395-l7389825-e7290542" />
                 </layer>
             </staff>
-            <slur xml:id="S1234567-m8974095-s-l-r3729884" />
+            <slur xml:id="S1234567-m8974095-s-l-e3729884" />
         </measure>
     </section>
 
 From this you can see:
 
-- every element has a unique "r" part
+- every element has a unique "e" part
 - elements that determine the id of contained elements have "me" at the level of their id that
-  corresponds to that element's tag. For example, the staff has ``-sme-l-r8290395`` in its id. This
+  corresponds to that element's tag. For example, the staff has ``-sme-l-e8290395`` in its id. This
   is saying "the staff is me, and elements I contain should have '8290395' in their id."
 - the ``<slur>`` not inside a ``<staff>`` or ``<layer>`` simply has "s" and "l" without identifiers
-- seven-digit unique identifiers for every object in the "r" part. We could use shorter ones too,
-  because the "r" part doesn't need to be unique across all elements in the document---only within
+- seven-digit unique identifiers for every object in the "e" part. We could use shorter ones too,
+  because the "e" part doesn't need to be unique across all elements in the document---only within
   that combination of the document hierarchy. It's feasible but probably unnecessary to ensure
   uniqueness of the whole id by iterating through all the objects at a particular hierarchic level.
   Adding a second ``<note>`` to the example above would involve checking only the existing
   ``<note>`` for an id clash.
 
-And what you can't see is that this also gives Lychee a systematic way to name files. This section
-could be named "Sme-m-s-l-r1234567.mei".
+One other thing: this gives Lychee a systematic way to name files. The section example above could
+be named "Sme-m-s-l-e1234567.mei".
 
 One-shot and Interactive Modes
 ------------------------------
@@ -142,18 +142,20 @@ is being updated. (The ``views`` module determines which part of the Lychee-MEI 
 what part of the document is being updated. (The ``views`` module determines which part of the
 other representation this corresponds to).
 
-LilyPond documents shall always be unicode strings. Abjad documents shall always be Abjad objects.
-
 Each converter must be capable of accepting an incomplete document and producing the corresponding
-incomplete output, and of emitting an error signal if the incomplete input is insufficient to
-produce the corresponding valid output. For example, ``Element('note', {'pname': 'c'})`` given to
-the ``mei_to_ly`` module should result in ``'c'`` as output, even though the single Element is not
-a complete and valid MEI document, and the single-character string is not a complete and valid
+incomplete output, or emitting an error signal if the incomplete input is insufficient to produce
+corresponding valid output. For example, ``Element('note', {'pname': 'c'})`` given to the
+``mei_to_ly`` module should result in ``'c'`` as output, even though the single Element is not a
+complete and valid MEI document, and the single-character string is not a complete and valid
 LilyPond document. Yet if ``mei_to_ly`` receives ``Element('slur', {'plist': '#123 #443'})`` as
 input, there is not enough information to produce any sensible output, so the module ought to emit
 an error signal.
 
 Future modules will convert data between MEI and MusicXML, and MEI and music21.
+
+Also note that a conversion through Lychee from one format to the same format, like
+LilyPond-to-MEI-to-LilyPond, need not produce an identical file at the end. Although the content
+must be identical, its formatting does not need to be.
 
 Special Case: MEI-to-MEI Converter
 ----------------------------------
@@ -167,8 +169,8 @@ Special Case: Converting to UI
 
 Another unusual situation is the storage of user interface settings and usage data in MEI. We will
 need to extend MEI to deal with this information. It may then still be application-specific (not
-transferrable between application shtat use Lychee) and will not likely be incorporated into the
-MEI standard proper.
+transferrable between applications that use Lychee) and will not likely be incorporated into the
+"upstream" MEI standard.
 
 We can store all sorts of things here, so every musical document is like a "session" in an IDE (or
 at least a "session" in the Kate text editor, if that helps anyone). We can even store things to
@@ -176,7 +178,7 @@ the detail of what proportion of the screen is occupied by various interface com
 still manage this with the generic workflow, and maybe in the style of the *React.js* GUI framework:
 a user will make the motion to change a dial, and they'll think they changed the dial, but really
 they caused a change that was put into Lychee, stored in the MEI file, and then the dial was told
-by Lychee that it should update its state.
+by Lychee that it should update its position.
 
 These "conversions" will be handled by the ``mei_to_ui`` and ``ui_to_mei`` modules.
 
@@ -197,7 +199,7 @@ Views: Does It Go Here?
 
 The largest remaining unsolved problem is how to manage "views" on an MEI document. A "view" is an
 MEI document, or a portion of an MEI document, formatted in the way most suitable for another
-module's input or output.
+module's input or output (for example, a measure from an Abjad score).
 
 Sample Uses
 -----------
@@ -218,45 +220,29 @@ LilyPond, and Abjad views of the document.
 How It Works
 ------------
 
-I don't know.
+I don't know, but (1) we will probably need "views-trackers" for every supported external format,
+and (2) there has already been some work in this area by, for example, the Frescobaldi people. There
+may have been useful research conducted in other disciplines, or for unrelated applications.
 
-The "view" will be considered twice for every action, and the ``views`` module called twice: once
-on the "inbound" to Lychee-MEI, and once on the "outbound" from Lychee-MEI. In order to track the
-corresponding sections between documents of different formats, the converter modules must also
-provide to the ``views`` module the location of the modifications currently being "inbounded."
+In any case, the "view" will be considered for the "inbound" step, and once for every "outbound"
+format. The ``views`` module will have to retain information about what portion of the document was
+"inbounded" so it can properly process the outbound placement.
 
-Somehow, the ``views`` module will have to retain a bidirectional mapping between locations in
-arbitrary-format documents and the ``@xml:id`` attribute in the Lychee-MEI document collection. For
-example, in LilyPond documents it would probably be a mapping with line and column numbers; for
-Abjad it would probably be a mapping with object ``__id__`` values.
+Per-format views-trackers will keep a bidirectional mapping between the location of an object in
+arbitrary-format documents and the ``@xml:id`` attribute of its Lychee-MEI representation. This
+information should be submitted to the VCS so that Lychee will not need to regenerate it. In any
+case, the initial generation of correspondence data may be very time consuming.
 
-Arbitrary Ideas
----------------
-
-This seems rocky still, and potentially very error-prone. It seems like Lychee would have to create
-arbitrary-format documents bit by bit, in order to know the exact correspondences. There are ways to
-let LilyPond and Abjad documents know the ``@xml:id`` of an MEI note (or similar): in LilyPond you
-might write ``c4) %{id:7229879837498}%`` for example and in Abjad you might add an ``_mei_id``
-attribute at runtime.
-
-But 1: this means Abjad documents will have to be largely or partially amended after every update.
-
-But 2: this means users will be faced with useless-to-them, space-consuming comments in their
-LilyPond files. GUI editor widgets could help us with this, but then we would need two layers of
-abstraction for the same purpose.
-
-But 3: tracking correspondence by ``@xml:id`` alone is an inefficient way to search documents for
-affected objects. The fact is, these document formats are all hierarchic to some extent, and we
-should use that characteristic to help with views-tracking. (Thus the "semantic XML IDs" I suggest
-for Lychee-MEI). But that only solves the problem for MEI; it doesn't help us locate objects in a
-LilyPond file, and it especially doesn't help us find an Abjad object.
+Positions in LilyPond documents can be recorded with line and column numbers. Abjad correspondences
+could be tracked with ``__id__`` values (but that might require significant work when the document
+is first created).
 
 Signals: Event-Driven Workflow Management
 =========================================
 
 Although signalling systems are conventionally used for event-driven programming, and they will
 indeed be used for that in Lychee, they will also manage control flow through Lychee during one-shot
-use. Another way to say this: whether run continuously with an event loop, or in a single-action
+use. Another way to say this: whether run continuously with an event loop or in a single-action
 context through the commandline interface, the ``lychee.signals`` module is responsible for managing
 how control flows through the program.
 
@@ -274,31 +260,34 @@ eliminate the possibility of a cyclic workflow.
 
 One of the additional requirements for the ``signals`` module is to integrate cleanly and
 effectively with other similar mechanisms. The most important concerns will be whatever mechanisms
-are used by Frescobaldi (PyQt4 signals) and nCoda (???). For nCoda, we should first try to use
-``signals`` itself as the single signalling mechanism, but I expect we'll have to complement it with
-a JavaScript-specific signalling library. In both cases, Lychee's ``signals`` module should act as
-the overall controller for Lychee-related moments, leaving the other signalling mechanisms to serve
-as connection points between Lychee's client applications and Lychee itself.
+are used by Frescobaldi (PyQt4 signals) and nCoda (???) for the user interfaces. For nCoda, we
+should first try to use ``signals`` itself as the single signalling mechanism, but I expect we'll
+have to complement it with a JavaScript-specific signalling library. In both cases, Lychee's
+``signals`` module should act as the overall controller for Lychee-related activities, leaving the
+other signalling mechanisms to serve as connection points between Lychee's client applications and
+Lychee itself.
 
 Signals-and-Slots: Description
 ------------------------------
 
 For those who aren't familiar with the signal-and-slot mechanism, it's basically a combination of
-inter-process communication and inter-module function calls. Consider an example signal,
-"mei_updated," which is defined to be triggered whenever the core MEI document is finished being
-updated. When this happens, several independent tasks may be required: the VCS should make a new
-commit; Verovio should be updated; a new LilyPond file should be outputted. The problem is, these
-three things won't always be the same---it depends how the program is configured to run at the
-moment: in nCoda, we won't usually be outputting a LilyPond file, but in Frescobaldi we may not
-want to use the VCS. Furthermore, because of their dynamic character, it's not necessarily obvious
-how to cause all of, and only the, desired functions to be called.
+inter-process communication (IPC) and regular function calls. Signals are defined and called with
+function-like signatures, but (as with IPC) the caller doesn't know specifically which function is
+called in the end. And there are no return values.
 
-One solution, which I find compelling and we will therefore try to use, is to have signals and slots,
-which I believe to have been introduced first with the Qt library. It's basically like an
-intermediate, multiplexing function call. Modules that want to know about an event happening will
-subscribe to the event's signal. Functions that cause the event will simply call the signal like
-any other function. The ``signal`` module keeps track of who has registered for a signal, and when
-a signal is triggered, it calls all the registered modules---but not in a known order.
+Consider an example signal, "mei_updated," which is defined as being triggered whenever the core
+MEI document is finished being updated. When the MEI document has been updated, several independent
+tasks may be required: the VCS may make a new commit; Verovio may be updated; a new LilyPond file
+may be outputted. The problem is that the required tasks won't always be the same---it depends how
+the program is configured to run at the moment. In nCoda, we won't usually be outputting a LilyPond
+file, but in Frescobaldi we may not want to use the VCS. Furthermore, because of their dynamic
+character, it's not necessarily obvious how to cause all of, and only the, desired functions to be
+called.
+
+The solution we will try is using the signals-and-slots mechanism, which acts in this case like an
+intermediate, multiplexing function call. Some configuration management module "registers" a slot
+with a signal. When the signal is "emitted," all the registered slots will be called in an
+arbitrary order. It is the signal's responsibility to keep track of all its registered slots.
 
 Consider this pseudocode elaboration of the "mei_updated" signal.
 
@@ -306,27 +295,26 @@ Consider this pseudocode elaboration of the "mei_updated" signal.
 
     def update_mei(change_to_make):
         mei_file.write(change_to_make)
-        signals.mei_updated.trigger(mei_file.pathname)
+        signals.mei_updated.emit(mei_file.pathname)
 
-    @signals.mei_updated
     def make_a_commit(pathname):
         if settings.using('hg'):
             hg.add(pathname)
             ref = hg.commit('Made a change to {}'.format(pathname))
-            signals.made_commit.trigger(ref)
+            signals.made_commit.emit(ref)
 
-    @signals.mei_updated
     def output_lilypond(pathname):
         if settings.using('lilypond'):
             mei_to_ly.output()
-            signals.lilypond_updated.trigger()
+            signals.lilypond_updated.emit()
 
-In the previous example, you can see how I've used Python decorators to connect the later two
-functions to the "mei_updated" signal. That's just one way to do it. You can also see that those
-functions will only do something useful if the runtime settings say they should. Although it's
-quite simple, reading this example illustrates some of the ways we might use signals to allow
-various parts of the program to interact, even though they don't have to know about each other at
-all.
+    signals.mei_updated.register(make_a_commit)
+    signals.mei_updated.register(output_lilypond)
+
+In this example, I've called the ``register()`` method on a signal to connect a slot. When some
+other function, not shown here, calls ``update_mei()``, the "mei_updated" signal will be emitted,
+causing both ``make_a_commit()`` and ``output_lilypond()`` to be called. They will both receive the
+same argument that the signal was emitted with.
 
 TUI: Commandline Interface
 ==========================

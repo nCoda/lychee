@@ -20,6 +20,7 @@ module names.
     - lmei_to_mei: convert Lychee-MEI to single-file MEI suitable for export
     - mei_to_ui: output info about the user interface from MEI (see "Converting to UI" below)
     - ui_to_mei: collect info about the user interface from the UI
+    - vcs_inbound: accepts operations for the VCS
 - vcs: manage revisions with Mercurial
 - views: manage partial "views" on a per-format basis
 - signals: coordinate event-driven programming
@@ -126,6 +127,11 @@ The **outbound** step converts from Lychee-MEI to (an) arbitrary format(s). When
 interactive mode, the ``views`` module produces information on what portion of the document is
 being updated.
 
+Note that the "conversion" steps do not necessarily work as simple format converters for musical
+information. For example, the ``mei_to_ui`` converter module issues changes for the user interface
+according to changes in the MEI document. As another example, the ``vcs_inbound`` module allows
+users to issue version control commands, like making a commit or switching to a different branch.
+
 Converters
 ==========
 
@@ -182,17 +188,114 @@ by Lychee that it should update its position.
 
 These "conversions" will be handled by the ``mei_to_ui`` and ``ui_to_mei`` modules.
 
+Special Case: VCS Inbound
+-------------------------
+
+The ``lychee.converters.vcs_inbound`` module allows operations with the ``lychee.vcs`` module.
+Possible user actions are described in the following section, "VCS: Mercurial Integration."
+
 VCS: Mercurial Integration
 ==========================
 
-One of the core nCoda features is integration with the Mercurial VCS (version control system). This
-will happen through the ``lychee.vcs`` module, and it will be a significant advantage for interested
-Frescobaldi users too. In order to be sure we don't tie our projects' success to that of Mercurial,
-to provide a somewhat simpler useage experience for Lychee programmers, and to protect us from
-possible changes to Mercurial's Python libraries (which they warn may happen), we should offer this
-functionality through a ``vcs`` wrapper module. This will also allow programmers to replace
-Mercurial with another VCS, like Git, which is notably more popular than Mercurial, but unsuitable
-for nCoda and suboptimal for any integration with Python.
+One of the core nCoda features is integration with a VCS (version control system) through the
+``lychee.vcs`` module. This will be a significant advantage for Frescobaldi users too, many of whom
+have already been tracking their projects in VCS repositories for years. The ``vcs`` module serves
+as an abstraction layer between Lychee and the VCS itself; this allows us to change the actual VCS
+in use without affecting Lychee beyond the ``vcs`` module. We may also choose to support multiple
+VCS programs simultaneously.
+
+The initial default VCS will be Mercurial, which we have chosen primarily for two reasons: first,
+it is written in Python, and therefore can provide tighter integration with Lychee, which is also
+written in Python; second, it is written in Python, and can therefore be run with nCoda's in-browser
+Python solution. Although the Git VCS is notably more popular than Mercurial in 2015, it lacks the
+integration and cross-compilation possibilities of Mercurial, and is therefore less suitable as an
+initial default for Lychee.
+
+Interacting with the VCS
+------------------------
+
+Usual use cases of a VCS have users interacting with the VCS directly, in order to change the files
+under version control. The situation is different in Lychee for a number of reasons. First, learning
+how to use a VCS is actually a terrible burden on users, so we want to try simplifying it as much
+as possible while still taking advantage of as many beenfits as possible. Second, at least in nCoda,
+users will not manipulate the repository's files directly, so VCS changes must be communicated to
+users through an outbound converter. Finally, again at least in nCoda, we don't expect users to
+learn the VCS *technology*---just VCS *concepts*. What that means in practice is, for example,
+that we would like users to know they can switch between "revisions" that they "saved," but
+there is no reason to have them learn that in Mercurial you switch between "changesets" that you
+"commit," and in Git you switch between "commits" that you "commit."
+
+Session Changes
+---------------
+
+Lychee has an idea of **session changes**, which is a temporary revision. These were created to
+represent single actions in the undo/redo stack. The idea is that every "change" a user makes will
+be entered as a session change and, if it can be converted successfully, it will be reflected in
+all the views the user has open. When a user chooses to "save" their work, all the existing session
+changes will be compressed to a single revision (changeset/commit) and the session change revisions
+will be discarded.
+
+Session changes can be stored in Mercurial as a patch in a Mercurial Queue, as a changeset proper,
+and possibly as other things. The simplest implementation solution will be best, so we should use
+proper changesets if possible. In that case, we can use a bookmark to track the most recent
+permanent changeset, and we'll need to "rewrite history" to rewrite the session changes as a single
+permanent changeset. However, this may cause a lot of garbage in the repository, and it may be
+impractical to clean up as often as might be required. In that case, we can investigate Mercurial
+Queues (MQ) which basically amount to a per-user micro-VCS on top of the rest of Mercurial. The key
+advantage here is that the MQ patch stack can be (1) completely deleted after a proper changeset is
+created, or (2) committed in a changeset.
+
+An interesting side-effect of representing the undo/redo stack with what we're calling session
+changes is that, in effect, the undo/redo stack can potentially be shared between users and across
+actual editing sessions. That's kind of weird, but I can imagine it may prove quite popular. It's
+sort of like a complicated auto-save feature, but without much of the baggage that would come with
+developing that separately.
+
+One might rightly ask why we would bother differentiating between session changes and permanent
+changesets. There are at least two reasons, one practical and one technical. The practical reason
+is that a portion of users---most users, I hope---will find it significantly advantageous to be able
+to create annotated changesets of their work, that server as milestones along the creative or
+researchive process. The technical reason is that, as users work on a project for a long time, they
+will accumulate a large number of session changes, and it would be tremendously inefficient to have
+all of these stored permanently as changesets in the repository.
+
+If we're crafty about it, we can allow users to group and rewrite session
+changes in the same way as they may group and rewrite permanent revisions. That is to say, as users
+may go along composing a new piece of music, they may realize sessionchange-0 to sessionchange-55
+represent a single new artistic development and should be saved as a permanent changeset, even
+though they've already started working on other things, and the most recent sesion change is 99. So
+it's basically like "save some of what you did." But I don't know whether we can allow users to save
+only their work in *x* files... we'll have to see about that.
+
+Though not all users will be so eager to manage their revisions like this. We'll need to come up
+with some limit, like 5,000 session changes, at which point Lychee will automatically suggest that
+the user will "compress," say, the most recent 2,500 session changes into a single permanent
+changeset. And if they choose not to do it, at some point, like 10,000 session changes, we might
+just say to the user "stop being ridiculous, we need to cut down on these commits." But nicely.
+
+Bookmarking
+-----------
+
+We have to do this too, but it's not a big deal. In Mercurial, "bookmarks" are basically equivalent
+to Git's branches, so that's what's going on here.
+
+Branching
+---------
+
+Mercurial also has a feature called "branches," and they're for permanently divergent sets of work.
+For example, in Git you would make a "branch" for development, another "branch" for a stable release
+series, and then "tags" for each release. In Mercurial, you would make a "bookmark" to track your
+development, a "branch" for a stable release series, and "tags" for each release. In effect it's
+mostly the same, just that Mercurial sort of forces branches to be permanent but bookmarks to be
+movable and dynamic, whereas Git suggests using branches both for permanent and dynamism.
+
+Anyway, the point is: is there a place for Mercurial branches? Is this distinction something that
+we should expose to our users?
+
+Collaboration and Merging
+-------------------------
+
+I don't know how to handle this yet.
 
 Views: Does It Go Here?
 =======================

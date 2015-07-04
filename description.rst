@@ -121,14 +121,20 @@ with the core of a GUI application.
 Generic Workflow
 ----------------
 
-Every action Lychee performs will use the same basic workflow with three steps: inbound, document,
-outbound.
+Every action Lychee performs will use the same basic workflow with four steps: inbound, document,
+vcs, and outbound.
 
 The **inbound** step converts from an arbitrary format to Lychee-MEI. When running in interactive
 mode, the ``views`` module is given information on what portion of the document is being updated.
 
-The **document** step manages a change to the internal MEI document, and (if relevant) enters the
-change in the VCS.
+The **document** step manages changes to the internal MEI document, determining which specific files
+must be modified, and creating or deleting them as required. In some situations, this step will be
+skipped entirely if, for example, the user requested to see a different changeset from the VCS,
+which won't require any changes in this step.
+
+The **vcs** step manages the VCS repository in which the project is being managed. New changes will
+be entered in a new revision, but other actions are possible depending on the user's actions. This
+step may be skipped entirely if Lychee is configured not to use a VCS.
 
 The **outbound** step converts from Lychee-MEI to (an) arbitrary format(s). When running in
 interactive mode, the ``views`` module produces information on what portion of the document is

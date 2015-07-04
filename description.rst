@@ -48,6 +48,11 @@ go along; for now it involves the following characteristics:
     - use semantic ``@xml:id`` values as described below
     - MEI extension to incorporate commands specific to LilyPond
     - MEI extension to incorporate user metadata (about editing sessions, UI settings, etc.)
+    - the <multiRest> element isn't allowed in Lychee-MEI; on conversion from MEI to Lychee-MEI,
+      these must be converted to multiple <mRest> elements
+    - <dot> element are forbidden in favour of @dot attributes (we may need ``<dot>`` when dealing
+      with particular repertoire or critical editions, later, but for now it's an unnecessary
+      complication to support)
 
 When this "description" document refers to a music document in an **arbitrary format**, it means the
 music document is encoded in one of the formats supported by Lychee (Abjad, LilyPond, MEI) without a

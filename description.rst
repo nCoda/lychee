@@ -201,6 +201,25 @@ by Lychee that it should update its position.
 
 These "conversions" will be handled by the ``mei_to_ui`` and ``ui_to_mei`` modules.
 
+Special Case: Converting from UI
+--------------------------------
+
+Every change the user makes in the interface, if it's a change that may contribute to changing the
+musical score proper, as stored in MEI, must be recorded in the MEI itself. What this means in
+practice is that we're likely to need a separate MEI-like file (that will really hold data part of
+a custom MEI extension) in the repository to hold these changes, and we'll have to find some way to
+manage the abundance of information this will create.
+
+Here's the problem: if we're using the VCS to manage the undo/redo stack (which we are---see
+"Session Changesets" below) then it's likely that we'll end up generating a lot of changes that
+won't convert successfully into MEI, and therefore can't be saved in the VCS and, by extension,
+therefore can't be saved into the undo/redo stack. (Why so many changes that can't be converted to
+valid MEI? Because I predict users will start writing something, pause to think part-way through,
+and the pause will be long enough to cause a new undo/redo commit).
+
+Therefore... ? I'm still thinking about how we can deal with this. It may just be a silly idea to
+manage the undo/redo stack in a Mercurial repository!
+
 Special Case: VCS Inbound
 -------------------------
 

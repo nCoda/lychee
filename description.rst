@@ -203,32 +203,31 @@ VCS: Mercurial Integration
 ==========================
 
 One of the core nCoda features is integration with a VCS (version control system) through the
-``lychee.vcs`` module. This will be a significant advantage for Frescobaldi users too, many of whom
-have already been tracking their projects in VCS repositories for years. The ``vcs`` module serves
-as an abstraction layer between Lychee and the VCS itself; this allows us to change the actual VCS
-in use without affecting Lychee beyond the ``vcs`` module. We may also choose to support multiple
-VCS programs simultaneously.
+``lychee.vcs`` module. This is a significant advantage for Frescobaldi users too, many of whom
+have held their projects in VCS repositories for years. The ``vcs`` module is an abstraction layer
+between Lychee and the VCS itself. This allows changing the actual VCS we use without affecting
+Lychee beyond the ``vcs`` module. We may also support choosing between VCS programs at runtime.
 
-The initial default VCS will be Mercurial, which we have chosen primarily for two reasons: first,
-it is written in Python, and therefore can provide tighter integration with Lychee, which is also
-written in Python; second, it is written in Python, and can therefore be run with nCoda's in-browser
-Python solution. Although the Git VCS is notably more popular than Mercurial in 2015, it lacks the
-integration and cross-compilation possibilities of Mercurial, and is therefore less suitable as an
-initial default for Lychee.
+The initial VCS is Mercurial, which we have chosen primarily because it is written in Python, which
+yields two significant advantages. First, we can import Mercurial as a module directly into
+``lychee.vcs``. Second, Mercurial can use nCoda's in-browser Python runtime without having to
+cross over into another language. Even though the Git VCS is notably more popular than Mercurial
+in 2015, the it poses unnecessary integration challenges for an initial solution.
 
 Interacting with the VCS
 ------------------------
 
-Usual use cases of a VCS have users interacting with the VCS directly, in order to change the files
-under version control. The situation is different in Lychee for a number of reasons. First, learning
-how to use a VCS is actually a terrible burden on users, so we want to try simplifying it as much
-as possible while still taking advantage of as many beenfits as possible. Second, at least in nCoda,
-users will not manipulate the repository's files directly, so VCS changes must be communicated to
-users through an outbound converter. Finally, again at least in nCoda, we don't expect users to
-learn the VCS *technology*---just VCS *concepts*. What that means in practice is, for example,
-that we would like users to know they can switch between "revisions" that they "saved," but
-there is no reason to have them learn that in Mercurial you switch between "changesets" that you
-"commit," and in Git you switch between "commits" that you "commit."
+In their usual use cases, users will interecat with the VCS directly to manage the files under
+version control. In Lychee, users will interact with the VCS indirectly through our GUI. We should
+take this opportunity to relieve our users of the burden of learning advanced version control
+topics. In particular, we want to allow users to learn about version control concepts without
+having to remember command names or the differences between a *changeset* and a *commit*.
+
+In addition, nCoda users will not be managing the *files* in their projects, since the focus is
+rather on *musical sections*. Although each section is effectively stored in a file, Lychee will
+use additional files for its own purposes, as described above in the "Lychee-MEI" section. For this
+reason, even Frescobaldi users will usually want to be isolated from the files themselves, although
+it will be easier for them to access the files and the VCS directly if they desire.
 
 Session Changes
 ---------------

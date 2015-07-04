@@ -229,77 +229,73 @@ use additional files for its own purposes, as described above in the "Lychee-MEI
 reason, even Frescobaldi users will usually want to be isolated from the files themselves, although
 it will be easier for them to access the files and the VCS directly if they desire.
 
-Session Changes
----------------
+Session Changesets
+------------------
 
-Lychee has an idea of **session changes**, which is a temporary revision. These were created to
-represent single actions in the undo/redo stack. The idea is that every "change" a user makes will
-be entered as a session change and, if it can be converted successfully, it will be reflected in
-all the views the user has open. When a user chooses to "save" their work, all the existing session
-changes will be compressed to a single revision (changeset/commit) and the session change revisions
-will be discarded.
+A *session changeset* is a changeset (revision, commit) that we intend to be temporary---it should
+not outlive a user's current session. A session changeset represents a single action in the user's
+undo/redo stack. The idea is that every "change" a user makes will be entered as a changeset and,
+if it can be converted successfully, it will be used to update all the views a user has open. When
+a user chooses to "save" their work, all the existing session changesets will be "folded" into a
+single, permanent changeset.
 
-Session changes can be stored in Mercurial as a patch in a Mercurial Queue, as a changeset proper,
-and possibly as other things. The simplest implementation solution will be best, so we should use
-proper changesets if possible. In that case, we can use a bookmark to track the most recent
-permanent changeset, and we'll need to "rewrite history" to rewrite the session changes as a single
-permanent changeset. However, this may cause a lot of garbage in the repository, and it may be
-impractical to clean up as often as might be required. In that case, we can investigate Mercurial
-Queues (MQ) which basically amount to a per-user micro-VCS on top of the rest of Mercurial. The key
-advantage here is that the MQ patch stack can be (1) completely deleted after a proper changeset is
-created, or (2) committed in a changeset.
+We can do this using Mercurial's "histedit" command, which is shipped by default, and bookmarks. We
+will need to keep three bookmarks through the editing session, which may refer to one, two, or three
+changesets. One, called "latest," marks the most recent changeset of either type. Another,
+"permanent," marks the most recent permanent changeset from the start of the user's session (that
+is, it will not move during a session). The final, "session_permanent," marks the most recent
+changeset a user has "saved."
 
-An interesting side-effect of representing the undo/redo stack with what we're calling session
-changes is that, in effect, the undo/redo stack can potentially be shared between users and across
-actual editing sessions. That's kind of weird, but I can imagine it may prove quite popular. It's
-sort of like a complicated auto-save feature, but without much of the baggage that would come with
-developing that separately.
+If we only track two bookmarks ("latest" and "permanent") then we effectively discard the undo/redo
+stack every time a user "saves." Tracking three bookmarks allows us to undo actions that happened
+before the most recent "save."
 
-One might rightly ask why we would bother differentiating between session changes and permanent
-changesets. There are at least two reasons, one practical and one technical. The practical reason
-is that a portion of users---most users, I hope---will find it significantly advantageous to be able
-to create annotated changesets of their work, that server as milestones along the creative or
-researchive process. The technical reason is that, as users work on a project for a long time, they
-will accumulate a large number of session changes, and it would be tremendously inefficient to have
-all of these stored permanently as changesets in the repository.
+When a user ends their session, we can use "histedit" to "fold" the changesets between the
+"permanent" and "session_permanent" changesets into a single changeset. (In Git, we would use
+"interactive rebase" to "squash" the commits between the two "branches" into a single commit).
+Any new changesets will be uploaded to the shared nCoda server, and/or somehow exported locally
+to the user's own computer.
 
-If we're crafty about it, we can allow users to group and rewrite session
-changes in the same way as they may group and rewrite permanent revisions. That is to say, as users
-may go along composing a new piece of music, they may realize sessionchange-0 to sessionchange-55
-represent a single new artistic development and should be saved as a permanent changeset, even
-though they've already started working on other things, and the most recent sesion change is 99. So
-it's basically like "save some of what you did." But I don't know whether we can allow users to save
-only their work in *x* files... we'll have to see about that.
+If a user wants to "save" while their "latest" changeset is "before" their "permanent_session"
+changeset, or has effectively created a new "branch," we can offer to create for them a "branch"
+in the GUI, which will be depicted similarly to Git branches (but differently than Mercurial
+branches).
 
-Though not all users will be so eager to manage their revisions like this. We'll need to come up
-with some limit, like 5,000 session changes, at which point Lychee will automatically suggest that
-the user will "compress," say, the most recent 2,500 session changes into a single permanent
-changeset. And if they choose not to do it, at some point, like 10,000 session changes, we might
-just say to the user "stop being ridiculous, we need to cut down on these commits." But nicely.
+An interesting side-effect of representing the undo/redo stack with changesets is that, in effect,
+users can share the undo/redo stack between users and across actual editing sessions. I think we
+should disallow this, at least initially. Session changesets will be marked as "draft" (changing to
+"public" when they are made "permanent" at the end of a session).
 
-Bookmarking
------------
+A drawback to this approach is that session changesets will be preserved in the repository's ``.hg``
+directory so that users can revise their revised changesets. While this makes some sense for
+programmers using Mercurial, Lychee will generate a new changeset with every user action, leading
+to a large number of unused changesets relatively quickly. Furthermore, since users won't be
+accessing their repository directly, these backup files are an outright waste of space. Thankfully,
+these backups don't appear to be synchronized or pushed to servers, though we will have to confirm
+this before too long. If it comes to it, we can simply delete the backup files.
 
-We have to do this too, but it's not a big deal. In Mercurial, "bookmarks" are basically equivalent
-to Git's branches, so that's what's going on here.
+We will also need to make some replacement "hgeditor" script that will allow us to handle the
+"histedit" changeset revision file preparation without having to ask the user to open a text editor.
 
-Branching
----------
+Branching and Bookmarking
+-------------------------
 
-Mercurial also has a feature called "branches," and they're for permanently divergent sets of work.
-For example, in Git you would make a "branch" for development, another "branch" for a stable release
-series, and then "tags" for each release. In Mercurial, you would make a "bookmark" to track your
-development, a "branch" for a stable release series, and "tags" for each release. In effect it's
-mostly the same, just that Mercurial sort of forces branches to be permanent but bookmarks to be
-movable and dynamic, whereas Git suggests using branches both for permanent and dynamism.
+In Mercurial, "bookmarks" are mostly equivalent to Git's "branches," while Mercurial's "branches"
+represent a permanent diversion in development. Unlike with bookmarks (and Git branches) a changeset
+permanently records information about the branch to which it was committed.
 
-Anyway, the point is: is there a place for Mercurial branches? Is this distinction something that
-we should expose to our users?
+I suggest we create a new branch for every user who wants to work on the same document. Merging
+between branches is permitted, but the permanent record will help us keep track of who works on
+what. It may lead to a situation where popular scores take a lot of time and space to clone for
+new users, but there should be a way around this with some of Facebook's Mercurial extensions.
 
 Collaboration and Merging
 -------------------------
 
-I don't know how to handle this yet.
+We can use the same mechanisms for viewing changes and differences between "branches," whether
+created by a single user with bookmarks or by many users with branches. In the beginning, we can
+offer simple merge conflict resolution with ours/theirs-style resolution. Later, we can find a way
+to let users resolve merges by themselves.
 
 Views: Does It Go Here?
 =======================

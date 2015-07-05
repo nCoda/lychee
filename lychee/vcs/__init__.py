@@ -29,12 +29,12 @@ Initialize the :mod:`vcs` module.
 from lychee.signals import vcs
 
 
-def document_processor(**kwargs):
+def vcs_processor(**kwargs):
     vcs.STARTED.emit()
-    print('{}.document_processor()'.format(__name__, kwargs))
+    print('{}.vcs_processor()'.format(__name__, kwargs))
     #vcs.ERROR.emit()
     vcs.FINISH.emit()
-    print('{}.document_processor() after finish signal'.format(__name__))
+    print('{}.vcs_processor() after finish signal'.format(__name__))
 
 
-vcs.START.connect(document_processor)
+vcs.START.connect(vcs_processor)

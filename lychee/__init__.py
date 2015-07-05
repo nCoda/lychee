@@ -28,6 +28,6 @@ Initialize Lychee.
 
 __version__ = '0.0.1'
 
-__all__ = ['converters', 'signals', 'tui', 'vcs', 'views']
+__all__ = ['converters', 'document', 'signals', 'tui', 'vcs', 'views']
 
 from lychee import *

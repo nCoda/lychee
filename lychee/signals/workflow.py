@@ -26,8 +26,8 @@
 Control the workflow progression through an "action."
 '''
 
-from lychee import converters, vcs
-from lychee.signals import inbound, document, outbound
+from lychee import converters
+from lychee.signals import inbound, document, vcs, outbound
 
 
 class WorkflowManager(object):
@@ -49,6 +49,10 @@ class WorkflowManager(object):
     _DOCUMENT_STARTED = 101
     _DOCUMENT_FINISHED = 102
     _DOCUMENT_ERROR = 103
+    _VCS_PRESTART = 300
+    _VCS_STARTED = 301
+    _VCS_FINISHED = 302
+    _VCS_ERROR = 303
     _OUTBOUND_PRESTART = 200
     _OUTBOUND_HAVE_LISTENERS = 201
     _OUTBOUND_VIEWS_STARTED = 202
@@ -73,6 +77,10 @@ class WorkflowManager(object):
                     (document.FINISH, '_document_finish'),
                     (document.FINISHED, '_document_finished'),
                     (document.ERROR, '_document_error'),
+                    (vcs.STARTED, '_vcs_started'),
+                    (vcs.FINISH, '_vcs_finish'),
+                    (vcs.FINISHED, '_vcs_finished'),
+                    (vcs.ERROR, '_vcs_error'),
                     (outbound.I_AM_LISTENING, '_outbound_register_listener'),
                     (outbound.VIEWS_STARTED, '_outbound_views_started'),
                     (outbound.VIEWS_FINISH, '_outbound_views_finish'),
@@ -133,7 +141,7 @@ class WorkflowManager(object):
         Actually does what :meth:`run` says it does. The other method is intended as a wrapper for
         this method, to ensure that :meth:`end` is always run, regardless of how this method exits.
         '''
-        next_step = '(WorkflowManager continues to the next step)\n'
+        next_step = '(WorkflowManager continues to the next step)\n------------------------------------------\n'
 
         # Inbound -------------------------------------------------------------
         if self._status is not WorkflowManager._PRESTART:
@@ -166,6 +174,16 @@ class WorkflowManager(object):
         if self._status is not WorkflowManager._DOCUMENT_FINISHED:
             if self._status is not WorkflowManager._DOCUMENT_ERROR:
                 print('ERROR during "document" step')
+            return
+        print(next_step)
+
+        # VCS -----------------------------------------------------------------
+        self._status = WorkflowManager._VCS_PRESTART
+        vcs.START.emit()
+
+        if self._status is not WorkflowManager._VCS_FINISHED:
+            if self._status is not WorkflowManager._VCS_ERROR:
+                print('ERROR during "vcs" step')
             return
         print(next_step)
 
@@ -380,6 +398,36 @@ class WorkflowManager(object):
             print(kwargs['msg'])
         else:
             print('ERROR during document processing')
+
+    # ----
+
+    def _vcs_started(self, **kwargs):
+        print('vcs started')
+        self._status = WorkflowManager._VCS_STARTED
+
+    def _vcs_finish(self, **kwargs):
+        print('vcs finishing'.format(kwargs))
+        if self._status is WorkflowManager._VCS_STARTED:
+            if 5 is None:  # TODO: put in the appropriate arg here
+                vcs.ERROR.emit(msg='Document processing did not return views_info')
+            else:
+                self._status = WorkflowManager._VCS_FINISHED
+        else:
+            print('ERROR during vcs processing')
+        vcs.FINISHED.emit()
+
+    def _vcs_finished(self, **kwargs):
+        '''
+        Called when vcs.FINISHED is emitted, for logging and debugging.
+        '''
+        print('vcs processing finished')
+
+    def _vcs_error(self, **kwargs):
+        self._status = WorkflowManager._VCS_ERROR
+        if 'msg' in kwargs:
+            print(kwargs['msg'])
+        else:
+            print('ERROR during vcs processing')
 
     # ----
 

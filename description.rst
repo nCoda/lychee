@@ -42,9 +42,6 @@ go along; for now it involves the following characteristics:
     - a "project" MEI file holds cross-references to all section files, in an arbitrary order
     - a "score" MEI file holds cross-references to "active" section files, in score order
 - others:
-    - tupletSpan, beamSpan, slur, and other elements that may refer to object spans with @startid
-      and @endid, and are therefore inherently ambiguous and error-prone, must make use of @plist
-      to reduce the possibility of ambiguity and erors
     - use semantic ``@xml:id`` values as described below
     - MEI extension to incorporate commands specific to LilyPond
     - MEI extension to incorporate user metadata (about editing sessions, UI settings, etc.)
@@ -56,6 +53,16 @@ go along; for now it involves the following characteristics:
       unnecessary complication to support)
     - when the @accid attribute is used on an element, the @accid.ges attribute must be used too;
       using @accid.ges doesn't require @accid, however
+    - both @num and @numbase are required on every ``<tupletSpan>``
+- spanners:
+    - tupletSpan, beamSpan, slur, and other elements that may refer to spanner object with @startid
+      and @endid, and are therefore inherently ambiguous and error-prone, must additionally use the
+      @plist attribute to reduce the possibility of ambiguity and erors
+    - spanners that may be encoded as either an element containing other elements (like ``<tuplet>``)
+      or as a pointing element (like ``<tupletSpan>``) must use the pointing version
+    - spanner elements must be sibling elements to the element indicated by its @startid attribute,
+      and the spanner must precede the @startid element
+    - collectively, these restrictions eliminate the need for a multiple-pass parser
 
 When this "description" document refers to a music document in an **arbitrary format**, it means the
 music document is encoded in one of the formats supported by Lychee (Abjad, LilyPond, MEI) without a

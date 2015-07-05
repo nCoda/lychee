@@ -39,8 +39,8 @@ go along; for now it involves the following characteristics:
 - file management:
     - every MEI ``<section>`` is kept in its own file, to ease version control
     - clients are therefore encouraged to use sections generously
-    - a "complete" MEI file holds cross-references to all section files, in an arbitrary order
-    - a "playlist" MEI file holds cross-references to "active" section files, in score order
+    - a "project" MEI file holds cross-references to all section files, in an arbitrary order
+    - a "score" MEI file holds cross-references to "active" section files, in score order
 - others:
     - tupletSpan, beamSpan, slur, and other elements that may refer to object spans with @startid
       and @endid, and are therefore inherently ambiguous and error-prone, must make use of @plist

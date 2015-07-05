@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-from lychee.signals import document
+from lychee.signals import vcs
 
 
 def document_processor(**kwargs):
-    document.STARTED.emit()
+    vcs.STARTED.emit()
     print('{}.document_processor()'.format(__name__, kwargs))
-    #document.ERROR.emit()
-    document.FINISH.emit()
+    #vcs.ERROR.emit()
+    vcs.FINISH.emit()
     print('{}.document_processor() after finish signal'.format(__name__))
 
 
-document.START.connect(document_processor)
+vcs.START.connect(document_processor)

@@ -63,6 +63,22 @@ go along; for now it involves the following characteristics:
     - spanner elements must be sibling elements to the element indicated by its @startid attribute,
       and the spanner must precede the @startid element
     - collectively, these restrictions eliminate the need for a multiple-pass parser
+- @n attributes:
+    - for containers that require an @n attribute, the values must be enumerated from 1, incremented
+      by 1, and start with the highest or left-most sub-container, as applicable
+    - this means the first ``<section>`` will have ``@n="1"``, the next ``@n="2"``, and so on
+        - an "inactive" ``<section>``, not part of the current "score," should have an ``@n="0"``
+          value
+    - this means the highst ``<staff>`` will have ``@n="1"``, the next ``@n="2"``, and so on
+    - this means the ``<layer>`` of the "upper voice" will have ``@n="1"``, the "lower voice"
+      ``@n="2"``, a subsequent "upper voice" ``@n="3"``, and so on (the goal being that "upper"
+      voices with upward-pointing stems will have odd values of @n, and "lower" voices with
+      downward-pointing stems will have even values of @n)
+    - implication: when a sub-container is added or removed from a container (e.g., a ``<layer>``
+      removed from  a ``<staff>``) the @n values of following sub-containers must be adjusted
+    - additionally, the @n attribute of an element must be equal to the @n attribute of the
+      corresponding element in other contexts (i.e., the principal flute's ``<staff>`` should be
+      ``@n="1"`` in every ``<measure>``
 
 When this "description" document refers to a music document in an **arbitrary format**, it means the
 music document is encoded in one of the formats supported by Lychee (Abjad, LilyPond, MEI) without a

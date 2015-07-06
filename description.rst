@@ -80,6 +80,33 @@ go along; for now it involves the following characteristics:
     - additionally, the @n attribute of an element must be equal to the @n attribute of the
       corresponding element in other contexts (i.e., the principal flute's ``<staff>`` should be
       ``@n="1"`` in every ``<measure>``
+    - because these rules specify extra precision for which standard MEI would require such
+      attributes as @prev and @next, the LMEI-to-MEI converter should add those attributes
+- ``<measure>`` elements:
+    - This is a large and notable difference between MEI and Lychee-MEI that makes them incompatible
+    - In MEI for mensural music, sections contain measures contain staves contain layers/voices. For
+      non-mensural music sections contain staves contain layers/voices. This represents a fundamental
+      difference between the element hierarchy for mensural and non-mensural music, where changing
+      that characteristic forces significant change to a document's encoding into ``<staff>``
+      elements: in non-mensural music, there will be one ``<staff>`` per part, but in mensural music
+      every part has a new ``<staff>`` element for every measure. Thus, changing a score between
+      mensural and non-mensural encodings represents a significant change to the document's encoding.
+      Moreover, writing a document management tool that will correctly and consistently operate on
+      *both* non-mensural and mensural music seems much more daunting in this situation.
+    - Thus, while we understand and sympathize with the motivation for holding ``<staff>`` elements
+      as children of ``<measure>`` elements in MEI, we find this to be less suitable for Lychee.
+    - Therefore our nesting will work like this:
+        ``<section>``
+            ``<staff>``
+                ``<measure>``
+                    ``<layer>``
+      Where the ``<measure>`` element is optional.
+    - Therefore, a mensural Lychee-MEI document is incompatible with a mensural MEI document. We
+      will use the MEI-to-MEI converter modules to convert between these two. Computationally, we
+      don't expect a particular burden because (thanks to the rule about @n attributes) we can use
+      a simple XPath query to find corresponding elements. Either all ``<measure>`` elements with
+      the same @n attribute belong to "the same measure," or all ``<staff>`` elements with the same
+      @n attribute belong to "the same staff."
 
 When this "description" document refers to a music document in an **arbitrary format**, it means the
 music document is encoded in one of the formats supported by Lychee (Abjad, LilyPond, MEI) without a

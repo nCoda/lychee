@@ -1,12 +1,17 @@
 # -*- encoding: utf-8 -*-
 # Jeff Treviño, 6/8/15
-# given an mei string as an input, outputs an abjad note.
+# given an mei string as an input, outputs an abjad note
 
 from abjad.tools.scoretools.Note import Note
-try:
-    from xml.etree import cElementTree as ETree
-except ImportError:
-    from xml.etree import ElementTree as ETree
+from abjad.tools.scoretools.Rest import Rest
+from abjad.tools.scoretools.Chord import Chord
+from abjad.tools.scoretools.Voice import Voice
+from abjad.tools.scoretools.Staff import Staff
+from abjad.tools.scoretools.NoteHead import NoteHead
+from abjad.tools.durationtools.Duration import Duration
+
+
+from lxml import etree as ETree
 
 '''MEI to Abjad note conversion.
 
@@ -30,8 +35,8 @@ except ImportError:
 
 
 def convert_accidental_mei_to_abjad(mei_accidental_string):
-    # Helper that converts an mei accidental string to an Abjad accidental string.
-    accidental_dictionary = {'n': '', 'f': 'f', 's': 's', 'ff': 'ff', 'x': 'ss', 'su': 'tqs', 
+    # helper that converts an mei accidental string to an Abjad accidental string
+    accidental_dictionary = {'f': 'f', 's': 's', 'ff': 'ff', 'x': 'ss', 'su': 'tqs', 
                             'sd': 'qs', 'fd': 'tqf', 'fu': 'qf'}
     return accidental_dictionary[mei_accidental_string]
 
@@ -45,22 +50,112 @@ def octave_integer_to_string(octave_integer):
         return "," * (3 - octave_integer)
 
 
-def mei_to_abjad_note(element):
-    the_string = ''
-    the_string += element.attrib['pname']
-    if len(element) == 1:
-        the_string += convert_accidental_mei_to_abjad(element[0].attrib['accid'])
-        the_string += octave_integer_to_string(int(element.attrib['oct']))
-        the_string += "?"
+def append_accidental(mei_note):
+    # append accidental string, if one should be appended
+    accid_element = mei_note.findall('./accid')
+    if len(accid_element):
+    # if cautionary accidental
+        accid = accid_element[0].get('accid')
+        if accid != 'n':
+        # that isn't a natural
+            return convert_accidental_mei_to_abjad(accid)
     else:
-        the_string += convert_accidental_mei_to_abjad(element.attrib['accid'])
-        the_string += octave_integerToString(int(element.attrib['oct']))
-    the_string += str(element.attrib['dur'])
-    for x in range(int(element.attrib['dots'])):
-        the_string += '.'
-    abjad_note =  Note(the_string)
-    return abjad_note
+    # if normal accidental
+        accid = mei_note.get('accid.ges')
+        if accid:
+            if accid != 'n':
+                return convert_accidental_mei_to_abjad(accid)
+    return ''
+        
+        
+def make_abjad_note_from_string(the_string,mei_note):
+     #append the duration
+        the_string += str(mei_note.get('dur'))
+        if mei_note.get('dots'):
+            for x in range(int(mei_note.get('dots'))):
+                the_string += '.'
+        # and create a note
+        return Note(the_string)
 
-element = ETree.Element("note",dots="1",dur="4",oct="4",pname="c")
-ETree.SubElement(element,"accid",accid="sd",func="cautionary")
-note = mei_to_abjad_note(element)
+def set_forced(output,mei_note):
+    if mei_note.get('accid'):
+        if hasattr(output,'is_forced'):
+            output.is_forced = True
+        else:
+            output.note_head.is_forced = True
+
+def set_cautionary(output, mei_note):
+    accid = mei_note.findall('accid')
+    if len(accid):
+        if hasattr(output, 'is_cautionary'):
+            output.is_cautionary = True
+        else:
+            output.note_head.is_cautionary = True
+        
+
+def mei_note_to_abjad_note(mei_note):
+    the_string = ""
+    # append pitch name
+    the_string += mei_note.get('pname')
+    the_string += append_accidental(mei_note)
+    # octave tick string
+    the_string += octave_integer_to_string(int(mei_note.get('octave')))
+    #if the mei note Element has a duration,
+    if mei_note.get('dur'):
+       output = make_abjad_note_from_string(the_string,mei_note)
+    else:
+        # otherwise create an abjad NoteHead
+        output = NoteHead(the_string)
+    # set forced
+    set_forced(output,mei_note)
+    # set cautionary
+    set_cautionary(output, mei_note)
+    return output
+        
+
+def mei_rest_to_abjad_rest(mei_rest):
+    the_string = "r"
+    the_string += mei_rest.get('dur')
+    if mei_rest.get('dots'):
+        for x in range(int(mei_rest.get('dots'))):
+            the_string += '.'
+    abjad_rest = Rest(the_string)
+    return abjad_rest
+
+
+
+def mei_chord_to_abjad_chord(mei_chord):
+    dots = mei_chord.get('dots')
+    dur = mei_chord.get('dur')
+    abjad_duration = Duration()
+    lily_dur_string = dur
+    if dots:
+        for x in range(int(dots)):
+            lily_dur_string += "."
+    abjad_duration = abjad_duration.from_lilypond_duration_string(lily_dur_string)
+    noteheads = []
+    for child in mei_chord:
+        noteheads.append(mei_note_to_abjad_note(child))
+    abjad_chord = Chord(noteheads,abjad_duration)
+    return abjad_chord
+
+def mei_element_to_abjad_leaf(mei_element):
+    if mei_element.tag == 'rest':
+        return mei_rest_to_abjad_rest(mei_element)
+    elif mei_element.tag == 'note':
+        return mei_note_to_abjad_note(mei_element)
+    elif mei_element.tag == 'chord':
+        return mei_chord_to_abjad_chord(mei_element)
+
+def mei_layer_to_abjad_voice(mei_layer):
+    abjad_voice = Voice()
+    for child in mei_layer:
+        abjad_voice.append(mei_element_to_abjad_leaf(child))
+    return abjad_voice
+
+def mei_staff_to_abjad_staff(mei_staff):
+    abjad_staff = Staff()
+    for layer in mei_staff:
+        abjad_staff.append(mei_layer_to_abjad_voice(layer))
+    return abjad_staff
+

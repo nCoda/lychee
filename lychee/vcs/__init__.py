@@ -26,13 +26,27 @@
 Initialize the :mod:`vcs` module.
 '''
 
+from os import path
+import subprocess
+import time
+
 from lychee.signals import vcs
 
 
-def vcs_processor(**kwargs):
+def vcs_processor(pathnames, **kwargs):
     vcs.STARTED.emit()
-    print('{}.vcs_processor()'.format(__name__, kwargs))
-    #vcs.ERROR.emit()
+    print('{}.vcs_processor(pathnames)'.format(__name__, pathnames))
+
+    # TODO: this is going to cause problems later...
+    _, pathnames[0] = path.split(pathnames[0])
+
+    for each_file in pathnames:
+        with subprocess.Popen(['hg', 'add', each_file], cwd='testrepo') as add:
+            pass
+
+    with subprocess.Popen(['hg', 'commit', '-m', '"some message {}"'.format(time.time())], cwd='testrepo') as proc:
+        pass
+
     vcs.FINISH.emit()
     print('{}.vcs_processor() after finish signal'.format(__name__))
 

@@ -169,7 +169,7 @@ class WorkflowManager(object):
 
         # Document ------------------------------------------------------------
         self._status = WorkflowManager._DOCUMENT_PRESTART
-        document.START.emit()
+        document.START.emit(converted=self._converted)
 
         if self._status is not WorkflowManager._DOCUMENT_FINISHED:
             if self._status is not WorkflowManager._DOCUMENT_ERROR:
@@ -179,7 +179,7 @@ class WorkflowManager(object):
 
         # VCS -----------------------------------------------------------------
         self._status = WorkflowManager._VCS_PRESTART
-        vcs.START.emit()
+        vcs.START.emit(pathnames=self._modified_pathnames)
 
         if self._status is not WorkflowManager._VCS_FINISHED:
             if self._status is not WorkflowManager._VCS_ERROR:
@@ -375,12 +375,13 @@ class WorkflowManager(object):
         print('document started')
         self._status = WorkflowManager._DOCUMENT_STARTED
 
-    def _document_finish(self, **kwargs):
-        print('document finishing'.format(kwargs))
+    def _document_finish(self, pathnames, **kwargs):
+        print('document finishing; modified {}'.format(pathnames))
         if self._status is WorkflowManager._DOCUMENT_STARTED:
             if 5 is None:  # TODO: put in the appropriate arg here
                 document.ERROR.emit(msg='Document processing did not return views_info')
             else:
+                self._modified_pathnames = pathnames
                 self._status = WorkflowManager._DOCUMENT_FINISHED
         else:
             print('ERROR during document processing')

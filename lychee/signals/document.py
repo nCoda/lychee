@@ -29,9 +29,12 @@ Signals for the "document step."
 import signalslot
 
 
-START = signalslot.Signal()
+START = signalslot.Signal(args=['converted'])
 '''
 Emitted by the :class:`WorkflowManager` to begin processing during the "document" stage.
+
+:kwargs converted: The MEI document, converted from an arbitrary format.
+:type converted: :class:`lxml.etree._Element`
 '''
 
 STARTED = signalslot.Signal()
@@ -40,10 +43,13 @@ Emitted by the ``lychee.vcs`` module, once it gains control flow and begins to d
 manage changes proposed to the musical document.
 '''
 
-FINISH = signalslot.Signal()
+FINISH = signalslot.Signal(args=['pathnames'])
 '''
 Emitted by the ``lychee.document`` module, once its actions are complete, to return relevant
 information to the :class:`WorkflowManager`.
+
+:kwarg pathnames: List of pathnames that were modified in the most recent write-to-files event.
+:type pathnames: list of string
 '''
 
 FINISHED = signalslot.Signal()

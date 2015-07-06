@@ -29,9 +29,12 @@ Signals for the "vcs" step.
 import signalslot
 
 
-START = signalslot.Signal()
+START = signalslot.Signal(args=['pathnames'])
 '''
 Emitted by the :class:`WorkflowManager` to begin processing during the "vcs" stage.
+
+:kwarg pathnames: A list of pathnames that were modified in the most recent write-to-disk.
+:type pathnames: list of str
 '''
 
 STARTED = signalslot.Signal()

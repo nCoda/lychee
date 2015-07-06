@@ -26,6 +26,9 @@
 Contains an object representing an MEI document.
 '''
 
+from lxml import etree as ETree
+
+
 class Document(object):
     '''
     Object representing an MEI document. Use methods prefixed with ``get`` to obtain portions of
@@ -37,7 +40,8 @@ class Document(object):
         '''
         The initialization method accepts no arguments.
         '''
-        pass
+        self.output_filename = 'testrepo/lookatme.mei'  # where everything gets saved
+        self.score = None  # the <score> element
 
     def get_everything(self):
         '''
@@ -47,6 +51,20 @@ class Document(object):
         .. note:: Unlike the other ``get``-prefixed methods, this method returns nothing.
         '''
         pass
+
+    def save_everything(self):
+        '''
+        Writes the MEI document(s) into files. For now, it just writes "self.score."
+
+        :returns: A list of the pathnames modified during the write-to-files.
+        :rtype: list of str
+        '''
+        chree = ETree.ElementTree(self.score)
+        chree.write(self.output_filename,
+                    encoding='UTF-8',
+                    xml_declaration=True,
+                    pretty_print=True)
+        return [self.output_filename]
 
     def get_head(self):
         '''
@@ -100,7 +118,7 @@ class Document(object):
         :param new_music:
         :type new_music: :class:`lxml.etree.Element`
         '''
-        pass
+        self.score = new_music
 
     def get_section(self, section_id):
         '''

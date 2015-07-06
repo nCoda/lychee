@@ -48,4 +48,5 @@ outbound.WHO_IS_LISTENING.connect(ly_listener)
 outbound.WHO_IS_LISTENING.connect(mei_listener)
 
 # this is what starts a test "action"
-signals.ACTION_START.emit(dtype='LilyPond', doc='c4. d8')
+input_ly = "\clef treble a''4( b'16 c''2)  | \clef \"bass\" d?2 e!2  | f,,2( fis,2)  |"
+signals.ACTION_START.emit(dtype='LilyPond', doc=input_ly)

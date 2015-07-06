@@ -414,9 +414,8 @@ to let users resolve merges by themselves.
 Views: Does It Go Here?
 =======================
 
-The largest remaining unsolved problem is how to manage "views" on an MEI document. A "view" is an
-MEI document, or a portion of an MEI document, formatted in the way most suitable for another
-module's input or output (for example, a measure from an Abjad score).
+A **view** is a (portion of) a Lychee-MEI document, stored in another format (Abjad, LilyPond, MEI).
+The ``views`` module tracks correlation between musical objects separately for every format.
 
 Sample Uses
 -----------
@@ -434,25 +433,82 @@ Example 3: a user uploads a score from the MEI 2013 sample encodings to nCoda. T
 module should be able to "break down" that encoding into Lychee-MEI format and update the Verovio,
 LilyPond, and Abjad views of the document.
 
-How It Works
-------------
+How It Works: Example
+---------------------
 
-I don't know, but (1) we will probably need "views-trackers" for every supported external format,
-and (2) there has already been some work in this area by, for example, the Frescobaldi people. There
-may have been useful research conducted in other disciplines, or for unrelated applications.
+This example converts from an Abjad/LilyPond/music21-like data format that doesn't exist. The
+inbound converter receives three Note objects:
 
-In any case, the "view" will be considered for the "inbound" step, and once for every "outbound"
-format. The ``views`` module will have to retain information about what portion of the document was
-"inbounded" so it can properly process the outbound placement.
+    >>> inbound = [Note('c4'), Note('d4'), Note('e4')]
 
-Per-format views-trackers will keep a bidirectional mapping between the location of an object in
-arbitrary-format documents and the ``@xml:id`` attribute of its Lychee-MEI representation. This
-information should be submitted to the VCS so that Lychee will not need to regenerate it. In any
-case, the initial generation of correspondence data may be very time consuming.
+Each note has a ``_lychee_id`` attribute:
 
-Positions in LilyPond documents can be recorded with line and column numbers. Abjad correspondences
-could be tracked with ``__id__`` values (but that might require significant work when the document
-is first created).
+    >>> inbound[0]._lychee_id
+    'note-123'
+    >>> inbound[1]._lychee_id
+    'note-456'
+    >>> inbound[2]._lychee_id
+    'note-789'
+
+They're converted to Lychee-MEI *but* with @xml:id attributes that match the other format's
+``_lychee_id``:
+
+    >>> inbound_mei = convert(inbound)
+    >>> inbound_mei[0].tag
+    Note
+    >>> inbound_mei[0].get('xml:id')
+    'note-123'
+
+The ``views`` module replaces the @xml:id attributes with proper Lychee-MEI values. (And the values
+of any element/attribute that refers to that @xml:id). ALong the way, ``views`` also generates
+mappings between the external format's "id" and the corresponding Lychee-MEI @xml:id.
+
+    >>> extern_to_mei_ids = {}
+    >>> mei_to_extern_ids = {}
+    >>> for element in every_element_in_the_score:
+    ...     this_id = make_new_xml_id()
+    ...     extern_to_mei_ids[element.get('xml:id')] = this_id
+    ...     mei_to_extern_ids[this_id] = element.get('xml:id')
+    ...     element.set('xml:id', this_id)
+    ...
+    >>>
+
+The next time there's a change in the external-format, the ``views`` module has the context it needs
+to determine context for the changes.
+
+    >>> new_inbound = [Note('c4'), Note('d-4'), Note('e4')]
+    >>> new_inbound[0]._lychee_id
+    'note-123'
+    >>> new_inbound[1]._lychee_id
+    'note-912'
+    >>> new_inbound[2]._lychee_id
+    'note-789'
+
+As long as we have enough context, the ``views`` module can determine that the ``Note`` that
+previously had the id ``456`` should be replaced, and the surrounding two notes remain unchanged.
+In addition, if there's an inbound change originating from a view in another format, we can use the
+``mei_to_extern_ids`` mapping to know the ``_lychee_id`` values of the external-format objects that
+have been modified.
+
+Note that the "context" will initially be the whole document and soon the nearest ``<section>``.
+Ideally we'll be able to narrow this down to ``<measure>`` or other similarly-sized containers.
+
+For Abjad
+^^^^^^^^^
+
+Abjad objects are slotted, meaning we cannot add arbitrary attributes at runtime. Hopefully the
+Abjad developers will create a purpose-built attribute for our use to hold an "id" value to use in
+the ``views`` module. We can avoid having to recreate these attributes from scratch every time the
+application starts by using the ``jsonpickle`` package to serialize our Abjad score into a text
+file. This JSON data can also be stored in the VCS repository, if one is in use.
+
+For LilyPond
+^^^^^^^^^^^^
+
+Positions in LilyPond documents can be recorded with line and column numbers. This may cause
+problems if users like to reformat their files often, but (1) there can be ways around this, and
+(2) if our converters are slow enough that this causes a problem, then we have other, bigger
+problems to worry about.
 
 Signals: Event-Driven Workflow Management
 =========================================

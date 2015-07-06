@@ -117,30 +117,30 @@ Semantic XML IDs
 
 The ``@xml:id`` of an MEI object should be---partially at least---semantic in terms of describing
 that object's position within the complete document. We will generate ``@xml:id`` values according
-to a pattern concatenating identifiers for section, measure, staff, layer, and an "element" value.
-A generic ``@xml:id`` could be ``@xml:id="SXXXXXXX-mXXXXXXX-sXXXXXXX-lXXXXXXX-eXXXXXXX"``.
+to a pattern concatenating identifiers for section, staff, measure, layer, and an "element" value.
+A generic ``@xml:id`` could be ``@xml:id="SXXXXXXX-sXXXXXXX-mXXXXXXX-lXXXXXXX-eXXXXXXX"``.
 Consider this example:
 
 .. sourcecode:: xml
 
-    <section xml:id="Sme-m-s-l-e1234567">
-        <measure xml:id="S1234567-mme-s-l-e8974095">
-            <staff xml:id="S1234567-m8974095-sme-l-e8290395">
-                <layer xml:id="S1234567-m8974095-s8290395-lme-e7389825">
-                    <note xml:id="S1234567-m8974095-s8290395-l7389825-e7290542" />
+    <section xml:id="Sme-s-m-l-e1234567">
+        <staff xml:id="S1234567-sme-m-l-e8974095">
+            <measure xml:id="S1234567-s8974095-mme-l-e8290395">
+                <layer xml:id="S1234567-s8974095-m8290395-lme-e7389825">
+                    <note xml:id="S1234567-s8974095-m8290395-l7389825-e7290542" />
                 </layer>
-            </staff>
-            <slur xml:id="S1234567-m8974095-s-l-e3729884" />
-        </measure>
+                <slur xml:id="S1234567-s8974095-m8290395-l-e3729884" />
+            </measure>
+        </staff>
     </section>
 
 From this you can see:
 
 - every element has a unique "e" part
 - elements that determine the id of contained elements have "me" at the level of their id that
-  corresponds to that element's tag. For example, the staff has ``-sme-l-e8290395`` in its id. This
-  is saying "the staff is me, and elements I contain should have '8290395' in their id."
-- the ``<slur>`` not inside a ``<staff>`` or ``<layer>`` simply has "s" and "l" without identifiers
+  corresponds to that element's tag. For example, the measure has ``-mme-l-e8290395`` in its id.
+  This is saying "the measure is me, and elements I contain should have '8290395' in their id."
+- the ``<slur>`` inside a ``<measure>`` but not ``<layer>`` simply has "l" without an identifier
 - seven-digit unique identifiers for every object in the "e" part. We could use shorter ones too,
   because the "e" part doesn't need to be unique across all elements in the document---only within
   that combination of the document hierarchy. It's feasible but probably unnecessary to ensure
@@ -149,7 +149,7 @@ From this you can see:
   ``<note>`` for an id clash.
 
 One other thing: this gives Lychee a systematic way to name files. The section example above could
-be named "Sme-m-s-l-e1234567.mei".
+be named "Sme-s-m-l-e1234567.mei".
 
 One-shot and Interactive Modes
 ------------------------------

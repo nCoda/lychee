@@ -56,12 +56,15 @@ least once.
         alto, tenor, french, soprano, mezzosoprano, baritone, varbaritone, subbass, and percussion
 '''
 
+import random
+import string
 import sys
 import uuid
+
 import six
 from six.moves import range
-#from lxml import etree as ETree
-from xml.etree import ElementTree as ETree
+from lxml import etree as ETree
+
 from lychee.signals import inbound
 
 _XMLNS = '{http://www.w3.org/XML/1998/namespace}'
@@ -71,6 +74,7 @@ _MEINS = '{http://www.music-encoding.org/ns/mei}'
 _VALID_NOTE_LETTERS = {'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D', 'e': 'E', 'f': 'F', 'g': 'G',
                        'r': 'rest', 'R': 'REST', 's': 'space'}
 _VALID_ACCIDENTALS = {'is': 's', 'es': 'f', 'isis': 'ss', 'eses': 'ff'}
+LETTERS_AND_DIGITS = string.ascii_letters + string.digits
 
 # Error Messages
 _PITCH_CLASS_ERROR = 'Cannot decode pitch class: {}'
@@ -84,7 +88,7 @@ def convert(document, **kwargs):
     '''
     Convert a LilyPond document into an MEI document. This is the entry point for Lychee conversions.
 
-    :param str document: The LilyPond document. Must be provided as a kwarg.
+    :param str document: The LilyPond document.
     :returns: The corresponding MEI document.
     :rtype: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
     '''
@@ -101,8 +105,23 @@ def convert(document, **kwargs):
     section = ETree.Element('{}section'.format(_MEINS))
     [section.append(x) for x in measures]
 
-    inbound.CONVERSION_FINISH.emit(converted=section)#'<l-mei stuff>')
+    inbound.CONVERSION_FINISH.emit(converted=section)
 
+def make_id(length=None):
+    '''
+    Generate a string with length characters, pseudorandomly chosen from capital and lowercase
+    letters and numbers.
+
+    :param int length: Optional number of characters in the generated string. Default is 7.
+    :returns: A string with characters.
+    :rtype: str
+    '''
+    if not length:
+        length = 7
+    post = [None] * length
+    for i in range(length):
+        post[i] = LETTERS_AND_DIGITS[random.randrange(0, len(LETTERS_AND_DIGITS))]
+    return ''.join(post)
 
 def find_lowest_of(here, these):
     """
@@ -217,7 +236,7 @@ def do_note_block(markup):
     # make the <note> element
     the_elem = ETree.Element('{}note'.format(_MEINS),
                              {'pname': pname, 'dur': dur, 'oct': str(octave),
-                              _XMLID: str(uuid.uuid4())})
+                              _XMLID: 'S-s-m-l-e{}'.format(make_id(7))})
 
     # set @accid.ges and @accid, as required
     if accid_ges is not None:
@@ -304,7 +323,7 @@ def do_measure(markup):
             else:
                 slur_active = ETree.Element('{}slur'.format(_MEINS),
                                             {'startid': elem.get(_XMLID),
-                                             _XMLID: str(uuid.uuid4())})
+                                             _XMLID: 'S-s-m-l-e{}'.format(make_id(7))})
         elif 't1' == elem.get('slur'.format(_MEINS)):
             slur_active.set('endid', elem.get(_XMLID))
             list_of_elems.append(slur_active)
@@ -316,7 +335,8 @@ def do_measure(markup):
 
     # NOTE: this is a bit of a lie for now, just to make it work
     # TODO: adjust @n for the voice number
-    layer = ETree.Element('{}layer'.format(_MEINS), {'n': '1', _XMLID: str(uuid.uuid4())})
+    layer_id = make_id(7)
+    layer = ETree.Element('{}layer'.format(_MEINS), {'n': '1', _XMLID: 'S-s-m-lme-e{}'.format(layer_id)})
     [layer.append(x) for x in list_of_elems]
     staff = ETree.Element('{}staff'.format(_MEINS), {'n': '1', _XMLID: str(uuid.uuid4())})
     staff.append(layer)

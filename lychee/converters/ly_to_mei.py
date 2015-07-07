@@ -71,7 +71,7 @@ _XMLNS = '{http://www.w3.org/XML/1998/namespace}'
 _XMLID = '{}id'.format(_XMLNS)
 _MEINS = '{http://www.music-encoding.org/ns/mei}'
 
-_VALID_NOTE_LETTERS = {'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D', 'e': 'E', 'f': 'F', 'g': 'G',
+_VALID_NOTE_LETTERS = {'a': 'a', 'b': 'b', 'c': 'c', 'd': 'd', 'e': 'e', 'f': 'f', 'g': 'g',
                        'r': 'rest', 'R': 'REST', 's': 'space'}
 _VALID_ACCIDENTALS = {'is': 's', 'es': 'f', 'isis': 'ss', 'eses': 'ff'}
 LETTERS_AND_DIGITS = string.ascii_letters + string.digits

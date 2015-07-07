@@ -26,8 +26,16 @@
 Module that runs Lychee as a program.
 '''
 
+import subprocess
+
+from lxml import etree as ETree
+
 from lychee import signals
 from signals import outbound
+
+_MEINS = '{http://www.music-encoding.org/ns/mei}'
+_MEINS_URL = 'http://www.music-encoding.org/ns/mei'
+
 
 # register these fake "listeners" that will pretend they want data in whatever formats
 def generic_listener(dtype):
@@ -43,9 +51,34 @@ def ly_listener(**kwargs):
 def mei_listener(**kwargs):
     generic_listener('mei')
 
-outbound.WHO_IS_LISTENING.connect(abj_listener)
-outbound.WHO_IS_LISTENING.connect(ly_listener)
+def mei_through_verovio(dtype, placement, document, **kwargs):
+    '''
+    Outputs a document to a file, then runs Verovio on it. Parameters work as per the
+    :const:`outbound.CONVERSION_FINISHED` signal.
+    '''
+
+    if 'mei' != dtype:
+        return
+
+    # Verovio can only deal with MEI as the default namespace, which "lxml" doesn like to output,
+    # so this weird hack removes the MEI namespace prefix from all the tag names.
+    output_filename = 'testrepo/mei_for_verovio.xml'
+    document.set('xmlns', _MEINS_URL)
+    for elem in document.iter():
+        elem.tag = elem.tag.replace(_MEINS, '')
+
+    # then we'll just make an ElementTree and output it
+    chree = ETree.ElementTree(document)
+    chree.write_c14n(output_filename, exclusive=False, inclusive_ns_prefixes=['mei'])
+    #chree.write(output_filename, encoding='UTF-8', xml_declaration=True, pretty_print=True)
+
+    # and call Verovio!
+    subprocess.call(['verovio', '-f', 'mei', '-o', 'testrepo/verovio_output', output_filename])
+
+#outbound.WHO_IS_LISTENING.connect(abj_listener)
+#outbound.WHO_IS_LISTENING.connect(ly_listener)
 outbound.WHO_IS_LISTENING.connect(mei_listener)
+outbound.CONVERSION_FINISHED.connect(mei_through_verovio)
 
 # this is what starts a test "action"
 input_ly = "\clef treble a''4( b'16 c''2)  | \clef \"bass\" d?2 e!2  | f,,2( fis,2)  |"

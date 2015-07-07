@@ -6,6 +6,7 @@ from abjad.tools.scoretools.Chord import Chord
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.scoretools.Voice import Voice
 from abjad.tools.scoretools.Staff import Staff
+from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.topleveltools.mutate import mutate
 
 from lxml import etree as ETree
@@ -135,3 +136,31 @@ def abjad_staff_to_mei_staff(abjad_staff):
             mei_layer = abjad_voice_to_mei_layer(out_voice)
         mei_staff.append(mei_layer)
     return mei_staff
+
+def abjad_score_to_mei_section(abjad_score):
+    if len(abjad_score) == 0:
+        return ETree.Element('section',n='1')
+    mei_section = ETree.Element('section', n='1')
+    score_def = ETree.Element('scoreDef')
+    mei_section.append(score_def)
+    staffCounter = 1
+    for component in abjad_score:
+        if isinstance(component, Staff):
+            abjad_staff = component
+            mei_staff = abjad_staff_to_mei_staff(abjad_staff)
+            mei_staff.set('n', str(staffCounter))
+            mei_section.append(mei_staff)
+            staffDef = score_def.append(ETree.Element('staffDef',lines='5',n=str(staffCounter)))
+            staffCounter += 1
+        elif isinstance(component, StaffGroup):
+            mei_staff_group = ETree.Element('staffGrp',symbol='bracket')
+            score_def.append(mei_staff_group)
+            for staff in component:
+                abjad_staff = component
+                mei_staff = abjad_staff_to_mei_staff(abjad_staff)
+                mei_staff.set('n', str(staffCounter))
+                mei_section.append(mei_staff)
+                mei_staff_group.append(ETree.Element('staffDef',lines='5',n=str(staffCounter)))
+                staffCounter += 1
+    return mei_section
+

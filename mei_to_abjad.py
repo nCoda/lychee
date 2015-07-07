@@ -7,6 +7,8 @@ from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
 from abjad.tools.scoretools.Voice import Voice
 from abjad.tools.scoretools.Staff import Staff
+from abjad.tools.scoretools.Score import Score
+from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.durationtools.Duration import Duration
 
@@ -159,3 +161,22 @@ def mei_staff_to_abjad_staff(mei_staff):
         abjad_staff.append(mei_layer_to_abjad_voice(layer))
     return abjad_staff
 
+def mei_section_to_abjad_score(mei_section):
+    if len(mei_section) == 0:
+        return Score()
+    abjad_score = Score()
+    scoreDef = mei_section[0]
+    staffs = mei_section[1:]
+    for element in scoreDef:
+        if element.tag == 'staffDef':
+            staff_index = int(element.get('n')) - 1
+            abjad_staff = mei_staff_to_abjad_staff(staffs[staff_index])
+            abjad_score.append(abjad_staff)
+        elif element.tag == 'staffGrp':
+            abjad_staff_group = StaffGroup()
+            for staffDef in element:
+                staff_index = int(staffDef.get('n')) - 1
+                abjad_staff_group.append(mei_staff_to_abjad_staff(staffs[staff_index]))
+            abjad_score.append(abjad_staff_group)
+    return abjad_score
+            

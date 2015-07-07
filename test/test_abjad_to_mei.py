@@ -6,6 +6,8 @@ from abjad.tools.scoretools.Chord import Chord
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.scoretools.Voice import Voice
 from abjad.tools.scoretools.Staff import Staff
+from abjad.tools.scoretools.StaffGroup import StaffGroup
+from abjad.tools.scoretools.Score import Score
 import abjad_to_mei
 import unittest
 
@@ -13,7 +15,7 @@ class TestAbjadToMeiConversions(unittest.TestCase):
     
     # note conversion
     
-    def test_basic(self):
+    def test_note_basic(self):
         '''
         precondition: abjad note with duration, pitch name, and octave string
         postcondition: mei element
@@ -23,7 +25,7 @@ class TestAbjadToMeiConversions(unittest.TestCase):
         self.assertEqual(mei_note.tag, 'note')
         self.assertEqual(mei_note.attrib, {'dur': '4', 'pname': 'c', 'octave': '4'})
     
-    def test_dotted(self):
+    def test_note_dotted(self):
         '''
         precondition: abjad note with dot
         postcondition: mei element with dots attribute
@@ -33,7 +35,7 @@ class TestAbjadToMeiConversions(unittest.TestCase):
         self.assertEqual(mei_note.tag, 'note')
         self.assertEqual(mei_note.attrib, {'dots': '1', 'dur': '4', 'pname': 'c', 'octave': '4'})
     
-    def test_accid(self):
+    def test_note_accid(self):
         '''
         precondition: abjad note with accidental, neither forced nor cautionary
         postcondition: mei element with gestural accidental
@@ -43,7 +45,7 @@ class TestAbjadToMeiConversions(unittest.TestCase):
         self.assertEqual(mei_note.tag, 'note')
         self.assertEqual(mei_note.attrib, {'accid.ges': 'f', 'dur': '4', 'pname': 'c', 'octave': '4'})
         
-    def test_accid_and_cautionary(self):
+    def test_note_accid_and_cautionary(self):
         '''
         preconditions: abjad note with cautionary accidental
         postconditions: mei element containing cautionary accidental subelement
@@ -57,7 +59,7 @@ class TestAbjadToMeiConversions(unittest.TestCase):
         self.assertEqual(mei_note.tag, 'note')
         self.assertEqual(accid.attrib, {'accid': 'f', 'func': 'cautionary'})
     
-    def test_accid_and_forced(self):
+    def test_note_accid_and_forced(self):
         '''
         preconditions: abjad note with forced accidental
         postconditions: mei element with both written and gestural accidentals
@@ -67,7 +69,7 @@ class TestAbjadToMeiConversions(unittest.TestCase):
         self.assertEqual(mei_note.tag, 'note')
         self.assertEqual(mei_note.attrib, {'accid.ges': 'f', 'accid': 'f', 'dur': '4', 'pname': 'c', 'octave': '4'})
     
-    def test_cautionary(self):
+    def test_note_cautionary(self):
         '''
         precondition: abjad note with no accidental and cautionary natural
         postcondition: mei element containing cautionary accidental subelement set to natural
@@ -81,7 +83,7 @@ class TestAbjadToMeiConversions(unittest.TestCase):
         self.assertEqual(mei_note.tag, 'note')
         self.assertEqual(accid.attrib, {'accid': 'n', 'func': 'cautionary'})
     
-    def test_forced(self):
+    def test_note_forced(self):
         '''
         precondition: abjad note with no accidental and forced accidental
         postcondition: mei element with both accid.ges and accid attributes set
@@ -479,4 +481,87 @@ class TestAbjadToMeiConversions(unittest.TestCase):
         self.assertEqual(mei_staff[0].tag, 'layer')
         self.assertEqual(mei_staff[0].get('n'),'1')
         self.assertEqual(len(mei_staff[0]), 8)
-            
+    
+    def test_section_empty(self):
+        '''
+        precondition: empty abjad Score
+        postcondition: empty mei section Element
+        '''
+        abjad_score = Score()
+        mei_section = abjad_to_mei.abjad_score_to_mei_section(abjad_score)
+        self.assertEqual(mei_section.tag, 'section')
+        self.assertEqual(mei_section.get('n'), '1')
+        self.assertEqual(len(mei_section), 0)
+        
+    def test_section_full(self):
+        '''
+        precondition: abjad Score containing Staff, StaffGroup containing two Staffs, and Staff
+        postcondition: mei section Element containing scoreDef element and four staff Elements
+        with staff Elements two and three of four grouped
+        
+        '''
+        abjad_score = Score()
+        abjad_score.append(Staff())
+        abjad_score.append( StaffGroup([Staff(), Staff()]) )
+        abjad_score.append(Staff())
+        
+        mei_section = abjad_to_mei.abjad_score_to_mei_section(abjad_score)
+        
+        self.assertEqual(mei_section.tag, 'section')
+        self.assertEqual(len(mei_section), 5)
+        self.assertEqual(len(mei_section[0]), 3)
+        self.assertEqual(mei_section[0].tag, 'scoreDef')
+        self.assertEqual(mei_section[0][0].tag, 'staffDef')
+        self.assertEqual(mei_section[0][0].get('lines'), '5')
+        self.assertEqual(mei_section[0][0].get('n'), '1')
+        self.assertEqual(mei_section[0][1].tag, 'staffGrp')
+        self.assertEqual(mei_section[0][1][0].tag, 'staffDef')
+        self.assertEqual(mei_section[0][1][0].get('lines'), '5')
+        self.assertEqual(mei_section[0][1][0].get('n'), '2')
+        self.assertEqual(mei_section[0][1][1].tag, 'staffDef')
+        self.assertEqual(mei_section[0][1][1].get('n'), '3')
+        self.assertEqual(mei_section[0][1][1].get('lines'), '5')
+        self.assertEqual(mei_section[0][2].tag, 'staffDef')
+        self.assertEqual(mei_section[0][2].get('n'), '4')
+        self.assertEqual(mei_section[0][2].get('lines'), '5')
+        for x in range(1,5):
+            self.assertEqual(mei_section[x].tag, 'staff')
+            self.assertEqual(mei_section[x].get('n'), str(x))
+    
+    @mock.patch("abjad_to_mei.abjad_staff_to_mei_staff")
+    def test_section_full_mock(self,mock_section):
+        '''
+        precondition: abjad Score containing Staff, StaffGroup containing two Staffs, and Staff
+        postcondition: mei section Element containing scoreDef element and four staff Elements
+        with staff Elements two and three of four grouped
+        
+        '''
+        abjad_score = Score()
+        abjad_score.append(Staff())
+        abjad_score.append( StaffGroup([Staff(), Staff()]) )
+        abjad_score.append(Staff())
+        mock_section.side_effect = lambda x: ETree.Element('staff',n='1')
+        
+        mei_section = abjad_to_mei.abjad_score_to_mei_section(abjad_score)
+        
+        self.assertEqual(mei_section.tag, 'section')
+        self.assertEqual(len(mei_section), 5)
+        self.assertEqual(len(mei_section[0]), 3)
+        self.assertEqual(mei_section[0].tag, 'scoreDef')
+        self.assertEqual(mei_section[0][0].tag, 'staffDef')
+        self.assertEqual(mei_section[0][0].get('lines'), '5')
+        self.assertEqual(mei_section[0][0].get('n'), '1')
+        self.assertEqual(mei_section[0][1].tag, 'staffGrp')
+        self.assertEqual(mei_section[0][1][0].tag, 'staffDef')
+        self.assertEqual(mei_section[0][1][0].get('lines'), '5')
+        self.assertEqual(mei_section[0][1][0].get('n'), '2')
+        self.assertEqual(mei_section[0][1][1].tag, 'staffDef')
+        self.assertEqual(mei_section[0][1][1].get('n'), '3')
+        self.assertEqual(mei_section[0][1][1].get('lines'), '5')
+        self.assertEqual(mei_section[0][2].tag, 'staffDef')
+        self.assertEqual(mei_section[0][2].get('n'), '4')
+        self.assertEqual(mei_section[0][2].get('lines'), '5')
+        for x in range(1,5):
+            self.assertEqual(mei_section[x].tag, 'staff')
+            self.assertEqual(mei_section[x].get('n'), str(x))
+        

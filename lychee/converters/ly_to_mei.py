@@ -68,7 +68,7 @@ from lxml import etree as ETree
 from lychee.signals import inbound
 
 _XMLNS = '{http://www.w3.org/XML/1998/namespace}'
-_XMLID = '{http://www.w3.org/XML/1998/namespace}id'
+_XMLID = '{}id'.format(_XMLNS)
 _MEINS = '{http://www.music-encoding.org/ns/mei}'
 
 _VALID_NOTE_LETTERS = {'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D', 'e': 'E', 'f': 'F', 'g': 'G',

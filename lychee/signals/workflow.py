@@ -235,7 +235,7 @@ class WorkflowManager(object):
             self._choose_outbound_converter(each_dtype)
             self._o_running_converter = each_dtype
             outbound.CONVERSION_START.emit(views_info=self._o_views_info[each_dtype],
-                                           document='<Lychee-MEI snippet>')
+                                           document=self._converted)
             if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_ERROR:
                 self._status = WorkflowManager._OUTBOUND_CONVERSIONS_STARTED
                 continue

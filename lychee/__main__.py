@@ -60,6 +60,16 @@ def mei_through_verovio(dtype, placement, document, **kwargs):
     if 'mei' != dtype:
         return
 
+    # Verovio likes to have the initial clef in the <staffDef> or else it will print a "Verovio
+    # default clef," being a G clef on the staff's top line.
+    for each_staff in document.find('.//{}staff'.format(_MEINS)):
+        first_clef = each_staff.find('.//{}clef'.format(_MEINS))
+        staff_def = document.find('.//{}staffDef[@n="{}"]'.format(_MEINS, each_staff.get('n')))
+        staff_def.set('clef.shape', first_clef.get('shape'))
+        staff_def.set('clef.line', first_clef.get('line'))
+        # and remove that <clef> so it won't appear any more
+        first_clef.getparent().remove(first_clef)
+
     # Verovio can only deal with MEI as the default namespace, which "lxml" doesn like to output,
     # so this weird hack removes the MEI namespace prefix from all the tag names.
     output_filename = 'testrepo/mei_for_verovio.xml'

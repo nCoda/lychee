@@ -87,13 +87,13 @@ Emitted when there's an error while processing the outbound view.
 :kwarg str msg: A descriptive error message for the log file.
 '''
 
-CONVERSION_START = signalslot.Signal(args=['views_info', 'document'])
+CONVERSION_START = signalslot.Signal(args=['views_info', 'outbound'])
 '''
 Emitted to being outbound conversion. (This is emitted several times---once per data type).
 
 :kwarg object views_info: The views information required for the "dtype" data format.
-:kwarg document: The Lychee-MEI document required to prepare the outbound data.
-:type document: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
+:kwarg outbound: The Lychee-MEI document required to prepare the outbound data.
+:type outbound: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
 '''
 
 CONVERSION_STARTED = signalslot.Signal()
@@ -122,6 +122,10 @@ formats are prepared before any :const:`CONVERSION_FINISHED` signal is emitted.
 :param object placement: Information for the slot about which part of the document is being updated.
     Offered in a different format depending on the "dtype" of this call.
 :param object document: The update (partial) document. The type depends on the value of "dtype."
+
+**Type of "Document" Parameter**
+
+- If ``dtype`` is ``'mei'`` then ``document`` should be an :class:`lxml.etree.Element`.
 '''
 
 CONVERSION_ERROR = signalslot.Signal(args=['msg'])

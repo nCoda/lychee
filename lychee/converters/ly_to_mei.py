@@ -63,7 +63,7 @@ import uuid
 
 import six
 from six.moves import range
-from lxml import etree as ETree
+from lxml import etree
 
 from lychee.signals import inbound
 
@@ -81,7 +81,7 @@ _PITCH_CLASS_ERROR = 'Cannot decode pitch class: {}'
 _SLUR_OPEN_WARNING = 'Slur already open in "{}"'
 
 # register the 'mei' namespace
-ETree.register_namespace('mei', _MEINS[1:-1])
+etree.register_namespace('mei', _MEINS[1:-1])
 
 
 def convert(document, **kwargs):
@@ -102,7 +102,7 @@ def convert(document, **kwargs):
             measures.append(elem)
 
     # work everything into a <section>
-    section = ETree.Element('{}section'.format(_MEINS))
+    section = etree.Element('{}section'.format(_MEINS))
     [section.append(x) for x in measures]
 
     inbound.CONVERSION_FINISH.emit(converted=section)
@@ -217,7 +217,7 @@ def do_note_block(markup):
         elif '!' == each_char:
             accid = accid_ges if accid_ges is not None else 'n'
         elif '?' == each_char:
-            accid = ETree.Element('{}accid'.format(_MEINS),
+            accid = etree.Element('{}accid'.format(_MEINS),
                                   {'func': 'caution'})
             accid.set('accid', accid_ges if accid_ges is not None else 'n')
         else:
@@ -234,7 +234,7 @@ def do_note_block(markup):
             break
 
     # make the <note> element
-    the_elem = ETree.Element('{}note'.format(_MEINS),
+    the_elem = etree.Element('{}note'.format(_MEINS),
                              {'pname': pname, 'dur': dur, 'oct': str(octave),
                               _XMLID: 'S-s-m-l-e{}'.format(make_id(7))})
 
@@ -286,7 +286,7 @@ def do_clef(markup):
         CLEF_LINES = {'soprano': '1', 'mezzosoprano': '2', 'alto': '3', 'tenor': '4', 'baritone': '5'}
         line = CLEF_LINES[markup]
 
-    elem = ETree.Element('{}clef'.format(_MEINS), {'shape': shape, 'line': line})
+    elem = etree.Element('{}clef'.format(_MEINS), {'shape': shape, 'line': line})
 
     # set the @dis and @dis.place attributes
     # TODO: the "^8"-type things won't work yet because they clog up the dicts above
@@ -321,7 +321,7 @@ def do_measure(markup):
                 # previous slur wasn't closed
                 raise RuntimeWarning(_SLUR_OPEN_WARNING.format(markup.strip()))
             else:
-                slur_active = ETree.Element('{}slur'.format(_MEINS),
+                slur_active = etree.Element('{}slur'.format(_MEINS),
                                             {'startid': elem.get(_XMLID),
                                              _XMLID: 'S-s-m-l-e{}'.format(make_id(7))})
         elif 't1' == elem.get('slur'.format(_MEINS)):
@@ -336,11 +336,11 @@ def do_measure(markup):
     # NOTE: this is a bit of a lie for now, just to make it work
     # TODO: adjust @n for the voice number
     layer_id = make_id(7)
-    layer = ETree.Element('{}layer'.format(_MEINS), {'n': '1', _XMLID: 'S-s-m-lme-e{}'.format(layer_id)})
+    layer = etree.Element('{}layer'.format(_MEINS), {'n': '1', _XMLID: 'S-s-m-lme-e{}'.format(layer_id)})
     [layer.append(x) for x in list_of_elems]
-    staff = ETree.Element('{}staff'.format(_MEINS), {'n': '1', _XMLID: str(uuid.uuid4())})
+    staff = etree.Element('{}staff'.format(_MEINS), {'n': '1', _XMLID: str(uuid.uuid4())})
     staff.append(layer)
-    measure = ETree.Element('{}measure'.format(_MEINS), {_XMLID: str(uuid.uuid4())})
+    measure = etree.Element('{}measure'.format(_MEINS), {_XMLID: str(uuid.uuid4())})
     measure.append(staff)
 
     return measure

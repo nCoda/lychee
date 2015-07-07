@@ -26,7 +26,7 @@
 Contains an object representing an MEI document.
 '''
 
-from lxml import etree as ETree
+from lxml import etree
 
 
 class Document(object):
@@ -59,7 +59,7 @@ class Document(object):
         :returns: A list of the pathnames modified during the write-to-files.
         :rtype: list of str
         '''
-        chree = ETree.ElementTree(self.score)
+        chree = etree.ElementTree(self.score)
         chree.write(self.output_filename,
                     encoding='UTF-8',
                     xml_declaration=True,

@@ -26,7 +26,7 @@
 Converts a Lychee-MEI document to a more conventional document.
 '''
 
-from lxml import etree as ETree
+from lxml import etree
 
 from lychee.signals import outbound
 
@@ -50,22 +50,22 @@ def convert(document, **kwargs):
         outbound.CONVERSION_ERROR.emit(msg='LMEI-to-MEI did not receive a <section>')
         return
 
-    scoreDef = ETree.Element('{}scoreDef'.format(_MEINS))
-    staffGrp = ETree.Element('{}staffGrp'.format(_MEINS), attrib={'symbol': 'line'})
-    staffDef = ETree.Element('{}staffDef'.format(_MEINS), attrib={'n': '1', 'lines': '5'})
+    scoreDef = etree.Element('{}scoreDef'.format(_MEINS))
+    staffGrp = etree.Element('{}staffGrp'.format(_MEINS), attrib={'symbol': 'line'})
+    staffDef = etree.Element('{}staffDef'.format(_MEINS), attrib={'n': '1', 'lines': '5'})
     staffGrp.append(staffDef)
     scoreDef.append(staffGrp)
     document.insert(0, scoreDef)
 
-    score = ETree.Element('{}score'.format(_MEINS))
+    score = etree.Element('{}score'.format(_MEINS))
     score.append(document)
-    mdiv = ETree.Element('{}mdiv'.format(_MEINS))
+    mdiv = etree.Element('{}mdiv'.format(_MEINS))
     mdiv.append(score)
-    body = ETree.Element('{}body'.format(_MEINS))
+    body = etree.Element('{}body'.format(_MEINS))
     body.append(mdiv)
-    music = ETree.Element('{}music'.format(_MEINS))
+    music = etree.Element('{}music'.format(_MEINS))
     music.append(body)
-    mei = ETree.Element('{}mei'.format(_MEINS))
+    mei = etree.Element('{}mei'.format(_MEINS))
     mei.append(music)
 
     outbound.CONVERSION_FINISH.emit(converted=mei)

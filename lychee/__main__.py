@@ -28,7 +28,7 @@ Module that runs Lychee as a program.
 
 import subprocess
 
-from lxml import etree as ETree
+from lxml import etree
 
 from lychee import signals
 from signals import outbound
@@ -78,7 +78,7 @@ def mei_through_verovio(dtype, placement, document, **kwargs):
         elem.tag = elem.tag.replace(_MEINS, '')
 
     # then we'll just make an ElementTree and output it
-    chree = ETree.ElementTree(document)
+    chree = etree.ElementTree(document)
     chree.write_c14n(output_filename, exclusive=False, inclusive_ns_prefixes=['mei'])
     #chree.write(output_filename, encoding='UTF-8', xml_declaration=True, pretty_print=True)
 

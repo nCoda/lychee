@@ -26,7 +26,7 @@
 Initializes the :mod:`document` module.
 '''
 
-from lxml import etree as ETree
+from lxml import etree
 
 from lychee.signals import document as document_signals
 from lychee.document.document import Document
@@ -39,7 +39,7 @@ def _document_processor(converted, **kwargs):
     document_signals.STARTED.emit()
     print('{}.document_processor(converted={})'.format(__name__, converted))
 
-    score = ETree.Element('{}score'.format(_MEINS))
+    score = etree.Element('{}score'.format(_MEINS))
     score.append(converted)
 
     doc = Document()

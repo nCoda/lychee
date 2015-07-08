@@ -1,0 +1,3 @@
+[submodule "lychee/converters"]
+	path = lychee/converters
+	url = git@jameson.adjectivenoun.ca:lychee/converters.git

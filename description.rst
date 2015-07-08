@@ -107,6 +107,13 @@ go along; for now it involves the following characteristics:
       a simple XPath query to find corresponding elements. Either all ``<measure>`` elements with
       the same @n attribute belong to "the same measure," or all ``<staff>`` elements with the same
       @n attribute belong to "the same staff."
+- Limitations on ``<scoreDef>`` and ``<staffDef>``:
+    - To the fullest extent possible, every ``<staffDef>`` must appear within a ``<scoreDef>``.
+    - Also as much as possible, both elements must only appear as the first element within a
+      ``<section>``. It may not always be possible to abide by this rule, so exceptions may be
+      clarified in the future.
+    - Every ``<staffDef>`` element must have an @n attribute that is the same as the corresponding
+      ``<staff>`` element(s).
 
 When this "description" document refers to a music document in an **arbitrary format**, it means the
 music document is encoded in one of the formats supported by Lychee (Abjad, LilyPond, MEI) without a

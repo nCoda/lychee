@@ -26,8 +26,39 @@
 Initialize Lychee.
 '''
 
-__version__ = '0.0.1'
+import time
 
+
+__version__ = '0.0.1'
 __all__ = ['converters', 'document', 'signals', 'tui', 'vcs', 'views']
+
+DEBUG = True
+
+
+def log(message, level=None):
+    '''
+    Log a message according to runtime settings.
+
+    :param str message: The message to log. Context will be prepended (time, module, etc.).
+    :param str level: The level of the message in question (i.e., whether this is a "debug" or
+        "warning" or "error" message). The default is "debug."
+
+    **Side Effect**
+
+    This method may cause a message to be printed to stdout or stderr or into a file.
+    '''
+
+    if level is None:
+        level = 'debug'
+
+    if 'debug' and not DEBUG:
+        return
+
+    message = '[{time}] {name}: {message}'.format(name=__name__,
+                                                  time=time.strftime('%H:%M:%S'),
+                                                  message=message)
+
+    print(message)
+
 
 from lychee import *

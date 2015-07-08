@@ -26,6 +26,7 @@
 Converts an MEI document to a LilyPond document.
 '''
 
+import lychee
 from lychee.signals import outbound
 
 def convert(**kwargs):
@@ -38,7 +39,7 @@ def convert(**kwargs):
     :rtype: str
     '''
     outbound.CONVERSION_STARTED.emit()
-    print('{}.convert(document="{}")'.format(__name__, kwargs['document']))
+    lychee.log('{}.convert(document="{}")'.format(__name__, kwargs['document']))
     #outbound.CONVERSION_ERROR.emit()
     outbound.CONVERSION_FINISH.emit(converted='<ly stuff>')
-    print('{}.convert() after finish signal'.format(__name__))
+    lychee.log('{}.convert() after finish signal'.format(__name__))

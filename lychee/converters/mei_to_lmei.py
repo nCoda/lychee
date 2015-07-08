@@ -26,6 +26,7 @@
 Converts a conventional MEI document to a Lychee-MEI document.
 '''
 
+import lychee
 from lychee.signals import inbound
 
 def convert(**kwargs):
@@ -38,7 +39,7 @@ def convert(**kwargs):
     :rtype: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
     '''
     inbound.CONVERSION_STARTED.emit()
-    print('{}.convert(document="{}")'.format(__name__, kwargs['document']))
+    lychee.log('{}.convert(document="{}")'.format(__name__, kwargs['document']))
     #inbound.CONVERSION_ERROR.emit()
     inbound.CONVERSION_FINISH.emit(converted='<l-mei stuff>')
-    print('{}.convert() after finish signal'.format(__name__))
+    lychee.log('{}.convert() after finish signal'.format(__name__))

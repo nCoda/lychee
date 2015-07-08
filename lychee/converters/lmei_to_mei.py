@@ -28,6 +28,7 @@ Converts a Lychee-MEI document to a more conventional document.
 
 from lxml import etree
 
+import lychee
 from lychee.signals import outbound
 
 
@@ -44,7 +45,7 @@ def convert(document, **kwargs):
     :rtype: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
     '''
     outbound.CONVERSION_STARTED.emit()
-    print('{}.convert(document={})'.format(__name__, document))
+    lychee.log('{}.convert(document={})'.format(__name__, document))
 
     if '{}section'.format(_MEINS) != document.tag:
         outbound.CONVERSION_ERROR.emit(msg='LMEI-to-MEI did not receive a <section>')
@@ -69,4 +70,4 @@ def convert(document, **kwargs):
     mei.append(music)
 
     outbound.CONVERSION_FINISH.emit(converted=mei)
-    print('{}.convert() after finish signal'.format(__name__))
+    lychee.log('{}.convert() after finish signal'.format(__name__))

@@ -30,6 +30,7 @@ import subprocess
 
 from lxml import etree
 
+import lychee
 from lychee import signals
 from signals import outbound
 
@@ -39,7 +40,7 @@ _MEINS_URL = 'http://www.music-encoding.org/ns/mei'
 
 # register these fake "listeners" that will pretend they want data in whatever formats
 def generic_listener(dtype):
-    #print("I'm listening for {}!".format(dtype))
+    lychee.log("I'm listening for {}!".format(dtype))
     outbound.I_AM_LISTENING.emit(dtype=dtype)
 
 def abj_listener(**kwargs):

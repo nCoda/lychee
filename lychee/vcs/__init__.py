@@ -30,12 +30,13 @@ from os import path
 import subprocess
 import time
 
+import lychee
 from lychee.signals import vcs
 
 
 def vcs_processor(pathnames, **kwargs):
     vcs.STARTED.emit()
-    print('{}.vcs_processor(pathnames)'.format(__name__, pathnames))
+    lychee.log('{}.vcs_processor(pathnames)'.format(__name__, pathnames))
 
     # TODO: this is going to cause problems later...
     _, pathnames[0] = path.split(pathnames[0])
@@ -48,7 +49,7 @@ def vcs_processor(pathnames, **kwargs):
         pass
 
     vcs.FINISH.emit()
-    print('{}.vcs_processor() after finish signal'.format(__name__))
+    lychee.log('{}.vcs_processor() after finish signal'.format(__name__))
 
 
 vcs.START.connect(vcs_processor)

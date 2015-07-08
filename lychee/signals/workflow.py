@@ -26,7 +26,6 @@
 Control the workflow progression through an "action."
 '''
 
-import time
 
 import lychee
 from lychee import converters
@@ -120,31 +119,6 @@ class WorkflowManager(object):
         for signal, slot in WorkflowManager._CONNECTIONS:
             signal.connect(getattr(self, slot))
 
-    def _log(self, message, level=None):
-        '''
-        Log a message according to runtime settings.
-
-        :param str message: The message to log. Context will be prepended (time, module, etc.).
-        :param str level: The level of the message in question (i.e., whether this is a "debug" or
-            "warning" or "error" message). The default is "debug."
-
-        **Side Effect**
-
-        This method may cause a message to be printed to stdout or stderr or into a file.
-        '''
-
-        if level is None:
-            level = 'debug'
-
-        if 'debug' and not lychee.DEBUG:
-            return
-
-        message = '[{time}] {name}: {message}'.format(name=__name__,
-                                                      time=time.strftime('%H:%M:%S'),
-                                                      message=message)
-
-        print(message)
-
     def end(self):
         '''
         Disconnect all signals from this :class:`WorkflowManager` so it can be deleted. Does not
@@ -173,7 +147,7 @@ class WorkflowManager(object):
 
         # Inbound -------------------------------------------------------------
         if self._status is not WorkflowManager._PRESTART:
-            self._log('ERROR starting the action')
+            lychee.log('ERROR starting the action')
             return
 
         self._status = WorkflowManager._INBOUND_PRECONVERSION
@@ -182,18 +156,18 @@ class WorkflowManager(object):
 
         if self._status is not WorkflowManager._INBOUND_CONVERSION_FINISHED:
             if self._status is not WorkflowManager._INBOUND_CONVERSION_ERROR:
-                self._log('ERROR during inbound conversion')
+                lychee.log('ERROR during inbound conversion')
             return
-        self._log(next_step)
+        lychee.log(next_step)
 
         self._status = WorkflowManager._INBOUND_PREVIEWS
         self._choose_inbound_views()
         inbound.VIEWS_START.emit(dtype=self._i_dtype, doc=self._i_doc, converted=self._converted)
 
         if self._status is not WorkflowManager._INBOUND_VIEWS_FINISHED:
-            self._log('ERROR during inbound views processing')
+            lychee.log('ERROR during inbound views processing')
             return
-        self._log(next_step)
+        lychee.log(next_step)
 
         # Document ------------------------------------------------------------
         self._status = WorkflowManager._DOCUMENT_PRESTART
@@ -201,9 +175,9 @@ class WorkflowManager(object):
 
         if self._status is not WorkflowManager._DOCUMENT_FINISHED:
             if self._status is not WorkflowManager._DOCUMENT_ERROR:
-                self._log('ERROR during "document" step')
+                lychee.log('ERROR during "document" step')
             return
-        self._log(next_step)
+        lychee.log(next_step)
 
         # VCS -----------------------------------------------------------------
         self._status = WorkflowManager._VCS_PRESTART
@@ -211,9 +185,9 @@ class WorkflowManager(object):
 
         if self._status is not WorkflowManager._VCS_FINISHED:
             if self._status is not WorkflowManager._VCS_ERROR:
-                self._log('ERROR during "vcs" step')
+                lychee.log('ERROR during "vcs" step')
             return
-        self._log(next_step)
+        lychee.log(next_step)
 
         # Outbound ------------------------------------------------------------
         self._status = WorkflowManager._OUTBOUND_PRESTART
@@ -222,10 +196,8 @@ class WorkflowManager(object):
         # determine which formats are required
         if self._status is not WorkflowManager._OUTBOUND_HAVE_LISTENERS:
             if self._status is not WorkflowManager._OUTBOUND_VIEWS_ERROR:
-                self._log('nobody was listening')
+                lychee.log('nobody was listening')
             return
-        else:
-            print('')
 
         # do the views processing
         successful_dtypes = []
@@ -235,7 +207,7 @@ class WorkflowManager(object):
                 self._status = WorkflowManager._OUTBOUND_VIEWS_STARTED
                 continue
             elif each_dtype not in self._o_views_info:
-                self._log('ERROR: {} did not return outbound views info'.format(each_dtype))
+                lychee.log('ERROR: {} did not return outbound views info'.format(each_dtype))
                 continue
             else:
                 successful_dtypes.append(each_dtype)
@@ -248,14 +220,14 @@ class WorkflowManager(object):
             if 0 == len(successful_dtypes):
                 outbound.VIEWS_ERROR.emit(msg='No registered outbound dtypes passed through views processing')
             else:
-                self._log('ERROR: some registered outbound dtypes failed views processing')
+                lychee.log('ERROR: some registered outbound dtypes failed views processing')
                 self._o_dtypes = successful_dtypes
         else:
             outbound.VIEWS_FINISHED.emit()
 
         if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:
             return
-        self._log(next_step)
+        lychee.log(next_step)
 
         # do the outbound conversion
         successful_dtypes = []
@@ -278,10 +250,8 @@ class WorkflowManager(object):
             if 0 == len(successful_dtypes):
                 outbound.CONVERSION_ERROR.emit('No outbound converters succeeded')
             else:
-                self._log('ERROR: some registered outbound dtypes failed conversion')
+                lychee.log('ERROR: some registered outbound dtypes failed conversion')
                 self._o_dtypes = successful_dtypes
-
-        print('')
 
         # emit one signal per things returned
         for each_dtype in successful_dtypes:
@@ -338,74 +308,74 @@ class WorkflowManager(object):
     # ----
 
     def _inbound_conversion_started(self, **kwargs):
-        self._log('inbound conversion started')
-        self._log('inbound conversion started')
+        lychee.log('inbound conversion started')
+        lychee.log('inbound conversion started')
         self._status = WorkflowManager._INBOUND_CONVERSION_STARTED
 
     def _inbound_conversion_finish(self, converted, **kwargs):
-        self._log('inbound conversion finishing')
+        lychee.log('inbound conversion finishing')
         if self._status is WorkflowManager._INBOUND_CONVERSION_STARTED:
             if converted is None:
                 inbound.CONVERSION_ERROR.emit(msg='Inbound converter did not return L-MEI document')
             else:
-                self._log('\t(we got "{}")'.format(converted))
+                lychee.log('\t(we got "{}")'.format(converted))
                 self._converted = converted
                 self._status = WorkflowManager._INBOUND_CONVERSION_FINISHED
         else:
-            self._log('ERROR during inbound conversion')
+            lychee.log('ERROR during inbound conversion')
         inbound.CONVERSION_FINISHED.emit()
 
     def _inbound_conversion_finished(self, **kwargs):
         '''
         Called when inbound.CONVERSION_FINISHED is emitted, for logging and debugging.
         '''
-        self._log('inbound conversion finished')
+        lychee.log('inbound conversion finished')
 
     def _inbound_conversion_error(self, **kwargs):
         self._status = WorkflowManager._INBOUND_CONVERSION_ERROR
         if 'msg' in kwargs:
-            self._log(kwargs['msg'])
+            lychee.log(kwargs['msg'])
         else:
-            self._log('ERROR during inbound conversion')
+            lychee.log('ERROR during inbound conversion')
 
     def _inbound_views_started(self, **kwargs):
-        self._log('inbound views started')
+        lychee.log('inbound views started')
         self._status = WorkflowManager._INBOUND_VIEWS_STARTED
 
     def _inbound_views_finish(self, views_info, **kwargs):
-        self._log('inbound views finishing'.format(kwargs))
+        lychee.log('inbound views finishing'.format(kwargs))
         if self._status is WorkflowManager._INBOUND_VIEWS_STARTED:
             if views_info is None:
                 inbound.VIEWS_ERROR.emit(msg='Inbound views processing did not return views_info')
             else:
-                self._log('\t(we got "{}")'.format(views_info))
+                lychee.log('\t(we got "{}")'.format(views_info))
                 self._i_views = views_info
                 self._status = WorkflowManager._INBOUND_VIEWS_FINISHED
         else:
-            self._log('ERROR during inbound views processing')
+            lychee.log('ERROR during inbound views processing')
         inbound.VIEWS_FINISHED.emit()
 
     def _inbound_views_finished(self, **kwargs):
         '''
         Called when inbound.VIEWS_FINISHED is emitted, for logging and debugging.
         '''
-        self._log('inbound views finished')
+        lychee.log('inbound views finished')
 
     def _inbound_views_error(self, **kwargs):
         self._status = WorkflowManager._INBOUND_VIEWS_ERROR
         if 'msg' in kwargs:
-            self._log(kwargs['msg'])
+            lychee.log(kwargs['msg'])
         else:
-            self._log('ERROR during inbound views processing')
+            lychee.log('ERROR during inbound views processing')
 
     # ----
 
     def _document_started(self, **kwargs):
-        self._log('document started')
+        lychee.log('document started')
         self._status = WorkflowManager._DOCUMENT_STARTED
 
     def _document_finish(self, pathnames, **kwargs):
-        self._log('document finishing; modified {}'.format(pathnames))
+        lychee.log('document finishing; modified {}'.format(pathnames))
         if self._status is WorkflowManager._DOCUMENT_STARTED:
             if 5 is None:  # TODO: put in the appropriate arg here
                 document.ERROR.emit(msg='Document processing did not return views_info')
@@ -413,51 +383,51 @@ class WorkflowManager(object):
                 self._modified_pathnames = pathnames
                 self._status = WorkflowManager._DOCUMENT_FINISHED
         else:
-            self._log('ERROR during document processing')
+            lychee.log('ERROR during document processing')
         document.FINISHED.emit()
 
     def _document_finished(self, **kwargs):
         '''
         Called when document.FINISHED is emitted, for logging and debugging.
         '''
-        self._log('document processing finished')
+        lychee.log('document processing finished')
 
     def _document_error(self, **kwargs):
         self._status = WorkflowManager._DOCUMENT_ERROR
         if 'msg' in kwargs:
-            self._log(kwargs['msg'])
+            lychee.log(kwargs['msg'])
         else:
-            self._log('ERROR during document processing')
+            lychee.log('ERROR during document processing')
 
     # ----
 
     def _vcs_started(self, **kwargs):
-        self._log('vcs started')
+        lychee.log('vcs started')
         self._status = WorkflowManager._VCS_STARTED
 
     def _vcs_finish(self, **kwargs):
-        self._log('vcs finishing'.format(kwargs))
+        lychee.log('vcs finishing'.format(kwargs))
         if self._status is WorkflowManager._VCS_STARTED:
             if 5 is None:  # TODO: put in the appropriate arg here
                 vcs.ERROR.emit(msg='Document processing did not return views_info')
             else:
                 self._status = WorkflowManager._VCS_FINISHED
         else:
-            self._log('ERROR during vcs processing')
+            lychee.log('ERROR during vcs processing')
         vcs.FINISHED.emit()
 
     def _vcs_finished(self, **kwargs):
         '''
         Called when vcs.FINISHED is emitted, for logging and debugging.
         '''
-        self._log('vcs processing finished')
+        lychee.log('vcs processing finished')
 
     def _vcs_error(self, **kwargs):
         self._status = WorkflowManager._VCS_ERROR
         if 'msg' in kwargs:
-            self._log(kwargs['msg'])
+            lychee.log(kwargs['msg'])
         else:
-            self._log('ERROR during vcs processing')
+            lychee.log('ERROR during vcs processing')
 
     # ----
 
@@ -466,63 +436,63 @@ class WorkflowManager(object):
         Slot for the :const:`outbound.I_AM_LISTENING` signal.
         '''
         if dtype not in self._o_dtypes:
-            self._log('registering {} for outbound conversion'.format(dtype))
+            lychee.log('registering {} for outbound conversion'.format(dtype))
             self._status = WorkflowManager._OUTBOUND_HAVE_LISTENERS
             self._o_dtypes.append(dtype)
 
     def _outbound_views_started(self, **kwargs):
-        self._log('outbound views started')
+        lychee.log('outbound views started')
         self._status = WorkflowManager._OUTBOUND_VIEWS_STARTED
 
     def _outbound_views_finish(self, dtype, views_info, **kwargs):
         '''
         Slot for outbound.VIEWS_FINISH
         '''
-        self._log('outbound views finishing'.format(kwargs))
+        lychee.log('outbound views finishing'.format(kwargs))
         if self._status is WorkflowManager._OUTBOUND_VIEWS_STARTED:
             self._o_views_info[dtype] = views_info
             self._status = WorkflowManager._OUTBOUND_VIEWS_FINISHED
         else:
-            self._log('ERROR during outbound views processing')
+            lychee.log('ERROR during outbound views processing')
 
     def _outbound_views_finished(self, **kwargs):
         '''
         Called when outbound.VIEWS_FINISHED is emitted, for logging and debugging.
         '''
-        self._log('outbound views finished')
+        lychee.log('outbound views finished')
 
     def _outbound_views_error(self, **kwargs):
         self._status = WorkflowManager._OUTBOUND_VIEWS_ERROR
         if 'msg' in kwargs:
-            self._log(kwargs['msg'])
+            lychee.log(kwargs['msg'])
         else:
-            self._log('ERROR during outbound views processing')
+            lychee.log('ERROR during outbound views processing')
 
     def _outbound_conversion_started(self, **kwargs):
-        self._log('outbound conversion started')
+        lychee.log('outbound conversion started')
         self._status = WorkflowManager._OUTBOUND_CONVERSIONS_STARTED
 
     def _outbound_conversion_finish(self, converted, **kwargs):
-        self._log('outbound conversion finishing')
+        lychee.log('outbound conversion finishing')
         if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_STARTED:
             if converted is None:
                 outbound.CONVERSION_ERROR.emit(msg='Outbound converter did not return a document')
             else:
-                self._log('\t(we got "{}")'.format(converted))
+                lychee.log('\t(we got "{}")'.format(converted))
                 self._o_converted[self._o_running_converter] = converted
                 self._status = WorkflowManager._OUTBOUND_CONVERSIONS_FINISHED
         else:
-            self._log('ERROR during outbound conversion')
+            lychee.log('ERROR during outbound conversion')
 
     def _outbound_conversion_finished(self, dtype, placement, document, **kwargs):
         '''
         Called when outbound.CONVERSION_FINISHED is emitted, for logging and debugging.
         '''
-        self._log('outbound conversion finished\n\tdtype: {}\n\tplacement: {}\n\tdocument: {}\n'.format(dtype, placement, document))
+        lychee.log('outbound conversion finished\n\tdtype: {}\n\tplacement: {}\n\tdocument: {}\n'.format(dtype, placement, document))
 
     def _outbound_conversion_error(self, **kwargs):
         self._status = WorkflowManager._OUTBOUND_CONVERSIONS_ERROR
         if 'msg' in kwargs:
-            self._log(kwargs['msg'])
+            lychee.log(kwargs['msg'])
         else:
-            self._log('ERROR during outbound conversion')
+            lychee.log('ERROR during outbound conversion')

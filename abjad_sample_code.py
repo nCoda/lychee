@@ -1,3 +1,6 @@
+# Jeffrey Treviño wrote this example Abjad script as a fragment of Abjad score that can be used for
+# testing the efficacy of Lychee.
+
 from abjad import *
 
 # This works:
@@ -12,4 +15,3 @@ bottom.is_simultaneous = True
 group = StaffGroup([top,bottom])
 tuba = Staff("c''''1 r c''''")
 score = Score([group,tuba])
-#conversion goes here.

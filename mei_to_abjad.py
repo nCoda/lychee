@@ -12,7 +12,6 @@ from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.durationtools.Duration import Duration
 
-
 from lxml import etree as ETree
 
 '''MEI to Abjad note conversion.

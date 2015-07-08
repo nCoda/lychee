@@ -10,6 +10,10 @@ from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.topleveltools.mutate import mutate
 
 from lxml import etree as ETree
+import uuid
+
+_MEINS = '{http://www.music-encoding.org/ns/mei}'
+ETree.register_namespace('mei', _MEINS[1:-1])
 
 '''Abjad to mei note conversion.
 
@@ -36,6 +40,7 @@ def convert_accidental_abjad_to_mei(abjad_accidental_string):
 
 
 def abjad_note_to_mei_note(abjad_note):
+        #also handles abjad NoteHead objects (which have pitch and octave attrs but no dur)
         if hasattr(abjad_note,'written_duration'):
             dots = abjad_note.written_duration.dot_count
             duration = abjad_note.written_duration.lilypond_duration_string
@@ -57,21 +62,21 @@ def abjad_note_to_mei_note(abjad_note):
             is_forced = abjad_note.note_head.is_forced
         dictionary = {'octave': str(octave), 
                         'pname': pitchname}
-        mei_note = ETree.Element("note", dictionary)
+        mei_note = ETree.Element("{}note".format(_MEINS), dictionary)
         if duration:
             mei_note.set('dur',str(duration))
         if dots:
             mei_note.set('dots',str(dots))
         if accidental:
             if is_cautionary:
-                ETree.SubElement(mei_note,"accid",accid=accidental,func="cautionary")
+                ETree.SubElement(mei_note,'{}accid'.format(_MEINS),accid=accidental,func='cautionary')
             else:
                 mei_note.set('accid.ges', accidental)
                 if is_forced:
                     mei_note.set('accid', accidental)
         else:
             if is_cautionary:
-                ETree.SubElement(mei_note,"accid",accid='n',func="cautionary")
+                ETree.SubElement(mei_note,'{}accid'.format(_MEINS),accid='n',func='cautionary')
             if is_forced:
                 mei_note.set('accid.ges', 'n')
                 mei_note.set('accid', 'n')
@@ -80,7 +85,7 @@ def abjad_note_to_mei_note(abjad_note):
 def abjad_rest_to_mei_rest(abjad_rest):
     duration = abjad_rest.written_duration.lilypond_duration_string
     dots = abjad_rest.written_duration.dot_count
-    mei_rest = ETree.Element('rest')
+    mei_rest = ETree.Element('{}rest'.format(_MEINS))
     if dots:
         dot_index = duration.find('.')
         dur_number_string = duration[:dot_index]
@@ -92,7 +97,7 @@ def abjad_rest_to_mei_rest(abjad_rest):
 
 
 def abjad_chord_to_mei_chord(abjad_chord):
-    mei_chord = ETree.Element("chord")
+    mei_chord = ETree.Element('{}chord'.format(_MEINS))
     dots = abjad_chord.written_duration.dot_count
     dur_string = abjad_chord.written_duration.lilypond_duration_string
     if dots:
@@ -113,13 +118,13 @@ def abjad_leaf_to_mei_element(abjad_object):
         return abjad_chord_to_mei_chord(abjad_object)
 
 def abjad_voice_to_mei_layer(abjad_voice):
-    mei_layer = ETree.Element('layer',n="1")
+    mei_layer = ETree.Element('{}layer'.format(_MEINS),n="1")
     for child in abjad_voice:
         mei_layer.append(abjad_leaf_to_mei_element(child))
     return mei_layer
 
 def abjad_staff_to_mei_staff(abjad_staff):
-    mei_staff = ETree.Element('staff',n='1')
+    mei_staff = ETree.Element('{}staff'.format(_MEINS),n='1')
     if len(abjad_staff) != 0:
         if abjad_staff.is_simultaneous:
             for x,voice in enumerate(abjad_staff):
@@ -139,9 +144,9 @@ def abjad_staff_to_mei_staff(abjad_staff):
 
 def abjad_score_to_mei_section(abjad_score):
     if len(abjad_score) == 0:
-        return ETree.Element('section',n='1')
-    mei_section = ETree.Element('section', n='1')
-    score_def = ETree.Element('scoreDef')
+        return ETree.Element('{}section'.format(_MEINS),n='1')
+    mei_section = ETree.Element('{}section'.format(_MEINS), n='1')
+    score_def = ETree.Element('{}scoreDef'.format(_MEINS))
     mei_section.append(score_def)
     staffCounter = 1
     for component in abjad_score:
@@ -150,17 +155,17 @@ def abjad_score_to_mei_section(abjad_score):
             mei_staff = abjad_staff_to_mei_staff(abjad_staff)
             mei_staff.set('n', str(staffCounter))
             mei_section.append(mei_staff)
-            staffDef = score_def.append(ETree.Element('staffDef',lines='5',n=str(staffCounter)))
+            staffDef = score_def.append(ETree.Element('{}staffDef'.format(_MEINS),lines='5',n=str(staffCounter)))
             staffCounter += 1
         elif isinstance(component, StaffGroup):
-            mei_staff_group = ETree.Element('staffGrp',symbol='bracket')
+            mei_staff_group = ETree.Element('{}staffGrp'.format(_MEINS),symbol='bracket')
             score_def.append(mei_staff_group)
             for staff in component:
                 abjad_staff = component
                 mei_staff = abjad_staff_to_mei_staff(abjad_staff)
                 mei_staff.set('n', str(staffCounter))
                 mei_section.append(mei_staff)
-                mei_staff_group.append(ETree.Element('staffDef',lines='5',n=str(staffCounter)))
+                mei_staff_group.append(ETree.Element('{}staffDef'.format(_MEINS),lines='5',n=str(staffCounter)))
                 staffCounter += 1
     return mei_section
 

@@ -17,3 +17,17 @@ class AbjadTestCase(unittest.TestCase):
                 raise AssertionError(STRING_FORMAT_ERROR)
         else:
             super(AbjadTestCase,self).assertEqual(first,second,msg)
+    
+    def assertAttribsEqual(self, with_id_dict, without_id_dict):
+        with_id_dict = dict(with_id_dict)
+        without_id_dict = dict(without_id_dict)
+        if isinstance(with_id_dict, dict):
+            if type(with_id_dict) != type(without_id_dict):
+                raise AssertionError(SAME_CLASS_ERROR)
+            elif not with_id_dict['{http://www.w3.org/XML/1998/namespace}id']:
+                raise AssertionError("First Element lacks an xml id.")
+        with_id_copy = with_id_dict.copy()
+        del(with_id_copy['{http://www.w3.org/XML/1998/namespace}id'])
+        self.assertEqual(with_id_copy, without_id_dict)
+            
+            

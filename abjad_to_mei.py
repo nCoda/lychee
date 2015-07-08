@@ -1,5 +1,50 @@
-#Jeff Trevino, 6/8/15
-#given an Abjad object as input, outputs an appropriate mei Element.
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#--------------------------------------------------------------------------------------------------
+# Program Name:           Lychee
+# Program Description:    MEI document manager for formalized document control
+#
+# Filename:               lychee/converters/abjad_to_mei.py
+# Purpose:                Converts an Abjad document to an MEI document.
+#
+# Copyright (C) 2015 Jeffrey Treviño
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+#--------------------------------------------------------------------------------------------------
+'''
+Converts an Abjad document to an MEI document.
+
+..  container:: example
+
+    **Example 1.** Initializes from Abjad note:
+
+    ::
+
+        >>> note = Note("cqs''?8.")
+        >>> out = abjadNoteTomeiTree(note)
+
+    ..  doctest::
+
+        >>> >>> ET.tostring(out.getroot())
+        <note dots="1" dur="8" octave="5" pname="c"><accid accid="sd" func="cautionary" /></note>
+'''
+
+
+import uuid
+
+from lxml import etree as ETree
+
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
@@ -9,29 +54,32 @@ from abjad.tools.scoretools.Staff import Staff
 from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.topleveltools.mutate import mutate
 
-from lxml import etree as ETree
-import uuid
+import lychee
+from lychee.signals import inbound
+
 
 _MEINS = '{http://www.music-encoding.org/ns/mei}'
 ETree.register_namespace('mei', _MEINS[1:-1])
 
-'''Abjad to mei note conversion.
 
-    ..  container:: example
-    
-        **Example 1.** Initializes from Abjad note:
+def convert(document, **kwargs):
+    '''
+    Convert an Abjad document into an MEI document.
 
-        ::
+    :param object document: The Abjad document.
+    :returns: The corresponding MEI document.
+    :rtype: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
+    '''
+    inbound.CONVERSION_STARTED.emit()
+    lychee.log('{}.convert(document="{}")'.format(document))
 
-            >>> note = Note("cqs''?8.")
-            >>> out = abjadNoteTomeiTree(note)
-        
-        ..  doctest::
+    # TODO: put the conversion-handling bits here
+    # TODO: CONVERS_FINISH.emit() should be called with the converted Element or ElementTree
 
-            >>> >>> ET.tostring(out.getroot())
-            <note dots="1" dur="8" octave="5" pname="c"><accid accid="sd" func="cautionary" /></note>
+    inbound.CONVERSION_FINISH.emit(converted='<l-mei stuff>')
+    lychee.log('{}.convert() after finish signal'.format(__name__))
 
-'''    
+
 def convert_accidental_abjad_to_mei(abjad_accidental_string):
     # Helper that converts an Abjad accidental string to an mei accidental string.
     accidental_dictionary = {'': '', 'f': 'f', 's': 's', 'ff': 'ff', 'ss': 'x', 

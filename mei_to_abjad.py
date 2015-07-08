@@ -1,6 +1,49 @@
-# -*- encoding: utf-8 -*-
-# Jeff Treviño, 6/8/15
-# given an mei string as an input, outputs an abjad note
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#--------------------------------------------------------------------------------------------------
+# Program Name:           Lychee
+# Program Description:    MEI document manager for formalized document control
+#
+# Filename:               lychee/converters/abjad_to_mei.py
+# Purpose:                Converts an MEI document to an Abjad document.
+#
+# Copyright (C) 2015 Jeffrey Treviño
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+#--------------------------------------------------------------------------------------------------
+'''
+Converts an MEI document to an Abjad document.
+
+..  container:: example
+
+    **Example 1.** Initializes from mei Element Tree:
+
+    ::
+
+        >>> root = ETree.Element("note",dots="1",dur="4",oct="4",pname="c")
+        >>> ETree.SubElement(root,"accid",accid="sd",func="cautionary")
+        >>> tree = ETree.ElementTree(root)
+        >>> note = meiTreeToAbjadNote(tree)
+
+    ..  doctest::
+
+        >>> note
+        Note("cqs'4.")
+'''
+
+
+from lxml import etree as ETree
 
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
@@ -12,27 +55,27 @@ from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.durationtools.Duration import Duration
 
-from lxml import etree as ETree
+import lychee
+from lychee.signals import outbound
 
-'''MEI to Abjad note conversion.
 
-    ..  container:: example
-    
-        **Example 1.** Initializes from mei Element Tree:
-
-        ::
-
-            >>> root = ETree.Element("note",dots="1",dur="4",oct="4",pname="c")
-            >>> ETree.SubElement(root,"accid",accid="sd",func="cautionary")
-            >>> tree = ETree.ElementTree(root)
-            >>> note = meiTreeToAbjadNote(tree)
-        
-        ..  doctest::
-
-            >>> note
-            Note("cqs'4.")
-
+def convert(document, **kwargs):
     '''
+    Convert an MEI document into an Abjad document.
+
+    :param document: The MEI document.
+    :type document: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
+    :returns: The corresponding MEI document.
+    :rtype: object
+    '''
+    outbound.CONVERSION_STARTED.emit()
+    lychee.log('{}.convert(document="{}")'.format(__name__, document))
+
+    # TODO: put the conversion stuff here
+    # TODO: CONVERSION_FINISH should be called with the Abjad result
+
+    outbound.CONVERSION_FINISH.emit(converted='<Abjad stuff>')
+    lychee.log('{}.convert() after finish signal'.format(__name__))
 
 
 def convert_accidental_mei_to_abjad(mei_accidental_string):

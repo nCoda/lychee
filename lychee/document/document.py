@@ -26,7 +26,62 @@
 Contains an object representing an MEI document.
 '''
 
+import os.path
+
 from lxml import etree
+
+
+_XMLNS = '{http://www.w3.org/XML/1998/namespace}'
+_XMLID = '{}id'.format(_XMLNS)
+_MEINS = '{http://www.music-encoding.org/ns/mei}'
+
+
+def _check_xmlid_chars(xmlid):
+    '''
+    Ensure the only characters in a string are acceptable as an @xml:id.
+
+    At the moment, this only checks that a ``"`` (double-quote) character is not in the string. If
+    I can figure out what the XML:ID spec really means, then it may be restricted further... but it
+    doesn't seem to be the case!
+
+    :param str xmlid: The @xml:id string to check.
+    :returns: ``True`` if all the characters are valid in an @xml:id string, otherwise ``False``.
+    '''
+    return '"' not in xmlid
+
+
+def _set_default(here, this, that):
+        '''
+        Returns ``here[this]``, if ``this`` is a key in ``here``, otherwise returns ``that``.
+
+        **Examples**
+
+        >>> _set_default({'a': 12}, 'a', 42)
+        12
+        >>> _set_default({'a': 12}, 'b', 42)
+        42
+        '''
+        if this in here:
+            return here[this]
+        else:
+            return that
+
+
+def _make_empty_all_files(pathname):
+    '''
+    Produce and return an empty ``all_files.mei`` file that will be used to cross-reference all
+    other files in this repository.
+
+    :param str pathname: The pathname to use for the file---must include the "all_files.mei" part.
+    :returns: The XML document produced.
+    :rtype: :class:`lxml.etree.ElementTree`
+    '''
+    root = etree.Element('{}meiCorpus'.format(_MEINS))
+    root.append(etree.Element('{}meiHead'.format(_MEINS)))
+    root.append(etree.Element('{}mei'.format(_MEINS)))
+    tree = etree.ElementTree(root)
+    tree.write_c14n(pathname, exclusive=False, inclusive_ns_prefixes=['mei'])
+    return tree
 
 
 class Document(object):
@@ -36,12 +91,38 @@ class Document(object):
     to submit a new portion to *replace* the existing portion outright.
     '''
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         '''
         The initialization method accepts no arguments.
+
+        :kwarg str repository_pathname: The pathname, relative or absolute, to where the Lychee-MEI
+            files are stored. Default is "testrepo."
         '''
-        self.output_filename = 'testrepo/lookatme.mei'  # where everything gets saved
-        self.score = None  # the <score> element
+        # TODO: tests for this method
+
+        # path to the Mercurial repository directory
+        self.repository_pathname = _set_default(kwargs, 'repository_pathname', 'testrepo')
+
+        # file that indicates the other files in this repository
+        #self._all_files_file = os.path.join(self.repository_pathname, 'all_files.mei')
+        #if os.path.exists(self._all_files_file):
+            #self._all_files = etree.parse(self._all_files_file)
+        #else:
+            #self._all_files = _make_empty_all_files(self._all_files_file)
+
+        # TODO: the "metadata" file
+
+        # files that hold MEI <section> elements; @xml:id to Element
+        # TODO: this bit is questionably working
+        self._sections = {}
+        #for pointer in self._all_files.findall('.//ptr[@targettype="section"]'):
+            #section = etree.parse(pointer.get('target')).getroot()
+            #self._sections[section.get('xml:id')] = section
+
+        # the <score> element
+        self._score = None
+        # the order of <section> elements in the <score>, indicated with @xml:id
+        self._score_order = []
 
     def get_everything(self):
         '''
@@ -50,16 +131,16 @@ class Document(object):
 
         .. note:: Unlike the other ``get``-prefixed methods, this method returns nothing.
         '''
-        pass
+        raise NotImplementedError()
 
     def save_everything(self):
         '''
-        Writes the MEI document(s) into files. For now, it just writes "self.score."
+        Writes the MEI document(s) into files. For now, it just writes "self._score."
 
         :returns: A list of the pathnames modified during the write-to-files.
         :rtype: list of str
         '''
-        chree = etree.ElementTree(self.score)
+        chree = etree.ElementTree(self._score)
         chree.write(self.output_filename,
                     encoding='UTF-8',
                     xml_declaration=True,
@@ -73,7 +154,7 @@ class Document(object):
         :returns: The ``<head>`` portion of the MEI document.
         :rtype: :class:`lxml.etree.Element`
         '''
-        pass
+        raise NotImplementedError()
 
     def put_head(self, new_head):
         '''
@@ -82,7 +163,7 @@ class Document(object):
         :param: new_head: A ``<head>`` element that should replace the existing one.
         :type new_head: :class:`lxml.etree.Element`
         '''
-        pass
+        raise NotImplementedError()
 
     def get_ui(self):
         '''
@@ -91,7 +172,7 @@ class Document(object):
         :returns: Some element... ???
         :rtype: :class:`lxml.etree.Element`
         '''
-        pass
+        raise NotImplementedError()
 
     def put_ui(self, new_ui):
         '''
@@ -100,7 +181,7 @@ class Document(object):
         :param new_ui: Some element... ???
         :type new_ui: :class:`lxml.etree.Element`
         '''
-        pass
+        raise NotImplementedError()
 
     def get_score(self):
         '''
@@ -109,16 +190,27 @@ class Document(object):
         :returns: A ``<music>`` element.
         :rtype: :class:`lxml.etree.Element`
         '''
-        pass
+        raise NotImplementedError()
 
     def put_score(self, new_music):
         '''
-        Save a new score in place of the existing one.
+        Save a new score in place of the existing one. The "score order" in ``new_music`` is taken
+        to replace the existing "score order." Note that <section> elements not included in
+        ``new_music`` are not deleted---they remain tracked in "all_files." Also note that any
+        <section> elements already contained in the local list of sections is replaced by the
+        section that has a matching @xml:id in ``new_music``.
 
-        :param new_music:
+        :param new_music: The <score> element to use in place of the existing one.
         :type new_music: :class:`lxml.etree.Element`
         '''
-        self.score = new_music
+        score_order = []
+        for section in new_music.findall('./{}section'.format(_MEINS)):
+            xmlid = section.get(_XMLID)
+            score_order.append(xmlid)
+            self._sections[xmlid] = section
+
+        self._score = new_music
+        self._score_order = score_order
 
     def get_section(self, section_id):
         '''
@@ -129,7 +221,13 @@ class Document(object):
         :returns: The section with an ``@xml:id`` matching ``section_id``.
         :rtype: :class:`lxml.etree.Element`
         '''
-        raise NotImplementedError('call get_score()')
+        if section_id.startswith('#'):
+            section_id = section_id[1:]
+
+        try:
+            return self._sections[section_id]
+        except KeyError:
+            return None
 
     def put_section(self, section_id, new_section):
         '''
@@ -140,4 +238,7 @@ class Document(object):
         :param new_section: A replacement for the section with ``section_id``.
         :type new_section: :class:`lxml.etree.Element`
         '''
-        raise NotImplementedError('call put_score()')
+        if section_id.startswith('#'):
+            section_id = section_id[1:]
+
+        self._sections[section_id] = new_section

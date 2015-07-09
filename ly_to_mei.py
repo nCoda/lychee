@@ -59,7 +59,6 @@ least once.
 import random
 import string
 import sys
-import uuid
 
 import six
 from six.moves import range
@@ -217,8 +216,7 @@ def do_note_block(markup):
         elif '!' == each_char:
             accid = accid_ges if accid_ges is not None else 'n'
         elif '?' == each_char:
-            accid = etree.Element('{}accid'.format(_MEINS),
-                                  {'func': 'caution'})
+            accid = etree.Element('{}accid'.format(_MEINS), {'func': 'caution'})
             accid.set('accid', accid_ges if accid_ges is not None else 'n')
         else:
             pass  # TODO: panic
@@ -236,7 +234,7 @@ def do_note_block(markup):
     # make the <note> element
     the_elem = etree.Element('{}note'.format(_MEINS),
                              {'pname': pname, 'dur': dur, 'oct': str(octave),
-                              _XMLID: 'S-s-m-l-e{}'.format(make_id(7))})
+                              _XMLID: make_id(32)})
 
     # set @accid.ges and @accid, as required
     if accid_ges is not None:
@@ -322,10 +320,10 @@ def do_measure(markup):
                 raise RuntimeWarning(_SLUR_OPEN_WARNING.format(markup.strip()))
             else:
                 slur_active = etree.Element('{}slur'.format(_MEINS),
-                                            {'startid': elem.get(_XMLID),
-                                             _XMLID: 'S-s-m-l-e{}'.format(make_id(7))})
+                                            {'startid': '#{}'.format(elem.get(_XMLID)),
+                                             _XMLID: make_id(32)})
         elif 't1' == elem.get('slur'.format(_MEINS)):
-            slur_active.set('endid', elem.get(_XMLID))
+            slur_active.set('endid', '#{}'.format(elem.get(_XMLID)))
             list_of_elems.append(slur_active)
             slur_active = None
 
@@ -335,12 +333,11 @@ def do_measure(markup):
 
     # NOTE: this is a bit of a lie for now, just to make it work
     # TODO: adjust @n for the voice number
-    layer_id = make_id(7)
-    layer = etree.Element('{}layer'.format(_MEINS), {'n': '1', _XMLID: 'S-s-m-lme-e{}'.format(layer_id)})
+    layer = etree.Element('{}layer'.format(_MEINS), {'n': '1', _XMLID: make_id(32)})
     [layer.append(x) for x in list_of_elems]
-    staff = etree.Element('{}staff'.format(_MEINS), {'n': '1', _XMLID: str(uuid.uuid4())})
+    staff = etree.Element('{}staff'.format(_MEINS), {'n': '1', _XMLID: make_id(32)})
     staff.append(layer)
-    measure = etree.Element('{}measure'.format(_MEINS), {_XMLID: str(uuid.uuid4())})
+    measure = etree.Element('{}measure'.format(_MEINS), {_XMLID: make_id(32)})
     measure.append(staff)
 
     return measure

@@ -51,15 +51,10 @@ def convert(document, **kwargs):
         outbound.CONVERSION_ERROR.emit(msg='LMEI-to-MEI did not receive a <section>')
         return
 
-    scoreDef = etree.Element('{}scoreDef'.format(_MEINS))
-    staffGrp = etree.Element('{}staffGrp'.format(_MEINS), attrib={'symbol': 'line'})
-    staffDef = etree.Element('{}staffDef'.format(_MEINS), attrib={'n': '1', 'lines': '5'})
-    staffGrp.append(staffDef)
-    scoreDef.append(staffGrp)
-    document.insert(0, scoreDef)
+    section = change_measure_hierarchy(document)
 
     score = etree.Element('{}score'.format(_MEINS))
-    score.append(document)
+    score.append(section)
     mdiv = etree.Element('{}mdiv'.format(_MEINS))
     mdiv.append(score)
     body = etree.Element('{}body'.format(_MEINS))
@@ -69,5 +64,44 @@ def convert(document, **kwargs):
     mei = etree.Element('{}mei'.format(_MEINS))
     mei.append(music)
 
+    print(etree.tostring(mei, pretty_print=True))
+
     outbound.CONVERSION_FINISH.emit(converted=mei)
     lychee.log('{}.convert() after finish signal'.format(__name__))
+
+
+def change_measure_hierarchy(lmei_section):
+    '''
+    Convert a <section> with measure-within-staff hierarchy to staff-within-measure hierarchy. That
+    represents a conversion from Lychee-MEI to standard MEI.
+
+    :param lmei_section: The <section> to convert.
+    :type lmei_section: :class:`xml.etree.ElementTree.Element`
+    :returns: A converted <section>.
+    :rtype: :class:`xml.etree.ElementTree.Element`
+    '''
+
+    section = etree.Element('{}section'.format(_MEINS))
+    section.append(lmei_section.find('.//{}scoreDef'.format(_MEINS)))
+    measure_num = 0
+    ran_out_of_measures = False
+
+    while not ran_out_of_measures:
+        measure_num += 1
+        xpath_query = './/{meins}measure[@n="{n}"]'.format(meins=_MEINS, n=measure_num)
+        staffs = lmei_section.findall(xpath_query)
+
+        if 0 == len(staffs):
+            ran_out_of_measures = True
+            continue
+
+        measure = etree.Element('{}measure'.format(_MEINS), n=str(measure_num))
+
+        for i, each in enumerate(staffs):
+            each.tag = '{}staff'.format(_MEINS)
+            each.set('n', str(i+1))
+            measure.append(each)
+
+        section.append(measure)
+
+    return section

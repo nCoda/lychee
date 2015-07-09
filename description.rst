@@ -63,6 +63,9 @@ go along; for now it involves the following characteristics:
       or as a pointing element (like ``<tupletSpan>``) must use the pointing version
     - spanner elements must be sibling elements to the element indicated by its @startid attribute,
       and the spanner must precede the @startid element
+    - the @plist attribute must include all child elements, not just immediate children (so in a
+      nested tuplet, the highest-level <tupletSpan> will have in its @plist all of the notes/rests
+      in that and all contained <tupletSpan> elements
     - collectively, these restrictions eliminate the need for a multiple-pass parser
 - @n attributes:
     - for containers that require an @n attribute, the values must be enumerated from 1, incremented
@@ -230,6 +233,15 @@ input, there is not enough information to produce any sensible output, so the mo
 an error signal.
 
 Future modules will convert data between MEI and MusicXML, and MEI and music21.
+
+Note that converter modules will always convert between Lychee-MEI and another format. However, the
+@xml:id values assigned by the converter modules will not conform to the Lychee-MEI guidelines; they
+should instead be used by the converter module to help track the correlation between objects in
+their LMEI and external representation. The ``views`` module is responsible for converting the
+@xml:id attributes from format-specific to Lychee-MEI values (and will not work without its ability
+to do so). For this reason, the converters' @xml:id attributes must not change unless an element is
+changed (meaning it is new or it replaces an element in Lychee's existing internal representation)
+and that the converter-assigned @xml:id must change if an element does change.
 
 Also note that a conversion through Lychee from one format to the same format, like
 LilyPond-to-MEI-to-LilyPond, need not produce an identical file at the end. Although the content
@@ -422,7 +434,10 @@ Views: Does It Go Here?
 =======================
 
 A **view** is a (portion of) a Lychee-MEI document, stored in another format (Abjad, LilyPond, MEI).
-The ``views`` module tracks correlation between musical objects separately for every format.
+The ``views`` module tracks correlation between musical objects separately for every format, in two
+mappings between a Lychee-MEI-compliant @xml:id value assinged by the ``views`` module itself and
+the @xml:id values assigned by ``converters`` submodules. Therefore, it is the responsiblity of the
+``views`` module to assign Lychee-MEI-compliant @xml:id attributes to the LMEI data it receives.
 
 Sample Uses
 -----------

@@ -101,7 +101,7 @@ class WorkflowManager(object):
         # inbound data type
         self._i_dtype = dtype.lower()
         # inbound document
-        self._i_doc = doc.lower()
+        self._i_doc = doc  #.lower()
         # inbound document after conversion
         self._converted = None
         # inbound information from the "views" module

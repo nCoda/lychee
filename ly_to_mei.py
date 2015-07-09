@@ -100,9 +100,28 @@ def convert(document, **kwargs):
             elem.set('n', str(i + 1))
             measures.append(elem)
 
+    # work everything into a <staff>
+    staff = etree.Element('{}staff'.format(_MEINS), {'n': '1', _XMLID: make_id(32)})
+    [staff.append(x) for x in measures]
+
+    # make a <staffDef>
+    scoreDef = etree.Element('{}scoreDef'.format(_MEINS))
+    staffGrp = etree.Element('{}staffGrp'.format(_MEINS), attrib={'symbol': 'line'})
+    staffDef = etree.Element('{}staffDef'.format(_MEINS), attrib={'n': '1', 'lines': '5'})
+    staffGrp.append(staffDef)
+    scoreDef.append(staffGrp)
+
+    # put the first clef in the <staffDef> so it's cleaner
+    first_clef = staff.find('.//{}clef'.format(_MEINS))
+    staffDef.set('clef.shape', first_clef.get('shape'))
+    staffDef.set('clef.line', first_clef.get('line'))
+    # and remove that <clef> so it won't appear any more
+    first_clef.getparent().remove(first_clef)
+
     # work everything into a <section>
     section = etree.Element('{}section'.format(_MEINS))
-    [section.append(x) for x in measures]
+    section.append(scoreDef)
+    section.append(staff)
 
     inbound.CONVERSION_FINISH.emit(converted=section)
 
@@ -335,9 +354,7 @@ def do_measure(markup):
     # TODO: adjust @n for the voice number
     layer = etree.Element('{}layer'.format(_MEINS), {'n': '1', _XMLID: make_id(32)})
     [layer.append(x) for x in list_of_elems]
-    staff = etree.Element('{}staff'.format(_MEINS), {'n': '1', _XMLID: make_id(32)})
-    staff.append(layer)
-    measure = etree.Element('{}measure'.format(_MEINS), {_XMLID: make_id(32)})
-    measure.append(staff)
+    measure = etree.Element('{}measure'.format(_MEINS), {'n': '1', _XMLID: make_id(32)})
+    measure.append(layer)
 
     return measure

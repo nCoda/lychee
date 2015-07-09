@@ -67,6 +67,9 @@ go along; for now it involves the following characteristics:
       nested tuplet, the highest-level <tupletSpan> will have in its @plist all of the notes/rests
       in that and all contained <tupletSpan> elements
     - collectively, these restrictions eliminate the need for a multiple-pass parser
+    - for a spanner that contains another spanner, the element defining the inner spanner must
+      appear in the document *after* the element defining the outer spanner. This is implied in the
+      previous rules, but specified more clearly here for consistency.
 - @n attributes:
     - for containers that require an @n attribute, the values must be enumerated from 1, incremented
       by 1, and start with the highest or left-most sub-container, as applicable

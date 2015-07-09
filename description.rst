@@ -164,6 +164,29 @@ From this you can see:
 One other thing: this gives Lychee a systematic way to name files. The section example above could
 be named "Sme-s-m-l-e1234567.mei".
 
+Cross-References with Files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Lychee-MEI shall maintain a file called ``all_files.mei`` in which cross-reference links are kept
+to all other MEI files in the repository. These cross-references shall use the ``<ptr>`` element.
+
+- the @target attribute holds a URL to the other file, relative to ``all_files.mei``
+- @targettype may be ``"section"``, ``"score"``, ``"ui"``, or ``"metadata"``, as appropriate
+- @xlink:actuate shall be ``"onRequest"``
+- @xlink:show shall be ``"embed"``
+
+<meiCorpus>
+    <meiHead></meiHead>
+    <mei>
+        <ptr/>
+        <ptr/>
+        ...
+    </mei>
+</meiCorpus>
+
+Note that this isn't valid MEI. It should be, and I'll figure out how later, but I just can't seem
+to find a useful place for a <ptr> like this.
+
 One-shot and Interactive Modes
 ------------------------------
 

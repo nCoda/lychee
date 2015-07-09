@@ -64,8 +64,6 @@ def convert(document, **kwargs):
     mei = etree.Element('{}mei'.format(_MEINS))
     mei.append(music)
 
-    print(etree.tostring(mei, pretty_print=True))
-
     outbound.CONVERSION_FINISH.emit(converted=mei)
     lychee.log('{}.convert() after finish signal'.format(__name__))
 

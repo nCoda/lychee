@@ -100,7 +100,6 @@ def convert_accidental_abjad_to_mei(abjad_accidental_string):
 def add_xml_id_to_abjad_object_and_mei_element_pair(abjad_object, mei_element):
     if isinstance(abjad_object, NoteHead):
         parent_chord = abjad_object.client
-        print type(parent_chord)
         parentage = inspect(parent_chord).get_parentage()
     else:
         parentage = inspect(abjad_object).get_parentage()

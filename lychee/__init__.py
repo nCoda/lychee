@@ -61,4 +61,6 @@ def log(message, level=None):
     print(message)
 
 
+# many other modules will want to import :mod:`exceptions`, so it should be imported first
+from lychee import exceptions
 from lychee import *

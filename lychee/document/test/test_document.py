@@ -27,15 +27,19 @@ Tests for the :mod:`lychee.document.document` module.
 '''
 
 import unittest
+from unittest import mock
 
 from lxml import etree
 
+from lychee import exceptions
 from lychee.document import document
 
 
 _XMLNS = '{http://www.w3.org/XML/1998/namespace}'
 _XMLID = '{}id'.format(_XMLNS)
 _MEINS = '{http://www.music-encoding.org/ns/mei}'
+_SCORE = '{}score'.format(_MEINS)
+_SECTION = '{}section'.format(_MEINS)
 
 
 class TestSmallThings(unittest.TestCase):
@@ -125,13 +129,37 @@ class TestGetPutSection(unittest.TestCase):
         doc._sections['123'] = 'some section'
         self.assertEqual('some section', doc.get_section('123'))
 
-    def test_get_3(self):
+    @mock.patch('lychee.document.Document.load_everything')
+    def test_get_3(self, mock_load_everything):
         '''
-        When the "id" doesn't exist, the function should return None.
+        When the "id" doesn't exist, see if calling self.load_everything() will load the section.
+        In this case, it does.
+        '''
+        section_id = '888'
+        the_section = 'some section'
+        doc = document.Document()
+        def loader():
+            doc._sections[section_id] = the_section
+        mock_load_everything.side_effect = loader
+        expected = the_section
+
+        actual = doc.get_section(section_id)
+
+        self.assertEqual(expected, actual)
+        mock_load_everything.assert_called_once_with()
+
+    @mock.patch('lychee.document.Document.load_everything')
+    def test_get_4(self, mock_load_everything):
+        '''
+        When the "id" doesn't exist, see if calling self.load_everything() will load the section.
+        In this case, it doesn't, so the function should raise SectionNotFoundError.
         '''
         doc = document.Document()
         doc._sections['123'] = 'some section'
-        self.assertIsNone(doc.get_section('888'))
+        with self.assertRaises(exceptions.SectionNotFoundError) as exc:
+            doc.get_section('888')
+        self.assertEqual(document._SECTION_NOT_FOUND.format(xmlid='888'), exc.exception.args[0])
+        mock_load_everything.assert_called_once_with()
 
     def test_put_1(self):
         '''

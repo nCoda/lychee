@@ -30,10 +30,16 @@ import os.path
 
 from lxml import etree
 
+from lychee import exceptions
+
 
 _XMLNS = '{http://www.w3.org/XML/1998/namespace}'
 _XMLID = '{}id'.format(_XMLNS)
 _MEINS = '{http://www.music-encoding.org/ns/mei}'
+_SCORE = '{}score'.format(_MEINS)
+_SECTION = '{}section'.format(_MEINS)
+
+_SECTION_NOT_FOUND = 'Could not load <section xml:id="{xmlid}">'
 
 
 def _check_xmlid_chars(xmlid):
@@ -124,7 +130,7 @@ class Document(object):
         # the order of <section> elements in the <score>, indicated with @xml:id
         self._score_order = []
 
-    def get_everything(self):
+    def load_everything(self):
         '''
         Load all portions of the MEI document from files. This method effectively caches the
         document in memory for faster access later.
@@ -216,18 +222,28 @@ class Document(object):
         '''
         Load and return a section of the score.
 
-        Returns ``None`` if there is no ``<section>`` with the given ``@xml:id``.
-
         :returns: The section with an ``@xml:id`` matching ``section_id``.
         :rtype: :class:`lxml.etree.Element`
+        :raises: :exc:`lychee.exceptions.SectionNotFoundError` if no ``<section>`` with the
+            specified @xml:id can be found.
+
+        **Side Effects**
+
+        If the section is not found, :meth:`get_section` first tries to load the section with
+        :meth:`load_everything` before failing.
         '''
+
         if section_id.startswith('#'):
             section_id = section_id[1:]
 
         try:
             return self._sections[section_id]
         except KeyError:
-            return None
+            self.load_everything()
+            try:
+                return self._sections[section_id]
+            except KeyError:
+                raise exceptions.SectionNotFoundError(_SECTION_NOT_FOUND.format(xmlid=section_id))
 
     def put_section(self, section_id, new_section):
         '''

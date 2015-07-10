@@ -26,6 +26,8 @@
 Tests for the :mod:`lychee.document.document` module.
 '''
 
+import os
+import os.path
 import unittest
 from unittest import mock
 
@@ -78,10 +80,13 @@ class TestSmallThings(unittest.TestCase):
         '''
         That _make_empty_all_files() works.
         '''
-        # 1.) run the function
+        # 1.) ensure we won't overwrite some file
         test_path = 'test_all_files.mei'
+        if os.path.exists(test_path):
+            raise AssertionError('cannot do this test because {} would be overwritten'.format(test_path))
+        # 2.) run the function
         actual = document._make_empty_all_files(test_path)
-        # 2.) ensure the returned "actual" document is proper
+        # 3.) ensure the returned "actual" document is proper
         self.assertIsInstance(actual, etree._ElementTree)
         root = actual.getroot()
         for i, elem in enumerate([x for x in root.iter()]):
@@ -93,7 +98,7 @@ class TestSmallThings(unittest.TestCase):
                 self.assertEqual('{http://www.music-encoding.org/ns/mei}mei', elem.tag)
             else:
                 raise AssertionError('i should only be 0, 1, or 2 but it was {}'.format(i))
-        # 3.) ensure the saved document is also proper
+        # 4.) ensure the saved document is also proper
         actualFile = etree.parse(test_path)
         self.assertIsInstance(actualFile, etree._ElementTree)
         root = actualFile.getroot()
@@ -106,6 +111,8 @@ class TestSmallThings(unittest.TestCase):
                 self.assertEqual('{http://www.music-encoding.org/ns/mei}mei', elem.tag)
             else:
                 raise AssertionError('i should only be 0, 1, or 2 but it was {}'.format(i))
+        # 5.) delete the test file
+        os.remove(test_path)
 
 
 class TestEnsureScoreOrder(unittest.TestCase):

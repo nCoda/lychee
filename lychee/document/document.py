@@ -90,6 +90,50 @@ def _make_empty_all_files(pathname):
     return tree
 
 
+def _ensure_score_order(score, order):
+    '''
+    Ensure there are <section> elements in ``score`` with the same @xml:id attributes, in the same
+    order, as they appear in ``order``.
+
+    :param score: The <score> element in which to inspect the <section> elements.
+    :type score: :class:`lxml.etree.Element`
+    :param order: List of the expected @xml:id attribute values, in the order desired.
+    :type order: list of str
+    :returns: Whether the desired <section> elements are in the proper order.
+    :rtype: bool
+
+    **Examples**
+
+    >>> score_tag = '{http://www.music-encoding.org/ns/mei}score'
+    >>> section_tag = '{http://www.music-encoding.org/ns/mei}section'
+    >>> xmlid_tag = '{http://www.w3.org/XML/1998/namespace}id'
+    >>> from lxml import etree
+    >>> score = etree.Element(score_tag)
+    >>> score.append(etree.Element(section_tag, attrib={xmlid_tag: '123'}))
+    >>> score.append(etree.Element(section_tag, attrib={xmlid_tag: '456'}))
+    >>> score.append(etree.Element(section_tag, attrib={xmlid_tag: '789'}))
+    >>> _ensure_score_order(score, ['123', '456', '789'])
+    True
+    >>> _ensure_score_order(score, ['123', '789'])
+    False
+    >>> _ensure_score_order(score, ['123', '789', '456'])
+    False
+    >>> _ensure_score_order(score, ['123', '234', '456', '789'])
+    False
+    '''
+
+    sections = [x for x in score.findall('./{}'.format(_SECTION))]
+
+    if len(sections) != len(order):
+        return False
+
+    for i, section in enumerate(sections):
+        if order[i] != section.get(_XMLID):
+            return False
+
+    return True
+
+
 class Document(object):
     '''
     Object representing an MEI document. Use methods prefixed with ``get`` to obtain portions of

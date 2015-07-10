@@ -108,6 +108,75 @@ class TestSmallThings(unittest.TestCase):
                 raise AssertionError('i should only be 0, 1, or 2 but it was {}'.format(i))
 
 
+class TestEnsureScoreOrder(unittest.TestCase):
+    '''
+    Tests for document._ensure_score_order().
+    '''
+
+    def test__ensure_score_order_1(self):
+        '''
+        When the sections are in the expected order.
+        '''
+        score = etree.Element(_SCORE)
+        score.append(etree.Element(_SECTION, attrib={_XMLID: '123'}))
+        score.append(etree.Element(_SECTION, attrib={_XMLID: '456'}))
+        score.append(etree.Element(_SECTION, attrib={_XMLID: '789'}))
+        order = ['123', '456', '789']
+        self.assertTrue(document._ensure_score_order(score, order))
+
+    def test__ensure_score_order_2(self):
+        '''
+        When "score" has more sections than "order" wants.
+        '''
+        score = etree.Element(_SCORE)
+        score.append(etree.Element(_SECTION, attrib={_XMLID: '123'}))
+        score.append(etree.Element(_SECTION, attrib={_XMLID: '456'}))
+        score.append(etree.Element(_SECTION, attrib={_XMLID: '789'}))
+        order = ['123', '789']
+        self.assertFalse(document._ensure_score_order(score, order))
+
+    def test__ensure_score_order_3(self):
+        '''
+        When "score" and "order" are in a different order.
+        '''
+        score = etree.Element(_SCORE)
+        score.append(etree.Element(_SECTION, attrib={_XMLID: '123'}))
+        score.append(etree.Element(_SECTION, attrib={_XMLID: '456'}))
+        score.append(etree.Element(_SECTION, attrib={_XMLID: '789'}))
+        order = ['123', '789', '456']
+        self.assertFalse(document._ensure_score_order(score, order))
+
+    def test__ensure_score_order_4(self):
+        '''
+        When "score" has fewer sections than "order" wants.
+        '''
+        score = etree.Element(_SCORE)
+        score.append(etree.Element(_SECTION, attrib={_XMLID: '123'}))
+        score.append(etree.Element(_SECTION, attrib={_XMLID: '456'}))
+        score.append(etree.Element(_SECTION, attrib={_XMLID: '789'}))
+        order = ['123', '234', '456', '789']
+        self.assertFalse(document._ensure_score_order(score, order))
+
+    def test__ensure_score_order_5(self):
+        '''
+        When "order" has no elements.
+        '''
+        score = etree.Element(_SCORE)
+        score.append(etree.Element(_SECTION, attrib={_XMLID: '123'}))
+        score.append(etree.Element(_SECTION, attrib={_XMLID: '456'}))
+        score.append(etree.Element(_SECTION, attrib={_XMLID: '789'}))
+        order = []
+        self.assertFalse(document._ensure_score_order(score, order))
+
+    def test__ensure_score_order_6(self):
+        '''
+        When "score" has no child elements.
+        '''
+        score = etree.Element(_SCORE)
+        order = ['123', '456', '789']
+        self.assertFalse(document._ensure_score_order(score, order))
+
+
 class TestGetPutSection(unittest.TestCase):
     '''
     Tests for Document.get_section() and Document.put_section().

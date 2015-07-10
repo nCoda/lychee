@@ -282,3 +282,73 @@ class TestGetPutScore(unittest.TestCase):
             self.assertEqual(section_tag, doc._sections[xmlid].tag)
             self.assertEqual(xmlid, doc._sections[xmlid].get(_XMLID))
 
+    @mock.patch('lychee.document.document._ensure_score_order')
+    @mock.patch('lychee.document.Document.get_section')
+    def test_get_1(self, mock_get_section, mock_score_order):
+        '''
+        When self._score is something, and _ensure_score_order() says it's good.
+        '''
+        doc = document.Document()
+        the_score = mock.MagicMock()
+        the_order = [1, 2, 3]
+        doc._score = the_score
+        doc._score_order = the_order
+        mock_score_order.return_value = True
+        expected = the_score
+
+        actual = doc.get_score()
+
+        self.assertEqual(expected, actual)
+        mock_score_order.assert_called_once_with(the_score, the_order)
+        self.assertEqual(0, mock_get_section.call_count)
+
+    @mock.patch('lychee.document.document._ensure_score_order')
+    @mock.patch('lychee.document.Document.get_section')
+    def test_get_2(self, mock_get_section, mock_score_order):
+        '''
+        When self._score is something, and _ensure_score_order() says it's bad.
+        Uses self.get_section() to build a new score.
+        Saves the result in self._score.
+        '''
+        mock_get_section.side_effect = lambda x: etree.Element(x)
+        doc = document.Document()
+        the_score = mock.MagicMock()
+        the_order = ['one', 'two', 'three']
+        doc._score = the_score
+        doc._score_order = the_order
+        mock_score_order.return_value = False
+
+        actual = doc.get_score()
+
+        mock_score_order.assert_called_once_with(the_score, the_order)
+        self.assertEqual(3, mock_get_section.call_count)
+        mock_get_section.assert_any_call('one')
+        mock_get_section.assert_any_call('two')
+        mock_get_section.assert_any_call('three')
+        children = [x for x in actual.findall('*')]
+        self.assertEqual(3, len(children))
+        self.assertEqual('one', children[0].tag)
+        self.assertEqual('two', children[1].tag)
+        self.assertEqual('three', children[2].tag)
+
+    @mock.patch('lychee.document.document._ensure_score_order')
+    @mock.patch('lychee.document.Document.get_section')
+    def test_get_3(self, mock_get_section, mock_score_order):
+        '''
+        When self._score is something, and _ensure_score_order() says it's bad.
+        Uses self.get_section() to build a new score, but it raises SectionNotFoundError.
+        Raises SectionNotFoundError.
+        '''
+        mock_get_section.side_effect = exceptions.SectionNotFoundError
+        doc = document.Document()
+        the_score = mock.MagicMock()
+        the_order = ['one', 'two', 'three']
+        doc._score = the_score
+        doc._score_order = the_order
+        mock_score_order.return_value = False
+
+        with self.assertRaises(exceptions.SectionNotFoundError):
+            doc.get_score()
+
+        mock_score_order.assert_called_once_with(the_score, the_order)
+        mock_get_section.assert_called_once_with('one')

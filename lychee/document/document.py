@@ -172,7 +172,7 @@ class Document(object):
         # the <score> element
         self._score = None
         # the order of <section> elements in the <score>, indicated with @xml:id
-        self._score_order = []
+        self._score_order = []  # TODO: ensure this is loaded when instantiated
 
     def load_everything(self):
         '''
@@ -237,10 +237,24 @@ class Document(object):
         '''
         Load and return the whole score, excluding metadata and "inactive" ``<section>`` elements.
 
-        :returns: A ``<music>`` element.
+        :returns: A ``<score>`` element with relevant ``<section>`` elements in the proper order.
         :rtype: :class:`lxml.etree.Element`
+        :raises: :exc:`lychee.exceptions.SectionNotFoundError` if one or more of the ``<section>``
+            elements require for the ``<score>`` cannot be found.
+
+        **Side Effect**
+
+        Caches the returned ``<score>`` for later access.
         '''
-        raise NotImplementedError()
+
+        if self._score is not None and _ensure_score_order(self._score, self._score_order):
+            return self._score
+        else:
+            score = etree.Element('{}score'.format(_MEINS))
+            for xmlid in self._score_order:
+                score.append(self.get_section(xmlid))
+            self._score = score
+            return score
 
     def put_score(self, new_music):
         '''

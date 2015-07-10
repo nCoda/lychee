@@ -44,19 +44,25 @@ Converts an MEI document to an Abjad document.
 
 
 from lxml import etree as ETree
+from abjad import *
+from abjad.tools.scoretools.NoteHead import NoteHead
 
+'''
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
+from abjad.tools.durationtools.Multiplier import Multiplier
+from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.scoretools.Voice import Voice
 from abjad.tools.scoretools.Staff import Staff
 from abjad.tools.scoretools.Score import Score
 from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.durationtools.Duration import Duration
+'''
 
-import lychee
-from lychee.signals import outbound
+#import lychee
+#from lychee.signals import outbound
 
 
 def convert(document, **kwargs):
@@ -110,7 +116,6 @@ def append_accidental(mei_note):
             if accid != 'n':
                 return convert_accidental_mei_to_abjad(accid)
     return ''
-        
         
 def make_abjad_note_from_string(the_string,mei_note):
      #append the duration
@@ -207,9 +212,10 @@ def mei_section_to_abjad_score(mei_section):
     if len(mei_section) == 0:
         return Score()
     abjad_score = Score()
-    scoreDef = mei_section[0]
+    score_def = mei_section[0]
+    mei_global_staff_group = score_def[0]
     staffs = mei_section[1:]
-    for element in scoreDef:
+    for element in mei_global_staff_group:
         if element.tag == 'staffDef':
             staff_index = int(element.get('n')) - 1
             abjad_staff = mei_staff_to_abjad_staff(staffs[staff_index])
@@ -221,4 +227,47 @@ def mei_section_to_abjad_score(mei_section):
                 abjad_staff_group.append(mei_staff_to_abjad_staff(staffs[staff_index]))
             abjad_score.append(abjad_staff_group)
     return abjad_score
-            
+
+'''
+def tupletspan_element_to_empty_tuplet(mei_tupletspan):
+        numerator = mei_tupletspan.get('num')
+        duration = mei_tupletspan.get('dur')
+        if numerator != None:
+            denominator = mei_tupletspan.get('num')
+            multiplier = Multiplier(numerator, denominator)
+            return Tuplet(multiplier, [])
+        if duration != None:
+            dots = mei_tupletspan.get('dots')
+            dur_string = duration
+            if dots != None:
+                for x in range(int(dots)):
+                    dur_string += '.'
+            duration = Duration()
+            duration.from_lilypond_duration_string(dur_string)
+            return FixedDurationTuplet(duration, [])
+
+
+def mei_tupletspan_to_abjad_tuplet(mei_tupletspan):
+    if isinstance(mei_tupletspan, list):
+        # list beginning with tuplet span and continuing with spanned Elements
+        #set up the outermost tuplet and components list
+        mei_outermost_tuplet = tupletspan_element_to_empty_tuplet(mei_tupletspan[0])
+        tuplet_components = []
+        for x,element in enumerate(mei_tupletspan[1:]):
+            #iterate through the list; if you hit a tuplet, recurse
+            if element.tag == 'tupletspan':
+                recursion_list = [element]
+                plist = element.get('plist').split()
+                end_index = x + len(plist) + 1
+                recursion_list.extend(mei_tupletspan[x:end_index])
+                a_tuplet = mei_tupletspan_to_abjad_tuplet(recursion_list)
+                tuplet_components.append(a_tuplet)
+            else:
+                #convert the element and add it to the list
+                mei_element = mei_element_to_abjad_leaf(element)
+                tuplet_components.append(mei_element)
+        mei_outermost_tuplet.extend(tuplet_components)
+        return mei_outermost_tuplet
+    elif isinstance(mei_tupletspan, ETree._Element): 
+        return tupletspan_element_to_empty_tuplet(mei_tupletspan)
+'''

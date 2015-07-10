@@ -4,10 +4,13 @@ from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
 from abjad.tools.scoretools.NoteHead import NoteHead
+from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
+from abjad.tools.scoretools.Tuplet import Tuplet
 from abjad.tools.scoretools.Voice import Voice
 from abjad.tools.scoretools.Staff import Staff
 from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.scoretools.Score import Score
+from abjad.tools.topleveltools import *
 import abjad_to_mei
 import unittest
 import abjad_test_case
@@ -114,7 +117,6 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         mei_note = abjad_to_mei.abjad_note_to_mei_note(head)
         self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
         self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'octave': '4'})
-        self.assertIsNotNone(mei_note.get(_XMLNS))
     
     def test_notehead_cautionary(self):
         '''
@@ -130,7 +132,6 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(accid.tag, '{}accid'.format(_MEINS))
         self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
         self.assertAttribsEqual(accid.attrib, {'accid': 'n', 'func': 'cautionary'})
-        self.assertIsNotNone(mei_note.get(_XMLNS))
     
     def test_notehead_forced(self):
         head = NoteHead("c'")
@@ -138,7 +139,6 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         mei_note = abjad_to_mei.abjad_note_to_mei_note(head)
         self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
         self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'octave': '4', 'accid.ges': 'n', 'accid': 'n'})
-        self.assertIsNotNone(mei_note.get(_XMLNS))
         
     def test_notehead_accid(self):
         '''
@@ -149,7 +149,6 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         mei_note = abjad_to_mei.abjad_note_to_mei_note(head)
         self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
         self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'octave': '4', 'accid.ges': 'f'})
-        self.assertIsNotNone(mei_note.get(_XMLNS))
         
     def test_notehead_accid_cautionary(self):
         '''
@@ -165,7 +164,6 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(accid.tag, '{}accid'.format(_MEINS))
         self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
         self.assertAttribsEqual(accid.attrib, {'accid': 'f', 'func': 'cautionary'})
-        self.assertIsNotNone(mei_note.get(_XMLNS))
         
     def test_notehead_accid_forced(self):
         head = NoteHead("cf'")
@@ -173,7 +171,6 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         mei_note = abjad_to_mei.abjad_note_to_mei_note(head)
         self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
         self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'octave': '4', 'accid.ges': 'f', 'accid': 'f'})
-        self.assertIsNotNone(mei_note.get(_XMLNS))
     
     def test_rest(self):
         '''
@@ -550,21 +547,23 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         
         self.assertEqual(mei_section.tag, '{}section'.format(_MEINS))
         self.assertEqual(len(mei_section), 5)
-        self.assertEqual(len(mei_section[0]), 3)
         self.assertEqual(mei_section[0].tag, '{}scoreDef'.format(_MEINS))
-        self.assertEqual(mei_section[0][0].tag, '{}staffDef'.format(_MEINS))
-        self.assertEqual(mei_section[0][0].get('lines'), '5')
-        self.assertEqual(mei_section[0][0].get('n'), '1')
-        self.assertEqual(mei_section[0][1].tag, '{}staffGrp'.format(_MEINS))
-        self.assertEqual(mei_section[0][1][0].tag, '{}staffDef'.format(_MEINS))
-        self.assertEqual(mei_section[0][1][0].get('lines'), '5')
-        self.assertEqual(mei_section[0][1][0].get('n'), '2')
-        self.assertEqual(mei_section[0][1][1].tag, '{}staffDef'.format(_MEINS))
-        self.assertEqual(mei_section[0][1][1].get('n'), '3')
-        self.assertEqual(mei_section[0][1][1].get('lines'), '5')
-        self.assertEqual(mei_section[0][2].tag, '{}staffDef'.format(_MEINS))
-        self.assertEqual(mei_section[0][2].get('n'), '4')
-        self.assertEqual(mei_section[0][2].get('lines'), '5')
+        self.assertEqual(len(mei_section[0]), 1)
+        self.assertEqual(mei_section[0][0].tag, '{}staffGrp'.format(_MEINS))
+        self.assertEqual(len(mei_section[0][0]), 3)
+        self.assertEqual(mei_section[0][0][0].tag, '{}staffDef'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][0].get('lines'), '5')
+        self.assertEqual(mei_section[0][0][0].get('n'), '1')
+        self.assertEqual(mei_section[0][0][1].tag, '{}staffGrp'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][1][0].tag, '{}staffDef'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][1][0].get('lines'), '5')
+        self.assertEqual(mei_section[0][0][1][0].get('n'), '2')
+        self.assertEqual(mei_section[0][0][1][1].tag, '{}staffDef'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][1][1].get('n'), '3')
+        self.assertEqual(mei_section[0][0][1][1].get('lines'), '5')
+        self.assertEqual(mei_section[0][0][2].tag, '{}staffDef'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][2].get('n'), '4')
+        self.assertEqual(mei_section[0][0][2].get('lines'), '5')
         for x in range(1,5):
             self.assertEqual(mei_section[x].tag, '{}staff'.format(_MEINS))
             self.assertEqual(mei_section[x].get('n'), str(x))
@@ -588,24 +587,24 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         
         self.assertEqual(mei_section.tag, '{}section'.format(_MEINS))
         self.assertEqual(len(mei_section), 5)
-        self.assertEqual(len(mei_section[0]), 3)
         self.assertEqual(mei_section[0].tag, '{}scoreDef'.format(_MEINS))
-        self.assertEqual(mei_section[0][0].tag, '{}staffDef'.format(_MEINS))
-        self.assertEqual(mei_section[0][0].get('lines'), '5')
-        self.assertEqual(mei_section[0][0].get('n'), '1')
-        self.assertEqual(mei_section[0][1].tag, '{}staffGrp'.format(_MEINS))
-        self.assertEqual(mei_section[0][1][0].tag, '{}staffDef'.format(_MEINS))
-        self.assertEqual(mei_section[0][1][0].get('lines'), '5')
-        self.assertEqual(mei_section[0][1][0].get('n'), '2')
-        self.assertEqual(mei_section[0][1][1].tag, '{}staffDef'.format(_MEINS))
-        self.assertEqual(mei_section[0][1][1].get('n'), '3')
-        self.assertEqual(mei_section[0][1][1].get('lines'), '5')
-        self.assertEqual(mei_section[0][2].tag, '{}staffDef'.format(_MEINS))
-        self.assertEqual(mei_section[0][2].get('n'), '4')
-        self.assertEqual(mei_section[0][2].get('lines'), '5')
+        self.assertEqual(len(mei_section[0]), 1)
+        self.assertEqual(mei_section[0][0].tag, '{}staffGrp'.format(_MEINS))
+        self.assertEqual(len(mei_section[0][0]), 3)
+        self.assertEqual(mei_section[0][0][0].tag, '{}staffDef'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][0].get('lines'), '5')
+        self.assertEqual(mei_section[0][0][0].get('n'), '1')
+        self.assertEqual(mei_section[0][0][1].tag, '{}staffGrp'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][1][0].tag, '{}staffDef'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][1][0].get('lines'), '5')
+        self.assertEqual(mei_section[0][0][1][0].get('n'), '2')
+        self.assertEqual(mei_section[0][0][1][1].tag, '{}staffDef'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][1][1].get('n'), '3')
+        self.assertEqual(mei_section[0][0][1][1].get('lines'), '5')
+        self.assertEqual(mei_section[0][0][2].tag, '{}staffDef'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][2].get('n'), '4')
+        self.assertEqual(mei_section[0][0][2].get('lines'), '5')
         for x in range(1,5):
             self.assertEqual(mei_section[x].tag, '{}staff'.format(_MEINS))
             self.assertEqual(mei_section[x].get('n'), str(x))
         self.assertIsNotNone(mei_section.get(_XMLNS))
-        
-        

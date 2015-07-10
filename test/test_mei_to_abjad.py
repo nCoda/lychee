@@ -3,14 +3,22 @@ from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
 from abjad.tools.scoretools.NoteHead import NoteHead
+from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
+from abjad.tools.scoretools.Tuplet import Tuplet
 from abjad.tools.scoretools.Voice import Voice
 from abjad.tools.scoretools.Staff import Staff
 from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.scoretools.Score import Score
+from abjad.tools.durationtools.Duration import Duration
+from abjad.tools.durationtools.Multiplier import Multiplier
 import mei_to_abjad
 import abjad_test_case
 import mock
 import unittest
+
+_MEINS = '{http://www.music-encoding.org/ns/mei}'
+_XMLNS = '{http://www.w3.org/XML/1998/namespace}id'
+ETree.register_namespace('mei', _MEINS[1:-1])
 
 try:
     from xml.etree import cElementTree as ETree
@@ -362,7 +370,8 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         '''
         mei_section = ETree.Element('section', n='1')
         mei_score_def = ETree.Element('scoreDef', n='1')
-        mei_staff_grp = ETree.Element('staffGrp', n='1')
+        main_staff_grp = ETree.Element('staffGrp', n='1')
+        contained_mei_staff_grp = ETree.Element('staffGrp', n='1')
         mei_staffs = []
         mei_staff_defs = []
         for x in range(4):
@@ -370,10 +379,11 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         for x in range(4):
             mei_staffs.append( ETree.Element('staff',n=str(x + 1)))
         mei_section.append(mei_score_def)
-        mei_score_def.append(mei_staff_defs[0])
-        mei_score_def.append(mei_staff_grp)
-        mei_staff_grp.extend(mei_staff_defs[1:3])
-        mei_score_def.append(mei_staff_defs[3])
+        mei_score_def.append(main_staff_grp)
+        main_staff_grp.append(mei_staff_defs[0])
+        main_staff_grp.append(contained_mei_staff_grp)
+        contained_mei_staff_grp.extend(mei_staff_defs[1:3])
+        main_staff_grp.append(mei_staff_defs[3])
         mei_section.extend(mei_staffs)
         
         abjad_score = mei_to_abjad.mei_section_to_abjad_score(mei_section)
@@ -399,7 +409,8 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         '''
         mei_section = ETree.Element('section', n='1')
         mei_score_def = ETree.Element('scoreDef', n='1')
-        mei_staff_grp = ETree.Element('staffGrp', n='1')
+        main_staff_grp = ETree.Element('staffGrp', n='1')
+        contained_mei_staff_grp = ETree.Element('staffGrp', n='1')
         mei_staffs = []
         mei_staff_defs = []
         for x in range(4):
@@ -407,10 +418,11 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         for x in range(4):
             mei_staffs.append( ETree.Element('staff',n=str(x + 1)))
         mei_section.append(mei_score_def)
-        mei_score_def.append(mei_staff_defs[0])
-        mei_score_def.append(mei_staff_grp)
-        mei_staff_grp.extend(mei_staff_defs[1:3])
-        mei_score_def.append(mei_staff_defs[3])
+        mei_score_def.append(main_staff_grp)
+        main_staff_grp.append(mei_staff_defs[0])
+        main_staff_grp.append(contained_mei_staff_grp)
+        contained_mei_staff_grp.extend(mei_staff_defs[1:3])
+        main_staff_grp.append(mei_staff_defs[3])
         mei_section.extend(mei_staffs)
         mock_staff.side_effect = lambda x: Staff()
         
@@ -427,4 +439,3 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(isinstance(abjad_score[1], StaffGroup), True)
         self.assertEqual(isinstance(abjad_score[2], Staff), True)
         self.assertEqual(len(abjad_score[1]), 2)
-        

@@ -21,13 +21,14 @@ class AbjadTestCase(unittest.TestCase):
     def assertAttribsEqual(self, with_id_dict, without_id_dict):
         with_id_dict = dict(with_id_dict)
         without_id_dict = dict(without_id_dict)
+        with_id_dict_xml_id = with_id_dict.get('{http://www.w3.org/XML/1998/namespace}id', None)
+        without_id_dict_xml_id = without_id_dict.get('{http://www.w3.org/XML/1998/namespace}id', None)
         if isinstance(with_id_dict, dict):
             if type(with_id_dict) != type(without_id_dict):
                 raise AssertionError(SAME_CLASS_ERROR)
-            elif not with_id_dict['{http://www.w3.org/XML/1998/namespace}id']:
-                raise AssertionError("First Element lacks an xml id.")
         with_id_copy = with_id_dict.copy()
-        del(with_id_copy['{http://www.w3.org/XML/1998/namespace}id'])
+        if with_id_dict_xml_id:
+            del(with_id_copy['{http://www.w3.org/XML/1998/namespace}id'])
         self.assertEqual(with_id_copy, without_id_dict)
             
             

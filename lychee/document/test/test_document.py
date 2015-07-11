@@ -134,6 +134,40 @@ class TestSmallThings(unittest.TestCase):
         # 4.) ensure the saved document is also proper
         self.assertFalse(os.path.exists('None'))
 
+    def test__save_out_1(self):
+        '''
+        Given an ElementTree, it just saves it.
+        '''
+        tree = mock.MagicMock(spec_set=etree._ElementTree)
+        to_here = 'whatever.mei'
+        document._save_out(tree, to_here)
+        tree.write.assert_called_once_with(to_here, encoding='UTF-8', xml_declaration=True,
+                                           pretty_print=True)
+
+    @mock.patch('lychee.document.document.etree.ElementTree')
+    def test__save_out_2(self, mock_etree):
+        '''
+        Given an Element, it's turned into an ElementTree and saved.
+        '''
+        tree = mock.MagicMock(spec_set=etree._ElementTree)
+        mock_etree.return_value = tree
+        to_here = 'whatever.mei'
+        elem = mock.MagicMock(spec_set=etree._Element)
+        document._save_out(elem, to_here)
+        mock_etree.assert_called_once_with(elem)
+        tree.write.assert_called_once_with(to_here, encoding='UTF-8', xml_declaration=True,
+                                           pretty_print=True)
+
+    def test__save_out_3(self):
+        '''
+        Do it for real (no mocks)!
+        '''
+        elem = etree.Element('something')
+        tempdir = tempfile.TemporaryDirectory()
+        to_here = os.path.join(tempdir.name, 'something.mei')
+        document._save_out(elem, to_here)
+        self.assertTrue(os.path.exists(to_here))
+
 
 class TestEnsureScoreOrder(unittest.TestCase):
     '''

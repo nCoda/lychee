@@ -139,6 +139,21 @@ def _ensure_score_order(score, order):
     return True
 
 
+def _save_out(this, to_here):
+    '''
+    Take ``this`` :class:`Element` or :class:`ElementTree` and save ``to_here``.
+
+    :param this: An element (tree) to save to a file.
+    :type this: :class:`lxml.etree.Element` or :class:`lxml.etree.ElementTree`
+    :param str to_here: The pathname in which to save the file.
+    :returns: ``None``
+    :raises: :exc:`OSError` if something messes up
+    '''
+    if isinstance(this, etree._Element):
+        this = etree.ElementTree(this)
+    this.write(to_here, encoding='UTF-8', xml_declaration=True, pretty_print=True)
+
+
 class Document(object):
     '''
     Object representing an MEI document. Use methods prefixed with ``get`` to obtain portions of

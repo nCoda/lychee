@@ -141,29 +141,37 @@ def _ensure_score_order(score, order):
 class Document(object):
     '''
     Object representing an MEI document. Use methods prefixed with ``get`` to obtain portions of
-    the document, automatically loading from files if required. Use methods preifxed with ``put``
+    the document, automatically loading from files if required. Use methods prefixed with ``put``
     to submit a new portion to *replace* the existing portion outright.
+
+    If you do not provide a ``repository_path`` argument to the initialization method, no files will
+    be written. Additionally, the :meth:`save_everything` method therefore will not work, and all
+    :meth:`get_` methods will not return useful data until they have been given data.
+
+    .. note:: When you use a :meth:`put_` method, the element(s) replace those already present in
+        this :class:`Document` instance, but they will not be written to the document's directory
+        until you call :meth:`save_everything`.
     '''
 
-    def __init__(self, repository_path, **kwargs):
+    def __init__(self, repository_path=None, **kwargs):
         '''
-        In the future, :class:`Document` may support a mode that does not write files. For now,
-        users who wish for impermanence are recommended to use :mod:`tempfile` to provide a
-        temporary directory.
-
         :param str repository_path: Path to a directory in which the files for this :class:`Document`
-            are or will be stored.
+            are or will be stored. The default of ``None`` will not save any files.
         '''
 
         # path to the Mercurial repository directory
         self._repo_path = repository_path
 
         # file that indicates the other files in this repository
-        self._all_files_path = os.path.join(self._repo_path, 'all_files.mei')
-        if os.path.exists(self._all_files_path):
-            self._all_files = etree.parse(self._all_files_path)
+        self._all_files_path = None
+        if self._repo_path is None:
+            self._all_files = _make_empty_all_files(None)
         else:
-            self._all_files = _make_empty_all_files(self._all_files_path)
+            self._all_files_path = os.path.join(self._repo_path, 'all_files.mei')
+            if os.path.exists(self._all_files_path):
+                self._all_files = etree.parse(self._all_files_path)
+            else:
+                self._all_files = _make_empty_all_files(self._all_files_path)
 
         # @xml:id to the <section> with that id
         self._sections = {}

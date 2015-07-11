@@ -243,6 +243,21 @@ class TestDocumentInit(unittest.TestCase):
         self.assertEqual([], doc._score_order)
         self.assertIsNone(doc._head)
 
+    def test_init_3(self):
+        '''
+        Repository is None. _make_empty_all_files() is called to create a new "all_files.mei" file.
+        Instance variables are initialized as expected.
+        '''
+        with mock.patch('lychee.document.document._make_empty_all_files') as mock_meaf:
+            mock_meaf.return_value = 'five'
+            doc = document.Document(None)
+        mock_meaf.assert_called_once_with(None)
+        self.assertEqual('five', doc._all_files)
+        self.assertEqual({}, doc._sections)
+        self.assertIsNone(doc._score)
+        self.assertEqual([], doc._score_order)
+        self.assertIsNone(doc._head)
+
 
 class DocumentTestCase(unittest.TestCase):
     '''

@@ -46,3 +46,9 @@ class SectionNotFoundError(DocumentError):
     Error indicating a <section> with a particular @xml:id attribute is needed but can't be found.
     '''
     pass
+
+class HeaderNotFoundError(DocumentError):
+    '''
+    Error indicating the <meiHead> section is needed but can't be found.
+    '''
+    pass

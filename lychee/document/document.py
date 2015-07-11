@@ -40,6 +40,8 @@ _SCORE = '{}score'.format(_MEINS)
 _SECTION = '{}section'.format(_MEINS)
 
 _SECTION_NOT_FOUND = 'Could not load <section xml:id="{xmlid}">'
+_ERR_MISSING_MEIHEAD = 'missing <meiHead> element in "all_files"'
+_ERR_FAILED_LOADING_MEIHEAD = 'failed to load <meiHead> file'
 
 
 def _check_xmlid_chars(xmlid):
@@ -197,10 +199,33 @@ class Document(object):
         '''
         Load and return the MEI header metadata.
 
-        :returns: The ``<head>`` portion of the MEI document.
+        :returns: The ``<meiHead>`` portion of the MEI document.
         :rtype: :class:`lxml.etree.Element`
+        :raises: :exc:`lychee.exceptions.HeaderNotFoundError` if the ``<meiHead>`` element is
+            missing or it contains a ``<ptr>`` without a @target attribute
         '''
-        raise NotImplementedError()
+
+        # if self._head hasn't been loaded/created, we'll do that now
+        if self._head is None:
+            # make sure "_all_files" contains an <meiHead>
+            mei_head = self._all_files.find('./{}meiHead'.format(_MEINS))
+            if mei_head is None:
+                raise exceptions.HeaderNotFoundError(_ERR_MISSING_MEIHEAD)
+
+            # see if there's a <ptr> in the <meiHead>
+            ptr = mei_head.find('./{}ptr[@targettype="head"]'.format(_MEINS))
+            if ptr is None:
+                # the Document's probably empty; we'll return the <meiHead> we have, and put_head()
+                # can save it with a <ptr> later
+                self._head = mei_head
+            else:
+                # otherwise we can load the file specified in the <ptr>
+                try:
+                    self._head = etree.parse(ptr.get('target', default='')).getroot()
+                except OSError:
+                    raise exceptions.HeaderNotFoundError(_ERR_FAILED_LOADING_MEIHEAD)
+
+        return self._head
 
     def put_head(self, new_head):
         '''

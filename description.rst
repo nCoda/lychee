@@ -171,15 +171,18 @@ Lychee-MEI shall maintain a file called ``all_files.mei`` in which cross-referen
 to all other MEI files in the repository. These cross-references shall use the ``<ptr>`` element.
 
 - the @target attribute holds a URL to the other file, relative to ``all_files.mei``
-- @targettype may be ``"section"``, ``"score"``, ``"ui"``, or ``"metadata"``, as appropriate
+- @targettype may be ``"section"``, ``"score"``, ``"ui"``, or ``"head"``, as appropriate
 - @xlink:actuate shall be ``"onRequest"``
 - @xlink:show shall be ``"embed"``
 
 <meiCorpus>
-    <meiHead></meiHead>
+    <meiHead>
+        <ptr targettype="head" target="meihead.xml" xlink:actuate="onRequest" xlink:show="embed"/>
+    </meiHead>
     <mei>
-        <ptr/>
-        <ptr/>
+        <ptr targettype="score" target="score.xml" xlink:actuate="onRequest" xlink:show="embed"/>
+        <ptr targettype="section" target="Sme-s-m-l-e4837298.mei" xlink:actuate="onRequest" xlink:show="embed"/>
+        <ptr targettype="section" target="Sme-s-m-l-e9376275.mei" xlink:actuate="onRequest" xlink:show="embed"/>
         ...
     </mei>
 </meiCorpus>

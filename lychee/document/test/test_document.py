@@ -241,6 +241,88 @@ class DocumentTestCase(unittest.TestCase):
         self.doc = document.Document(self.repo_dir)
 
 
+class TestGetPutHead(DocumentTestCase):
+    '''
+    Tests for Document.get_head() and Document.put_head().
+    '''
+
+    def test_get_1(self):
+        '''
+        Preconditions:
+        - self._head has an Element
+        Postconditions:
+        - it's returned
+        '''
+        mei_head = etree.Element('{}meiHead'.format(_MEINS))
+        self.doc._head = mei_head
+        self.assertTrue(mei_head is self.doc.get_head())
+
+    def test_get_2(self):
+        '''
+        Preconditions:
+        - self._head missing
+        - self._all_files has no <meiHead>
+        Postconditions:
+        - method raises exception
+        '''
+        self.doc._all_files = etree.Element('{}meiCorpus'.format(_MEINS))
+        with self.assertRaises(exceptions.HeaderNotFoundError) as hnferr:
+            self.doc.get_head()
+        self.assertEqual(document._ERR_MISSING_MEIHEAD, hnferr.exception.args[0])
+
+    def test_get_3(self):
+        '''
+        Preconditions:
+        - self._head missing
+        - _all_files has <meiHead> without <ptr>
+        Postconditions:
+        - the <meiHead> is cached
+        - the <meiHead> is returned
+        '''
+        exp_mei_head = self.doc._all_files.find('./{}meiHead'.format(_MEINS))
+        actual = self.doc.get_head()
+        self.assertTrue(exp_mei_head is actual)
+        self.assertTrue(exp_mei_head is self.doc._head)
+
+    def test_get_4(self):
+        '''
+        Preconditions:
+        - self._head missing
+        - _all_files has <meiHead> with <ptr>
+        - try to load the file and it works
+        Postconditions:
+        - the <meiHead> is cached
+        - the <meiHead> is returned
+        '''
+        # @ident is a marker to ensure Document.get_head() loads from the file
+        mei_head = etree.Element('{}meiHead'.format(_MEINS), attrib={'ident': '42'})
+        mei_head = etree.ElementTree(mei_head)
+        head_pathname = os.path.join(self.repo_dir, 'meiHead.mei')
+        mei_head.write_c14n(head_pathname, exclusive=False, inclusive_ns_prefixes=['mei'])
+        doc_mei_head = self.doc._all_files.find('./{}meiHead'.format(_MEINS))
+        doc_mei_head.append(etree.Element('{}ptr'.format(_MEINS),
+                                          attrib={'targettype': 'head', 'target': head_pathname}))
+        actual = self.doc.get_head()
+        self.assertIsInstance(actual, etree._Element)
+        self.assertEqual('42', actual.get('ident'))
+
+    def test_get_5(self):
+        '''
+        Preconditions:
+        - self._head missing
+        - _all_files has <meiHead> with <ptr>
+        - try to load the file but it fails
+        Postconditions:
+        - method raises exception
+        '''
+        exp_mei_head = self.doc._all_files.find('./{}meiHead'.format(_MEINS))
+        exp_mei_head.append(etree.Element('{}ptr'.format(_MEINS),
+                                          attrib={'targettype': 'head', 'target': 'noexista.mei'}))
+        with self.assertRaises(exceptions.HeaderNotFoundError) as hnferr:
+            self.doc.get_head()
+        self.assertEqual(document._ERR_FAILED_LOADING_MEIHEAD, hnferr.exception.args[0])
+
+
 class TestGetPutSection(DocumentTestCase):
     '''
     Tests for Document.get_section() and Document.put_section().

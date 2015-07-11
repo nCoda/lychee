@@ -76,14 +76,13 @@ class TestSmallThings(unittest.TestCase):
         '''
         self.assertEqual(12, document._set_default({'a': 12}, 'a', 42))
 
-    def test__make_empty_all_files(self):
+    def test__make_empty_all_files_1(self):
         '''
-        That _make_empty_all_files() works.
+        That _make_empty_all_files() works when a pathname is given.
         '''
-        # 1.) ensure we won't overwrite some file
-        test_path = 'test_all_files.mei'
-        if os.path.exists(test_path):
-            raise AssertionError('cannot do this test because {} would be overwritten'.format(test_path))
+        # 1.) get a temporary file
+        temp_dir = tempfile.TemporaryDirectory()
+        test_path = os.path.join(temp_dir.name, 'test_all_files.mei')
         # 2.) run the function
         actual = document._make_empty_all_files(test_path)
         # 3.) ensure the returned "actual" document is proper
@@ -111,8 +110,29 @@ class TestSmallThings(unittest.TestCase):
                 self.assertEqual('{http://www.music-encoding.org/ns/mei}mei', elem.tag)
             else:
                 raise AssertionError('i should only be 0, 1, or 2 but it was {}'.format(i))
-        # 5.) delete the test file
-        os.remove(test_path)
+
+    def test__make_empty_all_files_2(self):
+        '''
+        That _make_empty_all_files() works when the pathname is "None."
+        '''
+        # 1.) get a temporary file
+        test_path = None
+        # 2.) run the function
+        actual = document._make_empty_all_files(test_path)
+        # 3.) ensure the returned "actual" document is proper
+        self.assertIsInstance(actual, etree._ElementTree)
+        root = actual.getroot()
+        for i, elem in enumerate([x for x in root.iter()]):
+            if 0 == i:
+                self.assertEqual('{http://www.music-encoding.org/ns/mei}meiCorpus', elem.tag)
+            elif 1 == i:
+                self.assertEqual('{http://www.music-encoding.org/ns/mei}meiHead', elem.tag)
+            elif 2 == i:
+                self.assertEqual('{http://www.music-encoding.org/ns/mei}mei', elem.tag)
+            else:
+                raise AssertionError('i should only be 0, 1, or 2 but it was {}'.format(i))
+        # 4.) ensure the saved document is also proper
+        self.assertFalse(os.path.exists('None'))
 
 
 class TestEnsureScoreOrder(unittest.TestCase):

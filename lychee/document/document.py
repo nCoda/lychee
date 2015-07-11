@@ -81,6 +81,7 @@ def _make_empty_all_files(pathname):
     other files in this repository.
 
     :param str pathname: The pathname to use for the file---must include the "all_files.mei" part.
+        If ``pathname`` is ``None``, the file will not be saved.
     :returns: The XML document produced.
     :rtype: :class:`lxml.etree.ElementTree`
     '''
@@ -88,7 +89,8 @@ def _make_empty_all_files(pathname):
     root.append(etree.Element('{}meiHead'.format(_MEINS)))
     root.append(etree.Element('{}mei'.format(_MEINS)))
     tree = etree.ElementTree(root)
-    tree.write_c14n(pathname, exclusive=False, inclusive_ns_prefixes=['mei'])
+    if pathname is not None:
+        tree.write_c14n(pathname, exclusive=False, inclusive_ns_prefixes=['mei'])
     return tree
 
 

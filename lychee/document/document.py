@@ -141,38 +141,34 @@ class Document(object):
     to submit a new portion to *replace* the existing portion outright.
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self, repository_path, **kwargs):
         '''
-        The initialization method accepts no arguments.
+        In the future, :class:`Document` may support a mode that does not write files. For now,
+        users who wish for impermanence are recommended to use :mod:`tempfile` to provide a
+        temporary directory.
 
-        :kwarg str repository_pathname: The pathname, relative or absolute, to where the Lychee-MEI
-            files are stored. Default is "testrepo."
+        :param str repository_path: Path to a directory in which the files for this :class:`Document`
+            are or will be stored.
         '''
-        # TODO: tests for this method
 
         # path to the Mercurial repository directory
-        self.repository_pathname = _set_default(kwargs, 'repository_pathname', 'testrepo')
+        self._repo_path = repository_path
 
         # file that indicates the other files in this repository
-        #self._all_files_file = os.path.join(self.repository_pathname, 'all_files.mei')
-        #if os.path.exists(self._all_files_file):
-            #self._all_files = etree.parse(self._all_files_file)
-        #else:
-            #self._all_files = _make_empty_all_files(self._all_files_file)
+        self._all_files_path = os.path.join(self._repo_path, 'all_files.mei')
+        if os.path.exists(self._all_files_path):
+            self._all_files = etree.parse(self._all_files_path)
+        else:
+            self._all_files = _make_empty_all_files(self._all_files_path)
 
-        # TODO: the "metadata" file
-
-        # files that hold MEI <section> elements; @xml:id to Element
-        # TODO: this bit is questionably working
+        # @xml:id to the <section> with that id
         self._sections = {}
-        #for pointer in self._all_files.findall('.//ptr[@targettype="section"]'):
-            #section = etree.parse(pointer.get('target')).getroot()
-            #self._sections[section.get('xml:id')] = section
-
         # the <score> element
         self._score = None
         # the order of <section> elements in the <score>, indicated with @xml:id
-        self._score_order = []  # TODO: ensure this is loaded when instantiated
+        self._score_order = []
+        # the <meiHead> element
+        self._head = None
 
     def load_everything(self):
         '''

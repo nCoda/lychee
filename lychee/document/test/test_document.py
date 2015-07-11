@@ -28,6 +28,7 @@ Tests for the :mod:`lychee.document.document` module.
 
 import os
 import os.path
+import tempfile
 import unittest
 from unittest import mock
 
@@ -113,6 +114,46 @@ class TestSmallThings(unittest.TestCase):
                 raise AssertionError('i should only be 0, 1, or 2 but it was {}'.format(i))
         # 5.) delete the test file
         os.remove(test_path)
+
+
+class TestDocumentInit(unittest.TestCase):
+    '''
+    Tests for document.Document.__init__().
+    '''
+
+    def test_init_1(self):
+        '''
+        Repository already has an "all_files.mei" file. It's loaded properly. Instance variables are
+        initialized as expected.
+        '''
+        repo_dir = tempfile.TemporaryDirectory()
+        all_files_path = os.path.join(repo_dir.name, 'all_files.mei')
+        document._make_empty_all_files(all_files_path)
+        with mock.patch('lychee.document.document._make_empty_all_files') as mock_meaf:
+            doc = document.Document(repo_dir.name)
+        self.assertEqual(0, mock_meaf.call_count)
+        self.assertIsInstance(doc._all_files, etree._ElementTree)
+        self.assertEqual({}, doc._sections)
+        self.assertIsNone(doc._score)
+        self.assertEqual([], doc._score_order)
+        self.assertIsNone(doc._head)
+
+    def test_init_2(self):
+        '''
+        Repository is empty. _make_empty_all_files() is called to create a new "all_files.mei" file.
+        Instance variables are initialized as expected.
+        '''
+        repo_dir = tempfile.TemporaryDirectory()
+        all_files_path = os.path.join(repo_dir.name, 'all_files.mei')
+        with mock.patch('lychee.document.document._make_empty_all_files') as mock_meaf:
+            mock_meaf.return_value = 'five'
+            doc = document.Document(repo_dir.name)
+        mock_meaf.assert_called_once_with(all_files_path)
+        self.assertEqual('five', doc._all_files)
+        self.assertEqual({}, doc._sections)
+        self.assertIsNone(doc._score)
+        self.assertEqual([], doc._score_order)
+        self.assertIsNone(doc._head)
 
 
 class TestEnsureScoreOrder(unittest.TestCase):

@@ -35,6 +35,7 @@ from lychee import exceptions
 
 _XMLNS = '{http://www.w3.org/XML/1998/namespace}'
 _XMLID = '{}id'.format(_XMLNS)
+_XLINK = '{http://www.w3.org/1999/xlink}'
 _MEINS = '{http://www.music-encoding.org/ns/mei}'
 _SCORE = '{}score'.format(_MEINS)
 _SECTION = '{}section'.format(_MEINS)
@@ -263,10 +264,22 @@ class Document(object):
         '''
         Save new header metadata.
 
-        :param: new_head: A ``<head>`` element that should replace the existing one.
+        :param: new_head: An ``<meiHead>`` element that should replace the existing one.
         :type new_head: :class:`lxml.etree.Element`
         '''
-        raise NotImplementedError()
+
+        # I admit this is a little weird, so maybe we'll change it later. But for now the idea is
+        # that the presence of the <ptr> in the "all_files" file will indicate whether we have an
+        # <meiHead> with useful information, or just empty.
+        if (self._repo_path is not None
+            and self._all_files.find('.//{}ptr[@targettype="head"]'.format(_MEINS)) is None):
+            mei_head = self._all_files.find('./{}meiHead'.format(_MEINS))
+            mei_head.append(etree.Element('{}ptr'.format(_MEINS),
+                                          attrib={'targettype': 'head',
+                                                  'target': 'head.mei',
+                                                  '{}actuate'.format(_XLINK): 'onRequest',
+                                                  '{}show'.format(_XLINK): 'embed'}))
+        self._head = new_head
 
     def get_ui(self):
         '''

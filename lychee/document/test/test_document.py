@@ -390,6 +390,44 @@ class TestGetPutHead(DocumentTestCase):
             self.doc.get_head()
         self.assertEqual(document._ERR_FAILED_LOADING_MEIHEAD, hnferr.exception.args[0])
 
+    def test_put_1(self):
+        '''
+        - self._repo_path is None
+        ----
+        - <meiHead> is cached
+        '''
+        # we have to make a new Document for this test so that _repo_path is None
+        doc = document.Document()
+        mei_head = etree.Element('{}meiHead'.format(_MEINS))
+        doc.put_head(mei_head)
+        self.assertTrue(mei_head is doc._head)
+
+    def test_put_2(self):
+        '''
+        - self._repo_path is something
+        - self._all_files <meiHead> has a <ptr>
+        ----
+        - <meiHead> is cached
+        '''
+        old_head = self.doc._all_files.find('.//{}meiHead'.format(_MEINS))
+        old_head.append(etree.Element('{}ptr'.format(_MEINS), attrib={'targettype': 'head'}))
+        new_head = etree.Element('{}meiHead'.format(_MEINS))
+        self.doc.put_head(new_head)
+        self.assertTrue(new_head is self.doc._head)
+
+    def test_put_3(self):
+        '''
+        - self._repo_path is something
+        - self._all_files <meiHead> is empty
+        ----
+        - <ptr> is added to <meiHead>
+        - <meiHead> is cached
+        '''
+        new_head = etree.Element('{}meiHead'.format(_MEINS))
+        self.doc.put_head(new_head)
+        self.assertTrue(new_head is self.doc._head)
+        self.assertIsNotNone(self.doc._all_files.find('.//{}meiHead'.format(_MEINS)))
+
 
 class TestGetPutSection(DocumentTestCase):
     '''

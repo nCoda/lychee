@@ -74,7 +74,6 @@ class TestSmallThings(unittest.TestCase):
         '''
         Key is in the dict; it should return that.
         '''
-        doc = document.Document()
         self.assertEqual(12, document._set_default({'a': 12}, 'a', 42))
 
     def test__make_empty_all_files(self):
@@ -114,46 +113,6 @@ class TestSmallThings(unittest.TestCase):
                 raise AssertionError('i should only be 0, 1, or 2 but it was {}'.format(i))
         # 5.) delete the test file
         os.remove(test_path)
-
-
-class TestDocumentInit(unittest.TestCase):
-    '''
-    Tests for document.Document.__init__().
-    '''
-
-    def test_init_1(self):
-        '''
-        Repository already has an "all_files.mei" file. It's loaded properly. Instance variables are
-        initialized as expected.
-        '''
-        repo_dir = tempfile.TemporaryDirectory()
-        all_files_path = os.path.join(repo_dir.name, 'all_files.mei')
-        document._make_empty_all_files(all_files_path)
-        with mock.patch('lychee.document.document._make_empty_all_files') as mock_meaf:
-            doc = document.Document(repo_dir.name)
-        self.assertEqual(0, mock_meaf.call_count)
-        self.assertIsInstance(doc._all_files, etree._ElementTree)
-        self.assertEqual({}, doc._sections)
-        self.assertIsNone(doc._score)
-        self.assertEqual([], doc._score_order)
-        self.assertIsNone(doc._head)
-
-    def test_init_2(self):
-        '''
-        Repository is empty. _make_empty_all_files() is called to create a new "all_files.mei" file.
-        Instance variables are initialized as expected.
-        '''
-        repo_dir = tempfile.TemporaryDirectory()
-        all_files_path = os.path.join(repo_dir.name, 'all_files.mei')
-        with mock.patch('lychee.document.document._make_empty_all_files') as mock_meaf:
-            mock_meaf.return_value = 'five'
-            doc = document.Document(repo_dir.name)
-        mock_meaf.assert_called_once_with(all_files_path)
-        self.assertEqual('five', doc._all_files)
-        self.assertEqual({}, doc._sections)
-        self.assertIsNone(doc._score)
-        self.assertEqual([], doc._score_order)
-        self.assertIsNone(doc._head)
 
 
 class TestEnsureScoreOrder(unittest.TestCase):
@@ -225,7 +184,64 @@ class TestEnsureScoreOrder(unittest.TestCase):
         self.assertFalse(document._ensure_score_order(score, order))
 
 
-class TestGetPutSection(unittest.TestCase):
+class TestDocumentInit(unittest.TestCase):
+    '''
+    Tests for document.Document.__init__().
+    '''
+
+    def test_init_1(self):
+        '''
+        Repository already has an "all_files.mei" file. It's loaded properly. Instance variables are
+        initialized as expected.
+        '''
+        repo_dir = tempfile.TemporaryDirectory()
+        all_files_path = os.path.join(repo_dir.name, 'all_files.mei')
+        document._make_empty_all_files(all_files_path)
+        with mock.patch('lychee.document.document._make_empty_all_files') as mock_meaf:
+            doc = document.Document(repo_dir.name)
+        self.assertEqual(0, mock_meaf.call_count)
+        self.assertIsInstance(doc._all_files, etree._ElementTree)
+        self.assertEqual({}, doc._sections)
+        self.assertIsNone(doc._score)
+        self.assertEqual([], doc._score_order)
+        self.assertIsNone(doc._head)
+
+    def test_init_2(self):
+        '''
+        Repository is empty. _make_empty_all_files() is called to create a new "all_files.mei" file.
+        Instance variables are initialized as expected.
+        '''
+        repo_dir = tempfile.TemporaryDirectory()
+        all_files_path = os.path.join(repo_dir.name, 'all_files.mei')
+        with mock.patch('lychee.document.document._make_empty_all_files') as mock_meaf:
+            mock_meaf.return_value = 'five'
+            doc = document.Document(repo_dir.name)
+        mock_meaf.assert_called_once_with(all_files_path)
+        self.assertEqual('five', doc._all_files)
+        self.assertEqual({}, doc._sections)
+        self.assertIsNone(doc._score)
+        self.assertEqual([], doc._score_order)
+        self.assertIsNone(doc._head)
+
+
+class DocumentTestCase(unittest.TestCase):
+    '''
+    Base for test cases that use an instance of :class:`lychee.document.Document`. The setUp()
+    method here does some things those test cases will want.
+    '''
+
+    def setUp(self):
+        '''
+        Make an empty Document on "self.document" with a temporary directory. The repository
+        directory's name is stored in "self.repo_dir." There should already be an "all_files.mei"
+        file, in accordance with now Document.__init__() works.
+        '''
+        self._temp_dir = tempfile.TemporaryDirectory()
+        self.repo_dir = self._temp_dir.name
+        self.doc = document.Document(self.repo_dir)
+
+
+class TestGetPutSection(DocumentTestCase):
     '''
     Tests for Document.get_section() and Document.put_section().
     '''
@@ -234,17 +250,15 @@ class TestGetPutSection(unittest.TestCase):
         '''
         When the provided "id" starts wth an octothorpe, it should be removed.
         '''
-        doc = document.Document()
-        doc._sections['123'] = 'some section'
-        self.assertEqual('some section', doc.get_section('#123'))
+        self.doc._sections['123'] = 'some section'
+        self.assertEqual('some section', self.doc.get_section('#123'))
 
     def test_get_2(self):
         '''
         When the "id" doesn't start with an octothorpe, it shouldn't be removed.
         '''
-        doc = document.Document()
-        doc._sections['123'] = 'some section'
-        self.assertEqual('some section', doc.get_section('123'))
+        self.doc._sections['123'] = 'some section'
+        self.assertEqual('some section', self.doc.get_section('123'))
 
     @mock.patch('lychee.document.Document.load_everything')
     def test_get_3(self, mock_load_everything):
@@ -254,13 +268,12 @@ class TestGetPutSection(unittest.TestCase):
         '''
         section_id = '888'
         the_section = 'some section'
-        doc = document.Document()
         def loader():
-            doc._sections[section_id] = the_section
+            self.doc._sections[section_id] = the_section
         mock_load_everything.side_effect = loader
         expected = the_section
 
-        actual = doc.get_section(section_id)
+        actual = self.doc.get_section(section_id)
 
         self.assertEqual(expected, actual)
         mock_load_everything.assert_called_once_with()
@@ -271,10 +284,9 @@ class TestGetPutSection(unittest.TestCase):
         When the "id" doesn't exist, see if calling self.load_everything() will load the section.
         In this case, it doesn't, so the function should raise SectionNotFoundError.
         '''
-        doc = document.Document()
-        doc._sections['123'] = 'some section'
+        self.doc._sections['123'] = 'some section'
         with self.assertRaises(exceptions.SectionNotFoundError) as exc:
-            doc.get_section('888')
+            self.doc.get_section('888')
         self.assertEqual(document._SECTION_NOT_FOUND.format(xmlid='888'), exc.exception.args[0])
         mock_load_everything.assert_called_once_with()
 
@@ -282,20 +294,18 @@ class TestGetPutSection(unittest.TestCase):
         '''
         When the "id" starts with an octothorpe, the section is assigned without the octothorpe.
         '''
-        doc = document.Document()
-        doc.put_section('#123', 'some section')
-        self.assertEqual('some section', doc._sections['123'])
+        self.doc.put_section('#123', 'some section')
+        self.assertEqual('some section', self.doc._sections['123'])
 
     def test_put_2(self):
         '''
         When the "id" starts without an octothorpe, the section is assigned without the octothorpe.
         '''
-        doc = document.Document()
-        doc.put_section('123', 'some section')
-        self.assertEqual('some section', doc._sections['123'])
+        self.doc.put_section('123', 'some section')
+        self.assertEqual('some section', self.doc._sections['123'])
 
 
-class TestGetPutScore(unittest.TestCase):
+class TestGetPutScore(DocumentTestCase):
     '''
     Tests for Document.get_score() and Document.put_score().
     '''
@@ -304,31 +314,29 @@ class TestGetPutScore(unittest.TestCase):
         '''
         When the <score> has no <section> elements.
         '''
-        doc = document.Document()
         the_score = etree.Element('{}score'.format(_MEINS))
-        doc.put_score(the_score)
-        self.assertEqual(0, len(doc._score_order))
-        self.assertEqual(0, len(doc._sections))
+        self.doc.put_score(the_score)
+        self.assertEqual(0, len(self.doc._score_order))
+        self.assertEqual(0, len(self.doc._sections))
 
     def test_put_2(self):
         '''
         When the <score> has three <section> elements.
         '''
         section_tag = '{}section'.format(_MEINS)
-        doc = document.Document()
         the_score = etree.Element('{}score'.format(_MEINS))
         the_score.append(etree.Element(section_tag, attrib={_XMLID: '123'}))
         the_score.append(etree.Element(section_tag, attrib={_XMLID: '456'}))
         the_score.append(etree.Element(section_tag, attrib={_XMLID: '789'}))
         exp_xmlids = ['123', '456', '789']
 
-        doc.put_score(the_score)
+        self.doc.put_score(the_score)
 
-        self.assertEqual(exp_xmlids, doc._score_order)
-        self.assertEqual(3, len(doc._sections))
+        self.assertEqual(exp_xmlids, self.doc._score_order)
+        self.assertEqual(3, len(self.doc._sections))
         for xmlid in exp_xmlids:
-            self.assertEqual(section_tag, doc._sections[xmlid].tag)
-            self.assertEqual(xmlid, doc._sections[xmlid].get(_XMLID))
+            self.assertEqual(section_tag, self.doc._sections[xmlid].tag)
+            self.assertEqual(xmlid, self.doc._sections[xmlid].get(_XMLID))
 
     @mock.patch('lychee.document.document._ensure_score_order')
     @mock.patch('lychee.document.Document.get_section')
@@ -336,15 +344,14 @@ class TestGetPutScore(unittest.TestCase):
         '''
         When self._score is something, and _ensure_score_order() says it's good.
         '''
-        doc = document.Document()
         the_score = mock.MagicMock()
         the_order = [1, 2, 3]
-        doc._score = the_score
-        doc._score_order = the_order
+        self.doc._score = the_score
+        self.doc._score_order = the_order
         mock_score_order.return_value = True
         expected = the_score
 
-        actual = doc.get_score()
+        actual = self.doc.get_score()
 
         self.assertEqual(expected, actual)
         mock_score_order.assert_called_once_with(the_score, the_order)
@@ -359,14 +366,13 @@ class TestGetPutScore(unittest.TestCase):
         Saves the result in self._score.
         '''
         mock_get_section.side_effect = lambda x: etree.Element(x)
-        doc = document.Document()
         the_score = mock.MagicMock()
         the_order = ['one', 'two', 'three']
-        doc._score = the_score
-        doc._score_order = the_order
+        self.doc._score = the_score
+        self.doc._score_order = the_order
         mock_score_order.return_value = False
 
-        actual = doc.get_score()
+        actual = self.doc.get_score()
 
         mock_score_order.assert_called_once_with(the_score, the_order)
         self.assertEqual(3, mock_get_section.call_count)
@@ -388,15 +394,14 @@ class TestGetPutScore(unittest.TestCase):
         Raises SectionNotFoundError.
         '''
         mock_get_section.side_effect = exceptions.SectionNotFoundError
-        doc = document.Document()
         the_score = mock.MagicMock()
         the_order = ['one', 'two', 'three']
-        doc._score = the_score
-        doc._score_order = the_order
+        self.doc._score = the_score
+        self.doc._score_order = the_order
         mock_score_order.return_value = False
 
         with self.assertRaises(exceptions.SectionNotFoundError):
-            doc.get_score()
+            self.doc.get_score()
 
         mock_score_order.assert_called_once_with(the_score, the_order)
         mock_get_section.assert_called_once_with('one')

@@ -49,6 +49,9 @@ import hashlib
 
 from abjad import *
 from abjad.tools.scoretools.NoteHead import NoteHead
+from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
+from abjad.tools.durationtools.Multiplier import Multiplier
+from abjad.tools.durationtools.Duration import Duration
 
 '''
 from abjad.tools.scoretools.Note import Note
@@ -100,7 +103,6 @@ def convert_accidental_abjad_to_mei(abjad_accidental_string):
 def add_xml_id_to_abjad_object_and_mei_element_pair(abjad_object, mei_element):
     if isinstance(abjad_object, NoteHead):
         parent_chord = abjad_object.client
-        print type(parent_chord)
         parentage = inspect(parent_chord).get_parentage()
     else:
         parentage = inspect(abjad_object).get_parentage()
@@ -265,29 +267,52 @@ def abjad_score_to_mei_section(abjad_score):
                 staffCounter += 1
     return mei_section
 
-'''
+
 def empty_abjad_tuplet_to_mei_tupletspan_element(abjad_tuplet):
-        if hasattr(abjad_tuplet, 'multiplier'):
-            numerator = abjad_tuplet.multiplier.numerator
-            denominator = abjad_tuplet.multiplier.denominator
-            tupletspan = ETree.Element('tupletspan',num=denominator, numBase=numerator)
-            return tupletspan
-        elif hasattr(abjad_tuplet, 'target_duration'):
-            dots = abjad_tuplet.target_duration.dot_count
-            dur = abjad_tuplet.target_duration.lilypond_duration_string
-            tupletspan = ETree.Element('tupletspan', dur=dur, dots=dots)
-            return tupletspan
+    if isinstance(abjad_tuplet, Tuplet) and not isinstance(abjad_tuplet, FixedDurationTuplet):
+        numerator = six.b(str(abjad_tuplet.multiplier.numerator))
+        denominator = six.b(str(abjad_tuplet.multiplier.denominator))
+        tupletspan = ETree.Element('{}tupletspan'.format(_MEINS),num=denominator, numBase=numerator)
+        add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet, tupletspan)
+        return tupletspan
+    elif isinstance(abjad_tuplet, FixedDurationTuplet):
+        dots = abjad_tuplet.target_duration.dot_count
+        dur = abjad_tuplet.target_duration.lilypond_duration_string
+        tupletspan = ETree.Element('{}tupletspan'.format(_MEINS))
+        if dots:
+            dur = dur[:dur.find('.')]
+            tupletspan.set('dots', six.b(str(dots)))
+        tupletspan.set('dur', six.b(str(dur)))
+        add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet, tupletspan)
+        return tupletspan
+
 
 def abjad_tuplet_to_mei_tupletspan(abjad_tuplet):
     if len(abjad_tuplet) == 0:
         return empty_abjad_tuplet_to_mei_tupletspan_element(abjad_tuplet)
-    # set up output
-    outermost_span = ETree.Element('tupletspan')
-    duration = inspect(abjad_tuplet).get_duration()
-    dur = duration.lilypond_duration_string
+    elif isinstance(abjad_tuplet, list):
+        span_n = 0
+        outermost_span = ETree.Element('tupletspan')
+        outermost_span.set('n',six.b(str(span_n)))
+        duration = inspect(abjad_tuplet).get_duration()
+        dur = duration.lilypond_duration_string
+        dots = duration.dot_count
+        if dots:
+            dur = duration = duration[:duration.find('.')]
+        outermost_span.set('dur', dur)
+        if dots:
+            outermost_span.set('dots', dots)
+        outermost_span.set('num', outermost_span.multiplier.denominator)
+        outermost_span.set('numBase', outermost_span.multiplier.numerator)
+        add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet, outermost_span)
         output_list = [outermost_span]
-    for component in abjad_tuplet:
-        #
-    #otherwise return list of tupletspan and leaf elements
-    tupletspan = ETree.Element('tupletspan',n='1')
-'''
+        for x, component in abjad_tuplet:
+            if isinstance(component, Tuplet):
+                span_n += 1
+                tuplet_list = abjad_tuplet_to_mei_tupletspan(abjad_tuplet)
+                tuplet_list[0].set('n', span_n)
+                add_xml_id_to_abjad_object_and_mei_element_pair(component, tuplet_list[0])
+                output_list.extend(tuplet_list)
+            else:
+                output_list.append(abjad_leaf_to_mei_element(abjad_object))
+        return output_list

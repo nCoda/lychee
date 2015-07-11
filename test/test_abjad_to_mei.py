@@ -6,6 +6,8 @@ from abjad.tools.scoretools.Chord import Chord
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
 from abjad.tools.scoretools.Tuplet import Tuplet
+from abjad.tools.durationtools.Duration import Duration
+from abjad.tools.durationtools.Multiplier import Multiplier
 from abjad.tools.scoretools.Voice import Voice
 from abjad.tools.scoretools.Staff import Staff
 from abjad.tools.scoretools.StaffGroup import StaffGroup
@@ -608,3 +610,64 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
             self.assertEqual(mei_section[x].tag, '{}staff'.format(_MEINS))
             self.assertEqual(mei_section[x].get('n'), str(x))
         self.assertIsNotNone(mei_section.get(_XMLNS))
+
+    def test_abjad_tuplet_to_mei_tupletspan_empty_fixed(self):  
+        '''
+        precondition: empty abjad FixedDuratonTuplet
+        postcondition: list containing mei tupletspan Element with dur attr
+        '''  
+        abjad_tuplet = FixedDurationTuplet(Duration(1,4), [])
+        
+        mei_element = abjad_to_mei.abjad_tuplet_to_mei_tupletspan(abjad_tuplet)
+        
+        self.assertTrue(isinstance(mei_element, ETree._Element))
+        tupletspan = mei_element
+        self.assertEqual(tupletspan.tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(tupletspan.get('dur'), '4')
+        self.assertIsNone(tupletspan.get('dots'))
+        self.assertIsNone(tupletspan.get('num'))
+        self.assertIsNone(tupletspan.get('numBase'))
+        self.assertIsNone(tupletspan.get('startid'))
+        self.assertIsNone(tupletspan.get('endid'))
+        self.assertIsNotNone(tupletspan.get(_XMLNS))
+    
+    def test_abjad_tuplet_to_mei_tupletspan_empty_fixed_dotted(self):  
+        '''
+        precondition: empty abjad FixedDuratonTuplet
+        postcondition: list containing mei tupletspan Element with dur attr
+        '''  
+        abjad_tuplet = FixedDurationTuplet(Duration(3,8), [])
+        
+        mei_element = abjad_to_mei.abjad_tuplet_to_mei_tupletspan(abjad_tuplet)
+
+        self.assertTrue(isinstance(mei_element, ETree._Element))
+        tupletspan = mei_element
+        self.assertEqual(tupletspan.tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(tupletspan.get('dur'), '4')
+        self.assertEqual(tupletspan.get('dots'), '1')
+        self.assertIsNone(tupletspan.get('num'))
+        self.assertIsNone(tupletspan.get('numBase'))
+        self.assertIsNone(tupletspan.get('startid'))
+        self.assertIsNone(tupletspan.get('endid'))
+        self.assertIsNotNone(tupletspan.get(_XMLNS))
+    
+    def test_abjad_tuplet_to_mei_tupletspan_empty(self):  
+        '''
+        precondition: empty abjad Tuplet with fixed Multiplier
+        postcondition: list containing mei tupletspan Element with num and numBase attrs
+        '''  
+        abjad_tuplet = Tuplet(Multiplier(2,3), [])
+        
+        mei_element = abjad_to_mei.abjad_tuplet_to_mei_tupletspan(abjad_tuplet)
+        
+        self.assertTrue(isinstance(mei_element, ETree._Element))
+        tupletspan = mei_element
+        self.assertEqual(tupletspan.tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(tupletspan.get('dur'), None)
+        self.assertEqual(tupletspan.get('dots'), None)
+        self.assertEqual(tupletspan.get('num'), '3')
+        self.assertEqual(tupletspan.get('numBase'), '2')
+        self.assertEqual(tupletspan.get('startid'), None)
+        self.assertEqual(tupletspan.get('endid'), None)
+        self.assertIsNotNone(tupletspan.get(_XMLNS))
+      

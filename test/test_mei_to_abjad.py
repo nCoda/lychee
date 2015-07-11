@@ -20,10 +20,6 @@ _MEINS = '{http://www.music-encoding.org/ns/mei}'
 _XMLNS = '{http://www.w3.org/XML/1998/namespace}id'
 ETree.register_namespace('mei', _MEINS[1:-1])
 
-try:
-    from xml.etree import cElementTree as ETree
-except ImportError:
-    from xml.etree import ElementTree as ETree
 
 #every method in the class starts with test_ will be run as a test
 
@@ -439,3 +435,34 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(isinstance(abjad_score[1], StaffGroup), True)
         self.assertEqual(isinstance(abjad_score[2], Staff), True)
         self.assertEqual(len(abjad_score[1]), 2)
+
+    def test_mei_tuplet_span_to_abjad_tuplet_empty_fixed(self):
+        '''
+        precondition: empty mei tupletspan Element with duration but no multiplier
+        postcondition: empty abjad FixedDurationTuplet object
+        '''
+        mei_tupletspan = ETree.Element('tupletspan',dur='4')
+        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(mei_tupletspan)
+        self.assertEqual(len(abjad_tuplet), 0)
+        self.assertEqual(abjad_tuplet.target_duration, Duration(1,4))
+    
+    def test_mei_tuplet_span_to_abjad_tuplet_empty_fixed_dotted(self):
+        '''
+        precondition: empty mei tupletspan Element with dotted duration but no multiplier
+        postcondition: empty abjad FixedDurationTuplet object
+        '''
+        mei_tupletspan = ETree.Element('tupletspan',dur='4', dots='1')
+        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(mei_tupletspan)
+        self.assertEqual(len(abjad_tuplet), 0)
+        self.assertEqual(abjad_tuplet.target_duration, Duration(3,8))
+    
+    def test_mei_tupletspan_to_abjad_tuplet_empty(self):
+        '''
+        precondition: mei tupletspan Element with multipier, no duration
+        postcondition: abjad Tuplet object with Multiplier, no duration
+        '''
+        mei_tupletspan = ETree.Element('tupletspan',num='3',numBase='2')
+        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(mei_tupletspan)
+        self.assertEqual(len(abjad_tuplet), 0)
+        self.assertEqual(abjad_tuplet.multiplier, Multiplier(2,3))
+        

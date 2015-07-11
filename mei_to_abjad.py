@@ -46,6 +46,9 @@ Converts an MEI document to an Abjad document.
 from lxml import etree as ETree
 from abjad import *
 from abjad.tools.scoretools.NoteHead import NoteHead
+from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
+from abjad.tools.durationtools.Multiplier import Multiplier
+from abjad.tools.durationtools.Duration import Duration
 
 '''
 from abjad.tools.scoretools.Note import Note
@@ -228,23 +231,25 @@ def mei_section_to_abjad_score(mei_section):
             abjad_score.append(abjad_staff_group)
     return abjad_score
 
-'''
+
 def tupletspan_element_to_empty_tuplet(mei_tupletspan):
-        numerator = mei_tupletspan.get('num')
-        duration = mei_tupletspan.get('dur')
-        if numerator != None:
-            denominator = mei_tupletspan.get('num')
-            multiplier = Multiplier(numerator, denominator)
-            return Tuplet(multiplier, [])
-        if duration != None:
-            dots = mei_tupletspan.get('dots')
-            dur_string = duration
-            if dots != None:
-                for x in range(int(dots)):
-                    dur_string += '.'
-            duration = Duration()
-            duration.from_lilypond_duration_string(dur_string)
-            return FixedDurationTuplet(duration, [])
+    numerator = mei_tupletspan.get('numBase')
+    duration = str(mei_tupletspan.get('dur'))
+    if numerator != None:
+        denominator = mei_tupletspan.get('num')
+        multiplier = Multiplier(int(numerator), int(denominator))
+        return Tuplet(multiplier, [])
+    if duration != None:
+        dots = mei_tupletspan.get('dots')
+        dur_string = duration
+        if dots != None:
+            for x in range(int(dots)):
+                dur_string += '.'
+        duration = Duration()
+        print "duration is: ", type(duration)
+        print "dur string is: ", dur_string
+        duration = duration.from_lilypond_duration_string(dur_string)
+        return FixedDurationTuplet(duration, [])
 
 
 def mei_tupletspan_to_abjad_tuplet(mei_tupletspan):
@@ -262,12 +267,15 @@ def mei_tupletspan_to_abjad_tuplet(mei_tupletspan):
                 recursion_list.extend(mei_tupletspan[x:end_index])
                 a_tuplet = mei_tupletspan_to_abjad_tuplet(recursion_list)
                 tuplet_components.append(a_tuplet)
-            else:
+            elif mei_tupletspan:
                 #convert the element and add it to the list
                 mei_element = mei_element_to_abjad_leaf(element)
                 tuplet_components.append(mei_element)
+                
+            else:
+                return mei_outermost_tuplet
         mei_outermost_tuplet.extend(tuplet_components)
-        return mei_outermost_tuplet
-    elif isinstance(mei_tupletspan, ETree._Element): 
+    elif hasattr(mei_tupletspan, 'xpath'):
         return tupletspan_element_to_empty_tuplet(mei_tupletspan)
-'''
+    else:
+        raise AssertionError("Input argument isn't a list or Element.")

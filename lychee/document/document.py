@@ -154,6 +154,22 @@ def _save_out(this, to_here):
     this.write(to_here, encoding='UTF-8', xml_declaration=True, pretty_print=True)
 
 
+def _make_ptr(targettype, target):
+    '''
+    Make a <ptr> element with the specified ``targettype`` and ``target`` attributes.
+
+    :param str targettype: The value of the @targettype attribute.
+    :param str target: The value of the @target attribute.
+    :returns: The <ptr>.
+    :rtype: :class:`lxml.etree.Element`
+    '''
+    return etree.Element('{}ptr'.format(_MEINS),
+                         attrib={'targettype': targettype,
+                                 'target': target,
+                                 '{}actuate'.format(_XLINK): 'onRequest',
+                                 '{}show'.format(_XLINK): 'embed'})
+
+
 class Document(object):
     '''
     Object representing an MEI document. Use methods prefixed with ``get`` to obtain portions of

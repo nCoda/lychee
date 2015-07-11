@@ -40,6 +40,7 @@ from lychee.document import document
 
 _XMLNS = '{http://www.w3.org/XML/1998/namespace}'
 _XMLID = '{}id'.format(_XMLNS)
+_XLINK = '{http://www.w3.org/1999/xlink}'
 _MEINS = '{http://www.music-encoding.org/ns/mei}'
 _SCORE = '{}score'.format(_MEINS)
 _SECTION = '{}section'.format(_MEINS)
@@ -167,6 +168,19 @@ class TestSmallThings(unittest.TestCase):
         to_here = os.path.join(tempdir.name, 'something.mei')
         document._save_out(elem, to_here)
         self.assertTrue(os.path.exists(to_here))
+
+    def test__make_ptr(self):
+        '''
+        That _make_ptr() works.
+        '''
+        targettype = 'silly'
+        target = 'bullseye'
+        actual = document._make_ptr(targettype, target)
+        self.assertEqual('{}ptr'.format(_MEINS), actual.tag)
+        self.assertEqual(targettype, actual.get('targettype'))
+        self.assertEqual(target, actual.get('target'))
+        self.assertEqual('onRequest', actual.get('{}actuate'.format(_XLINK)))
+        self.assertEqual('embed', actual.get('{}show'.format(_XLINK)))
 
 
 class TestEnsureScoreOrder(unittest.TestCase):

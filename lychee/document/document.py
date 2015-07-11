@@ -150,7 +150,10 @@ class Document(object):
 
     .. note:: When you use a :meth:`put_` method, the element(s) replace those already present in
         this :class:`Document` instance, but they will not be written to the document's directory
-        until you call :meth:`save_everything`.
+        until you call :meth:`save_everything` or the context manager exits, if applicable.
+
+    The recommended way to use a :class:`Document` with file output is as a context manager (using
+    a :obj:`with` statement). This way, you cannot forget to save your changes to the filesystem.
     '''
 
     def __init__(self, repository_path=None, **kwargs):
@@ -181,6 +184,25 @@ class Document(object):
         self._score_order = []
         # the <meiHead> element
         self._head = None
+
+    def __enter__(self):
+        '''
+        Start a context manager for :class:`Document`.
+        '''
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        '''
+        Save all sections into files and stuff.
+        '''
+        # In the future, we should "auto-heal" from some exceptions that were raised by methods in
+        # this class.
+        if exc_type is None:
+            if self._repo_path is not None:
+                self.save_everything()
+            return True
+        else:
+            return False
 
     def load_everything(self):
         '''

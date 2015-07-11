@@ -258,6 +258,39 @@ class TestDocumentInit(unittest.TestCase):
         self.assertEqual([], doc._score_order)
         self.assertIsNone(doc._head)
 
+    @mock.patch('lychee.document.Document.save_everything')
+    def test_with_1(self, mock_save):
+        '''
+        Ensure the context manager stuff works (no exception raised).
+        '''
+        tempdir = tempfile.TemporaryDirectory()
+        with document.Document(tempdir.name) as doc:
+            self.assertIsInstance(doc, document.Document)
+        mock_save.assert_called_once_with()
+
+    @mock.patch('lychee.document.Document.save_everything')
+    def test_with_2(self, mock_save):
+        '''
+        Ensure the context manager stuff works (no output directory, but the error from
+        save_everything() is suppressed).
+        '''
+        mock_save.side_effect = exceptions.CannotSaveError
+        with document.Document() as doc:
+            self.assertIsInstance(doc, document.Document)
+        self.assertEqual(0, mock_save.call_count)
+
+    @mock.patch('lychee.document.Document.save_everything')
+    def test_with_3(self, mock_save):
+        '''
+        Ensure the context manager stuff works (arbitrary exception raised).
+        '''
+        tempdir = tempfile.TemporaryDirectory()
+        with self.assertRaises(RuntimeError):
+            with document.Document(tempdir.name) as doc:
+                self.assertIsInstance(doc, document.Document)
+                raise RuntimeError('asdf')
+        self.assertEqual(0, mock_save.call_count)
+
 
 class DocumentTestCase(unittest.TestCase):
     '''

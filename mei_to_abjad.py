@@ -64,6 +64,10 @@ from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.durationtools.Duration import Duration
 '''
 
+_MEINS = '{http://www.music-encoding.org/ns/mei}'
+_XMLNS = '{http://www.w3.org/XML/1998/namespace}id'
+ETree.register_namespace('mei', _MEINS[1:-1])
+
 #import lychee
 #from lychee.signals import outbound
 
@@ -246,8 +250,6 @@ def tupletspan_element_to_empty_tuplet(mei_tupletspan):
             for x in range(int(dots)):
                 dur_string += '.'
         duration = Duration()
-        print "duration is: ", type(duration)
-        print "dur string is: ", dur_string
         duration = duration.from_lilypond_duration_string(dur_string)
         return FixedDurationTuplet(duration, [])
 
@@ -255,27 +257,27 @@ def tupletspan_element_to_empty_tuplet(mei_tupletspan):
 def mei_tupletspan_to_abjad_tuplet(mei_tupletspan):
     if isinstance(mei_tupletspan, list):
         # list beginning with tuplet span and continuing with spanned Elements
-        #set up the outermost tuplet and components list
-        mei_outermost_tuplet = tupletspan_element_to_empty_tuplet(mei_tupletspan[0])
+        # set up the outermost tuplet and components list
+        abjad_outermost_tuplet = tupletspan_element_to_empty_tuplet(mei_tupletspan[0])
         tuplet_components = []
         for x,element in enumerate(mei_tupletspan[1:]):
             #iterate through the list; if you hit a tuplet, recurse
-            if element.tag == 'tupletspan':
-                recursion_list = [element]
+            if element.tag == '{}tupletspan'.format(_MEINS):
                 plist = element.get('plist').split()
                 end_index = x + len(plist) + 1
+                recursion_list = [element]
                 recursion_list.extend(mei_tupletspan[x:end_index])
-                a_tuplet = mei_tupletspan_to_abjad_tuplet(recursion_list)
-                tuplet_components.append(a_tuplet)
-            elif mei_tupletspan:
+                abjad_tuplet = mei_tupletspan_to_abjad_tuplet(recursion_list)
+                tuplet_components.append(abjad_tuplet)
+            else:
                 #convert the element and add it to the list
                 mei_element = mei_element_to_abjad_leaf(element)
                 tuplet_components.append(mei_element)
-                
-            else:
-                return mei_outermost_tuplet
-        mei_outermost_tuplet.extend(tuplet_components)
+        abjad_outermost_tuplet.extend(tuplet_components)
+        abjad_outermost_tuplet = abjad_outermost_tuplet.to_fixed_duration_tuplet()
+        return abjad_outermost_tuplet
     elif hasattr(mei_tupletspan, 'xpath'):
         return tupletspan_element_to_empty_tuplet(mei_tupletspan)
     else:
         raise AssertionError("Input argument isn't a list or Element.")
+        

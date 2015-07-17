@@ -670,4 +670,51 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(tupletspan.get('startid'), None)
         self.assertEqual(tupletspan.get('endid'), None)
         self.assertIsNotNone(tupletspan.get(_XMLNS))
-      
+    
+    def test_abjad_tuplet_to_mei_tupletspan_full(self):
+        '''
+        precondition: abjad Tuplet containing leaves
+        postcondition: list containing mei tupletspan Element followed by leaf Elements
+        '''
+        # returns list containing tupletspan followed by leaf elements
+        abjad_tuplet = Tuplet(Multiplier(2,3), "c'8 c' c'")
+        
+        mei_elements = abjad_to_mei.abjad_tuplet_to_mei_tupletspan(abjad_tuplet)
+        
+        self.assertTrue(isinstance(mei_elements, list))
+        self.assertEqual(len(mei_elements), 4)
+        self.assertEqual(mei_elements[0].tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(mei_elements[0].get('dur'), '4')
+        self.assertIsNone(mei_elements[0].get('dots'))
+        self.assertEqual(mei_elements[0].get('num'), '3')
+        self.assertEqual(mei_elements[0].get('numBase'), '2')
+        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(_XMLNS))
+        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(_XMLNS))
+        chunked_plist = mei_elements[0].get('plist').split()
+        self.assertEqual(len(chunked_plist), 3)
+        for note_element in mei_elements[1:]:
+            self.assertTrue(note_element.get(_XMLNS) in chunked_plist)
+    
+    def test_abjad_tuplet_to_mei_tupletspan_full_dotted(self):
+        '''
+        precondition: abjad Tuplet of dotted duration containing leaves
+        postcondition: list containing mei tupletspan Element with dots attr followed by leaf Elements
+        '''
+        abjad_tuplet = Tuplet()
+        abjad_tuplet = abjad_tuplet.from_duration_and_ratio(Duration(3,8), [1] * 5)
+        
+        mei_elements = abjad_to_mei.abjad_tuplet_to_mei_tupletspan(abjad_tuplet)
+        
+        self.assertTrue(isinstance(mei_elements, list))
+        self.assertEqual(len(mei_elements), 6)
+        self.assertEqual(mei_elements[0].tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(mei_elements[0].get('dur'), '4')
+        self.assertEqual(mei_elements[0].get('dots'), '1')
+        self.assertEqual(mei_elements[0].get('num'), '5')
+        self.assertEqual(mei_elements[0].get('numBase'), '3')
+        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(_XMLNS))
+        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(_XMLNS))
+        chunked_plist = mei_elements[0].get('plist').split()
+        self.assertEqual(len(chunked_plist), 5)
+        for note_element in mei_elements[1:]:
+            self.assertTrue(note_element.get(_XMLNS) in chunked_plist)

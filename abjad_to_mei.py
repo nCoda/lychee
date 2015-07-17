@@ -290,29 +290,48 @@ def empty_abjad_tuplet_to_mei_tupletspan_element(abjad_tuplet):
 def abjad_tuplet_to_mei_tupletspan(abjad_tuplet):
     if len(abjad_tuplet) == 0:
         return empty_abjad_tuplet_to_mei_tupletspan_element(abjad_tuplet)
-    elif isinstance(abjad_tuplet, list):
-        span_n = 0
-        outermost_span = ETree.Element('tupletspan')
+    elif isinstance(abjad_tuplet, Tuplet):
+        if isinstance(abjad_tuplet, Tuplet) and not isinstance(abjad_tuplet, FixedDurationTuplet):
+            abjad_tuplet = abjad_tuplet.to_fixed_duration_tuplet()
+        span_n = 1
+        component_n = 1
+        outermost_span = ETree.Element('{}tupletspan'.format(_MEINS))
         outermost_span.set('n',six.b(str(span_n)))
-        duration = inspect(abjad_tuplet).get_duration()
+        duration = abjad_tuplet.target_duration
         dur = duration.lilypond_duration_string
         dots = duration.dot_count
         if dots:
-            dur = duration = duration[:duration.find('.')]
-        outermost_span.set('dur', dur)
-        if dots:
-            outermost_span.set('dots', dots)
-        outermost_span.set('num', outermost_span.multiplier.denominator)
-        outermost_span.set('numBase', outermost_span.multiplier.numerator)
+            dur = dur[:dur.find('.')]
+            outermost_span.set('dots', six.b(str(dots)))
+        outermost_span.set('dur', six.b(dur))
+        outermost_span.set('num', six.b(str(abjad_tuplet.multiplier.denominator)))
+        outermost_span.set('numBase', six.b(str(abjad_tuplet.multiplier.numerator)))
         add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet, outermost_span)
         output_list = [outermost_span]
-        for x, component in abjad_tuplet:
+        plist = ''
+        for x, component in enumerate(abjad_tuplet):
             if isinstance(component, Tuplet):
                 span_n += 1
-                tuplet_list = abjad_tuplet_to_mei_tupletspan(abjad_tuplet)
+                tuplet_list = abjad_tuplet_to_mei_tupletspan(component)
                 tuplet_list[0].set('n', span_n)
                 add_xml_id_to_abjad_object_and_mei_element_pair(component, tuplet_list[0])
+                plist += six.b(str(tuplet_list[0].get(_XMLNS))) + ' '
+                for component in tuplet_list[:1]:
+                    plist += six.b(str(component.get(_XMLNS))) + ' '
+                plist += six.b(str(mei_component.get(_XMLNS))) + ' '
                 output_list.extend(tuplet_list)
             else:
-                output_list.append(abjad_leaf_to_mei_element(abjad_object))
+                mei_component = abjad_leaf_to_mei_element(component)
+                mei_component.set('n', six.b(str(component_n)))
+                component_n += 1
+                add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet[x], mei_component)
+                plist += six.b(str(mei_component.get(_XMLNS))) + ' '
+                if x == 0:
+                    outermost_span.set('startid', mei_component.get(_XMLNS))
+                if x == len(abjad_tuplet) - 1:
+                    outermost_span.set('endid', mei_component.get(_XMLNS))
+                output_list.append(abjad_leaf_to_mei_element(component)) 
+        plist = plist[:-1]
+        outermost_span.set('plist', plist)
         return output_list
+        

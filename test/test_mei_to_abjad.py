@@ -15,6 +15,7 @@ import mei_to_abjad
 import abjad_test_case
 import mock
 import unittest
+import six
 
 _MEINS = '{http://www.music-encoding.org/ns/mei}'
 _XMLNS = '{http://www.w3.org/XML/1998/namespace}id'
@@ -465,4 +466,53 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(mei_tupletspan)
         self.assertEqual(len(abjad_tuplet), 0)
         self.assertEqual(abjad_tuplet.multiplier, Multiplier(2,3))
+    
+    def test_mei_tupletspan_to_abjad_tuplet_full(self):
+        '''
+        precondition: mei tupletspan Element with multipier, duration, and children
+        postcondition: abjad Tuplet object with Multiplier, duration, and children
+        '''
+        mei_tupletspan = ETree.Element('tupletspan',num='3', numBase='2', dur='4')
+        tupletspan_list = [mei_tupletspan]
+        for x in range(3):
+            note = ETree.Element('note', pname='c', octave='4', dur='8')
+            note.set(_XMLNS, six.b(str(x + 1)))
+            tupletspan_list.append(note)
+        mei_tupletspan.set('startid', '1')
+        mei_tupletspan.set('endid', '5')
+        mei_tupletspan.set('plist', '1 2 3 4 5')
+    
+        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(tupletspan_list)
+    
+        self.assertEqual(len(abjad_tuplet), 3)
+        self.assertEqual(abjad_tuplet.multiplier, Multiplier(2,3))
+        self.assertEqual(abjad_tuplet.target_duration, Duration(1,4))
+        for note in abjad_tuplet:
+            self.assertTrue(isinstance(note, Note))
+            self.assertEqual(note.written_duration, Duration(1,8))
+            # self.assertEqual(inspect(note).get_duration(), Duration(1,12))
+    
+    def test_mei_tupletspan_to_abjad_tuplet_full_dotted(self):
+        '''
+        precondition: mei tupletspan Element with multipier, dotted duration, and children
+        postcondition: abjad Tuplet object with Multiplier, dotted duration, and children
+        '''
+        mei_tupletspan = [ETree.Element('tupletspan',num='5', numBase='3', dur='4', dots='1')]
+        for x in range(5):
+            note = ETree.Element('note', pname='c', octave='4', dur='8')
+            note.set(_XMLNS, six.b(str(x + 1)))
+            mei_tupletspan.append(note)
+        mei_tupletspan[0].set('startid', '1')
+        mei_tupletspan[0].set('endid', '5')
+        mei_tupletspan[0].set('plist', '1 2 3 4 5')
+    
+        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(mei_tupletspan)
+    
+        self.assertEqual(len(abjad_tuplet), 5)
+        self.assertEqual(abjad_tuplet.multiplier, Multiplier(3,5))
+        self.assertEqual(abjad_tuplet.target_duration, Duration(3,8))
+        for note in abjad_tuplet:
+            self.assertTrue(isinstance(note, Note))
+            self.assertEqual(note.written_duration, Duration(1,8))
+            # self.assertEqual(inspect(note).get_duration(), Duration(3,40))
         

@@ -1,0 +1,11 @@
+<!-- This is an "expected" result for the test suite. It's a basic "all_files.mei" file plus
+     a <ptr> to the apropriate <meiHead> document.
+     This file is used by tests in:
+     - "test_document.py"
+-->
+<mei:meiCorpus xmlns:mei="http://www.music-encoding.org/ns/mei" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <mei:meiHead>
+        <mei:ptr target="head.mei" targettype="head" xlink:actuate="onRequest" xlink:show="embed"/>
+    </mei:meiHead>
+    <mei:mei/>
+</mei:meiCorpus>

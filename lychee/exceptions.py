@@ -47,8 +47,16 @@ class SectionNotFoundError(DocumentError):
     '''
     pass
 
+
 class HeaderNotFoundError(DocumentError):
     '''
     Error indicating the <meiHead> section is needed but can't be found.
+    '''
+    pass
+
+
+class CannotSaveError(DocumentError):
+    '''
+    Error indicating the MEI document could not be saved as requested.
     '''
     pass

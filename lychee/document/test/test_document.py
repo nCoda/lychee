@@ -26,6 +26,7 @@
 Tests for the :mod:`lychee.document.document` module.
 '''
 
+import inspect
 import os
 import os.path
 import tempfile
@@ -44,6 +45,30 @@ _XLINK = '{http://www.w3.org/1999/xlink}'
 _MEINS = '{http://www.music-encoding.org/ns/mei}'
 _SCORE = '{}score'.format(_MEINS)
 _SECTION = '{}section'.format(_MEINS)
+
+
+class CommonTestMethods(object):
+    '''
+    Test methods that can be used by many TestCase subclasses.
+    '''
+
+    def assertElementsEqual(self, first, second, msg=None):
+        '''
+        Type-specific equality function for :class:`lxml.etree.Element` and
+        :class:`lxml.etree.ElementTree` objects.
+        '''
+        first_list = [x for x in first.iter()]
+        second_list = [x for x in second.iter()]
+        if len(first_list) != len(second_list):
+            raise self.failureException('element trees are different sizes')
+        for i in range(len(first_list)):
+            if first_list[i].tag != second_list[i].tag:
+                raise self.failureException('Tags are not equal')
+            first_keys = [x for x in first_list[i].keys()]
+            second_keys = [x for x in second_list[i].keys()]
+            self.assertCountEqual(first_keys, second_keys)
+            for key in first_keys:
+                self.assertEqual(first[i].get(key), second[i].get(key))
 
 
 class TestSmallThings(unittest.TestCase):
@@ -346,15 +371,19 @@ class DocumentTestCase(unittest.TestCase):
     method here does some things those test cases will want.
     '''
 
+    assertElementsEqual = CommonTestMethods.assertElementsEqual
+
     def setUp(self):
         '''
         Make an empty Document on "self.document" with a temporary directory. The repository
         directory's name is stored in "self.repo_dir." There should already be an "all_files.mei"
-        file, in accordance with now Document.__init__() works.
+        file, in accordance with how Document.__init__() works.
         '''
         self._temp_dir = tempfile.TemporaryDirectory()
         self.repo_dir = self._temp_dir.name
         self.doc = document.Document(self.repo_dir)
+        self.addTypeEqualityFunc(etree._Element, self.assertElementsEqual)
+        self.addTypeEqualityFunc(etree._ElementTree, self.assertElementsEqual)
 
 
 class TestGetPutHead(DocumentTestCase):
@@ -641,3 +670,316 @@ class TestGetPutScore(DocumentTestCase):
 
         mock_score_order.assert_called_once_with(the_score, the_order)
         mock_get_section.assert_called_once_with('one')
+
+
+class TestSaveLoadEverything(DocumentTestCase):
+    '''
+    Tests for Document.save_everything() and Document.load_everything().
+    '''
+
+    def setUp(self):
+        '''
+        Add a "path_to_here" property that holds the directory this file is in.
+        '''
+        DocumentTestCase.setUp(self)
+        self.path_to_here = os.path.dirname(inspect.getfile(self.__class__))
+
+    def load_n_compare(self, this, that):
+        '''
+        Do an "assertEqual" on two Element objects. "This" should be the filename of an MEI/XML
+        file that contains the expected result, relative to the directory of this file. "That"
+        should be the absolute path to the outputted result to compare.
+        '''
+        that = etree.parse(that)
+        this = etree.parse(os.path.join(self.path_to_here, this))
+        self.assertEqual(this, that)
+
+    def test_save_template_nomock(self, **kwargs):
+        '''
+        This is a template test with default values. This test should run by itself, but it may
+        also be used for targeted testing of the other functionality in
+        :meth:`Document.save_everything`. Unit tests should use :meth:`test_save_template`; this
+        method is intended for integration tests, since :func:`_write_out` is not mocked here.
+        Use the following keyword arguments to adjust pre- and post-conditions:
+
+        :kwarg head: The value to assign to :attr:`Document._head` before the test.
+        :type head: :class:`lxml.etree.Element`
+        :kwarg score_order: The value to assign to :attr:`Document._score_order` before the test.
+        :type score_order: list of str
+        :kwarg sections: The value to assign to :attr:`Document._sections` before the test.
+        :type sections: dict of str to :class:`Element`
+        :kwarg expected: Expected return value of :meth:`save_everything`.
+        :type expected: list of str
+        :returns: The return value of the function-under-test.
+        :rtype: list of str
+
+        .. note:: This test method automatically prepends the ``repository_pathname`` to the
+            pathnames expected in ``expected``.
+
+        .. note:: You should be using this test method when you want to check the validity of the
+            files outputted by :func:`_write_out`. You must do this manually.
+
+        Default Preconditions:
+        - head is None
+        - score_order is empty
+        - sections is empty
+        Default Postconditions:
+        - expected is ``['all_files.mei']``
+        '''
+
+        def get_from_kwargs(key, val):
+            "Return kwargs[key] if that will work, otherwise return 'val.'"
+            if key in kwargs:
+                return kwargs[key]
+            else:
+                return val
+
+        # 1.) prepare the preconditions parameters
+        head = get_from_kwargs('head', None)
+        score_order = get_from_kwargs('score_order', [])
+        sections = get_from_kwargs('sections', {})
+        # prepend the full path to the "expected" return values
+        expected = get_from_kwargs('expected', ['all_files.mei'])
+        expected = [os.path.join(self.repo_dir, x) for x in expected]
+
+        # 2.) prepare the Document instance
+        self.doc._head = head
+        self.doc._score_order = score_order
+        self.doc._sections = sections
+
+        # 3.) do the test
+        actual = self.doc.save_everything()
+
+        # 4.) assert the postconditions
+        self.assertCountEqual(expected, actual)
+
+        return actual
+
+    @mock.patch('lychee.document.document._save_out')
+    def test_save_template(self, mock_save_out, **kwargs):
+        '''
+        This is a modified version of :meth:`test_save_template_nomock` that adds a mock to
+        :func:`_save_out` so that it may be tested.
+
+        :kwarg save_out_calls: A list of 2-tuples representing the calls expected to
+            :func:`_save_out`. The order of calls is not checked. You may use :const:`mock.ANY` for
+            the frist argument if it's not important which object is submitted. The second argument,
+            being an absolute pathname determined in part at runtime (by the ``repository_pathname``)
+            is modified in this method to incorporate the full path. The default value is this:
+            ``[(<something>, 'all_files.mei')]``, and this argument is added automatically by this
+            test method.
+        :type save_out_calls: list of :class:`mock.call`
+
+        .. note:: This test method does *not* check the validity of any files outputted. In fact,
+            because _write_out() is mocked, you cannot check that with this test method. Use
+            :meth:`test_save_template_nomock` for that.
+
+        Default Preconditions:
+        - (no difference)
+        Default Postconditions:
+        - save_out_calls has one call: ``call('')``
+        '''
+
+        save_out_calls = [] if 'save_out_calls' not in kwargs else kwargs['save_out_calls']
+        save_out_calls = [(x[0], os.path.join(self.repo_dir, x[1])) for x in save_out_calls]
+        save_out_calls.append((mock.ANY, os.path.join(self.repo_dir, 'all_files.mei')))
+
+        actual = self.test_save_template_nomock(**kwargs)
+
+        self.assertEqual(len(save_out_calls), mock_save_out.call_count)
+        for each_call in save_out_calls:
+            mock_save_out.assert_any_call(each_call[0], each_call[1])
+
+        return actual
+
+    def test_save_1(self):
+        '''
+        Preconditions:
+        - self._repo_path is None
+        Postconditions:
+        - raises CannotSaveError
+
+        .. note:: This test doesn't use the template.
+        '''
+        doc = document.Document(repository_path=None)
+        with self.assertRaises(exceptions.CannotSaveError) as cse:
+            doc.save_everything()
+        self.assertEqual(cse.exception.args[0], document._ERR_MISSING_REPO_PATH)
+
+    def test_save_2(self):
+        '''
+        Integration version of test_save_template() that tests proper structure of "all_files.mei".
+        '''
+        exp_listdir = ['all_files.mei']
+        files = self.test_save_template_nomock()
+        self.load_n_compare('exp_all_files_1.mei', files[0])
+
+    def test_save_3a(self):
+        '''
+        Preconditions:
+        - self._head is something
+        Postconditions:
+        - _save_out() is called with "head.mei"
+        - "head.mei" is in returned stuff
+        '''
+        self.test_save_template(head=12,
+                                expected=['all_files.mei', 'head.mei'],
+                                save_out_calls=[(12, 'head.mei')])
+
+    def test_save_3b(self):
+        '''
+        Integration test for test_save_3a().
+        '''
+        exp_listdir = ['all_files.mei', 'head.mei']
+        head = etree.parse(os.path.join(self.path_to_here, 'input_meiHead.mei'))
+        files = self.test_save_template_nomock(head=head, expected=exp_listdir)
+        listdir = os.listdir(os.path.dirname(files[0]))
+        self.assertCountEqual(exp_listdir, listdir)
+        for each_file in files:
+            if each_file.endswith('all_files.mei'):
+                self.load_n_compare('exp_all_files_2.mei', each_file)
+            elif each_file.endswith('head.mei'):
+                self.load_n_compare('input_meiHead.mei', each_file)
+
+    def test_save_4a(self):
+        '''
+        Preconditions:
+        - there are three contained <section> elements
+        - _score_order is empty
+        Postconditions:
+        - _save_out() called with each <section>
+        - each section's filename is returned
+        '''
+        self.test_save_template(sections={'1': 'section 1', '2': 'section 3', '3': 'section 3'},
+                                expected=['1.mei', '2.mei', '3.mei', 'all_files.mei'],
+                                save_out_calls=[(mock.ANY, '1.mei'), (mock.ANY, '2.mei'),
+                                                (mock.ANY, '3.mei')])
+    def test_save_4b(self):
+        '''
+        Integration test for test_save_4a().
+        '''
+        sections = {'1': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '1'}),
+                    '2': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '2'}),
+                    '3': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '3'})
+                   }
+        exp_listdir = ['all_files.mei', '1.mei', '2.mei', '3.mei']
+        files = self.test_save_template_nomock(sections=sections, expected=exp_listdir)
+        listdir = os.listdir(os.path.dirname(files[0]))
+        self.assertCountEqual(exp_listdir, listdir)
+        for each_file in files:
+            if each_file.endswith('all_files.mei'):
+                self.load_n_compare('exp_all_files_3.mei', each_file)
+            else:
+                # TODO: find a way to not need creating an XMLParser with recover=True...
+                #       the reason we need it now is that lxml otherwise fails to parse the
+                #       @xml:id attribute that IT OUTPUTTED BY ITSELF ANYWAY and that's weird
+                actual_section = etree.parse(each_file, etree.XMLParser(recover=True))
+                if each_file.endswith('1.mei'):
+                    self.assertEqual(sections['1'], actual_section.getroot())
+                elif each_file.endswith('2.mei'):
+                    self.assertEqual(sections['2'], actual_section.getroot())
+                elif each_file.endswith('3.mei'):
+                    self.assertEqual(sections['3'], actual_section.getroot())
+
+    def test_save_5a(self):
+        '''
+        Preconditions:
+        - there are three contained <section> elements
+        - _score_order holds three elements, but the first and third are the same
+        Postconditions:
+        - _save_out() called with each <section>
+        - _savo_out() called with "score.mei"
+        - each section's filename is returned
+        - "score.mei" is returned
+        '''
+        self.test_save_template(sections={'1': 'section 1', '2': 'section 3', '3': 'section 3'},
+                                score_order=['1', '2', '1'],
+                                expected=['1.mei', '2.mei', '3.mei', 'all_files.mei', 'score.mei'],
+                                save_out_calls=[(mock.ANY, '1.mei'), (mock.ANY, '2.mei'),
+                                                (mock.ANY, '3.mei'), (mock.ANY, 'score.mei')])
+
+    def test_save_5b(self):
+        '''
+        Integration test for test_save_5a().
+        '''
+        sections = {'1': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '1'}),
+                    '2': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '2'}),
+                    '3': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '3'})
+                   }
+        exp_listdir = ['all_files.mei', 'score.mei', '1.mei', '2.mei', '3.mei']
+        files = self.test_save_template_nomock(sections=sections, score_order=['1', '2', '1'],
+                                               expected=exp_listdir)
+        listdir = os.listdir(os.path.dirname(files[0]))
+        self.assertCountEqual(exp_listdir, listdir)
+        for each_file in files:
+            if each_file.endswith('all_files.mei'):
+                self.load_n_compare('exp_all_files_4.mei', each_file)
+            elif each_file.endswith('score.mei'):
+                self.load_n_compare('exp_score_1.mei', each_file)
+            else:
+                # TODO: find a way to not need creating an XMLParser with recover=True...
+                #       the reason we need it now is that lxml otherwise fails to parse the
+                #       @xml:id attribute that IT OUTPUTTED BY ITSELF ANYWAY and that's weird
+                actual_section = etree.parse(each_file, etree.XMLParser(recover=True))
+                if each_file.endswith('1.mei'):
+                    self.assertEqual(sections['1'], actual_section.getroot())
+                elif each_file.endswith('2.mei'):
+                    self.assertEqual(sections['2'], actual_section.getroot())
+                elif each_file.endswith('3.mei'):
+                    self.assertEqual(sections['3'], actual_section.getroot())
+
+    def test_save_6a(self):
+        '''
+        Preconditions:
+        - there are three contained <section> elements
+        - _score_order holds three elements, but the first and third are the same
+        - self._head is something
+        Postconditions:
+        - _save_out() called with "head.mei"
+        - _save_out() called with each <section>
+        - _savo_out() called with "score.mei"
+        - each section's filename is returned
+        - "score.mei" is returned
+        - "head.mei" is returned
+        '''
+        self.test_save_template(sections={'1': 'section 1', '2': 'section 3', '3': 'section 3'},
+                                head='something',
+                                score_order=['1', '2', '1'],
+                                expected=['1.mei', '2.mei', '3.mei', 'all_files.mei',
+                                          'score.mei', 'head.mei'],
+                                save_out_calls=[(mock.ANY, '1.mei'), (mock.ANY, '2.mei'),
+                                                (mock.ANY, '3.mei'), (mock.ANY, 'score.mei'),
+                                                (mock.ANY, 'head.mei')])
+
+    def test_save_6b(self):
+        '''
+        Integration test for test_save_6a().
+        '''
+        head = etree.parse(os.path.join(self.path_to_here, 'input_meiHead.mei'))
+        sections = {'1': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '1'}),
+                    '2': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '2'}),
+                    '3': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '3'})
+                   }
+        exp_listdir = ['all_files.mei', 'head.mei', 'score.mei', '1.mei', '2.mei', '3.mei']
+        files = self.test_save_template_nomock(sections=sections, score_order=['1', '2', '1'],
+                                               head=head, expected=exp_listdir)
+        listdir = os.listdir(os.path.dirname(files[0]))
+        self.assertCountEqual(exp_listdir, listdir)
+        for each_file in files:
+            if each_file.endswith('all_files.mei'):
+                self.load_n_compare('exp_all_files_5.mei', each_file)
+            elif each_file.endswith('score.mei'):
+                self.load_n_compare('exp_score_1.mei', each_file)
+            elif each_file.endswith('head.mei'):
+                self.load_n_compare('input_meiHead.mei', each_file)
+            else:
+                # TODO: find a way to not need creating an XMLParser with recover=True...
+                #       the reason we need it now is that lxml otherwise fails to parse the
+                #       @xml:id attribute that IT OUTPUTTED BY ITSELF ANYWAY and that's weird
+                actual_section = etree.parse(each_file, etree.XMLParser(recover=True))
+                if each_file.endswith('1.mei'):
+                    self.assertEqual(sections['1'], actual_section.getroot())
+                elif each_file.endswith('2.mei'):
+                    self.assertEqual(sections['2'], actual_section.getroot())
+                elif each_file.endswith('3.mei'):
+                    self.assertEqual(sections['3'], actual_section.getroot())

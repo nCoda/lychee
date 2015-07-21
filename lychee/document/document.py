@@ -43,6 +43,7 @@ _SECTION = '{}section'.format(_MEINS)
 _SECTION_NOT_FOUND = 'Could not load <section xml:id="{xmlid}">'
 _ERR_MISSING_MEIHEAD = 'missing <meiHead> element in "all_files"'
 _ERR_FAILED_LOADING_MEIHEAD = 'failed to load <meiHead> file'
+_ERR_MISSING_REPO_PATH = 'This Document is not using external files.'
 
 
 def _check_xmlid_chars(xmlid):
@@ -243,21 +244,79 @@ class Document(object):
 
         .. note:: Unlike the other ``get``-prefixed methods, this method returns nothing.
         '''
+        # TODO: when you write this, it should just call the other methods
         raise NotImplementedError()
 
     def save_everything(self):
         '''
-        Writes the MEI document(s) into files. For now, it just writes "self._score."
+        Write the MEI document(s) into files.
 
-        :returns: A list of the pathnames modified during the write-to-files.
+        :returns: A list of the absolute pathnames written out. This does not imply that all the
+            files have changed---just that they are part of the MEI document as it now exists.
         :rtype: list of str
+        :raises: :exc:`lychee.exceptions.CannotSaveError` if the document cannot be written to the
+            filesystem (this happens when ``repository_path`` was not supplied on initialization).
+
+        A Lychee-MEI document is a complex of various XML elements. This method arranges for the
+        documents stored in memory to be saved into files in the proper arrangement as specified
+        by the order.
         '''
-        chree = etree.ElementTree(self._score)
-        chree.write(self.output_filename,
-                    encoding='UTF-8',
-                    xml_declaration=True,
-                    pretty_print=True)
-        return [self.output_filename]
+
+        if self._repo_path is None:
+            raise exceptions.CannotSaveError(_ERR_MISSING_REPO_PATH)
+
+        # hold the absolute paths of all modified files
+        saved_files = []
+
+        # hold the "all_files.mei" document
+        all_files = etree.Element('{}meiCorpus'.format(_MEINS))
+
+        # hold the <mei> element for "all_files.mei"
+        mei_elem = etree.Element('{}mei'.format(_MEINS))
+
+        # hold the <meiHead> element for "all_files.mei"
+        mei_head = etree.Element('{}meiHead'.format(_MEINS))
+
+        # 1.) save the <meiHead> element
+        if self._head is not None:
+            head_path = os.path.join(self._repo_path, 'head.mei')
+            _save_out(self._head, head_path)
+            saved_files.append(head_path)
+            mei_head.append(_make_ptr('head', 'head.mei'))
+
+        # 2.) build the <score> element and save it
+        if len(self._score_order) > 0:
+            # make the <score> proper
+            score = etree.Element('{}score'.format(_MEINS))
+            for xmlid in self._score_order:
+                section_path = '{}.mei'.format(xmlid)  # path relative to "all_files.mei"
+                score.append(_make_ptr('section', section_path))
+            score_path = os.path.join(self._repo_path, 'score.mei')
+            _save_out(score, score_path)
+            saved_files.append(score_path)
+            # put a <ptr> in "all_files"
+            mei_elem.insert(0, _make_ptr('score', 'score.mei'))
+
+        # 3.) save contained <section> elements
+        section_paths = []
+        for xmlid, section in self._sections.items():
+            section_path = '{}.mei'.format(xmlid)  # path relative to "all_files.mei"
+            section_paths.append(section_path)
+            section_path = os.path.join(self._repo_path, section_path)  # build absolute path
+            _save_out(section, section_path)
+            saved_files.append(section_path)
+        section_paths = sorted(section_paths)
+        for each_path in section_paths:
+            mei_elem.append(_make_ptr('section', each_path))
+
+        # 5.) save "all_files.mei"
+        all_files.append(mei_head)
+        all_files.append(mei_elem)
+        self._all_files = all_files
+        _save_out(self._all_files, self._all_files_path)
+        saved_files.append(self._all_files_path)
+
+        return saved_files
 
     def get_head(self):
         '''

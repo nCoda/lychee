@@ -1,0 +1,14 @@
+<!-- This is an input value for the test suite. It's a bare-bones "head.mei" file.
+     This file is used by tests in:
+     - "test_document.py"
+-->
+<mei:meiHead xmlns:mei="http://www.music-encoding.org/ns/mei">
+    <mei:fileDesc>
+        <mei:titleStmt>
+            <mei:title>Lychee-MEI Test File</mei:title>
+        </mei:titleStmt>
+        <mei:pubStmt>
+            <mei:unPub/>
+        </mei:pubStmt>
+    </mei:fileDesc>
+</mei:meiHead>

@@ -68,7 +68,7 @@ class CommonTestMethods(object):
             second_keys = [x for x in second_list[i].keys()]
             self.assertCountEqual(first_keys, second_keys)
             for key in first_keys:
-                self.assertEqual(first[i].get(key), second[i].get(key))
+                self.assertEqual(first_list[i].get(key), second_list[i].get(key))
 
 
 class TestSmallThings(unittest.TestCase):
@@ -77,6 +77,17 @@ class TestSmallThings(unittest.TestCase):
     - :func:`_check_xmlid_chars`
     - :meth:`_set_default`
     '''
+
+    assertElementsEqual = CommonTestMethods.assertElementsEqual
+
+    def setUp(self):
+        '''
+        Make an empty Document on "self.document" with a temporary directory. The repository
+        directory's name is stored in "self.repo_dir." There should already be an "all_files.mei"
+        file, in accordance with how Document.__init__() works.
+        '''
+        self.addTypeEqualityFunc(etree._Element, self.assertElementsEqual)
+        self.addTypeEqualityFunc(etree._ElementTree, self.assertElementsEqual)
 
     def test__check_xmlid_chars_1(self):
         '''
@@ -109,33 +120,16 @@ class TestSmallThings(unittest.TestCase):
         # 1.) get a temporary file
         temp_dir = tempfile.TemporaryDirectory()
         test_path = os.path.join(temp_dir.name, 'test_all_files.mei')
+        expected_path = os.path.join(os.path.dirname(inspect.getfile(self.__class__)),
+                                     'exp_all_files_1.mei')
+        expected = etree.parse(expected_path)
         # 2.) run the function
         actual = document._make_empty_all_files(test_path)
         # 3.) ensure the returned "actual" document is proper
-        self.assertIsInstance(actual, etree._ElementTree)
-        root = actual.getroot()
-        for i, elem in enumerate([x for x in root.iter()]):
-            if 0 == i:
-                self.assertEqual('{http://www.music-encoding.org/ns/mei}meiCorpus', elem.tag)
-            elif 1 == i:
-                self.assertEqual('{http://www.music-encoding.org/ns/mei}meiHead', elem.tag)
-            elif 2 == i:
-                self.assertEqual('{http://www.music-encoding.org/ns/mei}mei', elem.tag)
-            else:
-                raise AssertionError('i should only be 0, 1, or 2 but it was {}'.format(i))
+        self.assertEqual(expected, actual)
         # 4.) ensure the saved document is also proper
         actualFile = etree.parse(test_path)
-        self.assertIsInstance(actualFile, etree._ElementTree)
-        root = actualFile.getroot()
-        for i, elem in enumerate([x for x in root.iter()]):
-            if 0 == i:
-                self.assertEqual('{http://www.music-encoding.org/ns/mei}meiCorpus', elem.tag)
-            elif 1 == i:
-                self.assertEqual('{http://www.music-encoding.org/ns/mei}meiHead', elem.tag)
-            elif 2 == i:
-                self.assertEqual('{http://www.music-encoding.org/ns/mei}mei', elem.tag)
-            else:
-                raise AssertionError('i should only be 0, 1, or 2 but it was {}'.format(i))
+        self.assertEqual(expected, actualFile)
 
     def test__make_empty_all_files_2(self):
         '''
@@ -143,20 +137,13 @@ class TestSmallThings(unittest.TestCase):
         '''
         # 1.) get a temporary file
         test_path = None
+        expected_path = os.path.join(os.path.dirname(inspect.getfile(self.__class__)),
+                                     'exp_all_files_1.mei')
+        expected = etree.parse(expected_path)
         # 2.) run the function
         actual = document._make_empty_all_files(test_path)
         # 3.) ensure the returned "actual" document is proper
-        self.assertIsInstance(actual, etree._ElementTree)
-        root = actual.getroot()
-        for i, elem in enumerate([x for x in root.iter()]):
-            if 0 == i:
-                self.assertEqual('{http://www.music-encoding.org/ns/mei}meiCorpus', elem.tag)
-            elif 1 == i:
-                self.assertEqual('{http://www.music-encoding.org/ns/mei}meiHead', elem.tag)
-            elif 2 == i:
-                self.assertEqual('{http://www.music-encoding.org/ns/mei}mei', elem.tag)
-            else:
-                raise AssertionError('i should only be 0, 1, or 2 but it was {}'.format(i))
+        self.assertEqual(expected, actual)
         # 4.) ensure the saved document is also proper
         self.assertFalse(os.path.exists('None'))
 

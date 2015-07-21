@@ -61,20 +61,20 @@ def _check_xmlid_chars(xmlid):
 
 
 def _set_default(here, this, that):
-        '''
-        Returns ``here[this]``, if ``this`` is a key in ``here``, otherwise returns ``that``.
+    '''
+    Returns ``here[this]``, if ``this`` is a key in ``here``, otherwise returns ``that``.
 
-        **Examples**
+    **Examples**
 
-        >>> _set_default({'a': 12}, 'a', 42)
-        12
-        >>> _set_default({'a': 12}, 'b', 42)
-        42
-        '''
-        if this in here:
-            return here[this]
-        else:
-            return that
+    >>> _set_default({'a': 12}, 'a', 42)
+    12
+    >>> _set_default({'a': 12}, 'b', 42)
+    42
+    '''
+    if this in here:
+        return here[this]
+    else:
+        return that
 
 
 def _make_empty_all_files(pathname):
@@ -150,7 +150,7 @@ def _save_out(this, to_here):
     :returns: ``None``
     :raises: :exc:`OSError` if something messes up
     '''
-    if isinstance(this, etree._Element):
+    if isinstance(this, etree._Element):  # pylint: disable=protected-access
         this = etree.ElementTree(this)
     this.write_c14n(to_here)
 
@@ -189,7 +189,7 @@ class Document(object):
     a :obj:`with` statement). This way, you cannot forget to save your changes to the filesystem.
     '''
 
-    def __init__(self, repository_path=None, **kwargs):
+    def __init__(self, repository_path=None):
         '''
         :param str repository_path: Path to a directory in which the files for this :class:`Document`
             are or will be stored. The default of ``None`` will not save any files.
@@ -362,7 +362,7 @@ class Document(object):
         # that the presence of the <ptr> in the "all_files" file will indicate whether we have an
         # <meiHead> with useful information, or just empty.
         if (self._repo_path is not None
-            and self._all_files.find('.//{}ptr[@targettype="head"]'.format(_MEINS)) is None):
+                and self._all_files.find('.//{}ptr[@targettype="head"]'.format(_MEINS)) is None):
             mei_head = self._all_files.find('./{}meiHead'.format(_MEINS))
             mei_head.append(etree.Element('{}ptr'.format(_MEINS),
                                           attrib={'targettype': 'head',

@@ -154,8 +154,7 @@ class TestSmallThings(unittest.TestCase):
         tree = mock.MagicMock(spec_set=etree._ElementTree)
         to_here = 'whatever.mei'
         document._save_out(tree, to_here)
-        tree.write.assert_called_once_with(to_here, encoding='UTF-8', xml_declaration=True,
-                                           pretty_print=True)
+        tree.write_c14n.assert_called_once_with(to_here)
 
     @mock.patch('lychee.document.document.etree.ElementTree')
     def test__save_out_2(self, mock_etree):
@@ -168,8 +167,7 @@ class TestSmallThings(unittest.TestCase):
         elem = mock.MagicMock(spec_set=etree._Element)
         document._save_out(elem, to_here)
         mock_etree.assert_called_once_with(elem)
-        tree.write.assert_called_once_with(to_here, encoding='UTF-8', xml_declaration=True,
-                                           pretty_print=True)
+        tree.write_c14n.assert_called_once_with(to_here)
 
     def test__save_out_3(self):
         '''

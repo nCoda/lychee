@@ -152,7 +152,7 @@ def _save_out(this, to_here):
     '''
     if isinstance(this, etree._Element):
         this = etree.ElementTree(this)
-    this.write(to_here, encoding='UTF-8', xml_declaration=True, pretty_print=True)
+    this.write_c14n(to_here)
 
 
 def _make_ptr(targettype, target):

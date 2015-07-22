@@ -42,7 +42,7 @@ Converts an MEI document to an Abjad document.
         Note("cqs'4.")
 '''
 
-
+import six
 from lxml import etree as ETree
 from abjad import *
 from abjad.tools.scoretools.NoteHead import NoteHead
@@ -238,41 +238,58 @@ def mei_section_to_abjad_score(mei_section):
 
 def tupletspan_element_to_empty_tuplet(mei_tupletspan):
     numerator = mei_tupletspan.get('numBase')
-    duration = str(mei_tupletspan.get('dur'))
-    if numerator != None:
+    mei_duration = mei_tupletspan.get('dur')
+    if numerator and mei_duration == None:
         denominator = mei_tupletspan.get('num')
         multiplier = Multiplier(int(numerator), int(denominator))
         return Tuplet(multiplier, [])
-    if duration != None:
+    elif mei_duration != None:
         dots = mei_tupletspan.get('dots')
-        dur_string = duration
+        dur_string = six.b(str(mei_duration))
         if dots != None:
             for x in range(int(dots)):
                 dur_string += '.'
         duration = Duration()
         duration = duration.from_lilypond_duration_string(dur_string)
-        return FixedDurationTuplet(duration, [])
+        return_tuplet = FixedDurationTuplet(duration, [])
+        return return_tuplet
+
+def setup_outermost_tupletspan(mei_tupletspan):
+    mei_duration = mei_tupletspan.get('dur')
+    dots = mei_tupletspan.get('dots')
+    dur_string = six.b(str(mei_duration))
+    if dots != None:
+        for x in range(int(dots)):
+            dur_string += '.'
+    duration = Duration()
+    duration = duration.from_lilypond_duration_string(dur_string)
+    return_tuplet = FixedDurationTuplet(duration, [])
+    return return_tuplet
 
 
 def mei_tupletspan_to_abjad_tuplet(mei_tupletspan):
     if isinstance(mei_tupletspan, list):
         # list beginning with tuplet span and continuing with spanned Elements
         # set up the outermost tuplet and components list
-        abjad_outermost_tuplet = tupletspan_element_to_empty_tuplet(mei_tupletspan[0])
+        abjad_outermost_tuplet = setup_outermost_tupletspan(mei_tupletspan[0])
         tuplet_components = []
-        for x,element in enumerate(mei_tupletspan[1:]):
+        outermost_tuplet_members = mei_tupletspan[1:]
+        index = 0
+        while index < len(outermost_tuplet_members):
+            element = outermost_tuplet_members[index]
             #iterate through the list; if you hit a tuplet, recurse
             if element.tag == '{}tupletspan'.format(_MEINS):
                 plist = element.get('plist').split()
-                end_index = x + len(plist) + 1
-                recursion_list = [element]
-                recursion_list.extend(mei_tupletspan[x:end_index])
+                end_index = index + len(plist) + 1
+                recursion_list = outermost_tuplet_members[index:end_index]
                 abjad_tuplet = mei_tupletspan_to_abjad_tuplet(recursion_list)
                 tuplet_components.append(abjad_tuplet)
+                index = index + len(plist) + 1
             else:
                 #convert the element and add it to the list
                 mei_element = mei_element_to_abjad_leaf(element)
                 tuplet_components.append(mei_element)
+                index += 1
         abjad_outermost_tuplet.extend(tuplet_components)
         abjad_outermost_tuplet = abjad_outermost_tuplet.to_fixed_duration_tuplet()
         return abjad_outermost_tuplet

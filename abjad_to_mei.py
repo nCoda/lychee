@@ -103,9 +103,9 @@ def convert_accidental_abjad_to_mei(abjad_accidental_string):
 def add_xml_id_to_abjad_object_and_mei_element_pair(abjad_object, mei_element):
     if isinstance(abjad_object, NoteHead):
         parent_chord = abjad_object.client
-        parentage = inspect(parent_chord).get_parentage()
+        parentage = inspect_(parent_chord).get_parentage()
     else:
-        parentage = inspect(abjad_object).get_parentage()
+        parentage = inspect_(abjad_object).get_parentage()
     id_string = str(abjad_object) + str(parentage.score_index)
     abjad_id = six.b(id_string)
     hasher = hashlib.new('SHA256', abjad_id)
@@ -286,6 +286,19 @@ def empty_abjad_tuplet_to_mei_tupletspan_element(abjad_tuplet):
         add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet, tupletspan)
         return tupletspan
 
+def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
+    mei_tupletspan.set('n','1')
+    duration = abjad_tuplet.target_duration
+    dur = duration.lilypond_duration_string
+    dots = duration.dot_count
+    if dots:
+        dur = dur[:dur.find('.')]
+        mei_tupletspan.set('dots', six.b(str(dots)))
+    mei_tupletspan.set('dur', six.b(dur))
+    mei_tupletspan.set('num', six.b(str(abjad_tuplet.multiplier.denominator)))
+    mei_tupletspan.set('numBase', six.b(str(abjad_tuplet.multiplier.numerator)))
+    add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet, mei_tupletspan)
+    
 
 def abjad_tuplet_to_mei_tupletspan(abjad_tuplet):
     if len(abjad_tuplet) == 0:
@@ -296,42 +309,27 @@ def abjad_tuplet_to_mei_tupletspan(abjad_tuplet):
         span_n = 1
         component_n = 1
         outermost_span = ETree.Element('{}tupletspan'.format(_MEINS))
-        outermost_span.set('n',six.b(str(span_n)))
-        duration = abjad_tuplet.target_duration
-        dur = duration.lilypond_duration_string
-        dots = duration.dot_count
-        if dots:
-            dur = dur[:dur.find('.')]
-            outermost_span.set('dots', six.b(str(dots)))
-        outermost_span.set('dur', six.b(dur))
-        outermost_span.set('num', six.b(str(abjad_tuplet.multiplier.denominator)))
-        outermost_span.set('numBase', six.b(str(abjad_tuplet.multiplier.numerator)))
-        add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet, outermost_span)
+        setup_outermost_tupletspan(outermost_span, abjad_tuplet)
         output_list = [outermost_span]
         plist = ''
         for x, component in enumerate(abjad_tuplet):
             if isinstance(component, Tuplet):
                 span_n += 1
                 tuplet_list = abjad_tuplet_to_mei_tupletspan(component)
-                tuplet_list[0].set('n', span_n)
+                tuplet_list[0].set('n', six.b(str(span_n)))
                 add_xml_id_to_abjad_object_and_mei_element_pair(component, tuplet_list[0])
-                plist += six.b(str(tuplet_list[0].get(_XMLNS))) + ' '
-                for component in tuplet_list[:1]:
-                    plist += six.b(str(component.get(_XMLNS))) + ' '
-                plist += six.b(str(mei_component.get(_XMLNS))) + ' '
                 output_list.extend(tuplet_list)
             else:
                 mei_component = abjad_leaf_to_mei_element(component)
                 mei_component.set('n', six.b(str(component_n)))
                 component_n += 1
                 add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet[x], mei_component)
-                plist += six.b(str(mei_component.get(_XMLNS))) + ' '
-                if x == 0:
-                    outermost_span.set('startid', mei_component.get(_XMLNS))
-                if x == len(abjad_tuplet) - 1:
-                    outermost_span.set('endid', mei_component.get(_XMLNS))
-                output_list.append(abjad_leaf_to_mei_element(component)) 
+                output_list.append(mei_component) 
+        for element in output_list[1:]:
+            plist = plist + six.b(str(element.get(_XMLNS))) + ' '
         plist = plist[:-1]
-        outermost_span.set('plist', plist)
+        outermost_span.set('startid',six.b(str(output_list[1].get(_XMLNS))))
+        outermost_span.set('endid',six.b(str(output_list[-1].get(_XMLNS))))
+        outermost_span.set('plist',plist)
         return output_list
         

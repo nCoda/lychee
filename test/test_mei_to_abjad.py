@@ -11,6 +11,7 @@ from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.scoretools.Score import Score
 from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.durationtools.Multiplier import Multiplier
+from abjad.tools.topleveltools.inspect_ import inspect_
 import mei_to_abjad
 import abjad_test_case
 import mock
@@ -490,7 +491,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         for note in abjad_tuplet:
             self.assertTrue(isinstance(note, Note))
             self.assertEqual(note.written_duration, Duration(1,8))
-            # self.assertEqual(inspect(note).get_duration(), Duration(1,12))
+            self.assertEqual(inspect_(note).get_duration(), Duration(1,12))
     
     def test_mei_tupletspan_to_abjad_tuplet_full_dotted(self):
         '''
@@ -514,5 +515,45 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         for note in abjad_tuplet:
             self.assertTrue(isinstance(note, Note))
             self.assertEqual(note.written_duration, Duration(1,8))
-            # self.assertEqual(inspect(note).get_duration(), Duration(3,40))
+            self.assertEqual(inspect_(note).get_duration(), Duration(3,40))
+    
+    def test_mei_tupletspan_to_abjad_tuplet_full_nested(self):
+        '''
+        precondition: list containing mei tupletspan Element, notes, and (nested) tupletspan Element
+        postcondition: abjad Tuplet containing notes and (nested) abjad Tuplet
+        '''
+        mei_nested_tuplet = []
+        outer_tuplet = ETree.Element('{}tupletspan'.format(_MEINS), dur='4', dots='1', num='5', numBase='3')
+        inner_tuplet = ETree.Element('{}tupletspan'.format(_MEINS), dur='4', num='3', numBase='2')
+        inner_tuplet.set(_XMLNS, six.b('1'))
+        mei_nested_tuplet.extend([outer_tuplet, inner_tuplet])
+        for x in range(6):
+            note = ETree.Element('note', dur='8', pname='c', octave='4')
+            note.set(_XMLNS, six.b(str(x + 2)))
+            mei_nested_tuplet.append(note)
+        outer_tuplet.set('startid', mei_nested_tuplet[1].get(_XMLNS))
+        outer_tuplet.set('endid', mei_nested_tuplet[-1].get(_XMLNS))
+        outer_tuplet.set('plist', '1 2 3 4 5 6 7')
+        inner_tuplet.set('startid', mei_nested_tuplet[2].get(_XMLNS))
+        inner_tuplet.set('endid', mei_nested_tuplet[4].get(_XMLNS))
+        inner_tuplet.set('plist', '2 3 4')
+        
+        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(mei_nested_tuplet)
+        
+        inner_tuplet = abjad_tuplet[0]
+        self.assertTrue(isinstance(abjad_tuplet, Tuplet))
+        self.assertTrue(isinstance(abjad_tuplet[0], Tuplet))
+        self.assertEqual(len(abjad_tuplet), 4)
+        self.assertEqual(abjad_tuplet.multiplier, Multiplier(3,5))
+        self.assertEqual(inner_tuplet.multiplier, Multiplier(2,3))
+        self.assertEqual(inspect_(abjad_tuplet).get_duration(), Duration(3,8))
+        self.assertEqual(inspect_(inner_tuplet).get_duration(), Duration(3,20))
+        for note in inner_tuplet:
+            self.assertTrue(isinstance(note, Note))
+            self.assertEqual(note.written_duration, Duration(1,8))
+            self.assertEqual(inspect_(note).get_duration(), Duration(1,20))
+        for note in abjad_tuplet[1:]:
+            self.assertTrue(isinstance(note, Note))
+            self.assertEqual(note.written_duration, Duration(1,8))
+            self.assertEqual(inspect_(note).get_duration(), Duration(3,40))
         

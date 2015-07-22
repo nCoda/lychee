@@ -92,7 +92,7 @@ def _make_empty_all_files(pathname):
     root.append(etree.Element('{}mei'.format(_MEINS)))
     tree = etree.ElementTree(root)
     if pathname is not None:
-        tree.write_c14n(pathname, exclusive=False, inclusive_ns_prefixes=['mei'])
+        _save_out(tree, pathname)
     return tree
 
 

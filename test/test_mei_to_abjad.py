@@ -493,6 +493,34 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
             self.assertEqual(note.written_duration, Duration(1,8))
             self.assertEqual(inspect_(note).get_duration(), Duration(1,12))
     
+    
+    @mock.patch("mei_to_abjad.mei_element_to_abjad_leaf")
+    def test_mei_tupletspan_to_abjad_tuplet_full_mock(self, mock_leaf):
+        '''
+        precondition: mei tupletspan Element with multipier, duration, and children
+        postcondition: abjad Tuplet object with Multiplier, duration, and children
+        '''
+        mei_tupletspan = ETree.Element('tupletspan',num='3', numBase='2', dur='4')
+        tupletspan_list = [mei_tupletspan]
+        for x in range(3):
+            note = ETree.Element('note', pname='c', octave='4', dur='8')
+            note.set(_XMLNS, six.b(str(x + 1)))
+            tupletspan_list.append(note)
+        mei_tupletspan.set('startid', '1')
+        mei_tupletspan.set('endid', '5')
+        mei_tupletspan.set('plist', '1 2 3 4 5')
+        mock_leaf.side_effect = lambda x: Note("c'8")
+    
+        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(tupletspan_list)
+    
+        self.assertEqual(len(abjad_tuplet), 3)
+        self.assertEqual(abjad_tuplet.multiplier, Multiplier(2,3))
+        self.assertEqual(abjad_tuplet.target_duration, Duration(1,4))
+        for note in abjad_tuplet:
+            self.assertTrue(isinstance(note, Note))
+            self.assertEqual(note.written_duration, Duration(1,8))
+            self.assertEqual(inspect_(note).get_duration(), Duration(1,12))
+    
     def test_mei_tupletspan_to_abjad_tuplet_full_dotted(self):
         '''
         precondition: mei tupletspan Element with multipier, dotted duration, and children
@@ -506,6 +534,32 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         mei_tupletspan[0].set('startid', '1')
         mei_tupletspan[0].set('endid', '5')
         mei_tupletspan[0].set('plist', '1 2 3 4 5')
+    
+        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(mei_tupletspan)
+    
+        self.assertEqual(len(abjad_tuplet), 5)
+        self.assertEqual(abjad_tuplet.multiplier, Multiplier(3,5))
+        self.assertEqual(abjad_tuplet.target_duration, Duration(3,8))
+        for note in abjad_tuplet:
+            self.assertTrue(isinstance(note, Note))
+            self.assertEqual(note.written_duration, Duration(1,8))
+            self.assertEqual(inspect_(note).get_duration(), Duration(3,40))
+    
+    @mock.patch("mei_to_abjad.mei_element_to_abjad_leaf")
+    def test_mei_tupletspan_to_abjad_tuplet_full_dotted_mock(self, mock_leaf):
+        '''
+        precondition: mei tupletspan Element with multipier, dotted duration, and children
+        postcondition: abjad Tuplet object with Multiplier, dotted duration, and children
+        '''
+        mei_tupletspan = [ETree.Element('tupletspan',num='5', numBase='3', dur='4', dots='1')]
+        for x in range(5):
+            note = ETree.Element('note', pname='c', octave='4', dur='8')
+            note.set(_XMLNS, six.b(str(x + 1)))
+            mei_tupletspan.append(note)
+        mei_tupletspan[0].set('startid', '1')
+        mei_tupletspan[0].set('endid', '5')
+        mei_tupletspan[0].set('plist', '1 2 3 4 5')
+        mock_leaf.side_effect = lambda x: Note("c'8")
     
         abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(mei_tupletspan)
     
@@ -556,4 +610,45 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
             self.assertTrue(isinstance(note, Note))
             self.assertEqual(note.written_duration, Duration(1,8))
             self.assertEqual(inspect_(note).get_duration(), Duration(3,40))
+    
+    @mock.patch("mei_to_abjad.mei_element_to_abjad_leaf")
+    def test_mei_tupletspan_to_abjad_tuplet_full_nested_mock(self, mock_leaf):
+        '''
+        precondition: list containing mei tupletspan Element, notes, and (nested) tupletspan Element
+        postcondition: abjad Tuplet containing notes and (nested) abjad Tuplet
+        '''
+        mei_nested_tuplet = []
+        outer_tuplet = ETree.Element('{}tupletspan'.format(_MEINS), dur='4', dots='1', num='5', numBase='3')
+        inner_tuplet = ETree.Element('{}tupletspan'.format(_MEINS), dur='4', num='3', numBase='2')
+        inner_tuplet.set(_XMLNS, six.b('1'))
+        mei_nested_tuplet.extend([outer_tuplet, inner_tuplet])
+        for x in range(6):
+            note = ETree.Element('note', dur='8', pname='c', octave='4')
+            note.set(_XMLNS, six.b(str(x + 2)))
+            mei_nested_tuplet.append(note)
+        outer_tuplet.set('startid', mei_nested_tuplet[1].get(_XMLNS))
+        outer_tuplet.set('endid', mei_nested_tuplet[-1].get(_XMLNS))
+        outer_tuplet.set('plist', '1 2 3 4 5 6 7')
+        inner_tuplet.set('startid', mei_nested_tuplet[2].get(_XMLNS))
+        inner_tuplet.set('endid', mei_nested_tuplet[4].get(_XMLNS))
+        inner_tuplet.set('plist', '2 3 4')
+        mock_leaf.side_effect = lambda x: Note("c'8")
         
+        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(mei_nested_tuplet)
+        
+        inner_tuplet = abjad_tuplet[0]
+        self.assertTrue(isinstance(abjad_tuplet, Tuplet))
+        self.assertTrue(isinstance(abjad_tuplet[0], Tuplet))
+        self.assertEqual(len(abjad_tuplet), 4)
+        self.assertEqual(abjad_tuplet.multiplier, Multiplier(3,5))
+        self.assertEqual(inner_tuplet.multiplier, Multiplier(2,3))
+        self.assertEqual(inspect_(abjad_tuplet).get_duration(), Duration(3,8))
+        self.assertEqual(inspect_(inner_tuplet).get_duration(), Duration(3,20))
+        for note in inner_tuplet:
+            self.assertTrue(isinstance(note, Note))
+            self.assertEqual(note.written_duration, Duration(1,8))
+            self.assertEqual(inspect_(note).get_duration(), Duration(1,20))
+        for note in abjad_tuplet[1:]:
+            self.assertTrue(isinstance(note, Note))
+            self.assertEqual(note.written_duration, Duration(1,8))
+            self.assertEqual(inspect_(note).get_duration(), Duration(3,40))

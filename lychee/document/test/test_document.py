@@ -29,9 +29,14 @@ Tests for the :mod:`lychee.document.document` module.
 import inspect
 import os
 import os.path
+import shutil
 import tempfile
 import unittest
-from unittest import mock
+
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 from lxml import etree
 
@@ -47,9 +52,11 @@ _SCORE = '{}score'.format(_MEINS)
 _SECTION = '{}section'.format(_MEINS)
 
 
-class CommonTestMethods(object):
+class TestSmallThings(unittest.TestCase):
     '''
-    Test methods that can be used by many TestCase subclasses.
+    Tests for small helper functions that require few tests:
+    - :func:`_check_xmlid_chars`
+    - :meth:`_set_default`
     '''
 
     def assertElementsEqual(self, first, second, msg=None):
@@ -70,24 +77,29 @@ class CommonTestMethods(object):
             for key in first_keys:
                 self.assertEqual(first_list[i].get(key), second_list[i].get(key))
 
-
-class TestSmallThings(unittest.TestCase):
-    '''
-    Tests for small helper functions that require few tests:
-    - :func:`_check_xmlid_chars`
-    - :meth:`_set_default`
-    '''
-
-    assertElementsEqual = CommonTestMethods.assertElementsEqual
-
     def setUp(self):
         '''
-        Make an empty Document on "self.document" with a temporary directory. The repository
-        directory's name is stored in "self.repo_dir." There should already be an "all_files.mei"
-        file, in accordance with how Document.__init__() works.
+        Make a temporary directory.
         '''
+        if hasattr(self, 'assertItemsEqual'):
+            self.assertCountEqual = self.assertItemsEqual
         self.addTypeEqualityFunc(etree._Element, self.assertElementsEqual)
         self.addTypeEqualityFunc(etree._ElementTree, self.assertElementsEqual)
+        try:
+            # Python 3.2+
+            self._temp_dir = tempfile.TemporaryDirectory()
+            self.repo_dir = self._temp_dir.name
+        except AttributeError:
+            # Python Boring
+            self._temp_dir = None
+            self.repo_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        '''
+        Clean up the temporary directory.
+        '''
+        if self._temp_dir is None:
+            shutil.rmtree(self.repo_dir)
 
     def test__check_xmlid_chars_1(self):
         '''
@@ -118,8 +130,7 @@ class TestSmallThings(unittest.TestCase):
         That _make_empty_all_files() works when a pathname is given.
         '''
         # 1.) get a temporary file
-        temp_dir = tempfile.TemporaryDirectory()
-        test_path = os.path.join(temp_dir.name, 'test_all_files.mei')
+        test_path = os.path.join(self.repo_dir, 'test_all_files.mei')
         expected_path = os.path.join(os.path.dirname(inspect.getfile(self.__class__)),
                                      'exp_all_files_1.mei')
         expected = etree.parse(expected_path)
@@ -174,8 +185,7 @@ class TestSmallThings(unittest.TestCase):
         Do it for real (no mocks)!
         '''
         elem = etree.Element('something')
-        tempdir = tempfile.TemporaryDirectory()
-        to_here = os.path.join(tempdir.name, 'something.mei')
+        to_here = os.path.join(self.repo_dir, 'something.mei')
         document._save_out(elem, to_here)
         self.assertTrue(os.path.exists(to_here))
 
@@ -267,16 +277,35 @@ class TestDocumentInit(unittest.TestCase):
     Tests for document.Document.__init__().
     '''
 
+    def setUp(self):
+        '''
+        Make a temporary directory.
+        '''
+        try:
+            # Python 3.2+
+            self._temp_dir = tempfile.TemporaryDirectory()
+            self.repo_dir = self._temp_dir.name
+        except AttributeError:
+            # Python Boring
+            self._temp_dir = None
+            self.repo_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        '''
+        Clean up the temporary directory.
+        '''
+        if self._temp_dir is None:
+            shutil.rmtree(self.repo_dir)
+
     def test_init_1(self):
         '''
         Repository already has an "all_files.mei" file. It's loaded properly. Instance variables are
         initialized as expected.
         '''
-        repo_dir = tempfile.TemporaryDirectory()
-        all_files_path = os.path.join(repo_dir.name, 'all_files.mei')
+        all_files_path = os.path.join(self.repo_dir, 'all_files.mei')
         document._make_empty_all_files(all_files_path)
         with mock.patch('lychee.document.document._make_empty_all_files') as mock_meaf:
-            doc = document.Document(repo_dir.name)
+            doc = document.Document(self.repo_dir)
         self.assertEqual(0, mock_meaf.call_count)
         self.assertIsInstance(doc._all_files, etree._ElementTree)
         self.assertEqual({}, doc._sections)
@@ -289,11 +318,10 @@ class TestDocumentInit(unittest.TestCase):
         Repository is empty. _make_empty_all_files() is called to create a new "all_files.mei" file.
         Instance variables are initialized as expected.
         '''
-        repo_dir = tempfile.TemporaryDirectory()
-        all_files_path = os.path.join(repo_dir.name, 'all_files.mei')
+        all_files_path = os.path.join(self.repo_dir, 'all_files.mei')
         with mock.patch('lychee.document.document._make_empty_all_files') as mock_meaf:
             mock_meaf.return_value = 'five'
-            doc = document.Document(repo_dir.name)
+            doc = document.Document(self.repo_dir)
         mock_meaf.assert_called_once_with(all_files_path)
         self.assertEqual('five', doc._all_files)
         self.assertEqual({}, doc._sections)
@@ -321,8 +349,7 @@ class TestDocumentInit(unittest.TestCase):
         '''
         Ensure the context manager stuff works (no exception raised).
         '''
-        tempdir = tempfile.TemporaryDirectory()
-        with document.Document(tempdir.name) as doc:
+        with document.Document(self.repo_dir) as doc:
             self.assertIsInstance(doc, document.Document)
         mock_save.assert_called_once_with()
 
@@ -342,9 +369,8 @@ class TestDocumentInit(unittest.TestCase):
         '''
         Ensure the context manager stuff works (arbitrary exception raised).
         '''
-        tempdir = tempfile.TemporaryDirectory()
         with self.assertRaises(RuntimeError):
-            with document.Document(tempdir.name) as doc:
+            with document.Document(self.repo_dir) as doc:
                 self.assertIsInstance(doc, document.Document)
                 raise RuntimeError('asdf')
         self.assertEqual(0, mock_save.call_count)
@@ -356,7 +382,23 @@ class DocumentTestCase(unittest.TestCase):
     method here does some things those test cases will want.
     '''
 
-    assertElementsEqual = CommonTestMethods.assertElementsEqual
+    def assertElementsEqual(self, first, second, msg=None):
+        '''
+        Type-specific equality function for :class:`lxml.etree.Element` and
+        :class:`lxml.etree.ElementTree` objects.
+        '''
+        first_list = [x for x in first.iter()]
+        second_list = [x for x in second.iter()]
+        if len(first_list) != len(second_list):
+            raise self.failureException('element trees are different sizes')
+        for i in range(len(first_list)):
+            if first_list[i].tag != second_list[i].tag:
+                raise self.failureException('Tags are not equal')
+            first_keys = [x for x in first_list[i].keys()]
+            second_keys = [x for x in second_list[i].keys()]
+            self.assertCountEqual(first_keys, second_keys)
+            for key in first_keys:
+                self.assertEqual(first_list[i].get(key), second_list[i].get(key))
 
     def setUp(self):
         '''
@@ -364,11 +406,26 @@ class DocumentTestCase(unittest.TestCase):
         directory's name is stored in "self.repo_dir." There should already be an "all_files.mei"
         file, in accordance with how Document.__init__() works.
         '''
-        self._temp_dir = tempfile.TemporaryDirectory()
-        self.repo_dir = self._temp_dir.name
+        if hasattr(self, 'assertItemsEqual'):
+            self.assertCountEqual = self.assertItemsEqual
+        try:
+            # Python 3.2+
+            self._temp_dir = tempfile.TemporaryDirectory()
+            self.repo_dir = self._temp_dir.name
+        except AttributeError:
+            # Python Boring
+            self._temp_dir = None
+            self.repo_dir = tempfile.mkdtemp()
         self.doc = document.Document(self.repo_dir)
         self.addTypeEqualityFunc(etree._Element, self.assertElementsEqual)
         self.addTypeEqualityFunc(etree._ElementTree, self.assertElementsEqual)
+
+    def tearDown(self):
+        '''
+        In Python before 3.2, we need to clean up the temporary directory ourselves.
+        '''
+        if self._temp_dir is None:
+            shutil.rmtree(self.repo_dir)
 
 
 class TestGetPutHead(DocumentTestCase):
@@ -519,6 +576,7 @@ class TestGetPutSection(DocumentTestCase):
         section_id = '888'
         the_section = 'some section'
         def loader():
+            "Side effect function for the load_everything() mock."
             self.doc._sections[section_id] = the_section
         mock_load_everything.side_effect = loader
         expected = the_section

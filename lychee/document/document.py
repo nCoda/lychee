@@ -345,7 +345,7 @@ class Document(object):
                 # otherwise we can load the file specified in the <ptr>
                 try:
                     self._head = etree.parse(ptr.get('target', default='')).getroot()
-                except OSError:
+                except (OSError, IOError):
                     raise exceptions.HeaderNotFoundError(_ERR_FAILED_LOADING_MEIHEAD)
 
         return self._head

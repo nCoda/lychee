@@ -270,9 +270,11 @@ def abjad_score_to_mei_section(abjad_score):
 
 def empty_abjad_tuplet_to_mei_tupletspan_element(abjad_tuplet):
     if isinstance(abjad_tuplet, Tuplet) and not isinstance(abjad_tuplet, FixedDurationTuplet):
-        numerator = six.b(str(abjad_tuplet.multiplier.numerator))
-        denominator = six.b(str(abjad_tuplet.multiplier.denominator))
-        tupletspan = ETree.Element('{}tupletspan'.format(_MEINS),num=denominator, numBase=numerator)
+        numerator = abjad_tuplet.multiplier.numerator
+        denominator = abjad_tuplet.multiplier.denominator
+        tupletspan = ETree.Element('{}tupletspan'.format(_MEINS),
+                                   num=str(denominator),
+                                   numBase=str(numerator))
         add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet, tupletspan)
         return tupletspan
     elif isinstance(abjad_tuplet, FixedDurationTuplet):
@@ -281,8 +283,8 @@ def empty_abjad_tuplet_to_mei_tupletspan_element(abjad_tuplet):
         tupletspan = ETree.Element('{}tupletspan'.format(_MEINS))
         if dots:
             dur = dur[:dur.find('.')]
-            tupletspan.set('dots', six.b(str(dots)))
-        tupletspan.set('dur', six.b(str(dur)))
+            tupletspan.set('dots', str(dots))
+        tupletspan.set('dur', dur)
         add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet, tupletspan)
         return tupletspan
 
@@ -293,10 +295,10 @@ def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
     dots = duration.dot_count
     if dots:
         dur = dur[:dur.find('.')]
-        mei_tupletspan.set('dots', six.b(str(dots)))
-    mei_tupletspan.set('dur', six.b(dur))
-    mei_tupletspan.set('num', six.b(str(abjad_tuplet.multiplier.denominator)))
-    mei_tupletspan.set('numBase', six.b(str(abjad_tuplet.multiplier.numerator)))
+        mei_tupletspan.set('dots', str(dots))
+    mei_tupletspan.set('dur', dur)
+    mei_tupletspan.set('num', str(abjad_tuplet.multiplier.denominator))
+    mei_tupletspan.set('numBase', str(abjad_tuplet.multiplier.numerator))
     add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet, mei_tupletspan)
     
 
@@ -316,20 +318,19 @@ def abjad_tuplet_to_mei_tupletspan(abjad_tuplet):
             if isinstance(component, Tuplet):
                 span_n += 1
                 tuplet_list = abjad_tuplet_to_mei_tupletspan(component)
-                tuplet_list[0].set('n', six.b(str(span_n)))
+                tuplet_list[0].set('n', str(span_n))
                 add_xml_id_to_abjad_object_and_mei_element_pair(component, tuplet_list[0])
                 output_list.extend(tuplet_list)
             else:
                 mei_component = abjad_leaf_to_mei_element(component)
-                mei_component.set('n', six.b(str(component_n)))
+                mei_component.set('n', str(component_n))
                 component_n += 1
                 add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet[x], mei_component)
-                output_list.append(mei_component) 
+                output_list.append(mei_component)
         for element in output_list[1:]:
-            plist = plist + six.b(str(element.get(_XMLNS))) + ' '
+            plist = plist + element.get(_XMLNS) + ' '
         plist = plist[:-1]
-        outermost_span.set('startid',six.b(str(output_list[1].get(_XMLNS))))
-        outermost_span.set('endid',six.b(str(output_list[-1].get(_XMLNS))))
+        outermost_span.set('startid',output_list[1].get(_XMLNS))
+        outermost_span.set('endid',output_list[-1].get(_XMLNS))
         outermost_span.set('plist',plist)
         return output_list
-        

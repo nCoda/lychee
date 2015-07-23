@@ -14,9 +14,13 @@ from abjad.tools.durationtools.Multiplier import Multiplier
 from abjad.tools.topleveltools.inspect_ import inspect_
 from lychee.converters import mei_to_abjad
 import abjad_test_case
-import mock
 import unittest
 import six
+
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 _MEINS = '{http://www.music-encoding.org/ns/mei}'
 _XMLNS = '{http://www.w3.org/XML/1998/namespace}id'

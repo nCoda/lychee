@@ -1,5 +1,4 @@
 from lxml import etree as ETree
-import mock
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
@@ -16,6 +15,11 @@ from abjad.tools.topleveltools import *
 from lychee.converters import abjad_to_mei
 import unittest
 import abjad_test_case
+
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 _MEINS = '{http://www.music-encoding.org/ns/mei}'
 _XMLNS = '{http://www.w3.org/XML/1998/namespace}id'

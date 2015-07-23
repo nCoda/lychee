@@ -245,7 +245,7 @@ def tupletspan_element_to_empty_tuplet(mei_tupletspan):
         return Tuplet(multiplier, [])
     elif mei_duration != None:
         dots = mei_tupletspan.get('dots')
-        dur_string = six.b(str(mei_duration))
+        dur_string = mei_duration
         if dots != None:
             for x in range(int(dots)):
                 dur_string += '.'
@@ -257,7 +257,7 @@ def tupletspan_element_to_empty_tuplet(mei_tupletspan):
 def setup_outermost_tupletspan(mei_tupletspan):
     mei_duration = mei_tupletspan.get('dur')
     dots = mei_tupletspan.get('dots')
-    dur_string = six.b(str(mei_duration))
+    dur_string = mei_duration
     if dots != None:
         for x in range(int(dots)):
             dur_string += '.'

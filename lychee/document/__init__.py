@@ -43,7 +43,7 @@ def _document_processor(converted, **kwargs):
     score = etree.Element('{}score'.format(_MEINS))
     score.append(converted)
 
-    doc = Document()
+    doc = Document(repository_path='testrepo')
     doc.put_score(score)
     output_filenames = doc.save_everything()
 

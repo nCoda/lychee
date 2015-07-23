@@ -1,7 +1,6 @@
 Abjad==2.16
 Babel==1.3
 Jinja2==2.7.3
--e git+git@jameson.adjectivenoun.ca:lychee/lychee.git@b12982965aaf60ebb2daf9b3eb9bd602dbea0a56#egg=Lychee-master
 MarkupSafe==0.23
 Pygments==2.0.2
 Sphinx==1.3.1

@@ -13,7 +13,7 @@ from abjad.tools.scoretools.Staff import Staff
 from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.scoretools.Score import Score
 from abjad.tools.topleveltools import *
-import abjad_to_mei
+from lychee.converters import abjad_to_mei
 import unittest
 import abjad_test_case
 
@@ -272,10 +272,10 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(mei_layer[1].tag, '{}note'.format(_MEINS))
         self.assertEqual(mei_layer[2].tag, '{}chord'.format(_MEINS))
         self.assertIsNotNone(mei_layer.get(_XMLNS))
-   
-    @mock.patch("abjad_to_mei.abjad_chord_to_mei_chord")
-    @mock.patch("abjad_to_mei.abjad_note_to_mei_note")
-    @mock.patch("abjad_to_mei.abjad_rest_to_mei_rest")
+
+    @mock.patch("lychee.converters.abjad_to_mei.abjad_chord_to_mei_chord")
+    @mock.patch("lychee.converters.abjad_to_mei.abjad_note_to_mei_note")
+    @mock.patch("lychee.converters.abjad_to_mei.abjad_rest_to_mei_rest")
     def test_voice_to_layer_full_mock(self,mock_rest,mock_note, mock_chord):
         '''
         precondition: abjad Voice containing rest, note, and chord
@@ -329,8 +329,8 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(len(mei_staff), 1)
         self.assertEqual(mei_staff[0].tag, '{}layer'.format(_MEINS))
         self.assertIsNotNone(mei_staff.get(_XMLNS))
-    
-    @mock.patch("abjad_to_mei.abjad_voice_to_mei_layer")
+
+    @mock.patch("lychee.converters.abjad_to_mei.abjad_voice_to_mei_layer")
     def test_staff_one_voice_mock(self,mock_layer):
         '''
         precondition: abjad Staff containing only one Voice
@@ -370,8 +370,8 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(mei_staff[1].tag, '{}layer'.format(_MEINS))
         self.assertEqual(mei_staff[1].get('n'),'2')
         self.assertIsNotNone(mei_staff.get(_XMLNS))
-    
-    @mock.patch("abjad_to_mei.abjad_voice_to_mei_layer")
+
+    @mock.patch("lychee.converters.abjad_to_mei.abjad_voice_to_mei_layer")
     def test_staff_parallel_mock(self,mock_layer):
         '''
         precondition: abjad Staff containing two or more parallel voices
@@ -412,8 +412,8 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(mei_staff[0].tag, '{}layer'.format(_MEINS))
         self.assertEqual(mei_staff[0].get('n'),'1')
         self.assertIsNotNone(mei_staff.get(_XMLNS))
-    
-    @mock.patch("abjad_to_mei.abjad_voice_to_mei_layer")
+
+    @mock.patch("lychee.converters.abjad_to_mei.abjad_voice_to_mei_layer")
     def test_staff_consecutive_mock(self,mock_layer):
         '''
         precondition: abjad Staff containing two or more consecutive Voices
@@ -449,8 +449,8 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(mei_staff[0].tag, '{}layer'.format(_MEINS))
         self.assertEqual(mei_staff[0].get('n'),'1')
         self.assertIsNotNone(mei_staff.get(_XMLNS))
-    
-    @mock.patch("abjad_to_mei.abjad_voice_to_mei_layer")
+
+    @mock.patch("lychee.converters.abjad_to_mei.abjad_voice_to_mei_layer")
     def test_staff_leaves_mock(self, mock_layer):
         '''
         precondition: abjad Staff containing leaves and no Voices
@@ -491,8 +491,8 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(mei_staff[0].get('n'),'1')
         self.assertEqual(len(mei_staff[0]), 8)
         self.assertIsNotNone(mei_staff.get(_XMLNS))
-    
-    @mock.patch("abjad_to_mei.abjad_voice_to_mei_layer")
+
+    @mock.patch("lychee.converters.abjad_to_mei.abjad_voice_to_mei_layer")
     def test_staff_leaves_and_voices_mock(self, mock_layer):
         '''
         precondition: abjad Staff containing both leaves and Voices as siblings
@@ -570,8 +570,8 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
             self.assertEqual(mei_section[x].tag, '{}staff'.format(_MEINS))
             self.assertEqual(mei_section[x].get('n'), str(x))
         self.assertIsNotNone(mei_section.get(_XMLNS))
-    
-    @mock.patch("abjad_to_mei.abjad_staff_to_mei_staff")
+
+    @mock.patch("lychee.converters.abjad_to_mei.abjad_staff_to_mei_staff")
     def test_section_full_mock(self,mock_section):
         '''
         precondition: abjad Score containing Staff, StaffGroup containing two Staffs, and Staff
@@ -694,8 +694,8 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(len(chunked_plist), 3)
         for note_element in mei_elements[1:]:
             self.assertTrue(note_element.get(_XMLNS) in chunked_plist)
-    
-    @mock.patch("abjad_to_mei.abjad_leaf_to_mei_element")
+
+    @mock.patch("lychee.converters.abjad_to_mei.abjad_leaf_to_mei_element")
     def test_abjad_tuplet_to_mei_tupletspan_full_mock(self, mock_element):
         '''
         precondition: abjad Tuplet containing leaves
@@ -744,8 +744,8 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(len(chunked_plist), 5)
         for note_element in mei_elements[1:]:
             self.assertTrue(note_element.get(_XMLNS) in chunked_plist)
-    
-    @mock.patch("abjad_to_mei.abjad_leaf_to_mei_element")
+
+    @mock.patch("lychee.converters.abjad_to_mei.abjad_leaf_to_mei_element")
     def test_abjad_tuplet_to_mei_tupletspan_full_dotted_mock(self, mock_element):
         '''
         precondition: abjad Tuplet of dotted duration containing leaves
@@ -811,8 +811,8 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(_XMLNS))
         for note_element in mei_elements[1:]:
             self.assertTrue(note_element.get(_XMLNS) in outer_ids)
-    
-    @mock.patch("abjad_to_mei.abjad_leaf_to_mei_element")
+
+    @mock.patch("lychee.converters.abjad_to_mei.abjad_leaf_to_mei_element")
     def test_abjad_tuplet_to_mei_tupletspan_full_nested_mock(self, mock_element):
         '''
         precondition: Abjad Tuplet containing Leaves and a Tuplet.

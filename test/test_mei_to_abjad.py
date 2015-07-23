@@ -12,7 +12,7 @@ from abjad.tools.scoretools.Score import Score
 from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.durationtools.Multiplier import Multiplier
 from abjad.tools.topleveltools.inspect_ import inspect_
-import mei_to_abjad
+from lychee.converters import mei_to_abjad
 import abjad_test_case
 import mock
 import unittest
@@ -259,9 +259,10 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(abjad_voice, Voice("r4 c'4 <c' d'>4"))
     
 
-    @mock.patch("mei_to_abjad.mei_chord_to_abjad_chord")
-    @mock.patch("mei_to_abjad.mei_note_to_abjad_note")
-    @mock.patch("mei_to_abjad.mei_rest_to_abjad_rest")
+
+    @mock.patch("lychee.converters.mei_to_abjad.mei_chord_to_abjad_chord")
+    @mock.patch("lychee.converters.mei_to_abjad.mei_note_to_abjad_note")
+    @mock.patch("lychee.converters.mei_to_abjad.mei_rest_to_abjad_rest")
     def test_layer_to_voice_full_mock(self, mock_rest, mock_note, mock_chord):
         '''
         precondition: mei layer Element containing children
@@ -304,8 +305,8 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         abjad_staff = mei_to_abjad.mei_staff_to_abjad_staff(mei_staff)
         
         self.assertEqual(abjad_staff, Staff([Voice("r4 c'4")]))
-    
-    @mock.patch("mei_to_abjad.mei_layer_to_abjad_voice")
+
+    @mock.patch("lychee.converters.mei_to_abjad.mei_layer_to_abjad_voice")
     def test_staff_one_voice_mock(self, mock_voice):
         '''
         precondition: mei staff Element containing one layer Element
@@ -335,8 +336,8 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         abjad_staff = mei_to_abjad.mei_staff_to_abjad_staff(mei_staff)
 
         self.assertEqual(abjad_staff, Staff([Voice(), Voice()]))
-    
-    @mock.patch("mei_to_abjad.mei_layer_to_abjad_voice")
+
+    @mock.patch("lychee.converters.mei_to_abjad.mei_layer_to_abjad_voice")
     def test_staff_parallel_mock(self, mock_voice):
         '''
         precondition: mei staff Element containing two layer Elements
@@ -397,8 +398,8 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(isinstance(abjad_score[1], StaffGroup), True)
         self.assertEqual(isinstance(abjad_score[2], Staff), True)
         self.assertEqual(len(abjad_score[1]), 2)
-        
-    @mock.patch("mei_to_abjad.mei_staff_to_abjad_staff")
+
+    @mock.patch("lychee.converters.mei_to_abjad.mei_staff_to_abjad_staff")
     def test_section_full_mock(self, mock_staff):
         '''
         precondition: mei section Element containing scoreDef element and four staff Elements
@@ -492,9 +493,9 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
             self.assertTrue(isinstance(note, Note))
             self.assertEqual(note.written_duration, Duration(1,8))
             self.assertEqual(inspect_(note).get_duration(), Duration(1,12))
-    
-    
-    @mock.patch("mei_to_abjad.mei_element_to_abjad_leaf")
+
+
+    @mock.patch("lychee.converters.mei_to_abjad.mei_element_to_abjad_leaf")
     def test_mei_tupletspan_to_abjad_tuplet_full_mock(self, mock_leaf):
         '''
         precondition: mei tupletspan Element with multipier, duration, and children
@@ -544,8 +545,8 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
             self.assertTrue(isinstance(note, Note))
             self.assertEqual(note.written_duration, Duration(1,8))
             self.assertEqual(inspect_(note).get_duration(), Duration(3,40))
-    
-    @mock.patch("mei_to_abjad.mei_element_to_abjad_leaf")
+
+    @mock.patch("lychee.converters.mei_to_abjad.mei_element_to_abjad_leaf")
     def test_mei_tupletspan_to_abjad_tuplet_full_dotted_mock(self, mock_leaf):
         '''
         precondition: mei tupletspan Element with multipier, dotted duration, and children
@@ -610,8 +611,8 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
             self.assertTrue(isinstance(note, Note))
             self.assertEqual(note.written_duration, Duration(1,8))
             self.assertEqual(inspect_(note).get_duration(), Duration(3,40))
-    
-    @mock.patch("mei_to_abjad.mei_element_to_abjad_leaf")
+
+    @mock.patch("lychee.converters.mei_to_abjad.mei_element_to_abjad_leaf")
     def test_mei_tupletspan_to_abjad_tuplet_full_nested_mock(self, mock_leaf):
         '''
         precondition: list containing mei tupletspan Element, notes, and (nested) tupletspan Element

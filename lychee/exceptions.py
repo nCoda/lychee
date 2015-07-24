@@ -4,8 +4,8 @@
 # Program Name:           Lychee
 # Program Description:    MEI document manager for formalized document control
 #
-# Filename:               lychee/document/document.py
-# Purpose:                Contains an object representing an MEI document.
+# Filename:               lychee/exceptions.py
+# Purpose:                Errors and Warnings for Lychee-specific error conditions.
 #
 # Copyright (C) 2015 Christopher Antila
 #

@@ -31,4 +31,4 @@ Constants for the "XML" namespace.
 
 XMLNS = '{http://www.w3.org/XML/1998/namespace}'
 
-XMLID = '{}id'.format(XMLNS)
+ID = '{}id'.format(XMLNS)

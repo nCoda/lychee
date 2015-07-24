@@ -42,14 +42,7 @@ from lxml import etree
 
 from lychee import exceptions
 from lychee.document import document
-
-
-_XMLNS = '{http://www.w3.org/XML/1998/namespace}'
-_XMLID = '{}id'.format(_XMLNS)
-_XLINK = '{http://www.w3.org/1999/xlink}'
-_MEINS = '{http://www.music-encoding.org/ns/mei}'
-_SCORE = '{}score'.format(_MEINS)
-_SECTION = '{}section'.format(_MEINS)
+from lychee.namespaces import mei, xlink, xml
 
 
 class TestSmallThings(unittest.TestCase):
@@ -196,11 +189,11 @@ class TestSmallThings(unittest.TestCase):
         targettype = 'silly'
         target = 'bullseye'
         actual = document._make_ptr(targettype, target)
-        self.assertEqual('{}ptr'.format(_MEINS), actual.tag)
+        self.assertEqual(mei.PTR, actual.tag)
         self.assertEqual(targettype, actual.get('targettype'))
         self.assertEqual(target, actual.get('target'))
-        self.assertEqual('onRequest', actual.get('{}actuate'.format(_XLINK)))
-        self.assertEqual('embed', actual.get('{}show'.format(_XLINK)))
+        self.assertEqual('onRequest', actual.get(xlink.ACTUATE))
+        self.assertEqual('embed', actual.get(xlink.SHOW))
 
 
 class TestEnsureScoreOrder(unittest.TestCase):
@@ -212,10 +205,10 @@ class TestEnsureScoreOrder(unittest.TestCase):
         '''
         When the sections are in the expected order.
         '''
-        score = etree.Element(_SCORE)
-        score.append(etree.Element(_SECTION, attrib={_XMLID: '123'}))
-        score.append(etree.Element(_SECTION, attrib={_XMLID: '456'}))
-        score.append(etree.Element(_SECTION, attrib={_XMLID: '789'}))
+        score = etree.Element(mei.SCORE)
+        score.append(etree.Element(mei.SECTION, attrib={xml.ID: '123'}))
+        score.append(etree.Element(mei.SECTION, attrib={xml.ID: '456'}))
+        score.append(etree.Element(mei.SECTION, attrib={xml.ID: '789'}))
         order = ['123', '456', '789']
         self.assertTrue(document._ensure_score_order(score, order))
 
@@ -223,10 +216,10 @@ class TestEnsureScoreOrder(unittest.TestCase):
         '''
         When "score" has more sections than "order" wants.
         '''
-        score = etree.Element(_SCORE)
-        score.append(etree.Element(_SECTION, attrib={_XMLID: '123'}))
-        score.append(etree.Element(_SECTION, attrib={_XMLID: '456'}))
-        score.append(etree.Element(_SECTION, attrib={_XMLID: '789'}))
+        score = etree.Element(mei.SCORE)
+        score.append(etree.Element(mei.SECTION, attrib={xml.ID: '123'}))
+        score.append(etree.Element(mei.SECTION, attrib={xml.ID: '456'}))
+        score.append(etree.Element(mei.SECTION, attrib={xml.ID: '789'}))
         order = ['123', '789']
         self.assertFalse(document._ensure_score_order(score, order))
 
@@ -234,10 +227,10 @@ class TestEnsureScoreOrder(unittest.TestCase):
         '''
         When "score" and "order" are in a different order.
         '''
-        score = etree.Element(_SCORE)
-        score.append(etree.Element(_SECTION, attrib={_XMLID: '123'}))
-        score.append(etree.Element(_SECTION, attrib={_XMLID: '456'}))
-        score.append(etree.Element(_SECTION, attrib={_XMLID: '789'}))
+        score = etree.Element(mei.SCORE)
+        score.append(etree.Element(mei.SECTION, attrib={xml.ID: '123'}))
+        score.append(etree.Element(mei.SECTION, attrib={xml.ID: '456'}))
+        score.append(etree.Element(mei.SECTION, attrib={xml.ID: '789'}))
         order = ['123', '789', '456']
         self.assertFalse(document._ensure_score_order(score, order))
 
@@ -245,10 +238,10 @@ class TestEnsureScoreOrder(unittest.TestCase):
         '''
         When "score" has fewer sections than "order" wants.
         '''
-        score = etree.Element(_SCORE)
-        score.append(etree.Element(_SECTION, attrib={_XMLID: '123'}))
-        score.append(etree.Element(_SECTION, attrib={_XMLID: '456'}))
-        score.append(etree.Element(_SECTION, attrib={_XMLID: '789'}))
+        score = etree.Element(mei.SCORE)
+        score.append(etree.Element(mei.SECTION, attrib={xml.ID: '123'}))
+        score.append(etree.Element(mei.SECTION, attrib={xml.ID: '456'}))
+        score.append(etree.Element(mei.SECTION, attrib={xml.ID: '789'}))
         order = ['123', '234', '456', '789']
         self.assertFalse(document._ensure_score_order(score, order))
 
@@ -256,10 +249,10 @@ class TestEnsureScoreOrder(unittest.TestCase):
         '''
         When "order" has no elements.
         '''
-        score = etree.Element(_SCORE)
-        score.append(etree.Element(_SECTION, attrib={_XMLID: '123'}))
-        score.append(etree.Element(_SECTION, attrib={_XMLID: '456'}))
-        score.append(etree.Element(_SECTION, attrib={_XMLID: '789'}))
+        score = etree.Element(mei.SCORE)
+        score.append(etree.Element(mei.SECTION, attrib={xml.ID: '123'}))
+        score.append(etree.Element(mei.SECTION, attrib={xml.ID: '456'}))
+        score.append(etree.Element(mei.SECTION, attrib={xml.ID: '789'}))
         order = []
         self.assertFalse(document._ensure_score_order(score, order))
 
@@ -267,7 +260,7 @@ class TestEnsureScoreOrder(unittest.TestCase):
         '''
         When "score" has no child elements.
         '''
-        score = etree.Element(_SCORE)
+        score = etree.Element(mei.SCORE)
         order = ['123', '456', '789']
         self.assertFalse(document._ensure_score_order(score, order))
 
@@ -440,7 +433,7 @@ class TestGetPutHead(DocumentTestCase):
         Postconditions:
         - it's returned
         '''
-        mei_head = etree.Element('{}meiHead'.format(_MEINS))
+        mei_head = etree.Element(mei.MEI_HEAD)
         self.doc._head = mei_head
         self.assertTrue(mei_head is self.doc.get_head())
 
@@ -452,7 +445,7 @@ class TestGetPutHead(DocumentTestCase):
         Postconditions:
         - method raises exception
         '''
-        self.doc._all_files = etree.Element('{}meiCorpus'.format(_MEINS))
+        self.doc._all_files = etree.Element(mei.MEI_CORPUS)
         with self.assertRaises(exceptions.HeaderNotFoundError) as hnferr:
             self.doc.get_head()
         self.assertEqual(document._ERR_MISSING_MEIHEAD, hnferr.exception.args[0])
@@ -466,7 +459,7 @@ class TestGetPutHead(DocumentTestCase):
         - the <meiHead> is cached
         - the <meiHead> is returned
         '''
-        exp_mei_head = self.doc._all_files.find('./{}meiHead'.format(_MEINS))
+        exp_mei_head = self.doc._all_files.find('./{}'.format(mei.MEI_HEAD))
         actual = self.doc.get_head()
         self.assertTrue(exp_mei_head is actual)
         self.assertTrue(exp_mei_head is self.doc._head)
@@ -482,12 +475,12 @@ class TestGetPutHead(DocumentTestCase):
         - the <meiHead> is returned
         '''
         # @ident is a marker to ensure Document.get_head() loads from the file
-        mei_head = etree.Element('{}meiHead'.format(_MEINS), attrib={'ident': '42'})
+        mei_head = etree.Element(mei.MEI_HEAD, attrib={'ident': '42'})
         mei_head = etree.ElementTree(mei_head)
         head_pathname = os.path.join(self.repo_dir, 'meiHead.mei')
         mei_head.write_c14n(head_pathname, exclusive=False, inclusive_ns_prefixes=['mei'])
-        doc_mei_head = self.doc._all_files.find('./{}meiHead'.format(_MEINS))
-        doc_mei_head.append(etree.Element('{}ptr'.format(_MEINS),
+        doc_mei_head = self.doc._all_files.find('./{}'.format(mei.MEI_HEAD))
+        doc_mei_head.append(etree.Element(mei.PTR,
                                           attrib={'targettype': 'head', 'target': head_pathname}))
         actual = self.doc.get_head()
         self.assertIsInstance(actual, etree._Element)
@@ -502,8 +495,8 @@ class TestGetPutHead(DocumentTestCase):
         Postconditions:
         - method raises exception
         '''
-        exp_mei_head = self.doc._all_files.find('./{}meiHead'.format(_MEINS))
-        exp_mei_head.append(etree.Element('{}ptr'.format(_MEINS),
+        exp_mei_head = self.doc._all_files.find('./{}'.format(mei.MEI_HEAD))
+        exp_mei_head.append(etree.Element(mei.PTR,
                                           attrib={'targettype': 'head', 'target': 'noexista.mei'}))
         with self.assertRaises(exceptions.HeaderNotFoundError) as hnferr:
             self.doc.get_head()
@@ -517,7 +510,7 @@ class TestGetPutHead(DocumentTestCase):
         '''
         # we have to make a new Document for this test so that _repo_path is None
         doc = document.Document()
-        mei_head = etree.Element('{}meiHead'.format(_MEINS))
+        mei_head = etree.Element(mei.MEI_HEAD)
         doc.put_head(mei_head)
         self.assertTrue(mei_head is doc._head)
 
@@ -528,9 +521,9 @@ class TestGetPutHead(DocumentTestCase):
         ----
         - <meiHead> is cached
         '''
-        old_head = self.doc._all_files.find('.//{}meiHead'.format(_MEINS))
-        old_head.append(etree.Element('{}ptr'.format(_MEINS), attrib={'targettype': 'head'}))
-        new_head = etree.Element('{}meiHead'.format(_MEINS))
+        old_head = self.doc._all_files.find('.//{}'.format(mei.MEI_HEAD))
+        old_head.append(etree.Element(mei.PTR, attrib={'targettype': 'head'}))
+        new_head = etree.Element(mei.MEI_HEAD)
         self.doc.put_head(new_head)
         self.assertTrue(new_head is self.doc._head)
 
@@ -542,10 +535,10 @@ class TestGetPutHead(DocumentTestCase):
         - <ptr> is added to <meiHead>
         - <meiHead> is cached
         '''
-        new_head = etree.Element('{}meiHead'.format(_MEINS))
+        new_head = etree.Element(mei.MEI_HEAD)
         self.doc.put_head(new_head)
         self.assertTrue(new_head is self.doc._head)
-        self.assertIsNotNone(self.doc._all_files.find('.//{}meiHead'.format(_MEINS)))
+        self.assertIsNotNone(self.doc._all_files.find('.//{}'.format(mei.MEI_HEAD)))
 
 
 class TestGetPutSection(DocumentTestCase):
@@ -622,7 +615,7 @@ class TestGetPutScore(DocumentTestCase):
         '''
         When the <score> has no <section> elements.
         '''
-        the_score = etree.Element('{}score'.format(_MEINS))
+        the_score = etree.Element(mei.SCORE)
         self.doc.put_score(the_score)
         self.assertEqual(0, len(self.doc._score_order))
         self.assertEqual(0, len(self.doc._sections))
@@ -631,11 +624,11 @@ class TestGetPutScore(DocumentTestCase):
         '''
         When the <score> has three <section> elements.
         '''
-        section_tag = '{}section'.format(_MEINS)
-        the_score = etree.Element('{}score'.format(_MEINS))
-        the_score.append(etree.Element(section_tag, attrib={_XMLID: '123'}))
-        the_score.append(etree.Element(section_tag, attrib={_XMLID: '456'}))
-        the_score.append(etree.Element(section_tag, attrib={_XMLID: '789'}))
+        section_tag = mei.SECTION
+        the_score = etree.Element(mei.SCORE)
+        the_score.append(etree.Element(section_tag, attrib={xml.ID: '123'}))
+        the_score.append(etree.Element(section_tag, attrib={xml.ID: '456'}))
+        the_score.append(etree.Element(section_tag, attrib={xml.ID: '789'}))
         exp_xmlids = ['123', '456', '789']
 
         self.doc.put_score(the_score)
@@ -644,7 +637,7 @@ class TestGetPutScore(DocumentTestCase):
         self.assertEqual(3, len(self.doc._sections))
         for xmlid in exp_xmlids:
             self.assertEqual(section_tag, self.doc._sections[xmlid].tag)
-            self.assertEqual(xmlid, self.doc._sections[xmlid].get(_XMLID))
+            self.assertEqual(xmlid, self.doc._sections[xmlid].get(xml.ID))
 
     @mock.patch('lychee.document.document._ensure_score_order')
     @mock.patch('lychee.document.Document.get_section')
@@ -901,9 +894,9 @@ class TestSaveLoadEverything(DocumentTestCase):
         '''
         Integration test for test_save_4a().
         '''
-        sections = {'1': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '1'}),
-                    '2': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '2'}),
-                    '3': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '3'})
+        sections = {'1': etree.Element(mei.SECTION, attrib={xml.ID: '1'}),
+                    '2': etree.Element(mei.SECTION, attrib={xml.ID: '2'}),
+                    '3': etree.Element(mei.SECTION, attrib={xml.ID: '3'})
                    }
         exp_listdir = ['all_files.mei', '1.mei', '2.mei', '3.mei']
         files = self.test_save_template_nomock(sections=sections, expected=exp_listdir)
@@ -945,9 +938,9 @@ class TestSaveLoadEverything(DocumentTestCase):
         '''
         Integration test for test_save_5a().
         '''
-        sections = {'1': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '1'}),
-                    '2': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '2'}),
-                    '3': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '3'})
+        sections = {'1': etree.Element(mei.SECTION, attrib={xml.ID: '1'}),
+                    '2': etree.Element(mei.SECTION, attrib={xml.ID: '2'}),
+                    '3': etree.Element(mei.SECTION, attrib={xml.ID: '3'})
                    }
         exp_listdir = ['all_files.mei', 'score.mei', '1.mei', '2.mei', '3.mei']
         files = self.test_save_template_nomock(sections=sections, score_order=['1', '2', '1'],
@@ -999,9 +992,9 @@ class TestSaveLoadEverything(DocumentTestCase):
         Integration test for test_save_6a().
         '''
         head = etree.parse(os.path.join(self.path_to_here, 'input_meiHead.mei'))
-        sections = {'1': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '1'}),
-                    '2': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '2'}),
-                    '3': etree.Element('{}section'.format(_MEINS), attrib={_XMLID: '3'})
+        sections = {'1': etree.Element(mei.SECTION, attrib={xml.ID: '1'}),
+                    '2': etree.Element(mei.SECTION, attrib={xml.ID: '2'}),
+                    '3': etree.Element(mei.SECTION, attrib={xml.ID: '3'})
                    }
         exp_listdir = ['all_files.mei', 'head.mei', 'score.mei', '1.mei', '2.mei', '3.mei']
         files = self.test_save_template_nomock(sections=sections, score_order=['1', '2', '1'],

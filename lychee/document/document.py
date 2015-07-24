@@ -31,14 +31,8 @@ import os.path
 from lxml import etree
 
 from lychee import exceptions
+from lychee.namespaces import mei, xlink, xml
 
-
-_XMLNS = '{http://www.w3.org/XML/1998/namespace}'
-_XMLID = '{}id'.format(_XMLNS)
-_XLINK = '{http://www.w3.org/1999/xlink}'
-_MEINS = '{http://www.music-encoding.org/ns/mei}'
-_SCORE = '{}score'.format(_MEINS)
-_SECTION = '{}section'.format(_MEINS)
 
 _SECTION_NOT_FOUND = 'Could not load <section xml:id="{xmlid}">'
 _ERR_MISSING_MEIHEAD = 'missing <meiHead> element in "all_files"'
@@ -87,9 +81,9 @@ def _make_empty_all_files(pathname):
     :returns: The XML document produced.
     :rtype: :class:`lxml.etree.ElementTree`
     '''
-    root = etree.Element('{}meiCorpus'.format(_MEINS))
-    root.append(etree.Element('{}meiHead'.format(_MEINS)))
-    root.append(etree.Element('{}mei'.format(_MEINS)))
+    root = etree.Element(mei.MEI_CORPUS)
+    root.append(etree.Element(mei.MEI_HEAD))
+    root.append(etree.Element(mei.MEI))
     tree = etree.ElementTree(root)
     if pathname is not None:
         _save_out(tree, pathname)
@@ -128,13 +122,13 @@ def _ensure_score_order(score, order):
     False
     '''
 
-    sections = [x for x in score.findall('./{}'.format(_SECTION))]
+    sections = [x for x in score.findall('./{}'.format(mei.SECTION))]
 
     if len(sections) != len(order):
         return False
 
     for i, section in enumerate(sections):
-        if order[i] != section.get(_XMLID):
+        if order[i] != section.get(xml.ID):
             return False
 
     return True
@@ -164,11 +158,11 @@ def _make_ptr(targettype, target):
     :returns: The <ptr>.
     :rtype: :class:`lxml.etree.Element`
     '''
-    return etree.Element('{}ptr'.format(_MEINS),
+    return etree.Element(mei.PTR,
                          attrib={'targettype': targettype,
                                  'target': target,
-                                 '{}actuate'.format(_XLINK): 'onRequest',
-                                 '{}show'.format(_XLINK): 'embed'})
+                                 xlink.ACTUATE: 'onRequest',
+                                 xlink.SHOW: 'embed'})
 
 
 class Document(object):
@@ -269,13 +263,13 @@ class Document(object):
         saved_files = []
 
         # hold the "all_files.mei" document
-        all_files = etree.Element('{}meiCorpus'.format(_MEINS))
+        all_files = etree.Element(mei.MEI_CORPUS)
 
         # hold the <mei> element for "all_files.mei"
-        mei_elem = etree.Element('{}mei'.format(_MEINS))
+        mei_elem = etree.Element(mei.MEI)
 
         # hold the <meiHead> element for "all_files.mei"
-        mei_head = etree.Element('{}meiHead'.format(_MEINS))
+        mei_head = etree.Element(mei.MEI_HEAD)
 
         # 1.) save the <meiHead> element
         if self._head is not None:
@@ -287,7 +281,7 @@ class Document(object):
         # 2.) build the <score> element and save it
         if len(self._score_order) > 0:
             # make the <score> proper
-            score = etree.Element('{}score'.format(_MEINS))
+            score = etree.Element(mei.SCORE)
             for xmlid in self._score_order:
                 section_path = '{}.mei'.format(xmlid)  # path relative to "all_files.mei"
                 score.append(_make_ptr('section', section_path))
@@ -331,12 +325,12 @@ class Document(object):
         # if self._head hasn't been loaded/created, we'll do that now
         if self._head is None:
             # make sure "_all_files" contains an <meiHead>
-            mei_head = self._all_files.find('./{}meiHead'.format(_MEINS))
+            mei_head = self._all_files.find('./{}'.format(mei.MEI_HEAD))
             if mei_head is None:
                 raise exceptions.HeaderNotFoundError(_ERR_MISSING_MEIHEAD)
 
             # see if there's a <ptr> in the <meiHead>
-            ptr = mei_head.find('./{}ptr[@targettype="head"]'.format(_MEINS))
+            ptr = mei_head.find('./{}[@targettype="head"]'.format(mei.PTR))
             if ptr is None:
                 # the Document's probably empty; we'll return the <meiHead> we have, and put_head()
                 # can save it with a <ptr> later
@@ -362,13 +356,13 @@ class Document(object):
         # that the presence of the <ptr> in the "all_files" file will indicate whether we have an
         # <meiHead> with useful information, or just empty.
         if (self._repo_path is not None
-                and self._all_files.find('.//{}ptr[@targettype="head"]'.format(_MEINS)) is None):
-            mei_head = self._all_files.find('./{}meiHead'.format(_MEINS))
-            mei_head.append(etree.Element('{}ptr'.format(_MEINS),
+                and self._all_files.find('.//{}[@targettype="head"]'.format(mei.PTR)) is None):
+            mei_head = self._all_files.find('./{}'.format(mei.MEI_HEAD))
+            mei_head.append(etree.Element('{}'.format(mei.PTR),
                                           attrib={'targettype': 'head',
                                                   'target': 'head.mei',
-                                                  '{}actuate'.format(_XLINK): 'onRequest',
-                                                  '{}show'.format(_XLINK): 'embed'}))
+                                                  xlink.ACTUATE: 'onRequest',
+                                                  xlink.SHOW: 'embed'}))
         self._head = new_head
 
     def get_ui(self):
@@ -406,7 +400,7 @@ class Document(object):
         if self._score is not None and _ensure_score_order(self._score, self._score_order):
             return self._score
         else:
-            score = etree.Element('{}score'.format(_MEINS))
+            score = etree.Element('{}'.format(mei.SCORE))
             for xmlid in self._score_order:
                 score.append(self.get_section(xmlid))
             self._score = score
@@ -424,8 +418,8 @@ class Document(object):
         :type new_music: :class:`lxml.etree.Element`
         '''
         score_order = []
-        for section in new_music.findall('./{}section'.format(_MEINS)):
-            xmlid = section.get(_XMLID)
+        for section in new_music.findall('./{}'.format(mei.SECTION)):
+            xmlid = section.get(xml.ID)
             score_order.append(xmlid)
             self._sections[xmlid] = section
 

@@ -33,6 +33,10 @@ Constants for the "MEI" XML namespace.
 MEINS = '{http://www.music-encoding.org/ns/mei}'
 
 # tag names
+MEI = '{}mei'.format(MEINS)
+MEI_CORPUS = '{}meiCorpus'.format(MEINS)
+MEI_HEAD = '{}meiHead'.format(MEINS)
+PTR = '{}ptr'.format(MEINS)
 SCORE = '{}score'.format(MEINS)
 SECTION = '{}section'.format(MEINS)
 

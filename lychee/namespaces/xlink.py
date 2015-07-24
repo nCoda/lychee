@@ -30,3 +30,6 @@ Constants for the "XLink" namespace.
 # NOTE: please keep this list alphabetical!
 
 XLINKNS = '{http://www.w3.org/1999/xlink}'
+
+ACTUATE = '{}actuate'.format(XLINKNS)
+SHOW = '{}show'.format(XLINKNS)

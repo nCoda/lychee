@@ -30,7 +30,7 @@ import time
 
 
 __version__ = '0.0.1'
-__all__ = ['converters', 'document', 'signals', 'tui', 'vcs', 'views']
+__all__ = ['converters', 'document', 'namespaces', 'signals', 'tui', 'vcs', 'views']
 
 DEBUG = True
 

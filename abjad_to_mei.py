@@ -190,84 +190,6 @@ def abjad_chord_to_mei_chord(abjad_chord):
     add_xml_id_to_abjad_object_and_mei_element_pair(abjad_chord, mei_chord)
     return mei_chord
 
-def abjad_leaf_to_mei_element(abjad_object):
-    if isinstance(abjad_object, Rest):
-        return abjad_rest_to_mei_rest(abjad_object)
-    elif isinstance(abjad_object, (Note,NoteHead)):
-        return abjad_note_to_mei_note(abjad_object)
-    elif isinstance(abjad_object, Chord):
-        return abjad_chord_to_mei_chord(abjad_object)
-
-def abjad_voice_to_mei_layer(abjad_voice):
-    mei_layer = ETree.Element('{}layer'.format(_MEINS),n="1")
-    for child in abjad_voice:
-        mei_layer.append(abjad_leaf_to_mei_element(child))
-    add_xml_id_to_abjad_object_and_mei_element_pair(abjad_voice, mei_layer)
-    return mei_layer
-
-def abjad_staff_to_mei_staff(abjad_staff):
-    mei_staff = ETree.Element('{}staff'.format(_MEINS),n='1')
-    if len(abjad_staff) != 0:
-        if abjad_staff.is_simultaneous:
-            for x,voice in enumerate(abjad_staff):
-                mei_layer = abjad_voice_to_mei_layer(voice)
-                add_xml_id_to_abjad_object_and_mei_element_pair(abjad_staff, mei_layer)
-                mei_layer.set('n',str(x+1))
-                mei_staff.append(mei_layer)
-        else:
-            out_voice = Voice()
-            for component in abjad_staff:
-                if isinstance(component, Voice):
-                    out_voice.extend([mutate(x).copy() for x in component])
-                else:
-                    out_voice.append(mutate(component).copy())
-            mei_layer = abjad_voice_to_mei_layer(out_voice)
-        mei_staff.append(mei_layer)
-    add_xml_id_to_abjad_object_and_mei_element_pair(abjad_staff, mei_staff)
-    return mei_staff
-
-def abjad_score_to_mei_section(abjad_score):
-    if len(abjad_score) == 0:
-        mei_section = ETree.Element('{}section'.format(_MEINS),n='1')
-        add_xml_id_to_abjad_object_and_mei_element_pair(abjad_score, mei_section)
-        return mei_section
-    mei_section = ETree.Element('{}section'.format(_MEINS), n='1')
-    add_xml_id_to_abjad_object_and_mei_element_pair(abjad_score, mei_section)
-    score_def = ETree.Element('{}scoreDef'.format(_MEINS))
-    score_def.set(_XMLNS, mei_section.get(_XMLNS) + 'scoreDef')
-    mei_section.append(score_def)
-    mei_main_staff_group = ETree.Element('{}staffGrp'.format(_MEINS),symbol='line')
-    score_def.append(mei_main_staff_group)
-    staffCounter = 1
-    for component in abjad_score:
-        if isinstance(component, Staff):
-            abjad_staff = component
-            mei_staff = abjad_staff_to_mei_staff(abjad_staff)
-            mei_staff.set('n', str(staffCounter))
-            mei_section.append(mei_staff)
-            add_xml_id_to_abjad_object_and_mei_element_pair(abjad_staff, mei_staff)
-            staff_def = ETree.Element('{}staffDef'.format(_MEINS),lines='5',n=str(staffCounter))
-            staff_def.set(_XMLNS, mei_staff.get(_XMLNS) + 'staffDef')
-            mei_main_staff_group.append(staff_def)
-            staffCounter += 1
-        elif isinstance(component, StaffGroup):
-            abjad_staff_group = component
-            mei_staff_group = ETree.Element('{}staffGrp'.format(_MEINS),symbol='bracket')
-            add_xml_id_to_abjad_object_and_mei_element_pair(abjad_staff_group, mei_staff_group)
-            mei_main_staff_group.append(mei_staff_group)
-            for staff in abjad_staff_group:
-                abjad_staff = component
-                mei_staff = abjad_staff_to_mei_staff(abjad_staff)
-                add_xml_id_to_abjad_object_and_mei_element_pair(abjad_staff, mei_staff)
-                mei_staff.set('n', str(staffCounter))
-                mei_section.append(mei_staff)
-                staff_def = ETree.Element('{}staffDef'.format(_MEINS),lines='5',n=str(staffCounter))
-                staff_def.set(_XMLNS, mei_staff.get(_XMLNS) + 'staffDef')
-                mei_staff_group.append(staff_def)
-                staffCounter += 1
-    return mei_section
-
-
 def empty_abjad_tuplet_to_mei_tupletspan_element(abjad_tuplet):
     if isinstance(abjad_tuplet, Tuplet) and not isinstance(abjad_tuplet, FixedDurationTuplet):
         numerator = six.b(str(abjad_tuplet.multiplier.numerator))
@@ -333,3 +255,85 @@ def abjad_tuplet_to_mei_tupletspan(abjad_tuplet):
         outermost_span.set('plist',plist)
         return output_list
         
+
+def abjad_leaf_to_mei_element(abjad_object):
+    if isinstance(abjad_object, Rest):
+        return abjad_rest_to_mei_rest(abjad_object)
+    elif isinstance(abjad_object, (Note,NoteHead)):
+        return abjad_note_to_mei_note(abjad_object)
+    elif isinstance(abjad_object, Chord):
+        return abjad_chord_to_mei_chord(abjad_object)
+    elif isinstance(abjad_object, Tuplet):
+        return abjad_tuplet_to_mei_tupletspan(abjad_object)
+
+def abjad_voice_to_mei_layer(abjad_voice):
+    mei_layer = ETree.Element('{}layer'.format(_MEINS),n="1")
+    for child in abjad_voice:
+        if isinstance(child, Tuplet): 
+            mei_layer.extend(abjad_leaf_to_mei_element(child))
+        else:
+            mei_layer.append(abjad_leaf_to_mei_element(child))
+    add_xml_id_to_abjad_object_and_mei_element_pair(abjad_voice, mei_layer)
+    return mei_layer
+
+def abjad_staff_to_mei_staff(abjad_staff):
+    mei_staff = ETree.Element('{}staff'.format(_MEINS),n='1')
+    if len(abjad_staff) != 0:
+        if abjad_staff.is_simultaneous and 1 < len(abjad_staff) and isinstance(abjad_staff[0], Voice):
+            for x, voice in enumerate(abjad_staff):
+                mei_layer = abjad_voice_to_mei_layer(voice)
+                add_xml_id_to_abjad_object_and_mei_element_pair(abjad_staff, mei_layer)
+                mei_layer.set('n',str(x+1))
+                mei_staff.append(mei_layer)
+        else:
+            out_voice = Voice()
+            for component in abjad_staff:
+                if isinstance(component, Voice):
+                    out_voice.extend([mutate(x).copy() for x in component])
+                else:
+                    out_voice.append(mutate(component).copy())
+            mei_layer = abjad_voice_to_mei_layer(out_voice)
+        mei_staff.append(mei_layer)
+    add_xml_id_to_abjad_object_and_mei_element_pair(abjad_staff, mei_staff)
+    return mei_staff
+
+def abjad_score_to_mei_section(abjad_score):
+    if len(abjad_score) == 0:
+        mei_section = ETree.Element('{}section'.format(_MEINS),n='1')
+        add_xml_id_to_abjad_object_and_mei_element_pair(abjad_score, mei_section)
+        return mei_section
+    mei_section = ETree.Element('{}section'.format(_MEINS), n='1')
+    add_xml_id_to_abjad_object_and_mei_element_pair(abjad_score, mei_section)
+    score_def = ETree.Element('{}scoreDef'.format(_MEINS))
+    score_def.set(_XMLNS, mei_section.get(_XMLNS) + 'scoreDef')
+    mei_section.append(score_def)
+    mei_main_staff_group = ETree.Element('{}staffGrp'.format(_MEINS),symbol='line')
+    score_def.append(mei_main_staff_group)
+    staffCounter = 1
+    for component in abjad_score:
+        if isinstance(component, Staff):
+            abjad_staff = component
+            mei_staff = abjad_staff_to_mei_staff(abjad_staff)
+            mei_staff.set('n', str(staffCounter))
+            mei_section.append(mei_staff)
+            add_xml_id_to_abjad_object_and_mei_element_pair(abjad_staff, mei_staff)
+            staff_def = ETree.Element('{}staffDef'.format(_MEINS),lines='5',n=str(staffCounter))
+            staff_def.set(_XMLNS, mei_staff.get(_XMLNS) + 'staffDef')
+            mei_main_staff_group.append(staff_def)
+            staffCounter += 1
+        elif isinstance(component, StaffGroup):
+            abjad_staff_group = component
+            mei_staff_group = ETree.Element('{}staffGrp'.format(_MEINS),symbol='bracket')
+            add_xml_id_to_abjad_object_and_mei_element_pair(abjad_staff_group, mei_staff_group)
+            mei_main_staff_group.append(mei_staff_group)
+            for staff in abjad_staff_group:
+                abjad_staff = staff
+                mei_staff = abjad_staff_to_mei_staff(abjad_staff)
+                add_xml_id_to_abjad_object_and_mei_element_pair(abjad_staff, mei_staff)
+                mei_staff.set('n', str(staffCounter))
+                mei_section.append(mei_staff)
+                staff_def = ETree.Element('{}staffDef'.format(_MEINS),lines='5',n=str(staffCounter))
+                staff_def.set(_XMLNS, mei_staff.get(_XMLNS) + 'staffDef')
+                mei_staff_group.append(staff_def)
+                staffCounter += 1
+    return mei_section

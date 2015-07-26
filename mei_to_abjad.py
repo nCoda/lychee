@@ -44,16 +44,13 @@ Converts an MEI document to an Abjad document.
 
 import six
 from lxml import etree as ETree
-from abjad import *
-from abjad.tools.scoretools.NoteHead import NoteHead
-from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
-from abjad.tools.durationtools.Multiplier import Multiplier
-from abjad.tools.durationtools.Duration import Duration
 
-'''
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
+from abjad.tools.scoretools.NoteHead import NoteHead
+from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
+from abjad.tools.scoretools.Tuplet import Tuplet
 from abjad.tools.durationtools.Multiplier import Multiplier
 from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.scoretools.Voice import Voice
@@ -62,7 +59,8 @@ from abjad.tools.scoretools.Score import Score
 from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.durationtools.Duration import Duration
-'''
+from abjad.tools.topleveltools.inspect_ import inspect_
+from abjad.tools.topleveltools.attach import attach
 
 _MEINS = '{http://www.music-encoding.org/ns/mei}'
 _XMLNS = '{http://www.w3.org/XML/1998/namespace}id'

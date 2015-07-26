@@ -11,7 +11,8 @@ from abjad.tools.scoretools.Voice import Voice
 from abjad.tools.scoretools.Staff import Staff
 from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.scoretools.Score import Score
-from abjad.tools.topleveltools import *
+from abjad.tools.topleveltools.inspect_ import inspect_
+from abjad.tools.topleveltools.attach import attach
 from lychee.converters import abjad_to_mei
 import unittest
 import abjad_test_case

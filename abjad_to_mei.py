@@ -46,26 +46,20 @@ import uuid
 from lxml import etree as ETree
 import six
 import hashlib
-
-from abjad import *
-from abjad.tools.scoretools.NoteHead import NoteHead
-from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
-from abjad.tools.durationtools.Multiplier import Multiplier
-from abjad.tools.durationtools.Duration import Duration
-
-'''
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
 from abjad.tools.scoretools.NoteHead import NoteHead
+from abjad.tools.scoretools.Tuplet import Tuplet
+from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
 from abjad.tools.durationtools.Multiplier import Multiplier
 from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.scoretools.Voice import Voice
 from abjad.tools.scoretools.Staff import Staff
 from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.topleveltools.mutate import mutate
-from abjad.tools.topleveltools import *
-'''
+from abjad.tools.topleveltools.inspect_ import inspect_
+from abjad.tools.topleveltools.attach import attach
 
 #import lychee
 #from lychee.signals import inbound

@@ -396,6 +396,8 @@ class Document(object):
 
         Caches the returned ``<score>`` for later access.
         '''
+        # TODO: refactor so it can deal with loading the _score_order by itself
+        # TODO: refactor it to not use self._score
 
         if self._score is not None and _ensure_score_order(self._score, self._score_order):
             return self._score
@@ -417,6 +419,7 @@ class Document(object):
         :param new_music: The <score> element to use in place of the existing one.
         :type new_music: :class:`lxml.etree.Element`
         '''
+        # TODO: refactor it to not use self._score
         score_order = []
         for section in new_music.findall('./{}'.format(mei.SECTION)):
             xmlid = section.get(xml.ID)
@@ -440,6 +443,7 @@ class Document(object):
         If the section is not found, :meth:`get_section` first tries to load the section with
         :meth:`load_everything` before failing.
         '''
+        # TODO: refactor so it can deal with loading the specific section by itself
 
         if section_id.startswith('#'):
             section_id = section_id[1:]
@@ -455,13 +459,15 @@ class Document(object):
 
     def put_section(self, section_id, new_section):
         '''
-
+        # TODO: rewrite the docstring
         In the future, you will be able to submit a section that is an element other than
         ``<section>``. For now, doing so will raise a :exc:`NotImplementedError`.
 
         :param new_section: A replacement for the section with ``section_id``.
         :type new_section: :class:`lxml.etree.Element`
         '''
+        # TODO: if the section doesn't have an @xml:id, make one
+        # TODO: always return the saved @xml:id
         if section_id.startswith('#'):
             section_id = section_id[1:]
 

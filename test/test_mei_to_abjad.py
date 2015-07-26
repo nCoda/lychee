@@ -12,6 +12,7 @@ from abjad.tools.scoretools.Score import Score
 from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.durationtools.Multiplier import Multiplier
 from abjad.tools.topleveltools.inspect_ import inspect_
+from abjad.tools.topleveltools.attach import attach
 from lychee.converters import mei_to_abjad
 import abjad_test_case
 import unittest
@@ -40,7 +41,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         '''        
         dictionary = {'dur': '4', 'pname': 'c', 'octave': '4'}
         mei_note = ETree.Element('note', dictionary)
-        abjad_note = mei_to_abjad.mei_note_to_abjad_note(mei_note)
+        abjad_note = mei_to_abjad.note_to_note(mei_note)
         self.assertEqual(format(abjad_note), format(Note("c'4")))    
     
     def test_note_dotted(self):
@@ -50,7 +51,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         '''
         dictionary = {'dots': '1', 'dur': '4', 'pname': 'c', 'octave': '4'}
         mei_note = ETree.Element('note', dictionary)
-        abjad_note = mei_to_abjad.mei_note_to_abjad_note(mei_note)
+        abjad_note = mei_to_abjad.note_to_note(mei_note)
         self.assertEqual(format(abjad_note), format(Note("c'4.")))
     
     def test_note_accid(self):
@@ -60,7 +61,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         '''
         dictionary = {'accid.ges': 'f', 'dur': '4', 'pname': 'c', 'octave': '4'}
         mei_note = ETree.Element('note', dictionary)
-        abjad_note = mei_to_abjad.mei_note_to_abjad_note(mei_note)
+        abjad_note = mei_to_abjad.note_to_note(mei_note)
         self.assertEqual(abjad_note, Note("cf'4"))
         
     def test_note_accid_and_cautionary(self):
@@ -71,7 +72,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         dictionary = {'dur': '4', 'pname': 'c', 'octave': '4'}
         mei_note = ETree.Element('note', dictionary)
         ETree.SubElement(mei_note, 'accid', {'accid': 'f', 'func': 'cautionary'}) 
-        abjad_note = mei_to_abjad.mei_note_to_abjad_note(mei_note)
+        abjad_note = mei_to_abjad.note_to_note(mei_note)
         self.assertEqual(abjad_note, Note("cf'?4"))
     
     def test_note_accid_and_forced(self):
@@ -81,7 +82,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         '''
         dictionary = {'accid.ges': 'f', 'accid': 'f', 'dur': '4', 'pname': 'c', 'octave': '4'}
         mei_note = ETree.Element('note', dictionary)
-        abjad_note = mei_to_abjad.mei_note_to_abjad_note(mei_note)
+        abjad_note = mei_to_abjad.note_to_note(mei_note)
         self.assertEqual(abjad_note, Note("cf'!4"))
         
     def test_note_cautionary(self):
@@ -92,7 +93,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         dictionary = {'dur': '4', 'pname': 'c', 'octave': '4'}
         mei_note = ETree.Element('note', dictionary)
         ETree.SubElement(mei_note, 'accid', {'accid': 'n', 'func': 'cautionary'}) 
-        abjad_note = mei_to_abjad.mei_note_to_abjad_note(mei_note)
+        abjad_note = mei_to_abjad.note_to_note(mei_note)
         self.assertEqual(abjad_note, Note("c'?4"))
         
     def test_note_forced(self):
@@ -102,7 +103,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         '''
         dictionary = {'accid.ges': 'n', 'accid': 'n', 'dur': '4', 'pname': 'c', 'octave': '4'}
         mei_note = ETree.Element('note',dictionary)
-        abjad_note = mei_to_abjad.mei_note_to_abjad_note(mei_note)
+        abjad_note = mei_to_abjad.note_to_note(mei_note)
         self.assertEqual(abjad_note, Note("c'!4"))
     
     #forced, cautionary, accidental, blank notehead tests
@@ -114,7 +115,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         '''        
         dictionary = {'pname': 'c', 'octave': '4'}
         mei_note = ETree.Element('note', dictionary)
-        abjad_notehead = mei_to_abjad.mei_note_to_abjad_note(mei_note)
+        abjad_notehead = mei_to_abjad.note_to_note(mei_note)
         self.assertEqual(abjad_notehead, NoteHead("c'"))
     
     #notehead: basic, basic cautionary, basic forced, accidental, acc cautionary, acc forced.
@@ -127,7 +128,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         dictionary = {'pname': 'c', 'octave': '4'}
         mei_note = ETree.Element('note', dictionary)
         ETree.SubElement(mei_note, 'accid', {'accid': 'n', 'func': 'cautionary'})
-        abjad_notehead = mei_to_abjad.mei_note_to_abjad_note(mei_note)
+        abjad_notehead = mei_to_abjad.note_to_note(mei_note)
         head = NoteHead("c'")
         head.is_cautionary = True
         self.assertEqual(abjad_notehead, head)
@@ -139,7 +140,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         '''
         dictionary = {'pname': 'c', 'octave': '4', 'accid.ges': 'n', 'accid': 'n'}
         mei_note = ETree.Element('note', dictionary)
-        abjad_notehead = mei_to_abjad.mei_note_to_abjad_note(mei_note)
+        abjad_notehead = mei_to_abjad.note_to_note(mei_note)
         head = NoteHead("c'")
         head.is_forced = True
         self.assertEqual(abjad_notehead, head)
@@ -151,7 +152,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         '''
         dictionary = {'pname': 'c', 'octave': '4', 'accid.ges': 'f'}
         mei_note = ETree.Element('note', dictionary)
-        abjad_notehead = mei_to_abjad.mei_note_to_abjad_note(mei_note)
+        abjad_notehead = mei_to_abjad.note_to_note(mei_note)
         self.assertEqual(abjad_notehead, NoteHead("cf'"))
     
     def test_notehead_accid_cautionary(self):
@@ -162,7 +163,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         dictionary = {'pname': 'c', 'octave': '4'}
         mei_note = ETree.Element('note', dictionary)
         ETree.SubElement(mei_note, 'accid', {'accid': 'f', 'func': 'cautionary'})
-        abjad_notehead = mei_to_abjad.mei_note_to_abjad_note(mei_note)
+        abjad_notehead = mei_to_abjad.note_to_note(mei_note)
         head = NoteHead("cf'")
         head.is_cautionary = True
         self.assertEqual(abjad_notehead, head)
@@ -174,7 +175,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         '''
         dictionary = {'pname': 'c', 'octave': '4', 'accid.ges': 'f', 'accid': 'f'}
         mei_note = ETree.Element('note', dictionary)
-        abjad_notehead = mei_to_abjad.mei_note_to_abjad_note(mei_note)
+        abjad_notehead = mei_to_abjad.note_to_note(mei_note)
         head = NoteHead("cf'")
         head.is_forced = True
         self.assertEqual(abjad_notehead, head)
@@ -185,7 +186,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         postcondition: abjad Rest with no dots.
         '''
         mei_rest = ETree.Element('rest',dur='32')
-        abjad_rest = mei_to_abjad.mei_rest_to_abjad_rest(mei_rest)
+        abjad_rest = mei_to_abjad.rest_to_rest(mei_rest)
         self.assertEqual(abjad_rest, Rest("r32"))
         
     def test_rest_dotted(self):
@@ -194,7 +195,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         postcondition: dotted abjad Rest.
         '''
         mei_rest = ETree.Element('rest',dur='32',dots='2')
-        abjad_rest = mei_to_abjad.mei_rest_to_abjad_rest(mei_rest)
+        abjad_rest = mei_to_abjad.rest_to_rest(mei_rest)
         self.assertEqual(abjad_rest, Rest("r32.."))
     
     def test_chord_empty(self):
@@ -203,7 +204,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         postcondition: empty abjad Chord with undotted duration
         '''
         mei_chord = ETree.Element('chord',dur='4')
-        abjad_chord = mei_to_abjad.mei_chord_to_abjad_chord(mei_chord)
+        abjad_chord = mei_to_abjad.chord_to_chord(mei_chord)
         self.assertEqual(abjad_chord, Chord([],(1,4)))
         
     def test_chord_empty_dotted(self):
@@ -212,7 +213,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         postcondition: empty abjad Chord with dotted duration
         '''
         mei_chord = ETree.Element('chord',dur='4',dots='1')
-        abjad_chord = mei_to_abjad.mei_chord_to_abjad_chord(mei_chord)
+        abjad_chord = mei_to_abjad.chord_to_chord(mei_chord)
         self.assertEqual(abjad_chord, Chord([],(3,8)))
         
     def test_chord_full(self):
@@ -223,7 +224,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         mei_chord = ETree.Element('chord',dur='4')
         ETree.SubElement(mei_chord, 'note',pname='c',octave='4')
         ETree.SubElement(mei_chord, 'note',pname='d',octave='4')
-        abjad_chord = mei_to_abjad.mei_chord_to_abjad_chord(mei_chord)
+        abjad_chord = mei_to_abjad.chord_to_chord(mei_chord)
         self.assertEqual(abjad_chord, Chord("<c' d'>4"))
         
     def test_chord_full_dotted(self):
@@ -234,7 +235,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         mei_chord = ETree.Element('chord',dur='4',dots='1')
         ETree.SubElement(mei_chord, 'note',pname='c',octave='4')
         ETree.SubElement(mei_chord, 'note',pname='d',octave='4')
-        abjad_chord = mei_to_abjad.mei_chord_to_abjad_chord(mei_chord)
+        abjad_chord = mei_to_abjad.chord_to_chord(mei_chord)
         self.assertEqual(abjad_chord, Chord("<c' d'>4."))
     
     def test_layer_to_voice_empty(self):
@@ -243,7 +244,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         postcondition: empty abjad Voice
         '''
         mei_layer = ETree.Element('layer',n='1')
-        abjad_voice = mei_to_abjad.mei_layer_to_abjad_voice(mei_layer)
+        abjad_voice = mei_to_abjad.layer_to_voice(mei_layer)
         self.assertEqual(abjad_voice, Voice() )
         
     def test_layer_to_voice_full(self):
@@ -258,15 +259,15 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         ETree.SubElement(chord,'note',pname='c',octave='4')
         ETree.SubElement(chord,'note',pname='d',octave='4')
         
-        abjad_voice = mei_to_abjad.mei_layer_to_abjad_voice(mei_layer)
+        abjad_voice = mei_to_abjad.layer_to_voice(mei_layer)
         
         self.assertEqual(abjad_voice, Voice("r4 c'4 <c' d'>4"))
     
 
 
-    @mock.patch("lychee.converters.mei_to_abjad.mei_chord_to_abjad_chord")
-    @mock.patch("lychee.converters.mei_to_abjad.mei_note_to_abjad_note")
-    @mock.patch("lychee.converters.mei_to_abjad.mei_rest_to_abjad_rest")
+    @mock.patch("lychee.converters.mei_to_abjad.chord_to_chord")
+    @mock.patch("lychee.converters.mei_to_abjad.note_to_note")
+    @mock.patch("lychee.converters.mei_to_abjad.rest_to_rest")
     def test_layer_to_voice_full_mock(self, mock_rest, mock_note, mock_chord):
         '''
         precondition: mei layer Element containing children
@@ -282,7 +283,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         mock_note.return_value = Note("c'4")
         mock_chord.return_value = Chord("<c' d'>4")
         
-        abjad_voice = mei_to_abjad.mei_layer_to_abjad_voice(mei_layer)
+        abjad_voice = mei_to_abjad.layer_to_voice(mei_layer)
         
         self.assertEqual(abjad_voice, Voice("r4 c'4 <c' d'>4"))
     
@@ -292,7 +293,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         postcondition: empty abjad Staff
         '''
         mei_staff = ETree.Element('staff',n='1')
-        abjad_staff = mei_to_abjad.mei_staff_to_abjad_staff(mei_staff)
+        abjad_staff = mei_to_abjad.staff_to_staff(mei_staff)
         self.assertEqual(abjad_staff, Staff())
         
     
@@ -306,11 +307,11 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         ETree.SubElement(mei_layer, 'rest', dur='4')
         ETree.SubElement(mei_layer, 'note', pname='c', dur='4', octave='4')
         
-        abjad_staff = mei_to_abjad.mei_staff_to_abjad_staff(mei_staff)
+        abjad_staff = mei_to_abjad.staff_to_staff(mei_staff)
         
         self.assertEqual(abjad_staff, Staff([Voice("r4 c'4")]))
 
-    @mock.patch("lychee.converters.mei_to_abjad.mei_layer_to_abjad_voice")
+    @mock.patch("lychee.converters.mei_to_abjad.layer_to_voice")
     def test_staff_one_voice_mock(self, mock_voice):
         '''
         precondition: mei staff Element containing one layer Element
@@ -322,7 +323,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         ETree.SubElement(mei_layer, 'note', pname='c', dur='4', octave='4')
         mock_voice.return_value = Voice("r4 c'4")
         
-        abjad_staff = mei_to_abjad.mei_staff_to_abjad_staff(mei_staff)
+        abjad_staff = mei_to_abjad.staff_to_staff(mei_staff)
         
         voice = Voice("r4 c'4")
         comparator = Staff([voice])
@@ -337,11 +338,11 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         ETree.SubElement(mei_staff,'layer',n='1')
         ETree.SubElement(mei_staff,'layer',n='2')
         
-        abjad_staff = mei_to_abjad.mei_staff_to_abjad_staff(mei_staff)
+        abjad_staff = mei_to_abjad.staff_to_staff(mei_staff)
 
         self.assertEqual(abjad_staff, Staff([Voice(), Voice()]))
 
-    @mock.patch("lychee.converters.mei_to_abjad.mei_layer_to_abjad_voice")
+    @mock.patch("lychee.converters.mei_to_abjad.layer_to_voice")
     def test_staff_parallel_mock(self, mock_voice):
         '''
         precondition: mei staff Element containing two layer Elements
@@ -352,7 +353,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         ETree.SubElement(mei_staff,'layer',n='2')
         mock_voice.side_effect = lambda x: Voice()
         
-        abjad_staff = mei_to_abjad.mei_staff_to_abjad_staff(mei_staff)
+        abjad_staff = mei_to_abjad.staff_to_staff(mei_staff)
         
         self.assertEqual(abjad_staff, Staff([Voice(), Voice()]))
 
@@ -362,7 +363,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         postcondition: empty abjad Score
         '''
         mei_section = ETree.Element('section',n='1')
-        abjad_score = mei_to_abjad.mei_section_to_abjad_score(mei_section)
+        abjad_score = mei_to_abjad.section_to_score(mei_section)
         self.assertEqual(abjad_score, Score())
         
     def test_section_full(self):
@@ -389,7 +390,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         main_staff_grp.append(mei_staff_defs[3])
         mei_section.extend(mei_staffs)
         
-        abjad_score = mei_to_abjad.mei_section_to_abjad_score(mei_section)
+        abjad_score = mei_to_abjad.section_to_score(mei_section)
         
         comparator = Score()
         comparator.append(Staff())
@@ -403,7 +404,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(isinstance(abjad_score[2], Staff), True)
         self.assertEqual(len(abjad_score[1]), 2)
 
-    @mock.patch("lychee.converters.mei_to_abjad.mei_staff_to_abjad_staff")
+    @mock.patch("lychee.converters.mei_to_abjad.staff_to_staff")
     def test_section_full_mock(self, mock_staff):
         '''
         precondition: mei section Element containing scoreDef element and four staff Elements
@@ -429,7 +430,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         mei_section.extend(mei_staffs)
         mock_staff.side_effect = lambda x: Staff()
         
-        abjad_score = mei_to_abjad.mei_section_to_abjad_score(mei_section)
+        abjad_score = mei_to_abjad.section_to_score(mei_section)
         
         comparator = Score()
         comparator.append(Staff())
@@ -449,7 +450,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         postcondition: empty abjad FixedDurationTuplet object
         '''
         mei_tupletspan = ETree.Element('tupletspan',dur='4')
-        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(mei_tupletspan)
+        abjad_tuplet = mei_to_abjad.tupletspan_to_tuplet(mei_tupletspan)
         self.assertEqual(len(abjad_tuplet), 0)
         self.assertEqual(abjad_tuplet.target_duration, Duration(1,4))
     
@@ -459,21 +460,21 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         postcondition: empty abjad FixedDurationTuplet object
         '''
         mei_tupletspan = ETree.Element('tupletspan',dur='4', dots='1')
-        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(mei_tupletspan)
+        abjad_tuplet = mei_to_abjad.tupletspan_to_tuplet(mei_tupletspan)
         self.assertEqual(len(abjad_tuplet), 0)
         self.assertEqual(abjad_tuplet.target_duration, Duration(3,8))
     
-    def test_mei_tupletspan_to_abjad_tuplet_empty(self):
+    def test_tupletspan_to_tuplet_empty(self):
         '''
         precondition: mei tupletspan Element with multipier, no duration
         postcondition: abjad Tuplet object with Multiplier, no duration
         '''
         mei_tupletspan = ETree.Element('tupletspan',num='3',numBase='2')
-        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(mei_tupletspan)
+        abjad_tuplet = mei_to_abjad.tupletspan_to_tuplet(mei_tupletspan)
         self.assertEqual(len(abjad_tuplet), 0)
         self.assertEqual(abjad_tuplet.multiplier, Multiplier(2,3))
     
-    def test_mei_tupletspan_to_abjad_tuplet_full(self):
+    def test_tupletspan_to_tuplet_full(self):
         '''
         precondition: mei tupletspan Element with multipier, duration, and children
         postcondition: abjad Tuplet object with Multiplier, duration, and children
@@ -488,7 +489,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         mei_tupletspan.set('endid', '5')
         mei_tupletspan.set('plist', '1 2 3 4 5')
     
-        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(tupletspan_list)
+        abjad_tuplet = mei_to_abjad.tupletspan_to_tuplet(tupletspan_list)
     
         self.assertEqual(len(abjad_tuplet), 3)
         self.assertEqual(abjad_tuplet.multiplier, Multiplier(2,3))
@@ -499,8 +500,8 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
             self.assertEqual(inspect_(note).get_duration(), Duration(1,12))
 
 
-    @mock.patch("lychee.converters.mei_to_abjad.mei_element_to_abjad_leaf")
-    def test_mei_tupletspan_to_abjad_tuplet_full_mock(self, mock_leaf):
+    @mock.patch("lychee.converters.mei_to_abjad.element_to_leaf")
+    def test_tupletspan_to_tuplet_full_mock(self, mock_leaf):
         '''
         precondition: mei tupletspan Element with multipier, duration, and children
         postcondition: abjad Tuplet object with Multiplier, duration, and children
@@ -516,7 +517,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         mei_tupletspan.set('plist', '1 2 3 4 5')
         mock_leaf.side_effect = lambda x: Note("c'8")
     
-        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(tupletspan_list)
+        abjad_tuplet = mei_to_abjad.tupletspan_to_tuplet(tupletspan_list)
     
         self.assertEqual(len(abjad_tuplet), 3)
         self.assertEqual(abjad_tuplet.multiplier, Multiplier(2,3))
@@ -526,7 +527,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
             self.assertEqual(note.written_duration, Duration(1,8))
             self.assertEqual(inspect_(note).get_duration(), Duration(1,12))
     
-    def test_mei_tupletspan_to_abjad_tuplet_full_dotted(self):
+    def test_tupletspan_to_tuplet_full_dotted(self):
         '''
         precondition: mei tupletspan Element with multipier, dotted duration, and children
         postcondition: abjad Tuplet object with Multiplier, dotted duration, and children
@@ -540,7 +541,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         mei_tupletspan[0].set('endid', '5')
         mei_tupletspan[0].set('plist', '1 2 3 4 5')
     
-        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(mei_tupletspan)
+        abjad_tuplet = mei_to_abjad.tupletspan_to_tuplet(mei_tupletspan)
     
         self.assertEqual(len(abjad_tuplet), 5)
         self.assertEqual(abjad_tuplet.multiplier, Multiplier(3,5))
@@ -550,8 +551,8 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
             self.assertEqual(note.written_duration, Duration(1,8))
             self.assertEqual(inspect_(note).get_duration(), Duration(3,40))
 
-    @mock.patch("lychee.converters.mei_to_abjad.mei_element_to_abjad_leaf")
-    def test_mei_tupletspan_to_abjad_tuplet_full_dotted_mock(self, mock_leaf):
+    @mock.patch("lychee.converters.mei_to_abjad.element_to_leaf")
+    def test_tupletspan_to_tuplet_full_dotted_mock(self, mock_leaf):
         '''
         precondition: mei tupletspan Element with multipier, dotted duration, and children
         postcondition: abjad Tuplet object with Multiplier, dotted duration, and children
@@ -566,7 +567,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         mei_tupletspan[0].set('plist', '1 2 3 4 5')
         mock_leaf.side_effect = lambda x: Note("c'8")
     
-        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(mei_tupletspan)
+        abjad_tuplet = mei_to_abjad.tupletspan_to_tuplet(mei_tupletspan)
     
         self.assertEqual(len(abjad_tuplet), 5)
         self.assertEqual(abjad_tuplet.multiplier, Multiplier(3,5))
@@ -576,7 +577,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
             self.assertEqual(note.written_duration, Duration(1,8))
             self.assertEqual(inspect_(note).get_duration(), Duration(3,40))
     
-    def test_mei_tupletspan_to_abjad_tuplet_full_nested(self):
+    def test_tupletspan_to_tuplet_full_nested(self):
         '''
         precondition: list containing mei tupletspan Element, notes, and (nested) tupletspan Element
         postcondition: abjad Tuplet containing notes and (nested) abjad Tuplet
@@ -597,7 +598,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         inner_tuplet.set('endid', mei_nested_tuplet[4].get(_XMLNS))
         inner_tuplet.set('plist', '2 3 4')
         
-        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(mei_nested_tuplet)
+        abjad_tuplet = mei_to_abjad.tupletspan_to_tuplet(mei_nested_tuplet)
         
         inner_tuplet = abjad_tuplet[0]
         self.assertTrue(isinstance(abjad_tuplet, Tuplet))
@@ -616,8 +617,8 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
             self.assertEqual(note.written_duration, Duration(1,8))
             self.assertEqual(inspect_(note).get_duration(), Duration(3,40))
 
-    @mock.patch("lychee.converters.mei_to_abjad.mei_element_to_abjad_leaf")
-    def test_mei_tupletspan_to_abjad_tuplet_full_nested_mock(self, mock_leaf):
+    @mock.patch("lychee.converters.mei_to_abjad.element_to_leaf")
+    def test_tupletspan_to_tuplet_full_nested_mock(self, mock_leaf):
         '''
         precondition: list containing mei tupletspan Element, notes, and (nested) tupletspan Element
         postcondition: abjad Tuplet containing notes and (nested) abjad Tuplet
@@ -639,7 +640,7 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         inner_tuplet.set('plist', '2 3 4')
         mock_leaf.side_effect = lambda x: Note("c'8")
         
-        abjad_tuplet = mei_to_abjad.mei_tupletspan_to_abjad_tuplet(mei_nested_tuplet)
+        abjad_tuplet = mei_to_abjad.tupletspan_to_tuplet(mei_nested_tuplet)
         
         inner_tuplet = abjad_tuplet[0]
         self.assertTrue(isinstance(abjad_tuplet, Tuplet))
@@ -657,3 +658,4 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
             self.assertTrue(isinstance(note, Note))
             self.assertEqual(note.written_duration, Duration(1,8))
             self.assertEqual(inspect_(note).get_duration(), Duration(3,40))
+            

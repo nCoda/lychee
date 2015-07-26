@@ -88,13 +88,13 @@ def convert(document, **kwargs):
     lychee.log('{}.convert() after finish signal'.format(__name__))
 
 
-def convert_accidental_abjad_to_mei(abjad_accidental_string):
+def convert_accidental(abjad_accidental_string):
     # Helper that converts an Abjad accidental string to an mei accidental string.
     accidental_dictionary = {'': '', 'f': 'f', 's': 's', 'ff': 'ff', 'ss': 'x',
                             'tqs': 'su', 'qs': 'sd', 'tqf': 'fd', 'qf': 'fu'}
     return accidental_dictionary[abjad_accidental_string]
 
-def add_xml_id_to_abjad_object_and_mei_element_pair(abjad_object, mei_element):
+def add_xml_ids(abjad_object, mei_element):
     if isinstance(abjad_object, NoteHead):
         parent_chord = abjad_object.client
         parentage = inspect_(parent_chord).get_parentage()
@@ -109,7 +109,7 @@ def add_xml_id_to_abjad_object_and_mei_element_pair(abjad_object, mei_element):
     mei_element.set(_XMLNS, the_xmlid)
 
 
-def abjad_note_to_mei_note(abjad_note):
+def note_to_note(abjad_note):
         #also handles abjad NoteHead objects (which have pitch and octave attrs but no dur)
         if hasattr(abjad_note,'written_duration'):
             dots = abjad_note.written_duration.dot_count
@@ -121,7 +121,7 @@ def abjad_note_to_mei_note(abjad_note):
             duration = None
         octave = abjad_note.written_pitch.octave.octave_number
         pitchname = abjad_note.written_pitch.pitch_class_name[0]
-        accidental = convert_accidental_abjad_to_mei(abjad_note.written_pitch.accidental.abbreviation)
+        accidental = convert_accidental(abjad_note.written_pitch.accidental.abbreviation)
         if hasattr(abjad_note, 'is_cautionary'):
             is_cautionary = abjad_note.is_cautionary
         else:
@@ -152,10 +152,10 @@ def abjad_note_to_mei_note(abjad_note):
                 mei_note.set('accid.ges', 'n')
                 mei_note.set('accid', 'n')
         if not isinstance(abjad_note, NoteHead):
-            add_xml_id_to_abjad_object_and_mei_element_pair(abjad_note, mei_note)
+            add_xml_ids(abjad_note, mei_note)
         return mei_note
 
-def abjad_rest_to_mei_rest(abjad_rest):
+def rest_to_rest(abjad_rest):
     duration = abjad_rest.written_duration.lilypond_duration_string
     dots = abjad_rest.written_duration.dot_count
     mei_rest = ETree.Element('{}rest'.format(_MEINS))
@@ -166,11 +166,11 @@ def abjad_rest_to_mei_rest(abjad_rest):
     else:
         dur_number_string = duration
     mei_rest.set('dur',dur_number_string)
-    add_xml_id_to_abjad_object_and_mei_element_pair(abjad_rest, mei_rest)
+    add_xml_ids(abjad_rest, mei_rest)
     return mei_rest
 
 
-def abjad_chord_to_mei_chord(abjad_chord):
+def chord_to_chord(abjad_chord):
     mei_chord = ETree.Element('{}chord'.format(_MEINS))
     dots = abjad_chord.written_duration.dot_count
     dur_string = abjad_chord.written_duration.lilypond_duration_string
@@ -179,17 +179,17 @@ def abjad_chord_to_mei_chord(abjad_chord):
         dur_string = dur_string[:dur_string.find('.')]
     mei_chord.set('dur',dur_string)
     for head in abjad_chord.note_heads:
-        mei_note = abjad_note_to_mei_note(head)
+        mei_note = note_to_note(head)
         mei_chord.append(mei_note)
-    add_xml_id_to_abjad_object_and_mei_element_pair(abjad_chord, mei_chord)
+    add_xml_ids(abjad_chord, mei_chord)
     return mei_chord
 
-def empty_abjad_tuplet_to_mei_tupletspan_element(abjad_tuplet):
+def empty_tuplet_to_tupletspan_element(abjad_tuplet):
     if isinstance(abjad_tuplet, Tuplet) and not isinstance(abjad_tuplet, FixedDurationTuplet):
         numerator = six.b(str(abjad_tuplet.multiplier.numerator))
         denominator = six.b(str(abjad_tuplet.multiplier.denominator))
         tupletspan = ETree.Element('{}tupletspan'.format(_MEINS),num=denominator, numBase=numerator)
-        add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet, tupletspan)
+        add_xml_ids(abjad_tuplet, tupletspan)
         return tupletspan
     elif isinstance(abjad_tuplet, FixedDurationTuplet):
         dots = abjad_tuplet.target_duration.dot_count
@@ -199,7 +199,7 @@ def empty_abjad_tuplet_to_mei_tupletspan_element(abjad_tuplet):
             dur = dur[:dur.find('.')]
             tupletspan.set('dots', six.b(str(dots)))
         tupletspan.set('dur', six.b(str(dur)))
-        add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet, tupletspan)
+        add_xml_ids(abjad_tuplet, tupletspan)
         return tupletspan
 
 def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
@@ -213,12 +213,12 @@ def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
     mei_tupletspan.set('dur', six.b(dur))
     mei_tupletspan.set('num', six.b(str(abjad_tuplet.multiplier.denominator)))
     mei_tupletspan.set('numBase', six.b(str(abjad_tuplet.multiplier.numerator)))
-    add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet, mei_tupletspan)
+    add_xml_ids(abjad_tuplet, mei_tupletspan)
 
 
-def abjad_tuplet_to_mei_tupletspan(abjad_tuplet):
+def tuplet_to_tupletspan(abjad_tuplet):
     if len(abjad_tuplet) == 0:
-        return empty_abjad_tuplet_to_mei_tupletspan_element(abjad_tuplet)
+        return empty_tuplet_to_tupletspan_element(abjad_tuplet)
     elif isinstance(abjad_tuplet, Tuplet):
         if isinstance(abjad_tuplet, Tuplet) and not isinstance(abjad_tuplet, FixedDurationTuplet):
             abjad_tuplet = abjad_tuplet.to_fixed_duration_tuplet()
@@ -231,18 +231,18 @@ def abjad_tuplet_to_mei_tupletspan(abjad_tuplet):
         for x, component in enumerate(abjad_tuplet):
             if isinstance(component, Tuplet):
                 span_n += 1
-                tuplet_list = abjad_tuplet_to_mei_tupletspan(component)
+                tuplet_list = tuplet_to_tupletspan(component)
                 tuplet_list[0].set('n', six.b(str(span_n)))
-                add_xml_id_to_abjad_object_and_mei_element_pair(component, tuplet_list[0])
+                add_xml_ids(component, tuplet_list[0])
                 output_list.extend(tuplet_list)
             else:
-                mei_component = abjad_leaf_to_mei_element(component)
+                mei_component = leaf_to_element(component)
                 mei_component.set('n', six.b(str(component_n)))
                 component_n += 1
-                add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet[x], mei_component)
+                add_xml_ids(abjad_tuplet[x], mei_component)
                 output_list.append(mei_component)
         for element in output_list[1:]:
-            plist = plist + six.b(str(element.get(_XMLNS))) + ' '
+            plist = plist + str(element.get(_XMLNS)) + ' '
         plist = plist[:-1]
         outermost_span.set('startid',six.b(str(output_list[1].get(_XMLNS))))
         outermost_span.set('endid',six.b(str(output_list[-1].get(_XMLNS))))
@@ -250,33 +250,33 @@ def abjad_tuplet_to_mei_tupletspan(abjad_tuplet):
         return output_list
 
 
-def abjad_leaf_to_mei_element(abjad_object):
+def leaf_to_element(abjad_object):
     if isinstance(abjad_object, Rest):
-        return abjad_rest_to_mei_rest(abjad_object)
+        return rest_to_rest(abjad_object)
     elif isinstance(abjad_object, (Note,NoteHead)):
-        return abjad_note_to_mei_note(abjad_object)
+        return note_to_note(abjad_object)
     elif isinstance(abjad_object, Chord):
-        return abjad_chord_to_mei_chord(abjad_object)
+        return chord_to_chord(abjad_object)
     elif isinstance(abjad_object, Tuplet):
-        return abjad_tuplet_to_mei_tupletspan(abjad_object)
+        return tuplet_to_tupletspan(abjad_object)
 
-def abjad_voice_to_mei_layer(abjad_voice):
+def voice_to_layer(abjad_voice):
     mei_layer = ETree.Element('{}layer'.format(_MEINS),n="1")
     for child in abjad_voice:
         if isinstance(child, Tuplet):
-            mei_layer.extend(abjad_leaf_to_mei_element(child))
+            mei_layer.extend(leaf_to_element(child))
         else:
-            mei_layer.append(abjad_leaf_to_mei_element(child))
-    add_xml_id_to_abjad_object_and_mei_element_pair(abjad_voice, mei_layer)
+            mei_layer.append(leaf_to_element(child))
+    add_xml_ids(abjad_voice, mei_layer)
     return mei_layer
 
-def abjad_staff_to_mei_staff(abjad_staff):
+def staff_to_staff(abjad_staff):
     mei_staff = ETree.Element('{}staff'.format(_MEINS),n='1')
     if len(abjad_staff) != 0:
         if abjad_staff.is_simultaneous and 1 < len(abjad_staff) and isinstance(abjad_staff[0], Voice):
             for x, voice in enumerate(abjad_staff):
-                mei_layer = abjad_voice_to_mei_layer(voice)
-                add_xml_id_to_abjad_object_and_mei_element_pair(abjad_staff, mei_layer)
+                mei_layer = voice_to_layer(voice)
+                add_xml_ids(abjad_staff, mei_layer)
                 mei_layer.set('n',str(x+1))
                 mei_staff.append(mei_layer)
         else:
@@ -286,18 +286,18 @@ def abjad_staff_to_mei_staff(abjad_staff):
                     out_voice.extend([mutate(x).copy() for x in component])
                 else:
                     out_voice.append(mutate(component).copy())
-            mei_layer = abjad_voice_to_mei_layer(out_voice)
+            mei_layer = voice_to_layer(out_voice)
         mei_staff.append(mei_layer)
-    add_xml_id_to_abjad_object_and_mei_element_pair(abjad_staff, mei_staff)
+    add_xml_ids(abjad_staff, mei_staff)
     return mei_staff
 
-def abjad_score_to_mei_section(abjad_score):
+def score_to_section(abjad_score):
     if len(abjad_score) == 0:
         mei_section = ETree.Element('{}section'.format(_MEINS),n='1')
-        add_xml_id_to_abjad_object_and_mei_element_pair(abjad_score, mei_section)
+        add_xml_ids(abjad_score, mei_section)
         return mei_section
     mei_section = ETree.Element('{}section'.format(_MEINS), n='1')
-    add_xml_id_to_abjad_object_and_mei_element_pair(abjad_score, mei_section)
+    add_xml_ids(abjad_score, mei_section)
     score_def = ETree.Element('{}scoreDef'.format(_MEINS))
     score_def.set(_XMLNS, mei_section.get(_XMLNS) + 'scoreDef')
     mei_section.append(score_def)
@@ -307,10 +307,10 @@ def abjad_score_to_mei_section(abjad_score):
     for component in abjad_score:
         if isinstance(component, Staff):
             abjad_staff = component
-            mei_staff = abjad_staff_to_mei_staff(abjad_staff)
+            mei_staff = staff_to_staff(abjad_staff)
             mei_staff.set('n', str(staffCounter))
             mei_section.append(mei_staff)
-            add_xml_id_to_abjad_object_and_mei_element_pair(abjad_staff, mei_staff)
+            add_xml_ids(abjad_staff, mei_staff)
             staff_def = ETree.Element('{}staffDef'.format(_MEINS),lines='5',n=str(staffCounter))
             staff_def.set(_XMLNS, mei_staff.get(_XMLNS) + 'staffDef')
             mei_main_staff_group.append(staff_def)
@@ -318,12 +318,12 @@ def abjad_score_to_mei_section(abjad_score):
         elif isinstance(component, StaffGroup):
             abjad_staff_group = component
             mei_staff_group = ETree.Element('{}staffGrp'.format(_MEINS),symbol='bracket')
-            add_xml_id_to_abjad_object_and_mei_element_pair(abjad_staff_group, mei_staff_group)
+            add_xml_ids(abjad_staff_group, mei_staff_group)
             mei_main_staff_group.append(mei_staff_group)
             for staff in abjad_staff_group:
                 abjad_staff = staff
-                mei_staff = abjad_staff_to_mei_staff(abjad_staff)
-                add_xml_id_to_abjad_object_and_mei_element_pair(abjad_staff, mei_staff)
+                mei_staff = staff_to_staff(abjad_staff)
+                add_xml_ids(abjad_staff, mei_staff)
                 mei_staff.set('n', str(staffCounter))
                 mei_section.append(mei_staff)
                 staff_def = ETree.Element('{}staffDef'.format(_MEINS),lines='5',n=str(staffCounter))
@@ -331,71 +331,3 @@ def abjad_score_to_mei_section(abjad_score):
                 mei_staff_group.append(staff_def)
                 staffCounter += 1
     return mei_section
-
-
-def empty_abjad_tuplet_to_mei_tupletspan_element(abjad_tuplet):
-    if isinstance(abjad_tuplet, Tuplet) and not isinstance(abjad_tuplet, FixedDurationTuplet):
-        numerator = abjad_tuplet.multiplier.numerator
-        denominator = abjad_tuplet.multiplier.denominator
-        tupletspan = ETree.Element('{}tupletspan'.format(_MEINS),
-                                   num=str(denominator),
-                                   numBase=str(numerator))
-        add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet, tupletspan)
-        return tupletspan
-    elif isinstance(abjad_tuplet, FixedDurationTuplet):
-        dots = abjad_tuplet.target_duration.dot_count
-        dur = abjad_tuplet.target_duration.lilypond_duration_string
-        tupletspan = ETree.Element('{}tupletspan'.format(_MEINS))
-        if dots:
-            dur = dur[:dur.find('.')]
-            tupletspan.set('dots', str(dots))
-        tupletspan.set('dur', dur)
-        add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet, tupletspan)
-        return tupletspan
-
-def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
-    mei_tupletspan.set('n','1')
-    duration = abjad_tuplet.target_duration
-    dur = duration.lilypond_duration_string
-    dots = duration.dot_count
-    if dots:
-        dur = dur[:dur.find('.')]
-        mei_tupletspan.set('dots', str(dots))
-    mei_tupletspan.set('dur', dur)
-    mei_tupletspan.set('num', str(abjad_tuplet.multiplier.denominator))
-    mei_tupletspan.set('numBase', str(abjad_tuplet.multiplier.numerator))
-    add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet, mei_tupletspan)
-
-
-def abjad_tuplet_to_mei_tupletspan(abjad_tuplet):
-    if len(abjad_tuplet) == 0:
-        return empty_abjad_tuplet_to_mei_tupletspan_element(abjad_tuplet)
-    elif isinstance(abjad_tuplet, Tuplet):
-        if isinstance(abjad_tuplet, Tuplet) and not isinstance(abjad_tuplet, FixedDurationTuplet):
-            abjad_tuplet = abjad_tuplet.to_fixed_duration_tuplet()
-        span_n = 1
-        component_n = 1
-        outermost_span = ETree.Element('{}tupletspan'.format(_MEINS))
-        setup_outermost_tupletspan(outermost_span, abjad_tuplet)
-        output_list = [outermost_span]
-        plist = ''
-        for x, component in enumerate(abjad_tuplet):
-            if isinstance(component, Tuplet):
-                span_n += 1
-                tuplet_list = abjad_tuplet_to_mei_tupletspan(component)
-                tuplet_list[0].set('n', str(span_n))
-                add_xml_id_to_abjad_object_and_mei_element_pair(component, tuplet_list[0])
-                output_list.extend(tuplet_list)
-            else:
-                mei_component = abjad_leaf_to_mei_element(component)
-                mei_component.set('n', str(component_n))
-                component_n += 1
-                add_xml_id_to_abjad_object_and_mei_element_pair(abjad_tuplet[x], mei_component)
-                output_list.append(mei_component)
-        for element in output_list[1:]:
-            plist = plist + element.get(_XMLNS) + ' '
-        plist = plist[:-1]
-        outermost_span.set('startid',output_list[1].get(_XMLNS))
-        outermost_span.set('endid',output_list[-1].get(_XMLNS))
-        outermost_span.set('plist',plist)
-        return output_list

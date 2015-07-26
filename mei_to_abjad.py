@@ -89,7 +89,7 @@ def convert(document, **kwargs):
     lychee.log('{}.convert() after finish signal'.format(__name__))
 
 
-def convert_accidental_mei_to_abjad(mei_accidental_string):
+def convert_accidental(mei_accidental_string):
     # helper that converts an mei accidental string to an Abjad accidental string
     accidental_dictionary = {'f': 'f', 's': 's', 'ff': 'ff', 'x': 'ss', 'su': 'tqs', 
                             'sd': 'qs', 'fd': 'tqf', 'fu': 'qf'}
@@ -113,13 +113,13 @@ def append_accidental(mei_note):
         accid = accid_element[0].get('accid')
         if accid != 'n':
         # that isn't a natural
-            return convert_accidental_mei_to_abjad(accid)
+            return convert_accidental(accid)
     else:
     # if normal accidental
         accid = mei_note.get('accid.ges')
         if accid:
             if accid != 'n':
-                return convert_accidental_mei_to_abjad(accid)
+                return convert_accidental(accid)
     return ''
         
 def make_abjad_note_from_string(the_string,mei_note):
@@ -147,7 +147,7 @@ def set_cautionary(output, mei_note):
             output.note_head.is_cautionary = True
         
 
-def mei_note_to_abjad_note(mei_note):
+def note_to_note(mei_note):
     the_string = ""
     # append pitch name
     the_string += mei_note.get('pname')
@@ -167,7 +167,7 @@ def mei_note_to_abjad_note(mei_note):
     return output
         
 
-def mei_rest_to_abjad_rest(mei_rest):
+def rest_to_rest(mei_rest):
     the_string = "r"
     the_string += mei_rest.get('dur')
     if mei_rest.get('dots'):
@@ -178,7 +178,7 @@ def mei_rest_to_abjad_rest(mei_rest):
 
 
 
-def mei_chord_to_abjad_chord(mei_chord):
+def chord_to_chord(mei_chord):
     dots = mei_chord.get('dots')
     dur = mei_chord.get('dur')
     abjad_duration = Duration()
@@ -189,51 +189,10 @@ def mei_chord_to_abjad_chord(mei_chord):
     abjad_duration = abjad_duration.from_lilypond_duration_string(lily_dur_string)
     noteheads = []
     for child in mei_chord:
-        noteheads.append(mei_note_to_abjad_note(child))
+        noteheads.append(note_to_note(child))
     abjad_chord = Chord(noteheads,abjad_duration)
     return abjad_chord
-
-def mei_element_to_abjad_leaf(mei_element):
-    if mei_element.tag == 'rest':
-        return mei_rest_to_abjad_rest(mei_element)
-    elif mei_element.tag == 'note':
-        return mei_note_to_abjad_note(mei_element)
-    elif mei_element.tag == 'chord':
-        return mei_chord_to_abjad_chord(mei_element)
-
-def mei_layer_to_abjad_voice(mei_layer):
-    abjad_voice = Voice()
-    for child in mei_layer:
-        abjad_voice.append(mei_element_to_abjad_leaf(child))
-    return abjad_voice
-
-def mei_staff_to_abjad_staff(mei_staff):
-    abjad_staff = Staff()
-    for layer in mei_staff:
-        abjad_staff.append(mei_layer_to_abjad_voice(layer))
-    return abjad_staff
-
-def mei_section_to_abjad_score(mei_section):
-    if len(mei_section) == 0:
-        return Score()
-    abjad_score = Score()
-    score_def = mei_section[0]
-    mei_global_staff_group = score_def[0]
-    staffs = mei_section[1:]
-    for element in mei_global_staff_group:
-        if element.tag == 'staffDef':
-            staff_index = int(element.get('n')) - 1
-            abjad_staff = mei_staff_to_abjad_staff(staffs[staff_index])
-            abjad_score.append(abjad_staff)
-        elif element.tag == 'staffGrp':
-            abjad_staff_group = StaffGroup()
-            for staffDef in element:
-                staff_index = int(staffDef.get('n')) - 1
-                abjad_staff_group.append(mei_staff_to_abjad_staff(staffs[staff_index]))
-            abjad_score.append(abjad_staff_group)
-    return abjad_score
-
-
+    
 def tupletspan_element_to_empty_tuplet(mei_tupletspan):
     numerator = mei_tupletspan.get('numBase')
     mei_duration = mei_tupletspan.get('dur')
@@ -265,7 +224,7 @@ def setup_outermost_tupletspan(mei_tupletspan):
     return return_tuplet
 
 
-def mei_tupletspan_to_abjad_tuplet(mei_tupletspan):
+def tupletspan_to_tuplet(mei_tupletspan):
     if isinstance(mei_tupletspan, list):
         # list beginning with tuplet span and continuing with spanned Elements
         # set up the outermost tuplet and components list
@@ -280,12 +239,12 @@ def mei_tupletspan_to_abjad_tuplet(mei_tupletspan):
                 plist = element.get('plist').split()
                 end_index = index + len(plist) + 1
                 recursion_list = outermost_tuplet_members[index:end_index]
-                abjad_tuplet = mei_tupletspan_to_abjad_tuplet(recursion_list)
+                abjad_tuplet = tupletspan_to_tuplet(recursion_list)
                 tuplet_components.append(abjad_tuplet)
                 index = index + len(plist) + 1
             else:
                 #convert the element and add it to the list
-                mei_element = mei_element_to_abjad_leaf(element)
+                mei_element = element_to_leaf(element)
                 tuplet_components.append(mei_element)
                 index += 1
         abjad_outermost_tuplet.extend(tuplet_components)
@@ -296,3 +255,44 @@ def mei_tupletspan_to_abjad_tuplet(mei_tupletspan):
     else:
         raise AssertionError("Input argument isn't a list or Element.")
         
+
+def element_to_leaf(mei_element):
+    if mei_element.tag == 'rest':
+        return rest_to_rest(mei_element)
+    elif mei_element.tag == 'note':
+        return note_to_note(mei_element)
+    elif mei_element.tag == 'chord':
+        return chord_to_chord(mei_element)
+
+def layer_to_voice(mei_layer):
+    abjad_voice = Voice()
+    for child in mei_layer:
+        abjad_voice.append(element_to_leaf(child))
+    return abjad_voice
+
+def staff_to_staff(mei_staff):
+    abjad_staff = Staff()
+    for layer in mei_staff:
+        abjad_staff.append(layer_to_voice(layer))
+    return abjad_staff
+
+def section_to_score(mei_section):
+    if len(mei_section) == 0:
+        return Score()
+    abjad_score = Score()
+    score_def = mei_section[0]
+    mei_global_staff_group = score_def[0]
+    staffs = mei_section[1:]
+    for element in mei_global_staff_group:
+        if element.tag == 'staffDef':
+            staff_index = int(element.get('n')) - 1
+            abjad_staff = staff_to_staff(staffs[staff_index])
+            abjad_score.append(abjad_staff)
+        elif element.tag == 'staffGrp':
+            abjad_staff_group = StaffGroup()
+            for staffDef in element:
+                staff_index = int(staffDef.get('n')) - 1
+                abjad_staff_group.append(staff_to_staff(staffs[staff_index]))
+            abjad_score.append(abjad_staff_group)
+    return abjad_score
+

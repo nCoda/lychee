@@ -206,7 +206,7 @@ class Document(object):
         # @xml:id to the <section> with that id
         self._sections = {}
         # the <score> element
-        self._score = None
+        self._score = None  # TODO: remove this (it should be created "on the fly")
         # the order of <section> elements in the <score>, indicated with @xml:id
         self._score_order = []
         # the <meiHead> element

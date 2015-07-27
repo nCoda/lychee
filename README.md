@@ -1,5 +1,5 @@
-Lychee "Converters" Submodule
-=============================
+Lychee
+======
 
 *Lychee* is an MEI document manager.
 
@@ -9,16 +9,12 @@ License
 *Lychee* is copyrighted according to the terms of the GNU GPLv3+. A copy of the license is held in
 the file called "LICENSE."
 
-Install for Development
------------------------
+Install for Development (CPython 3)
+-----------------------------------
 
 Clone this git repository:
 
     $ git clone https://jameson.adjectivenoun.ca:lychee/lychee.git
-
-Clone the submodules:
-
-    $ git submodule update
 
 Create and activate a new virtualenv:
 
@@ -27,7 +23,7 @@ Create and activate a new virtualenv:
 
 Install the development requirements:
 
-    $ pip install -r cra_pip_freeze.txt
+    $ pip install -r cra_pip_freeze-py3.txt
 
 Install *Lychee* itself. This ensure the *Lychee* module is importable in the interpreter.
 
@@ -37,6 +33,12 @@ The test suite uses the ``pytest`` package. To run the test suite, ensure your v
 then issue the following command from the "abbott" root directory:
 
     $ py.test
+
+Install for Development (CPython 2)
+-----------------------------------
+
+Same as for CPython 3, but use the ``virtualenv`` command to create a virtualenv. You may need to
+install that package separately.
 
 Install for Deployment
 ----------------------

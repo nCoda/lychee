@@ -1,4 +1,4 @@
-from lxml import etree as ETree
+from lxml import etree as etree
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
@@ -24,7 +24,7 @@ except ImportError:
 
 _MEINS = '{http://www.music-encoding.org/ns/mei}'
 _XMLNS = '{http://www.w3.org/XML/1998/namespace}id'
-ETree.register_namespace('mei', _MEINS[1:-1])
+etree.register_namespace('mei', _MEINS[1:-1])
 
 class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
     
@@ -287,9 +287,9 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         postcondition: mei layer Element containing rest, note and chord
         '''
         abjad_voice = Voice("r4 c'4 <c' d'>4")
-        mock_rest.return_value = ETree.Element('{}rest'.format(_MEINS))
-        mock_note.return_value = ETree.Element('{}note'.format(_MEINS))
-        mock_chord.return_value = ETree.Element('{}chord'.format(_MEINS))
+        mock_rest.return_value = etree.Element('{}rest'.format(_MEINS))
+        mock_note.return_value = etree.Element('{}note'.format(_MEINS))
+        mock_chord.return_value = etree.Element('{}chord'.format(_MEINS))
         mei_layer = abjad_to_mei.voice_to_layer(abjad_voice)
         self.assertAttribsEqual(mei_layer.attrib, {'n': '1'})
         self.assertEqual(len(mei_layer), 3)
@@ -343,7 +343,7 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         '''
         voice = Voice("r4 c'4 <c' d'>4")
         abjad_staff = Staff([voice])
-        mock_layer.return_value = ETree.Element('{}layer'.format(_MEINS))
+        mock_layer.return_value = etree.Element('{}layer'.format(_MEINS))
         
         mei_staff = abjad_to_mei.staff_to_staff(abjad_staff)
         
@@ -386,7 +386,7 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         voice_two = Voice("r4 d'4 <d' e'>4")
         abjad_staff = Staff([voice_one, voice_two])
         abjad_staff.is_simultaneous = True
-        mock_layer.side_effect = lambda x: ETree.Element('{}layer'.format(_MEINS))
+        mock_layer.side_effect = lambda x: etree.Element('{}layer'.format(_MEINS))
         
         mei_staff = abjad_to_mei.staff_to_staff(abjad_staff)
         
@@ -427,7 +427,7 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         voice_one = Voice("r4 c'4 <c' d'>4")
         voice_two = Voice("r4 d'4 <d' e'>4")
         abjad_staff = Staff([voice_one, voice_two])
-        mock_layer.return_value = ETree.Element('{}layer'.format(_MEINS),n='1')
+        mock_layer.return_value = etree.Element('{}layer'.format(_MEINS),n='1')
         
         mei_staff = abjad_to_mei.staff_to_staff(abjad_staff)
         
@@ -462,7 +462,7 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         postcondition: mei layer Element containing children leaf Elements
         '''
         abjad_staff = Staff("r4 c'4 <c' d'>4")
-        mock_layer.return_value = ETree.Element('{}layer'.format(_MEINS), n='1')
+        mock_layer.return_value = etree.Element('{}layer'.format(_MEINS), n='1')
         
         mei_staff = abjad_to_mei.staff_to_staff(abjad_staff)
         
@@ -510,9 +510,9 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         voice_two = Voice("r4 d'4")
         abjad_staff.append(voice_two)
         abjad_staff.append(Note("c''4"))
-        dummy = ETree.Element('{}layer'.format(_MEINS),n='1')
+        dummy = etree.Element('{}layer'.format(_MEINS),n='1')
         for _ in range(8):
-            ETree.SubElement(dummy, '{}note'.format(_MEINS))
+            etree.SubElement(dummy, '{}note'.format(_MEINS))
         mock_layer.return_value = dummy
         
         mei_staff = abjad_to_mei.staff_to_staff(abjad_staff)
@@ -588,7 +588,7 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         abjad_score.append(Staff())
         abjad_score.append( StaffGroup([Staff(), Staff()]) )
         abjad_score.append(Staff())
-        mock_section.side_effect = lambda x: ETree.Element('{}staff'.format(_MEINS),n='1')
+        mock_section.side_effect = lambda x: etree.Element('{}staff'.format(_MEINS),n='1')
         
         mei_section = abjad_to_mei.score_to_section(abjad_score)
         
@@ -625,7 +625,7 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         
         mei_element = abjad_to_mei.tuplet_to_tupletspan(abjad_tuplet)
         
-        self.assertTrue(isinstance(mei_element, ETree._Element))
+        self.assertTrue(isinstance(mei_element, etree._Element))
         tupletspan = mei_element
         self.assertEqual(tupletspan.tag, '{}tupletspan'.format(_MEINS))
         self.assertEqual(tupletspan.get('dur'), '4')
@@ -645,7 +645,7 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         
         mei_element = abjad_to_mei.tuplet_to_tupletspan(abjad_tuplet)
 
-        self.assertTrue(isinstance(mei_element, ETree._Element))
+        self.assertTrue(isinstance(mei_element, etree._Element))
         tupletspan = mei_element
         self.assertEqual(tupletspan.tag, '{}tupletspan'.format(_MEINS))
         self.assertEqual(tupletspan.get('dur'), '4')
@@ -665,7 +665,7 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         
         mei_element = abjad_to_mei.tuplet_to_tupletspan(abjad_tuplet)
         
-        self.assertTrue(isinstance(mei_element, ETree._Element))
+        self.assertTrue(isinstance(mei_element, etree._Element))
         tupletspan = mei_element
         self.assertEqual(tupletspan.tag, '{}tupletspan'.format(_MEINS))
         self.assertEqual(tupletspan.get('dur'), None)
@@ -708,7 +708,7 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         '''
         # returns list containing tupletspan followed by leaf elements
         abjad_tuplet = Tuplet(Multiplier(2,3), "c'8 c' c'")
-        mock_element.side_effect = lambda x: ETree.Element('{}note'.format(_MEINS), pname='c', octave='4', dur='8')
+        mock_element.side_effect = lambda x: etree.Element('{}note'.format(_MEINS), pname='c', octave='4', dur='8')
         
         mei_elements = abjad_to_mei.tuplet_to_tupletspan(abjad_tuplet)
         
@@ -758,7 +758,7 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         '''
         abjad_tuplet = Tuplet()
         abjad_tuplet = abjad_tuplet.from_duration_and_ratio(Duration(3,8), [1] * 5)
-        mock_element.side_effect = lambda x: ETree.Element('{}note'.format(_MEINS), pname='c', octave='4', dur='8')
+        mock_element.side_effect = lambda x: etree.Element('{}note'.format(_MEINS), pname='c', octave='4', dur='8')
         
         mei_elements = abjad_to_mei.tuplet_to_tupletspan(abjad_tuplet)
         
@@ -827,7 +827,7 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         outer_tuplet = FixedDurationTuplet((3,8), [])
         outer_tuplet.append(inner_tuplet)
         outer_tuplet.extend("d'8 d' d'")
-        mock_element.side_effect = lambda x: ETree.Element('{}note'.format(_MEINS), pname='c', octave='4', dur='8')
+        mock_element.side_effect = lambda x: etree.Element('{}note'.format(_MEINS), pname='c', octave='4', dur='8')
         
         mei_elements = abjad_to_mei.tuplet_to_tupletspan(outer_tuplet)
         

@@ -31,9 +31,9 @@ Converts an MEI document to an Abjad document.
 
     ::
 
-        >>> root = ETree.Element("note",dots="1",dur="4",oct="4",pname="c")
-        >>> ETree.SubElement(root,"accid",accid="sd",func="cautionary")
-        >>> tree = ETree.ElementTree(root)
+        >>> root = etree.Element("note",dots="1",dur="4",oct="4",pname="c")
+        >>> etree.SubElement(root,"accid",accid="sd",func="cautionary")
+        >>> tree = etree.ElementTree(root)
         >>> note = meiTreeToAbjadNote(tree)
 
     ..  doctest::
@@ -43,7 +43,7 @@ Converts an MEI document to an Abjad document.
 '''
 
 import six
-from lxml import etree as ETree
+from lxml import etree as etree
 
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
@@ -64,7 +64,7 @@ from abjad.tools.topleveltools.attach import attach
 
 _MEINS = '{http://www.music-encoding.org/ns/mei}'
 _XMLNS = '{http://www.w3.org/XML/1998/namespace}id'
-ETree.register_namespace('mei', _MEINS[1:-1])
+etree.register_namespace('mei', _MEINS[1:-1])
 
 #import lychee
 #from lychee.signals import outbound

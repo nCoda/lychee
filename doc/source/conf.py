@@ -54,8 +54,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Lychee'
-copyright = '2015, Christopher Antila and Jeffrey Treviño'
-author = 'Christopher Antila and Jeffrey Treviño'
+copyright = u'2015, Christopher Antila and Jeffrey Treviño'
+author = u'Christopher Antila and Jeffrey Treviño'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

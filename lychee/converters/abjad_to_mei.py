@@ -83,8 +83,10 @@ def convert_accidental(abjad_accidental_string):
 
 def add_xml_ids(abjad_object, mei_element):
     '''
+    
     Attaches the same SHA256 hash digest as xml ID to both an abjad object and an mei element.
-    :param abjad_object: an abjad object.
+    
+    :param abjad_object: an abjad object :class:`abjad.tools.abctools.AbjadObject`
     :param mei_element: an mei element.
     :returns: None
     :rtype: None
@@ -103,7 +105,7 @@ def note_to_note(abjad_note):
     Convert an Abjad Note or NoteHead object to an MEI note Element.
     Collects info from the abjad object, then generates mei Element.
 
-    :param object abjad_note: an abjad Note or NoteHead object.
+    :param abjad_note: the note to convert.
     :returns: an mei note Element.
     :rtype: :class:`xml.etree.ElementTree.Element`
     '''
@@ -162,7 +164,7 @@ def rest_to_rest(abjad_rest):
     Convert an Abjad Rest object to an MEI rest Element.
     Collects info from the abjad object, then generates mei Element.
 
-    :param object abjad_rest: an abjad Rest object.
+    :param abjad_rest: an abjad Rest object.
     :returns: an mei rest Element.
     :rtype: :class:`xml.etree.ElementTree.Element`
     '''
@@ -185,7 +187,7 @@ def chord_to_chord(abjad_chord):
     Convert an Abjad Chord object to an MEI chord Element.
     Collects info from the abjad object, then generates mei Element.
 
-    :param object abjad_chord: an abjad Chord object.
+    :param abjad_chord: an abjad Chord object.
     :returns: an mei chord Element.
     :rtype: :class:`xml.etree.ElementTree.Element`
     '''
@@ -207,7 +209,7 @@ def empty_tuplet_to_tupletspan_element(abjad_tuplet):
     Convert an empty Abjad Tuplet container to an MEI tupletspan Element.
     Collects info from the abjad object, then generates mei Element.
 
-    :param object abjad_tuplet: an empty abjad Tuplet container.
+    :param abjad_tuplet: an empty abjad Tuplet container.
     :returns: an mei tupletspan Element.
     :rtype: :class:`xml.etree.ElementTree.Element`
     '''

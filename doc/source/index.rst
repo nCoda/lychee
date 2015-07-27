@@ -6,12 +6,63 @@
 Documentation for Lychee
 ========================
 
-Contents:
+Converters
+----------
+
+Into Lychee-MEI
+^^^^^^^^^^^^^^^
+
+.. toctree::
+    :maxdepth: 1
+
+    converters
+    converters-abjad_to_mei
+    converters-ly_to_mei
+    converters-mei_to_lmei
+
+From Lychee-MEI
+^^^^^^^^^^^^^^^
+
+.. toctree::
+    :maxdepth: 1
+
+    converters-mei_to_abjad
+    converters-mei_to_ly
+    converters-lmei_to_mei
+
+Document
+--------
+
+.. toctree::
+    :maxdepth: 1
+
+    document
+
+Signals
+-------
 
 .. toctree::
     :maxdepth: 2
 
-    converters
+    signals
+    signals-workflow
+
+Views
+-----
+
+.. toctree::
+    :maxdepth: 1
+
+    views
+
+Others
+------
+
+.. toctree::
+    :maxdepth: 1
+
+    namespaces
+    tui
 
 Indices and tables
 ==================

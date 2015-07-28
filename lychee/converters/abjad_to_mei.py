@@ -57,7 +57,7 @@ def convert(document, **kwargs):
 
     :param object document: the Abjad document.
     :returns: The corresponding MEI document.
-    :rtype: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
+    :rtype: :class:`lxml.etree.ElementTree.Element` or :class:`lxml.etree.ElementTree.ElementTree`
     '''
     inbound.CONVERSION_STARTED.emit()
     lychee.log('{}.convert(document="{}")'.format(document))
@@ -71,7 +71,7 @@ def convert(document, **kwargs):
 
 def convert_accidental(abjad_accidental_string):
     '''
-    Converts an abjad accidental string to an mei accidental string.
+    Convert an abjad accidental string to an mei accidental string.
 
     :param abjad_accidental_string: the Abjad accidental string.
     :type abjad_accidental_string: string
@@ -85,12 +85,12 @@ def convert_accidental(abjad_accidental_string):
 def add_xml_ids(abjad_object, mei_element):
     '''
     
-    Attaches the same SHA256 hash digest as xml ID to both an abjad object and an mei element.
+    Attach the same SHA256 hash digest as xml ID to both an abjad object and an mei element.
     
     :param abjad_object: The abjad object to attach the ID to.
-    :type abjad_object: :class:`abjad.tools.abctools.AbjadObject`
+    :type abjad_object: :class:`abjad.tools.abctools.AbjadObject.AbjadObject`
     :param mei_element: The MEI Element to attach the ID to.
-    :type mei_element: :class:`xml.etree.ElementTree.Element`.
+    :type mei_element: :class:`lxml.etree.ElementTree.Element`.
     :returns: None.
     :rtype: None.
     '''
@@ -106,12 +106,11 @@ def add_xml_ids(abjad_object, mei_element):
 def note_to_note(abjad_note):
     '''
     Convert an Abjad Note or NoteHead object to an MEI note Element.
-    Collects info from the abjad object, then generates mei Element.
 
     :param abjad_note: the Abjad Note object to convert.
-    :type abjad_note: :class:`abjad.tools.scoretools.Note`
+    :type abjad_note: :class:`abjad.tools.scoretools.Note.Note`
     :returns: The corresponding MEI note Element.
-    :rtype: :class:`xml.etree.ElementTree.Element`
+    :rtype: :class:`lxml.etree.ElementTree.Element`
     '''
     #also handles abjad NoteHead objects (which have pitch and octave attrs but no dur)
     #(NoteHeads have the 'written_duration' attribute, Notes don't.)
@@ -169,9 +168,9 @@ def rest_to_rest(abjad_rest):
     Collects info from the abjad object, then generates mei Element.
 
     :param abjad_rest: The Abjad Rest object to convert.
-    :type abjad_rest: :class:`abjad.tools.scoretools.Rest`
+    :type abjad_rest: :class:`abjad.tools.scoretools.Rest.Rest`
     :returns: The corresponding MEI rest Element.
-    :rtype: :class:`xml.etree.ElementTree.Element`
+    :rtype: :class:`lxml.etree.ElementTree.Element`
     '''
     duration = abjad_rest.written_duration.lilypond_duration_string
     dots = abjad_rest.written_duration.dot_count
@@ -192,9 +191,9 @@ def chord_to_chord(abjad_chord):
     Convert an Abjad Chord object to an MEI chord Element.
 
     :param abjad_chord: the Abjad Chord object to convert.
-    :type abjad_chord: :class:`abjad.tools.scoretools.Chord`
+    :type abjad_chord: :class:`abjad.tools.scoretools.Chord.Chord`
     :returns: the corresponding MEI chord Element.
-    :rtype: :class:`xml.etree.ElementTree.Element`
+    :rtype: :class:`lxml.etree.ElementTree.Element`
     '''
     mei_chord = etree.Element('{}chord'.format(_MEINS))
     dots = abjad_chord.written_duration.dot_count
@@ -214,9 +213,9 @@ def empty_tuplet_to_tupletspan_element(abjad_tuplet):
     Convert an empty Abjad Tuplet or FixedDurationTuplet container to an MEI tupletspan Element.
 
     :param abjad_tuplet: the empty Abjad Tuplet container to convert.
-    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet`
+    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet` 
     :returns: The corresponding MEI tupletspan Element.
-    :rtype: :class:`xml.etree.ElementTree.Element`
+    :rtype: :class:`lxml.etree.ElementTree.Element`
     '''
     if isinstance(abjad_tuplet, Tuplet) and not isinstance(abjad_tuplet, FixedDurationTuplet):
         numerator = six.b(str(abjad_tuplet.multiplier.numerator))
@@ -237,12 +236,12 @@ def empty_tuplet_to_tupletspan_element(abjad_tuplet):
 
 def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
     '''
-    Helper function that sets mei tupletspan's 'dur', 'dots', 'n', 'num', and 'numBase' attributes according to info from an abjad Tuplet.
+    Set an mei tupletspan's 'dur', 'dots', 'n', 'num', and 'numBase' attributes according to info from an abjad Tuplet.
 
     :param mei_tupletspan: The MEI tupletspan Element to initialize.
-    :type mei_tupletspan: :class:`xml.etree.ElementTree.Element`
+    :type mei_tupletspan: :class:`lxml.etree.ElementTree.Element`
     :param abjad_tuplet: the Abjad Tuplet container from which to initialize.
-    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet`
+    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet` 
     :returns: None
     :rtype: None
     '''
@@ -261,14 +260,14 @@ def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
 
 def tuplet_to_tupletspan(abjad_tuplet):
     '''
-    Converts an empty abjad Tuplet container into an mei tupletspan Element and
+    Convert an empty abjad Tuplet container into an mei tupletspan Element and
     converts a full abjad Tuplet container into a list beginning with a tupletspan
     element and followed by appropriate conversions of the container's leaves.
 
     :param abjad_tuplet: The Abjad Tuplet container to convert.
-    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet` 
+    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet` 
     :returns: the corresponding MEI tupletspan Element or list of MEI Elements.
-    :rtype: :class:`xml.etree.ElementTree.Element` or list
+    :rtype: :class:`lxml.etree.ElementTree.Element` or list
     '''
     if len(abjad_tuplet) == 0:
         return empty_tuplet_to_tupletspan_element(abjad_tuplet)
@@ -306,13 +305,12 @@ def tuplet_to_tupletspan(abjad_tuplet):
 def leaf_to_element(abjad_object):
     '''
     
-    Converts an arbitrary abjad leaf (Rest, Note, or Chord) or Tuplet into the corresponding mei Element or list of Elements.
-    Only returns a list in the case of a full Tuplet input; otherwise, returns an mei Element.
+    Convert an arbitrary abjad leaf (Rest, Note, or Chord) into the corresponding mei Element.
     
     :param abjad_object: the Abjad leaf to convert.
-    :type abjad_object: :class:`abjad.tools.abctools.AbjadObject`
-    :returns: the corresponding MEI Element or list of Elements.
-    :rtype: List or :class:`xml.etree.ElementTree.Element`
+    :type abjad_object: :class:`abjad.tools.scoretools.Leaf.Leaf`
+    :returns: the corresponding MEI Element.
+    :rtype: List or :class:`lxml.etree.ElementTree.Element`
     '''
     if isinstance(abjad_object, Rest):
         return rest_to_rest(abjad_object)
@@ -320,17 +318,16 @@ def leaf_to_element(abjad_object):
         return note_to_note(abjad_object)
     elif isinstance(abjad_object, Chord):
         return chord_to_chord(abjad_object)
-    elif isinstance(abjad_object, Tuplet):
-        return tuplet_to_tupletspan(abjad_object)
+
 
 def voice_to_layer(abjad_voice):
     '''
-    Converts an abjad Voice into an mei layer Element.
+    Convert an abjad Voice into an mei layer Element.
     
     :param abjad_voice: the Abjad Voice to convert.
-    :type abjad_voice: :class:`abjad.tools.scoretools.Voice`
+    :type abjad_voice: :class:`abjad.tools.scoretools.Voice.Voice`
     :returns: the corresponding MEI layer Element.
-    :rtype: :class:`xml.etree.ElementTree.Element`
+    :rtype: :class:`lxml.etree.ElementTree.Element`
     '''
     mei_layer = etree.Element('{}layer'.format(_MEINS),n="1")
     for child in abjad_voice:
@@ -343,13 +340,13 @@ def voice_to_layer(abjad_voice):
 
 def staff_to_staff(abjad_staff):
     '''
-    Converts an abjad Staff to an mei staff Element.
+    Convert an abjad Staff to an mei staff Element.
     Handles sibling Voice and Leaf components by flattening all into a single Voice.
     
     :param abjad_staff: the Abjad Staff to convert.
-    :type abjad_staff: :class:`abjad.tools.scoretools.Staff`
+    :type abjad_staff: :class:`abjad.tools.scoretools.Staff.Staff`
     :returns: the corresponding MEI Element or list of Elements.
-    :rtype: :class:`xml.etree.ElementTree.Element`
+    :rtype: :class:`lxml.etree.ElementTree.Element`
     '''
     mei_staff = etree.Element('{}staff'.format(_MEINS),n='1')
     if len(abjad_staff) != 0:
@@ -377,12 +374,12 @@ def staff_to_staff(abjad_staff):
 
 def score_to_section(abjad_score):
     '''
-    Converts an abjad Score into an mei section Element.
+    Convert an abjad Score into an mei section Element.
     
     :param abjad_score: the Abjad Score object to convert.
-    :type abjad_score: :class:`abjad.tools.scoretools.Score`
+    :type abjad_score: :class:`abjad.tools.scoretools.Score.Score`
     :returns: the corresponding MEI section Element.
-    :rtype: :class:`xml.etree.ElementTree.Element`
+    :rtype: :class:`lxml.etree.ElementTree.Element`
     '''
     #an empty abjad Score returns an empty mei section Element
     if len(abjad_score) == 0:

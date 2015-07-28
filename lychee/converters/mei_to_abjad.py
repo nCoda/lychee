@@ -22,26 +22,6 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
-'''
-Converts an MEI document to an Abjad document.
-
-..  container:: example
-
-    **Example 1.** Initializes from mei Element Tree:
-
-    ::
-
-        >>> root = etree.Element("note",dots="1",dur="4",oct="4",pname="c")
-        >>> etree.SubElement(root,"accid",accid="sd",func="cautionary")
-        >>> tree = etree.ElementTree(root)
-        >>> note = meiTreeToAbjadNote(tree)
-
-    ..  doctest::
-
-        >>> note
-        Note("cqs'4.")
-'''
-
 import six
 from lxml import etree as etree
 
@@ -75,7 +55,7 @@ def convert(document, **kwargs):
     Convert an MEI document into an Abjad document.
 
     :param document: The MEI document.
-    :type document: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
+    :type document: :class:`lxml.etree.ElementTree.Element` or :class:`lxml.etree.ElementTree.ElementTree`
     :returns: The corresponding MEI document.
     :rtype: object
     '''
@@ -90,6 +70,14 @@ def convert(document, **kwargs):
 
 
 def convert_accidental(mei_accidental_string):
+    '''
+    Convert an MEI accidental string into an Abjad accidental string.
+    
+    :param mei_accidental_string: the MEI accidental string to convert.
+    :type mei_accidental_string: string
+    :returns: the corresponding Abjad accidental string.
+    :rtype: string
+    '''
     # helper that converts an mei accidental string to an Abjad accidental string
     accidental_dictionary = {'f': 'f', 's': 's', 'ff': 'ff', 'x': 'ss', 'su': 'tqs', 
                             'sd': 'qs', 'fd': 'tqf', 'fu': 'qf'}
@@ -97,6 +85,15 @@ def convert_accidental(mei_accidental_string):
 
 
 def octave_integer_to_string(octave_integer):
+    '''
+    Convert an octave integer to the corresponding Lilypond tick string.
+    See the Lilypond docs for explanation octave representation via apostrophes and commas.
+    
+    :param octave_integer: the octave integer to convert.
+    :type octave_integer: integer
+    :returns: the corresponding Lilypond tick string (either apostrophes, empty, or commas).
+    :rtype: string
+    '''
     if octave_integer == 3:
         return ''
     elif octave_integer > 3:
@@ -106,6 +103,14 @@ def octave_integer_to_string(octave_integer):
 
 
 def append_accidental(mei_note):
+    '''
+    Create an MEI note's corresponding Lilypond accidental string.
+    
+    :param mei_note: the MEI note to interrogate for accidental information.
+    :type mei_note: :class:`lxml.etree.ElementTree.Element`
+    :returns: the corresponding Lilypond accidental string.
+    :rtype: string
+    '''
     # append accidental string, if one should be appended
     accid_element = mei_note.findall('./accid')
     if len(accid_element):
@@ -123,31 +128,71 @@ def append_accidental(mei_note):
     return ''
         
 def make_abjad_note_from_string(the_string,mei_note):
+    '''
+    Append duration informtion from an MEI note to a Lilypond pitch-octave string to create an Abjad Note.
+    
+    :param the_string: the Lilypond pitch-octave string to append duration information to.
+    :type the_string: string
+    :param mei_note: the MEI note to query for duration information.
+    :type mei_note: :class:`lxml.etree.ElementTree.Element`
+    :returns: an Abjad Note.
+    :rtype: :class:`abjad.tools.scoretools.Note.Note`
+    '''
      #append the duration
-        the_string += str(mei_note.get('dur'))
-        if mei_note.get('dots'):
-            for x in range(int(mei_note.get('dots'))):
-                the_string += '.'
-        # and create a note
-        return Note(the_string)
+    the_string += str(mei_note.get('dur'))
+    if mei_note.get('dots'):
+        for x in range(int(mei_note.get('dots'))):
+            the_string += '.'
+    # and create a note
+    return Note(the_string)
 
-def set_forced(output,mei_note):
+def set_forced(abjad_note,mei_note):
+    '''
+    Set an Abjad Note's forced accidental attribute to true if the MEI note has an 'accid' attribute; returns the Note.
+    
+    :param abjad_note: the Abjad Note to consider setting.
+    :type abjad_note: :class:`abjad.tools.scoretools.Note.Note`
+    :param mei_note: the MEI note to interrogate for an 'accid' attribute.
+    :type mei_note: :class:`lxml.etree.ElementTree.Element`
+    :returns: the modified Abjad Note.
+    :rtype: :class:`abjad.tools.scoreetools.Note.Note`
+    '''
+    
     if mei_note.get('accid'):
-        if hasattr(output,'is_forced'):
-            output.is_forced = True
+        if hasattr(abjad_note,'is_forced'):
+            abjad_note.is_forced = True
         else:
-            output.note_head.is_forced = True
+            abjad_note.note_head.is_forced = True
+    return abjad_note
 
-def set_cautionary(output, mei_note):
-    accid = mei_note.findall('accid')
-    if len(accid):
-        if hasattr(output, 'is_cautionary'):
-            output.is_cautionary = True
+def set_cautionary(abjad_note, mei_note):
+    '''
+    Set an Abjad Note's cautionary accidental attribute to true if the MEI note parents a child, assumed to be an accidental Element; returns the Note.
+    
+    :param abjad_note: the Abjad Note to consider setting.
+    :type abjad_note: :class:`abjad.tools.scoretools.Note.Note`
+    :param mei_note: the MEI note to interrogate for a child.
+    :type mei_note: :class:`lxml.etree.ElementTree.Element`
+    :returns: the modified Abjad Note.
+    :rtype: :class:`abjad.tools.scoretools.Note.Note`
+    '''
+    if len(mei_note):
+        if hasattr(abjad_note, 'is_cautionary'):
+            abjad_note.is_cautionary = True
         else:
-            output.note_head.is_cautionary = True
+            abjad_note.note_head.is_cautionary = True
+    return abjad_note
         
 
 def note_to_note(mei_note):
+    '''
+    Convert an MEI note Element into an Abjad Note.
+    
+    :param mei_note: the MEI note Element to convert.
+    :type mei_note: :class:`lxml.etree.ElementTree.Element`
+    :returns: the corresponding Abjad Note.
+    :rtype: :class:`abjad.tools.scoretools.Note.Note`
+    '''
     the_string = ""
     # append pitch name
     the_string += mei_note.get('pname')
@@ -161,13 +206,21 @@ def note_to_note(mei_note):
         # otherwise create an abjad NoteHead
         output = NoteHead(the_string)
     # set forced
-    set_forced(output,mei_note)
+    output = set_forced(output, mei_note)
     # set cautionary
-    set_cautionary(output, mei_note)
+    output = set_cautionary(output, mei_note)
     return output
         
 
 def rest_to_rest(mei_rest):
+    '''
+    Convert an MEI rest Element into an Abjad Rest.
+    
+    :param mei_rest: the MEI rest Element to convert.
+    :type mei_rest: :class:`lxml.etree.ElementTree.Element`
+    :returns: the corresponding Abjad Rest.
+    :rtype: :class:`abjad.tools.scoretools.Rest.Rest`
+    '''
     the_string = "r"
     the_string += mei_rest.get('dur')
     if mei_rest.get('dots'):
@@ -179,6 +232,14 @@ def rest_to_rest(mei_rest):
 
 
 def chord_to_chord(mei_chord):
+    '''
+    Convert an MEI chord Element into an Abjad Chord.
+    
+    :param mei_chord: the MEI chord Element to convert.
+    :type mei_chord: :class:`lxml.etree.ElementTree.Element`
+    :returns: the corresponding Abjad Chord.
+    :rtype: :class:`abjad.tools.scoretools.Chord.Chord`
+    '''
     dots = mei_chord.get('dots')
     dur = mei_chord.get('dur')
     abjad_duration = Duration()
@@ -194,6 +255,16 @@ def chord_to_chord(mei_chord):
     return abjad_chord
     
 def tupletspan_element_to_empty_tuplet(mei_tupletspan):
+    '''
+    Convert an MEI tupletspan Element into an empty Abjad Tuplet or FixedDurationTuplet.
+    An MEI tupletspan with 'num' and 'numBase' attributes but no duration yields a Tuplet object.
+    A durated MEI tupletspan without 'num' and 'numBase' attributes yields a FixedDurationTuplet object.
+    
+    :param mei_tupletspan: the MEI tupletspan Element to convert.
+    :type mei_tupletspan: :class:`lxml.etree.ElementTree.Element`
+    :returns: the corresponding empty Abjad Tuplet or FixedDurationTuplet.
+    :rtype: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
+    '''
     numerator = mei_tupletspan.get('numBase')
     mei_duration = mei_tupletspan.get('dur')
     if numerator and mei_duration == None:
@@ -212,6 +283,14 @@ def tupletspan_element_to_empty_tuplet(mei_tupletspan):
         return return_tuplet
 
 def setup_outermost_tupletspan(mei_tupletspan):
+    '''
+    Generate an Abjad FixedDurationTuplet with a duration taken from an MEI tupletspan Element.
+    
+    :param mei_tupletspan: the MEI tupletspan Element to query for duration.
+    :type mei_tupletspan: :class:`lxml.etree.ElementTree.Element` 
+    :returns: an Abjad FixedDurationTuplet with mei_tupletspan's duration.
+    :rtype: :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
+    '''
     mei_duration = mei_tupletspan.get('dur')
     dots = mei_tupletspan.get('dots')
     dur_string = mei_duration
@@ -225,6 +304,16 @@ def setup_outermost_tupletspan(mei_tupletspan):
 
 
 def tupletspan_to_tuplet(mei_tupletspan):
+    '''
+    Convert an MEI tupletspan to an Abjad Tuplet object.
+    A tupletspan Element converts into an empty Tuplet, while a list beginning with a tupletspan element and
+    followed by some number of leaf Elements converts into an Abjad Tuplet object full of the following components.
+    
+    :param mei_tupletspan: the MEI tupletspan to convert.
+    :type mei_tupletspan: list or :class:`lxml.etree.ElementTree.Element`
+    :returns: corresponding Abjad Tuplet.
+    :rtype: :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
+    '''
     if isinstance(mei_tupletspan, list):
         # list beginning with tuplet span and continuing with spanned Elements
         # set up the outermost tuplet and components list
@@ -257,6 +346,14 @@ def tupletspan_to_tuplet(mei_tupletspan):
         
 
 def element_to_leaf(mei_element):
+    '''
+    Convert an MEI leaf Element to the corresponding Abjad leaf.
+    
+    :param mei_element: the MEI Element to convert.
+    :type mei_element: :class:`lxml.etree.ElementTree.Element`
+    :returns: the corresponding Abjad leaf.
+    :rtype: :class:`abjad.tools.scoretools.Leaf.Leaf`
+    '''
     if mei_element.tag == 'rest':
         return rest_to_rest(mei_element)
     elif mei_element.tag == 'note':
@@ -265,18 +362,42 @@ def element_to_leaf(mei_element):
         return chord_to_chord(mei_element)
 
 def layer_to_voice(mei_layer):
+    '''
+    Convert an MEI layer Element into an Abjad Voice container.
+    
+    :param mei_layer: the MEI layer Element to convert.
+    :type mei_layer: :class:`lxml.etree.ElementTree.Element`
+    :returns: the corresponding Abjad Voice.
+    :rtype: :class:`abjad.tools.scoretools.Voice.Voice`
+    '''
     abjad_voice = Voice()
     for child in mei_layer:
         abjad_voice.append(element_to_leaf(child))
     return abjad_voice
 
 def staff_to_staff(mei_staff):
+    '''
+    Convert an MEI staff Element into an Abjad Staff container.
+    
+    :param mei_staff: the MEI staff Element to convert.
+    :type mei_staff: :class:`lxml.etree.ElementTree.Element`
+    :returns: the corresponding Abjad Staff.
+    :rtype: :class:`abjad.tools.scoretools.Staff.Staff`
+    '''
     abjad_staff = Staff()
     for layer in mei_staff:
         abjad_staff.append(layer_to_voice(layer))
     return abjad_staff
 
 def section_to_score(mei_section):
+    '''
+    Convert an MEI section Element into an Abjad Score container.
+    
+    :param mei_section: the MEI section Element to convert.
+    :type mei_section: :class:`lxml.etree.ElementTree.Element`
+    :returns: the corresponding Abjad Score container.
+    :rtype: :class:`abjad.tools.scoretools.Score.Score`
+    '''
     if len(mei_section) == 0:
         return Score()
     abjad_score = Score()

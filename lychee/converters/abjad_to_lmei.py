@@ -4,7 +4,7 @@
 # Program Name:           Lychee
 # Program Description:    MEI document manager for formalized document control
 #
-# Filename:               lychee/converters/abjad_to_mei.py
+# Filename:               lychee/converters/abjad_to_lmei.py
 # Purpose:                Converts an Abjad document to an MEI document.
 #
 # Copyright (C) 2015 Jeffrey Treviño
@@ -30,6 +30,7 @@ import hashlib
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
+from abjad.tools.scoretools.Skip import Skip
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.scoretools.Tuplet import Tuplet
 from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
@@ -184,6 +185,28 @@ def rest_to_rest(abjad_rest):
     mei_rest.set('dur',dur_number_string)
     add_xml_ids(abjad_rest, mei_rest)
     return mei_rest
+
+def skip_to_space(abjad_skip):
+    '''
+    Convert an Abjad Skip object to an MEI space Element.
+
+    :param abjad_skip: The Abjad Skip object to convert.
+    :type abjad_skip: :class:`abjad.tools.scoretools.Skip.Skip`
+    :returns: The corresponding MEI space Element.
+    :rtype: :class:`lxml.etree.ElementTree.Element`
+    '''
+    duration = abjad_skip.written_duration.lilypond_duration_string
+    dots = abjad_skip.written_duration.dot_count
+    mei_space = etree.Element('{}space'.format(_MEINS))
+    if dots:
+        dot_index = duration.find('.')
+        dur_number_string = duration[:dot_index]
+        mei_space.set('dots',str(dots))
+    else:
+        dur_number_string = duration
+    mei_space.set('dur',dur_number_string)
+    add_xml_ids(abjad_skip, mei_space)
+    return mei_space
 
 
 def chord_to_chord(abjad_chord):

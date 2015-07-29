@@ -26,6 +26,8 @@
 Initialization for :mod:`converters` module.
 '''
 
+# Jeff: "Well, a universal converter is, by definition, a pretty slutty thing."
+
 __all__ = ['mei_to_ly', 'ly_to_mei', 'mei_to_abjad', 'abjad_to_mei', 'mei_to_lmei', 'lmei_to_mei']
 
 from lychee.converters import *

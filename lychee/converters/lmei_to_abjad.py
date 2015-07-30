@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
+    #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #--------------------------------------------------------------------------------------------------
 # Program Name:           Lychee
 # Program Description:    MEI document manager for formalized document control
 #
-# Filename:               lychee/converters/abjad_to_mei.py
+# Filename:               lychee/converters/abjad_to_lmei.py
 # Purpose:                Converts an MEI document to an Abjad document.
 #
 # Copyright (C) 2015 Jeffrey Treviño
@@ -28,6 +28,7 @@ from lxml import etree as etree
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
+from abjad.tools.scoretools.Skip import Skip
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
 from abjad.tools.scoretools.Tuplet import Tuplet
@@ -228,6 +229,23 @@ def rest_to_rest(mei_rest):
             the_string += '.'
     abjad_rest = Rest(the_string)
     return abjad_rest
+
+def space_to_skip(mei_space):
+    '''
+    Convert an MEI space Element into an Abjad Skip.
+    
+    :param mei_space: the MEI space Element to convert.
+    :type mei_space: :class:`lxml.etree.ElementTree.Element`
+    :returns: the corresponding Abjad Skip.
+    :rtype: :class:`abjad.tools.scoretools.Skip.Skip`
+    '''
+    the_string = "r"
+    the_string += mei_space.get('dur')
+    if mei_space.get('dots'):
+        for x in range(int(mei_space.get('dots'))):
+            the_string += '.'
+    abjad_skip = Skip(the_string)
+    return abjad_skip
 
 
 

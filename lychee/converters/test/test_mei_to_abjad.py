@@ -2,6 +2,7 @@ from lxml import etree as ETree
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
+from abjad.tools.scoretools.Skip import Skip
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
 from abjad.tools.scoretools.Tuplet import Tuplet
@@ -197,6 +198,24 @@ class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         mei_rest = ETree.Element('rest',dur='32',dots='2')
         abjad_rest = lmei_to_abjad.rest_to_rest(mei_rest)
         self.assertEqual(abjad_rest, Rest("r32.."))
+    
+    def test_space_to_skip(self):
+        '''
+        precondition: mei space Element with no dots.
+        postcondition: abjad Skip with no dots.
+        '''
+        mei_space = ETree.Element('space',dur='32')
+        abjad_skip = lmei_to_abjad.space_to_skip(mei_space)
+        self.assertEqual(abjad_skip, Skip("s32"))
+
+    def test_space_to_skip_dotted(self):
+        '''
+        precondition: dotted mei space Element
+        postcondition: dotted abjad Skip.
+        '''
+        mei_space = ETree.Element('space',dur='32',dots='2')
+        abjad_skip = lmei_to_abjad.space_to_skip(mei_space)
+        self.assertEqual(abjad_skip, Skip("s32.."))
 
     def test_chord_empty(self):
         '''

@@ -2,6 +2,7 @@ from lxml import etree as etree
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
+from abjad.tools.scoretools.Skip import Skip
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
 from abjad.tools.scoretools.Tuplet import Tuplet
@@ -181,25 +182,55 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
 
     def test_rest(self):
         '''
-        precondition: abjad rest with no dots.
-        postcondition: mei rest with no dots.
+        precondition: abjad Rest with no dots.
+        postcondition: mei rest Element with no dots.
         '''
         abjad_rest = Rest("r32")
+        
         mei_rest = abjad_to_lmei.rest_to_rest(abjad_rest)
+        
         self.assertEqual(mei_rest.tag, '{}rest'.format(_MEINS))
         self.assertAttribsEqual(mei_rest.attrib, {'dur': '32'} )
         self.assertIsNotNone(mei_rest.get(_XMLNS))
 
     def test_rest_dotted(self):
         '''
-        precondition: dotted abjad rest.
-        postcondition: dotted mei rest.
+        precondition: dotted abjad Rest.
+        postcondition: dotted mei rest Element.
         '''
         abjad_rest = Rest("r32..")
+        
         mei_rest = abjad_to_lmei.rest_to_rest(abjad_rest)
+        
         self.assertEqual(mei_rest.tag, '{}rest'.format(_MEINS))
         self.assertAttribsEqual(mei_rest.attrib, {'dots': '2', 'dur': '32'})
         self.assertIsNotNone(mei_rest.get(_XMLNS))
+    
+    def test_skip_to_space(self):
+        '''
+        precondition: abjad Skip with no dots.
+        postcondition: mei space Element with no dots.
+        '''
+        abjad_skip = Skip("s32")
+        
+        mei_space = abjad_to_lmei.skip_to_space(abjad_skip)
+        
+        self.assertEqual(mei_space.tag, '{}space'.format(_MEINS))
+        self.assertAttribsEqual(mei_space.attrib, {'dur': '32'} )
+        self.assertIsNotNone(mei_space.get(_XMLNS))
+
+    def test_skip_to_space_dotted(self):
+        '''
+        precondition: dotted abjad Skip.
+        postcondition: dotted mei space Element.
+        '''
+        abjad_skip = Skip("s32..")
+        
+        mei_space = abjad_to_lmei.skip_to_space(abjad_skip)
+        
+        self.assertEqual(mei_space.tag, '{}space'.format(_MEINS))
+        self.assertAttribsEqual(mei_space.attrib, {'dots': '2', 'dur': '32'})
+        self.assertIsNotNone(mei_space.get(_XMLNS))
 
     def test_chord_empty(self):
         '''

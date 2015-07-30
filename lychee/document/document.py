@@ -469,21 +469,21 @@ class Document(object):
 
         **Side Effects**
 
-        If the section is not found, :meth:`get_section` first tries to load the section with
-        :meth:`load_everything` before failing.
+        If the section is not already loaded, :meth:`get_section` will try to fetch it from the
+        filesystem, if a repository is configured.
         '''
-        # TODO: refactor so it can deal with loading the specific section by itself
 
         if section_id.startswith('#'):
             section_id = section_id[1:]
 
-        try:
+        if section_id in self._sections:
             return self._sections[section_id]
-        except KeyError:
-            self.load_everything()
+        elif self._repo_path is None:
+            raise exceptions.SectionNotFoundError(_SECTION_NOT_FOUND.format(xmlid=section_id))
+        else:
             try:
-                return self._sections[section_id]
-            except KeyError:
+                return _load_in(os.path.join(self._repo_path, section_id + '.mei'))
+            except (exceptions.FileNotFoundError, exceptions.InvalidFileError):
                 raise exceptions.SectionNotFoundError(_SECTION_NOT_FOUND.format(xmlid=section_id))
 
     def put_section(self, section_id, new_section):

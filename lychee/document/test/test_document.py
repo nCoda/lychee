@@ -701,36 +701,63 @@ class TestGetPutSection(DocumentTestCase):
         self.doc._sections['123'] = 'some section'
         self.assertEqual('some section', self.doc.get_section('123'))
 
-    @mock.patch('lychee.document.Document.load_everything')
-    def test_get_3(self, mock_load_everything):
+    @mock.patch('lychee.document.document._load_in')
+    def test_get_3(self, mock_load_in):
         '''
         When the "id" doesn't exist, see if calling self.load_everything() will load the section.
         In this case, it does.
         '''
         section_id = '888'
         the_section = 'some section'
-        def loader():
-            "Side effect function for the load_everything() mock."
-            self.doc._sections[section_id] = the_section
-        mock_load_everything.side_effect = loader
+        mock_load_in.return_value = the_section
         expected = the_section
 
         actual = self.doc.get_section(section_id)
 
         self.assertEqual(expected, actual)
-        mock_load_everything.assert_called_once_with()
+        mock_load_in.assert_called_with(os.path.join(self.repo_dir, '888.mei'))
 
-    @mock.patch('lychee.document.Document.load_everything')
-    def test_get_4(self, mock_load_everything):
+    @mock.patch('lychee.document.document._load_in')
+    def test_get_4(self, mock_load_in):
         '''
         When the "id" doesn't exist, see if calling self.load_everything() will load the section.
-        In this case, it doesn't, so the function should raise SectionNotFoundError.
+        In this case, the file doesn't exist.
         '''
-        self.doc._sections['123'] = 'some section'
+        section_id = '888'
+        mock_load_in.side_effect = exceptions.FileNotFoundError
+
         with self.assertRaises(exceptions.SectionNotFoundError) as exc:
-            self.doc.get_section('888')
-        self.assertEqual(document._SECTION_NOT_FOUND.format(xmlid='888'), exc.exception.args[0])
-        mock_load_everything.assert_called_once_with()
+            self.doc.get_section(section_id)
+        self.assertEqual(document._SECTION_NOT_FOUND.format(xmlid=section_id), exc.exception.args[0])
+        mock_load_in.assert_called_with(os.path.join(self.repo_dir, '888.mei'))
+
+    @mock.patch('lychee.document.document._load_in')
+    def test_get_5(self, mock_load_in):
+        '''
+        When the "id" doesn't exist, see if calling self.load_everything() will load the section.
+        In this case, the file is invalid.
+        '''
+        section_id = '888'
+        mock_load_in.side_effect = exceptions.InvalidFileError
+
+        with self.assertRaises(exceptions.SectionNotFoundError) as exc:
+            self.doc.get_section(section_id)
+        self.assertEqual(document._SECTION_NOT_FOUND.format(xmlid=section_id), exc.exception.args[0])
+        mock_load_in.assert_called_with(os.path.join(self.repo_dir, '888.mei'))
+
+    @mock.patch('lychee.document.document._load_in')
+    def test_get_6(self, mock_load_in):
+        '''
+        When the "id" doesn't exist, see if calling self.load_everything() will load the section.
+        In this case, the section doesn't exist, and there is no "repo_dir" configured.
+        '''
+        section_id = '888'
+
+        doc = document.Document()
+        with self.assertRaises(exceptions.SectionNotFoundError) as exc:
+            doc.get_section(section_id)
+        self.assertEqual(document._SECTION_NOT_FOUND.format(xmlid=section_id), exc.exception.args[0])
+        self.assertEqual(0, mock_load_in.call_count)
 
     def test_put_1(self):
         '''

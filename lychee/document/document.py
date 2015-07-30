@@ -27,6 +27,7 @@ Contains an object representing an MEI document.
 '''
 
 import os.path
+import time
 
 from lxml import etree
 
@@ -486,18 +487,25 @@ class Document(object):
             except (exceptions.FileNotFoundError, exceptions.InvalidFileError):
                 raise exceptions.SectionNotFoundError(_SECTION_NOT_FOUND.format(xmlid=section_id))
 
-    def put_section(self, section_id, new_section):
+    def put_section(self, new_section):
         '''
-        # TODO: rewrite the docstring
-        In the future, you will be able to submit a section that is an element other than
-        ``<section>``. For now, doing so will raise a :exc:`NotImplementedError`.
+        Add or replace a ``<section>`` in the current MEI document.
 
-        :param new_section: A replacement for the section with ``section_id``.
+        :param new_section: A new section or a replacement for an existing section with the same
+            @xml:id attribute.
         :type new_section: :class:`lxml.etree.Element`
-        '''
-        # TODO: if the section doesn't have an @xml:id, make one
-        # TODO: always return the saved @xml:id
-        if section_id.startswith('#'):
-            section_id = section_id[1:]
+        :returns: The @xml:id of the saved ``new_section``.
+        :rtype: str
 
-        self._sections[section_id] = new_section
+        .. note:: If ``new_section`` does not have an @xml:id attribute, a new one is created.
+        '''
+
+        xmlid = new_section.get(xml.ID)
+
+        if xmlid is None:
+            # TODO: replace this with a centralized @xml:id generator when possible
+            xmlid = str(time.clock())[2:]
+            new_section.set(xml.ID, xmlid)
+
+        self._sections[xmlid] = new_section
+        return xmlid

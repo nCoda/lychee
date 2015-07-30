@@ -761,17 +761,22 @@ class TestGetPutSection(DocumentTestCase):
 
     def test_put_1(self):
         '''
-        When the "id" starts with an octothorpe, the section is assigned without the octothorpe.
+        When there's already an @xml:id, it's used just fine.
         '''
-        self.doc.put_section('#123', 'some section')
-        self.assertEqual('some section', self.doc._sections['123'])
+        xmlid = '888'
+        section = etree.Element(mei.SECTION, attrib={xml.ID: xmlid})
+        actual = self.doc.put_section(section)
+        self.assertEqual(xmlid, actual)
+        self.assertEqual(xmlid, self.doc._sections[xmlid].get(xml.ID))
 
     def test_put_2(self):
         '''
-        When the "id" starts without an octothorpe, the section is assigned without the octothorpe.
+        When there isn't an @xml:id, a new one is created.
         '''
-        self.doc.put_section('123', 'some section')
-        self.assertEqual('some section', self.doc._sections['123'])
+        # use the @marker attribute to ensure it's the same <section>
+        section = etree.Element(mei.SECTION, attrib={'marker': 'crayon'})
+        actual = self.doc.put_section(section)
+        self.assertEqual('crayon', self.doc._sections[actual].get('marker'))
 
 
 class TestGetPutScore(DocumentTestCase):

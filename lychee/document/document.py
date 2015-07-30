@@ -29,6 +29,8 @@ Contains an object representing an MEI document.
 import os.path
 import time
 
+import six
+
 from lxml import etree
 
 from lychee import exceptions
@@ -260,6 +262,28 @@ class Document(object):
             return True
         else:
             return False
+
+    def get_section_ids(self, all_sections=False):
+        '''
+        By default, return the ordered @xml:id attributes of active ``<section>`` elements in this
+        score. If ``all_sections`` is ``True``, return the @xml:id attributes of all ``<section>``
+        elements in this MEI document, in arbitrary order.
+
+        :param bool all_sections: Whether to return the IDs of all sections in this document, rather
+            than just the sections currently active in the score.
+        :returns: A list of the section IDs.
+        :rtype: list of str
+
+        .. note:: If this :class:`Document` instance has not been fully loaded, this method may
+            return incomplete information. In particular, a :class:`Document` object's record of the
+            currently-active ``<section>`` elements will only be initialized after a call to
+            :meth:`load_everything` or :meth:`load_score`.
+        '''
+
+        if all_sections:
+            return [x for x in six.iterkeys(self._sections)]
+        else:
+            return self._score_order
 
     def load_everything(self):
         '''

@@ -562,6 +562,52 @@ class DocumentTestCase(unittest.TestCase):
             shutil.rmtree(self.repo_dir)
 
 
+class TestGetSectionIds(DocumentTestCase):
+    '''
+    Tests for Document.get_section_ids().
+    '''
+
+    def test_get_section_ids_1(self):
+        '''
+        "all_sections" is False; list is empty
+        '''
+        self.doc._score_order = []
+        expected = []
+        all_sections = False
+        actual = self.doc.get_section_ids(all_sections)
+        self.assertEqual(expected, actual)
+
+    def test_get_section_ids_2(self):
+        '''
+        "all_sections" is False; there's stuff
+        '''
+        self.doc._score_order = ['1', '2', '3']
+        expected = ['1', '2', '3']
+        all_sections = False
+        actual = self.doc.get_section_ids(all_sections)
+        self.assertEqual(expected, actual)
+
+    def test_get_section_ids_3(self):
+        '''
+        "all_sections" is True; dict is empty
+        '''
+        self.doc._sections = {}
+        expected = []
+        all_sections = True
+        actual = self.doc.get_section_ids(all_sections)
+        self.assertEqual(expected, actual)
+
+    def test_get_section_ids_4(self):
+        '''
+        "all_sections" is True; dict has stuff
+        '''
+        self.doc._sections = {'1': 1, '2': 2, '3': 3}
+        expected = ['1', '2', '3']
+        all_sections = True
+        actual = self.doc.get_section_ids(all_sections)
+        six.assertCountEqual(self, expected, actual)
+
+
 class TestGetPutHead(DocumentTestCase):
     '''
     Tests for Document.get_head() and Document.put_head().

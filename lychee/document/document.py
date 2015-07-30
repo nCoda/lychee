@@ -38,6 +38,7 @@ _SECTION_NOT_FOUND = 'Could not load <section xml:id="{xmlid}">'
 _ERR_MISSING_MEIHEAD = 'missing <meiHead> element in "all_files"'
 _ERR_FAILED_LOADING_MEIHEAD = 'failed to load <meiHead> file'
 _ERR_MISSING_REPO_PATH = 'This Document is not using external files.'
+_ERR_MISSING_FILE = 'Could not load indicated file.'
 
 
 def _check_xmlid_chars(xmlid):
@@ -147,6 +148,34 @@ def _save_out(this, to_here):
     if isinstance(this, etree._Element):  # pylint: disable=protected-access
         this = etree.ElementTree(this)
     this.write_c14n(to_here)
+
+
+def _load_in(from_here, recover=None):
+    '''
+    Try to load an MEI/XML file at the path ``from_here``.
+
+    :param str from_here: The pathname from which to try parsing a file.
+    :param bool recover: If ``True``, the XML document will be parsed with a parser object set to
+        "recover," which tries "hard to parse through broken XML." Default is ``False``. Generally,
+        this should be avoided---callers should make their users aware that they're entering some
+        parallel universe when their XML is broken.
+    :returns: The MEI/XML document stored at ``from_here``.
+    :rtype: :class:`lxml.etree.ElementTree`
+    :raises: :exc:`exceptions.FileNotFoundError` if the file does not exist, is not readable, is a
+        directory, or something like that.
+    :raises: :exc:`exceptions.InvalidFileError` if the file exists and can be loaded, but ``lxml``
+        cannot parse a valid XML document from it.
+    '''
+
+    if recover is None:
+        recover = False
+
+    try:
+        return etree.parse(from_here, etree.XMLParser(recover=recover))
+    except (IOError, OSError):
+        raise exceptions.FileNotFoundError(_ERR_MISSING_FILE)
+    except etree.XMLSyntaxError as xse:
+        raise exceptions.InvalidFileError(xse.args[0])
 
 
 def _make_ptr(targettype, target):

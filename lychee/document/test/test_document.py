@@ -38,6 +38,8 @@ try:
 except ImportError:
     import mock
 
+import six
+
 from lxml import etree
 
 from lychee import exceptions
@@ -151,6 +153,68 @@ class TestSmallThings(unittest.TestCase):
         # 4.) ensure the saved document is also proper
         self.assertFalse(os.path.exists('None'))
 
+    def test__make_ptr(self):
+        '''
+        That _make_ptr() works.
+        '''
+        targettype = 'silly'
+        target = 'bullseye'
+        actual = document._make_ptr(targettype, target)
+        self.assertEqual(mei.PTR, actual.tag)
+        self.assertEqual(targettype, actual.get('targettype'))
+        self.assertEqual(target, actual.get('target'))
+        self.assertEqual('onRequest', actual.get(xlink.ACTUATE))
+        self.assertEqual('embed', actual.get(xlink.SHOW))
+
+
+class TestSaveAndLoad(unittest.TestCase):
+    '''
+    Tests for document._save_out() and document._load_in().
+    '''
+
+    def assertElementsEqual(self, first, second, msg=None):
+        '''
+        Type-specific equality function for :class:`lxml.etree.Element` and
+        :class:`lxml.etree.ElementTree` objects.
+        '''
+        first_list = [x for x in first.iter()]
+        second_list = [x for x in second.iter()]
+        if len(first_list) != len(second_list):
+            raise self.failureException('element trees are different sizes')
+        for i in range(len(first_list)):
+            if first_list[i].tag != second_list[i].tag:
+                raise self.failureException('Tags are not equal')
+            first_keys = [x for x in first_list[i].keys()]
+            second_keys = [x for x in second_list[i].keys()]
+            self.assertCountEqual(first_keys, second_keys)
+            for key in first_keys:
+                self.assertEqual(first_list[i].get(key), second_list[i].get(key))
+
+    def setUp(self):
+        '''
+        Make a temporary directory.
+        '''
+        self.path_to_here = os.path.dirname(inspect.getfile(self.__class__))
+        if hasattr(self, 'assertItemsEqual'):
+            self.assertCountEqual = self.assertItemsEqual
+        self.addTypeEqualityFunc(etree._Element, self.assertElementsEqual)
+        self.addTypeEqualityFunc(etree._ElementTree, self.assertElementsEqual)
+        try:
+            # Python 3.2+
+            self._temp_dir = tempfile.TemporaryDirectory()
+            self.repo_dir = self._temp_dir.name
+        except AttributeError:
+            # Python Boring
+            self._temp_dir = None
+            self.repo_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        '''
+        Clean up the temporary directory.
+        '''
+        if self._temp_dir is None:
+            shutil.rmtree(self.repo_dir)
+
     def test__save_out_1(self):
         '''
         Given an ElementTree, it just saves it.
@@ -182,18 +246,95 @@ class TestSmallThings(unittest.TestCase):
         document._save_out(elem, to_here)
         self.assertTrue(os.path.exists(to_here))
 
-    def test__make_ptr(self):
+    @mock.patch('lxml.etree.XMLParser')
+    @mock.patch('lxml.etree.parse')
+    def test__load_in_1(self, mock_parse, mock_parser_class):
         '''
-        That _make_ptr() works.
+        Pathname is invalid; raises FileNotFoundError. (Mocked lxml).
         '''
-        targettype = 'silly'
-        target = 'bullseye'
-        actual = document._make_ptr(targettype, target)
-        self.assertEqual(mei.PTR, actual.tag)
-        self.assertEqual(targettype, actual.get('targettype'))
-        self.assertEqual(target, actual.get('target'))
-        self.assertEqual('onRequest', actual.get(xlink.ACTUATE))
-        self.assertEqual('embed', actual.get(xlink.SHOW))
+        from_here = 'something'
+        recover = False
+        exp_message = document._ERR_MISSING_FILE
+        mock_parser = 'a parser'
+        mock_parser_class.return_value = mock_parser
+        if six.PY2:
+            mock_parse.side_effect = IOError
+        else:
+            mock_parse.side_effect = OSError
+
+        with self.assertRaises(exceptions.FileNotFoundError) as fnfe:
+            document._load_in(from_here, recover)
+        self.assertEqual(exp_message, fnfe.exception.args[0])
+        mock_parse.assert_called_with(from_here, mock_parser)
+        mock_parser_class.assert_called_with(recover=False)
+
+    @mock.patch('lxml.etree.XMLParser')
+    @mock.patch('lxml.etree.parse')
+    def test__load_in_2(self, mock_parse, mock_parser_class):
+        '''
+        File can't be parsed by "lxml"; raises InvalidFileError. (Mocked lxml).
+        '''
+        from_here = 'something'
+        recover = False
+        mock_parser = 'a parser'
+        mock_parser_class.return_value = mock_parser
+        mock_parse.side_effect = etree.XMLSyntaxError('shmooba', 2, 3, 4)
+
+        with self.assertRaises(exceptions.InvalidFileError) as ife:
+            document._load_in(from_here, recover)
+        self.assertEqual('shmooba', ife.exception.args[0])
+        mock_parse.assert_called_with(from_here, mock_parser)
+        mock_parser_class.assert_called_with(recover=False)
+
+    @mock.patch('lxml.etree.XMLParser')
+    @mock.patch('lxml.etree.parse')
+    def test__load_in_3(self, mock_parse, mock_parser_class):
+        '''
+        File is loaded just fine. Returns the file. (Mocked lxml).
+        '''
+        from_here = 'something'
+        recover = True
+        mock_parser = 'a parser'
+        mock_parser_class.return_value = mock_parser
+        expected = 'such an XML'
+        mock_parse.return_value = expected
+
+        actual = document._load_in(from_here, recover)
+
+        mock_parse.assert_called_with(from_here, mock_parser)
+        mock_parser_class.assert_called_with(recover=True)
+
+    def test__load_in_1_int(self):
+        '''
+        Pathname is invalid; raises FileNotFoundError.
+        '''
+        from_here = os.path.join(self.path_to_here, '*blows nose*')
+        recover = False
+        exp_message = document._ERR_MISSING_FILE
+        with self.assertRaises(exceptions.FileNotFoundError) as fnfe:
+            document._load_in(from_here, recover)
+        self.assertEqual(exp_message, fnfe.exception.args[0])
+
+    def test__load_in_2_int(self):
+        '''
+        File can't be parsed by "lxml"; raises InvalidFileError.
+        '''
+        from_here = os.path.join(self.path_to_here, 'broken.xml')
+        recover = False
+        exp_message = 'Opening and ending tag mismatch'
+        with self.assertRaises(exceptions.InvalidFileError) as ife:
+            document._load_in(from_here, recover)
+        self.assertTrue(ife.exception.args[0].startswith(exp_message))
+
+    def test__load_in_3_int(self):
+        '''
+        File is loaded just fine. Returns the file.
+        '''
+        from_here = os.path.join(self.path_to_here, 'broken.xml')
+        recover = True
+        actual = document._load_in(from_here, recover)
+        self.assertIsInstance(actual, etree._ElementTree)
+        self.assertEqual('one', actual.getroot().tag)
 
 
 class TestEnsureScoreOrder(unittest.TestCase):

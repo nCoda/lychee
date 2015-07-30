@@ -26,6 +26,8 @@
 Errors and Warnings for Lychee-specific error conditions.
 '''
 
+import six
+
 
 class LycheeError(Exception):
     '''
@@ -36,21 +38,49 @@ class LycheeError(Exception):
 
 class DocumentError(LycheeError):
     '''
-    Generic exception for errors related to the handling of Lychee's internal MEI document.
+    Generic base for errors related to the handling of Lychee's internal MEI document.
     '''
     pass
 
 
-class SectionNotFoundError(DocumentError):
+if six.PY2:
+    class FileNotFoundError(DocumentError):
+        '''
+        Generic base for errors that indicate a file from an MEI document cannot be loaded. This is
+        a subclass of :class:`DocumentError` in Python 2, and an alias to :exc:`FileNotFoundError`
+        in Python 3. It's held in this module so Lychee code may use the same symbol in both
+        Python versions.
+        '''
+        pass
+else:
+    FileNotFoundError = FileNotFoundError
+
+
+class SectionNotFoundError(FileNotFoundError):
     '''
     Error indicating a <section> with a particular @xml:id attribute is needed but can't be found.
     '''
     pass
 
 
-class HeaderNotFoundError(DocumentError):
+class HeaderNotFoundError(FileNotFoundError):
     '''
     Error indicating the <meiHead> section is needed but can't be found.
+    '''
+    pass
+
+
+class InvalidDocumentError(DocumentError):
+    '''
+    Generic base for errors indicating that (part of) an MEI document is invalid.
+    '''
+    pass
+
+
+class InvalidFileError(InvalidDocumentError):
+    '''
+    Indicating that a file exists and could be loaded, but contains something other than a (portion
+    of a) valid MEI document.
     '''
     pass
 

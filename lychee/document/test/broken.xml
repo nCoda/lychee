@@ -1,0 +1,8 @@
+<!-- This is an input file for the test suite. It's a file that requires the "recover" setting in
+     the lxml parser.
+     This file is used by tests in:
+     - "test_document.py"
+-->
+<one>
+<two>
+</one>

@@ -68,7 +68,7 @@ class TestSmallThings(unittest.TestCase):
                 raise self.failureException('Tags are not equal')
             first_keys = [x for x in first_list[i].keys()]
             second_keys = [x for x in second_list[i].keys()]
-            self.assertCountEqual(first_keys, second_keys)
+            six.assertCountEqual(self, first_keys, second_keys)
             for key in first_keys:
                 self.assertEqual(first_list[i].get(key), second_list[i].get(key))
 
@@ -76,8 +76,6 @@ class TestSmallThings(unittest.TestCase):
         '''
         Make a temporary directory.
         '''
-        if hasattr(self, 'assertItemsEqual'):
-            self.assertCountEqual = self.assertItemsEqual
         self.addTypeEqualityFunc(etree._Element, self.assertElementsEqual)
         self.addTypeEqualityFunc(etree._ElementTree, self.assertElementsEqual)
         try:
@@ -186,7 +184,7 @@ class TestSaveAndLoad(unittest.TestCase):
                 raise self.failureException('Tags are not equal')
             first_keys = [x for x in first_list[i].keys()]
             second_keys = [x for x in second_list[i].keys()]
-            self.assertCountEqual(first_keys, second_keys)
+            six.assertCountEqual(self, first_keys, second_keys)
             for key in first_keys:
                 self.assertEqual(first_list[i].get(key), second_list[i].get(key))
 
@@ -195,8 +193,6 @@ class TestSaveAndLoad(unittest.TestCase):
         Make a temporary directory.
         '''
         self.path_to_here = os.path.dirname(inspect.getfile(self.__class__))
-        if hasattr(self, 'assertItemsEqual'):
-            self.assertCountEqual = self.assertItemsEqual
         self.addTypeEqualityFunc(etree._Element, self.assertElementsEqual)
         self.addTypeEqualityFunc(etree._ElementTree, self.assertElementsEqual)
         try:
@@ -530,7 +526,7 @@ class DocumentTestCase(unittest.TestCase):
                 raise self.failureException('Tags are not equal')
             first_keys = [x for x in first_list[i].keys()]
             second_keys = [x for x in second_list[i].keys()]
-            self.assertCountEqual(first_keys, second_keys)
+            six.assertCountEqual(self, first_keys, second_keys)
             for key in first_keys:
                 self.assertEqual(first_list[i].get(key), second_list[i].get(key))
 
@@ -540,8 +536,6 @@ class DocumentTestCase(unittest.TestCase):
         directory's name is stored in "self.repo_dir." There should already be an "all_files.mei"
         file, in accordance with how Document.__init__() works.
         '''
-        if hasattr(self, 'assertItemsEqual'):
-            self.assertCountEqual = self.assertItemsEqual
         try:
             # Python 3.2+
             self._temp_dir = tempfile.TemporaryDirectory()
@@ -1009,7 +1003,7 @@ class TestSaveLoadEverything(DocumentTestCase):
         actual = self.doc.save_everything()
 
         # 4.) assert the postconditions
-        self.assertCountEqual(expected, actual)
+        six.assertCountEqual(self, expected, actual)
 
         return actual
 
@@ -1092,7 +1086,7 @@ class TestSaveLoadEverything(DocumentTestCase):
         head = etree.parse(os.path.join(self.path_to_here, 'input_meiHead.mei'))
         files = self.test_save_template_nomock(head=head, expected=exp_listdir)
         listdir = os.listdir(os.path.dirname(files[0]))
-        self.assertCountEqual(exp_listdir, listdir)
+        six.assertCountEqual(self, exp_listdir, listdir)
         for each_file in files:
             if each_file.endswith('all_files.mei'):
                 self.load_n_compare('exp_all_files_2.mei', each_file)
@@ -1123,7 +1117,7 @@ class TestSaveLoadEverything(DocumentTestCase):
         exp_listdir = ['all_files.mei', '1.mei', '2.mei', '3.mei']
         files = self.test_save_template_nomock(sections=sections, expected=exp_listdir)
         listdir = os.listdir(os.path.dirname(files[0]))
-        self.assertCountEqual(exp_listdir, listdir)
+        six.assertCountEqual(self, exp_listdir, listdir)
         for each_file in files:
             if each_file.endswith('all_files.mei'):
                 self.load_n_compare('exp_all_files_3.mei', each_file)
@@ -1168,7 +1162,7 @@ class TestSaveLoadEverything(DocumentTestCase):
         files = self.test_save_template_nomock(sections=sections, score_order=['1', '2', '1'],
                                                expected=exp_listdir)
         listdir = os.listdir(os.path.dirname(files[0]))
-        self.assertCountEqual(exp_listdir, listdir)
+        six.assertCountEqual(self, exp_listdir, listdir)
         for each_file in files:
             if each_file.endswith('all_files.mei'):
                 self.load_n_compare('exp_all_files_4.mei', each_file)
@@ -1222,7 +1216,7 @@ class TestSaveLoadEverything(DocumentTestCase):
         files = self.test_save_template_nomock(sections=sections, score_order=['1', '2', '1'],
                                                head=head, expected=exp_listdir)
         listdir = os.listdir(os.path.dirname(files[0]))
-        self.assertCountEqual(exp_listdir, listdir)
+        six.assertCountEqual(self, exp_listdir, listdir)
         for each_file in files:
             if each_file.endswith('all_files.mei'):
                 self.load_n_compare('exp_all_files_5.mei', each_file)

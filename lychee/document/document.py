@@ -440,24 +440,27 @@ class Document(object):
 
     def put_score(self, new_music):
         '''
-        Save a new score in place of the existing one. The "score order" in ``new_music`` is taken
-        to replace the existing "score order." Note that <section> elements not included in
-        ``new_music`` are not deleted---they remain tracked in "all_files." Also note that any
-        <section> elements already contained in the local list of sections is replaced by the
-        section that has a matching @xml:id in ``new_music``.
+        Save a new score in place of the existing one.
 
         :param new_music: The <score> element to use in place of the existing one.
         :type new_music: :class:`lxml.etree.Element`
-        '''
-        # TODO: refactor it to not use self._score
-        score_order = []
-        for section in new_music.findall('./{}'.format(mei.SECTION)):
-            xmlid = section.get(xml.ID)
-            score_order.append(xmlid)
-            self._sections[xmlid] = section
+        :returns: The @xml:id attributes of all top-level ``<section>`` elements found in
+            ``new_music``, in the order they were found.
+        :rtype: list of str
 
-        self._score = new_music
-        self._score_order = score_order
+        The "score order" in ``new_music`` replaces the existing "score order." Note that existing
+        <section> elements that aren't part of ``new_music`` are not deleted---they remain tracked
+        internally. Also note that any <section> elements already contained in the local list of
+        sections is replaced by the section that has a matching @xml:id in ``new_music``. Sections
+        that don't have an @xml:id will be given one.
+        '''
+
+        self._score_order = []
+        for section in new_music.findall('./{}'.format(mei.SECTION)):
+            xmlid = self.put_section(section)
+            self._score_order.append(xmlid)
+
+        return self._score_order
 
     def get_section(self, section_id):
         '''

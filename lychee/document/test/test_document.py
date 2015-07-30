@@ -789,7 +789,9 @@ class TestGetPutScore(DocumentTestCase):
         When the <score> has no <section> elements.
         '''
         the_score = etree.Element(mei.SCORE)
-        self.doc.put_score(the_score)
+        expected = []
+        actual = self.doc.put_score(the_score)
+        self.assertEqual(expected, actual)
         self.assertEqual(0, len(self.doc._score_order))
         self.assertEqual(0, len(self.doc._sections))
 
@@ -804,8 +806,9 @@ class TestGetPutScore(DocumentTestCase):
         the_score.append(etree.Element(section_tag, attrib={xml.ID: '789'}))
         exp_xmlids = ['123', '456', '789']
 
-        self.doc.put_score(the_score)
+        actual = self.doc.put_score(the_score)
 
+        self.assertEqual(exp_xmlids, actual)
         self.assertEqual(exp_xmlids, self.doc._score_order)
         self.assertEqual(3, len(self.doc._sections))
         for xmlid in exp_xmlids:

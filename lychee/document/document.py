@@ -392,6 +392,7 @@ class Document(object):
             else:
                 # otherwise we can load the file specified in the <ptr>
                 try:
+                    # TODO: use _load_in() for this
                     self._head = etree.parse(ptr.get('target', default='')).getroot()
                 except (OSError, IOError):
                     raise exceptions.HeaderNotFoundError(_ERR_FAILED_LOADING_MEIHEAD)

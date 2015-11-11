@@ -1,46 +1,33 @@
-Lychee
-======
+# Lychee
 
 *Lychee* is an MEI document manager.
 
-License
--------
+## License
 
 *Lychee* is copyrighted according to the terms of the GNU GPLv3+. A copy of the license is held in
 the file called "LICENSE."
 
-Install for Development (CPython 3)
------------------------------------
+## Install for Development
 
-Clone this git repository:
+For the nCoda prototype, with a targeted launch in September 2016, we're using the PyPy 4.0 series.
+This is a Python 2 interpreter. Download it from http://pypy.org/download.html. We do recommend
+writing Python 3 compatible code whenever possible, for which reason you may also want to maintain
+a test environment with a CPython 3 interpreter.
 
-    $ git clone https://jameson.adjectivenoun.ca:lychee/lychee.git
+1. Set up a virtualenv and activate it.
+1. Update the default ``pip`` and ``setuptools``, which may not be able to successfully install
+   the dependencies: ``pip install -U pip setuptools``.
+1. Comment out the repository-based dependencies (Abjad and Lychee) in "pip_freeze_pypy40".
+1. Run ``pip install -r pip_freeze_pypy40`` to install the dependencies.
+1. Install Abjad.
+   1. Check https://pypi.python.org/pypi/Abjad to see if Abjad 2.17 has been released. If so, run
+      ``pip install Abjad`` to install it.
+   1. Otherwise clone the Abjad repository from https://github.com/Abjad/abjad, checkout commit
+      7e3af7f66, then install it by running ``pip install -e .`` in the abjad directory.
+1. Then install Lychee by running ``pip install -e .`` in the Lychee directory.
+1. And finally... run ``py.test`` in the Lychee directory to run the automated test suite, and make
+   sure that nothing is broken *before* you even start developing!
 
-Create and activate a new virtualenv:
+## Install for Deployment
 
-    $ pyvenv */your/path/here*
-    $ source */your/path/here/bin/activate*
-
-Install the development requirements:
-
-    $ pip install -r cra_pip_freeze-py3.txt
-
-Install *Lychee* itself. This ensure the *Lychee* module is importable in the interpreter.
-
-    $ pip install -e .
-
-The test suite uses the ``pytest`` package. To run the test suite, ensure your venv is activated,
-then issue the following command from the "abbott" root directory:
-
-    $ py.test
-
-Install for Development (CPython 2)
------------------------------------
-
-Same as for CPython 3, but use the ``virtualenv`` command to create a virtualenv. You may need to
-install that package separately.
-
-Install for Deployment
-----------------------
-
-Don't.
+Don't. It's not ready yet!

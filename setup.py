@@ -11,7 +11,11 @@ setup(
 
     install_requires = [
         'Abjad>2.17',
+        'lxml>3.4,<3.5',
+        'mock',
         'signalslot>0.1,<0.2',
+        'six',
+        'weakrefmethod',
     ],
 
     # metadata for upload to PyPI

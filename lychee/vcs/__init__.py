@@ -42,11 +42,11 @@ def vcs_processor(pathnames, **kwargs):
     _, pathnames[0] = path.split(pathnames[0])
 
     for each_file in pathnames:
-        with subprocess.Popen(['hg', 'add', each_file], cwd='testrepo') as add:
-            pass
+        proc = subprocess.Popen(['hg', 'add', each_file], cwd='testrepo')
+        proc.wait()
 
-    with subprocess.Popen(['hg', 'commit', '-m', '"some message {}"'.format(time.time())], cwd='testrepo') as proc:
-        pass
+    proc = subprocess.Popen(['hg', 'commit', '-m', '"some message {}"'.format(time.time())], cwd='testrepo')
+    proc.wait()
 
     vcs.FINISH.emit()
     lychee.log('{}.vcs_processor() after finish signal'.format(__name__))

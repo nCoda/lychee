@@ -9,7 +9,10 @@ setup(
     version = lychee.__version__,
     packages = ['lychee'],
 
-    install_requires = ['signalslot==0.0.11'],
+    install_requires = [
+        'Abjad>2.17',
+        'signalslot>0.1,<0.2',
+    ],
 
     # metadata for upload to PyPI
     author = 'Christopher Antila',

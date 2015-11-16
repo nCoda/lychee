@@ -248,7 +248,7 @@ class WorkflowManager(object):
             pass
         if len(successful_dtypes) != len(self._o_dtypes):
             if 0 == len(successful_dtypes):
-                outbound.CONVERSION_ERROR.emit('No outbound converters succeeded')
+                outbound.CONVERSION_ERROR.emit(msg='No outbound converters succeeded')
             else:
                 lychee.log('ERROR: some registered outbound dtypes failed conversion')
                 self._o_dtypes = successful_dtypes

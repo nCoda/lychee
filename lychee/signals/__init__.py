@@ -32,10 +32,56 @@ Initialize the :mod:`signals` module.
 __all__ = ['inbound', 'document', 'vcs', 'outbound']
 
 import signalslot
-from lychee.signals import *
 
 
-ACTION_START = signalslot.Signal(args=['dtype', 'doc'])
+# This is a module-level FujianWebSocketHandler instance. The Signal class uses it to emit signals
+# to the GUI over the WebSocket connection.
+_module_fujian = None
+
+
+def set_fujian(to_this):
+    '''
+    Call this with a :class:`fujian.FujianWebSocketHandler` instance. :class:`Signal` instances will
+    use it to emit themselves over the WebSocket connection.
+    '''
+
+    global _module_fujian
+    _module_fujian = to_this
+
+
+class Signal(signalslot.Signal):
+    '''
+    A Lychee-specific extension of the :class:`signalslot.Signal` class that emits signals through
+    the "Fujian" WebSocket server, if it's available.
+    '''
+
+    def __init__(self, args=None, name=None, threadsafe=False):
+        '''
+        Determine whether Fujian is available then call the superclass constructor.
+        '''
+        global _module_fujian
+        try:
+            _module_fujian
+            self._ws = True
+        except NameError:
+            self._ws = False
+        signalslot.Signal.__init__(self, args, name, threadsafe)
+
+    def emit(self, **kwargs):
+        '''
+        Emit the signal via Fujian if possible, then call the superclass :meth:`emit`.
+        '''
+        global _module_fujian
+        if self._ws:
+            try:
+                _module_fujian.write_message({'signal': self.name})
+            except NameError:
+                self._ws = False
+
+        signalslot.Signal.emit(self, **kwargs)
+
+
+ACTION_START = Signal(args=['dtype', 'doc'], name='ACTION_START')
 '''
 Emit this signal to start an "action" through Lychee.
 

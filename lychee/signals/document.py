@@ -26,10 +26,10 @@
 Signals for the "document step."
 '''
 
-import signalslot
+import lychee.signals
 
 
-START = signalslot.Signal(args=['converted'])
+START = lychee.signals.Signal(args=['converted'], name='document.START')
 '''
 Emitted by the :class:`WorkflowManager` to begin processing during the "document" stage.
 
@@ -37,13 +37,13 @@ Emitted by the :class:`WorkflowManager` to begin processing during the "document
 :type converted: :class:`lxml.etree._Element`
 '''
 
-STARTED = signalslot.Signal()
+STARTED = lychee.signals.Signal(name='document.STARTED')
 '''
 Emitted by the ``lychee.vcs`` module, once it gains control flow and begins to determine how to
 manage changes proposed to the musical document.
 '''
 
-FINISH = signalslot.Signal(args=['pathnames'])
+FINISH = lychee.signals.Signal(args=['pathnames'], name='document.FINISH')
 '''
 Emitted by the ``lychee.document`` module, once its actions are complete, to return relevant
 information to the :class:`WorkflowManager`.
@@ -52,13 +52,13 @@ information to the :class:`WorkflowManager`.
 :type pathnames: list of string
 '''
 
-FINISHED = signalslot.Signal()
+FINISHED = lychee.signals.Signal(name='document.FINISHED')
 '''
 This signal is emitted by the :class:`WorkflowManager` once it gains control flow after the
 "document" step has finished.
 '''
 
-ERROR = signalslot.Signal()
+ERROR = lychee.signals.Signal(name='document.ERROR')
 '''
 Emit this signal when an error occurs during the "document" stage.
 '''

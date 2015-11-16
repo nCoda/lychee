@@ -26,10 +26,10 @@
 Signals for the "vcs" step.
 '''
 
-import signalslot
+import lychee.signals
 
 
-START = signalslot.Signal(args=['pathnames'])
+START = lychee.signals.Signal(args=['pathnames'], name='vcs.START')
 '''
 Emitted by the :class:`WorkflowManager` to begin processing during the "vcs" stage.
 
@@ -37,111 +37,111 @@ Emitted by the :class:`WorkflowManager` to begin processing during the "vcs" sta
 :type pathnames: list of str
 '''
 
-STARTED = signalslot.Signal()
+STARTED = lychee.signals.Signal(name='vcs.STARTED')
 '''
 Emitted by the ``lychee.vcs`` module, once it gains control flow and begins to determine how to
 manage changes proposed to the musical document.
 '''
 
-BYPASSING_VCS = signalslot.Signal()
+BYPASSING_VCS = lychee.signals.Signal(name='vcs.BYPASSING_VCS')
 '''
 This signal is emitted by the ``lychee.vcs`` module when the VCS system will be bypassed because of
 configuration. A failure will be emitted through the ERROR signal.
 '''
 
-USING_VCS = signalslot.Signal()
+USING_VCS = lychee.signals.Signal(name='vcs.USING_VCS')
 '''
 This signal is emitted by the ``lychee.vcs`` module when the VCS system will be used according to
 the configuration system.
 '''
 
-PREINIT = signalslot.Signal()
+PREINIT = lychee.signals.Signal(name='vcs.PREINIT')
 '''
 This signal is emitted before initializing a new repository.
 '''
 
-INIT = signalslot.Signal()
+INIT = lychee.signals.Signal(name='vcs.INIT')
 '''
 This signal is emitted to cause a repository initialization. Such initialization may consist either
 of creating a new, empty local repository, or of cloning a remote repository.
 '''
 
-POSTINIT = signalslot.Signal()
+POSTINIT = lychee.signals.Signal(name='vcs.POSTINIT')
 '''
 This signal is emitted after a repository is initialized.
 '''
 
-PREADD = signalslot.Signal()
+PREADD = lychee.signals.Signal(name='vcs.PREADD')
 '''
 This signal is emitted before new files are added to the VCS.
 '''
 
-ADD = signalslot.Signal()
+ADD = lychee.signals.Signal(name='vcs.ADD')
 '''
 This signal is emitted to cause files to be added to the VCS.
 '''
 
-POSTADD = signalslot.Signal()
+POSTADD = lychee.signals.Signal(name='vcs.POSTADD')
 '''
 This signal is emitted after files are added to the VCS, before committing.
 '''
 
-PRECOMMIT = signalslot.Signal()
+PRECOMMIT = lychee.signals.Signal(name='vcs.PRECOMMIT')
 '''
 This signal is emitted by the ``lychee.vcs`` module just before making a new commit.
 '''
 
-COMMIT = signalslot.Signal()
+COMMIT = lychee.signals.Signal(name='vcs.COMMIT')
 '''
 This signal is emitted to cause a new commit.
 '''
 
-POSTCOMMIT = signalslot.Signal()
+POSTCOMMIT = lychee.signals.Signal(name='vcs.POSTCOMMIT')
 '''
 Emitted after the commit finishes, before the FINISH signal. This signal is for other modules that
 want to do something after the commit, since only the :class:`WorkflowManager` should connect to
 the FINISH signal.
 '''
 
-PREUPDATE_PERMANENT = signalslot.Signal()
+PREUPDATE_PERMANENT = lychee.signals.Signal(name='vcs.PREUPDATE_PERMANENT')
 '''
 Emitted before UPDATE_PERMANENT.
 '''
 
-UPDATE_PERMANENT = signalslot.Signal()
+UPDATE_PERMANENT = lychee.signals.Signal(name='vcs.UPDATE_PERMANENT')
 '''
 When a user chooses to "save" their progress, a "permanent" bookmark or branch will be moved
 to the relevant revision.
 '''
 
-POSTUPDATE_PERMANENT = signalslot.Signal()
+POSTUPDATE_PERMANENT = lychee.signals.Signal(name='vcs.POSTUPDATE_PERMANENT')
 '''
 Emitted after UPDATE_PERMANENT.
 '''
 
-PREEND_SESSION = signalslot.Signal()
+PREEND_SESSION = lychee.signals.Signal(name='vcs.PREEND_SESSION')
 '''
 Emitted before END_SESSION.
 '''
 
-END_SESSION = signalslot.Signal()
+END_SESSION = lychee.signals.Signal(name='vcs.END_SESSION')
 '''
 Emitted to end a session, which causes the revisions between the "permanent" and "session_permanent"
 markers (branches or bookmarks) to be collapsed into a single revision, and (if relevant) the
 repository's changes to be pushed to a remote server.
 '''
 
-POSTEND_SESSION = signalslot.Signal()
+POSTEND_SESSION = lychee.signals.Signal(name='vcs.POSTEND_SESSION')
 '''
 Emitted after END_SESSION.
 '''
 
-PREHOP_TO_REVISION = signalslot.Signal()
+PREHOP_TO_REVISION = lychee.signals.Signal(name='vcs.PREHOP_TO_REVISION')
 '''
 Emitted before HOP_TO_REVISION.
 '''
 
-HOP_TO_REVISION = signalslot.Signal()
+HOP_TO_REVISION = lychee.signals.Signal(name='vcs.HOP_TO_REVISION')
 '''
 This signal is emitted to cause the repository to checkout a particular revision (changeset/commit)
 and update all the views with the contents in that commit. In this situation, each outbound
@@ -149,24 +149,24 @@ converter is likely to receive the complete document, which eliminates the compl
 which portions of the document to update.
 '''
 
-POSTHOP_TO_REVISION = signalslot.Signal()
+POSTHOP_TO_REVISION = lychee.signals.Signal(name='vcs.POSTHOP_TO_REVISION')
 '''
 Emitted after HOP_TO_REVISION.
 '''
 
-FINISH = signalslot.Signal()
+FINISH = lychee.signals.Signal(name='vcs.FINISH')
 '''
 Emitted by the ``lychee.vcs`` module, once its actions are complete, to return relevant information
 to the :class:`WorkflowManager`.
 '''
 
-FINISHED = signalslot.Signal()
+FINISHED = lychee.signals.Signal(name='vcs.FINISHED')
 '''
 This signal is emitted by the :class:`WorkflowManager` once it gains control flow after the
 "vcs" step has finished.
 '''
 
-ERROR = signalslot.Signal()
+ERROR = lychee.signals.Signal(name='vcs.ERROR')
 '''
 Emit this signal when an error occurs during the "vcs" stage.
 '''

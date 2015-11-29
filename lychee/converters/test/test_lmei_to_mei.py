@@ -27,6 +27,7 @@ Tests for "lmei_to_mei.py" and "lmei_to_verovio.py"
 '''
 
 from lxml import etree
+import pytest
 
 try:
     from unittest import mock
@@ -37,214 +38,213 @@ from lychee.converters import lmei_to_mei, lmei_to_verovio
 from lychee.namespaces import mei
 
 
-def test_wrap_section_element():
-    '''
-    Ensure that wrap_section_element() returns the proper element hierarchy:
+class TestToMei:
 
-    <mei>
-        <music>
-            <body>
-                <mdiv>
-                    <score>
-                        <section>
-    '''
-    section = etree.Element(mei.SECTION)
-    actual = lmei_to_mei.wrap_section_element(section)
-    assert mei.MEI == actual.tag
-    actual = actual.getchildren()[0]
-    assert mei.MUSIC == actual.tag
-    actual = actual.getchildren()[0]
-    assert mei.BODY == actual.tag
-    actual = actual.getchildren()[0]
-    assert mei.MDIV == actual.tag
-    actual = actual.getchildren()[0]
-    assert mei.SCORE == actual.tag
-    actual = actual.getchildren()[0]
-    assert mei.SECTION == actual.tag
-    assert section is actual
+    def test_wrap_section_element(self):
+        '''
+        Ensure that wrap_section_element() returns the proper element hierarchy:
 
+        <mei>
+            <music>
+                <body>
+                    <mdiv>
+                        <score>
+                            <section>
+        '''
+        section = etree.Element(mei.SECTION)
+        actual = lmei_to_mei.wrap_section_element(section)
+        assert mei.MEI == actual.tag
+        actual = actual.getchildren()[0]
+        assert mei.MUSIC == actual.tag
+        actual = actual.getchildren()[0]
+        assert mei.BODY == actual.tag
+        actual = actual.getchildren()[0]
+        assert mei.MDIV == actual.tag
+        actual = actual.getchildren()[0]
+        assert mei.SCORE == actual.tag
+        actual = actual.getchildren()[0]
+        assert mei.SECTION == actual.tag
+        assert section is actual
 
-def test_change_measure_hierarchy_1():
-    '''
-    That change_measure_hierarchy() works with reasonable input.
-    '''
-    initial = [
-        '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
-            '<mei:scoreDef/>',
-            '<mei:staff n="1">',
-                '<mei:measure n="1"/>',
-                '<mei:measure n="2"/>',
-            '</mei:staff>',
-            '<mei:staff n="2">',
-                '<mei:measure n="1"/>',
-                '<mei:measure n="2"/>',
-            '</mei:staff>',
-        '</mei:section>',
-        ]
-    initial = etree.fromstringlist(initial)
-    expected = [
-        '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
-            '<mei:scoreDef/>',
-            '<mei:measure n="1">',
-                '<mei:staff n="1"/>',
-                '<mei:staff n="2"/>',
-            '</mei:measure>',
-            '<mei:measure n="2">',
-                '<mei:staff n="1"/>',
-                '<mei:staff n="2"/>',
-            '</mei:measure>',
-        '</mei:section>',
-        ]
+    def test_change_measure_hierarchy_1(self):
+        '''
+        That change_measure_hierarchy() works with reasonable input.
+        '''
+        initial = [
+            '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
+                '<mei:scoreDef/>',
+                '<mei:staff n="1">',
+                    '<mei:measure n="1"/>',
+                    '<mei:measure n="2"/>',
+                '</mei:staff>',
+                '<mei:staff n="2">',
+                    '<mei:measure n="1"/>',
+                    '<mei:measure n="2"/>',
+                '</mei:staff>',
+            '</mei:section>',
+            ]
+        initial = etree.fromstringlist(initial)
+        expected = [
+            '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
+                '<mei:scoreDef/>',
+                '<mei:measure n="1">',
+                    '<mei:staff n="1"/>',
+                    '<mei:staff n="2"/>',
+                '</mei:measure>',
+                '<mei:measure n="2">',
+                    '<mei:staff n="1"/>',
+                    '<mei:staff n="2"/>',
+                '</mei:measure>',
+            '</mei:section>',
+            ]
 
-    actual = lmei_to_mei.change_measure_hierarchy(initial)
+        actual = lmei_to_mei.change_measure_hierarchy(initial)
 
-    assert ''.join(expected) == etree.tostring(actual)
+        assert ''.join(expected) == etree.tostring(actual)
 
+    def test_change_measure_hierarchy_2(self):
+        '''
+        That change_measure_hierarchy() works when the <scoreDef> is missing.
+        '''
+        initial = [
+            '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
+                '<mei:staff n="1">',
+                    '<mei:measure n="1"/>',
+                    '<mei:measure n="2"/>',
+                '</mei:staff>',
+                '<mei:staff n="2">',
+                    '<mei:measure n="1"/>',
+                    '<mei:measure n="2"/>',
+                '</mei:staff>',
+            '</mei:section>',
+            ]
+        initial = etree.fromstringlist(initial)
+        expected = [
+            '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
+                '<mei:measure n="1">',
+                    '<mei:staff n="1"/>',
+                    '<mei:staff n="2"/>',
+                '</mei:measure>',
+                '<mei:measure n="2">',
+                    '<mei:staff n="1"/>',
+                    '<mei:staff n="2"/>',
+                '</mei:measure>',
+            '</mei:section>',
+            ]
 
-def test_change_measure_hierarchy_2():
-    '''
-    That change_measure_hierarchy() works when the <scoreDef> is missing.
-    '''
-    initial = [
-        '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
-            '<mei:staff n="1">',
-                '<mei:measure n="1"/>',
-                '<mei:measure n="2"/>',
-            '</mei:staff>',
-            '<mei:staff n="2">',
-                '<mei:measure n="1"/>',
-                '<mei:measure n="2"/>',
-            '</mei:staff>',
-        '</mei:section>',
-        ]
-    initial = etree.fromstringlist(initial)
-    expected = [
-        '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
-            '<mei:measure n="1">',
-                '<mei:staff n="1"/>',
-                '<mei:staff n="2"/>',
-            '</mei:measure>',
-            '<mei:measure n="2">',
-                '<mei:staff n="1"/>',
-                '<mei:staff n="2"/>',
-            '</mei:measure>',
-        '</mei:section>',
-        ]
+        actual = lmei_to_mei.change_measure_hierarchy(initial)
 
-    actual = lmei_to_mei.change_measure_hierarchy(initial)
+        assert ''.join(expected) == etree.tostring(actual)
 
-    assert ''.join(expected) == etree.tostring(actual)
+    def test_change_measure_hierarchy_3(self):
+        '''
+        That change_measure_hierarchy() works when one of the staves is missing the second measure.
+        '''
+        initial = [
+            '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
+                '<mei:scoreDef/>',
+                '<mei:staff n="1">',
+                    '<mei:measure n="1"/>',
+                    '<mei:measure n="2"/>',
+                '</mei:staff>',
+                '<mei:staff n="2">',
+                    '<mei:measure n="1"/>',
+                '</mei:staff>',
+            '</mei:section>',
+            ]
+        initial = etree.fromstringlist(initial)
+        expected = [
+            '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
+                '<mei:scoreDef/>',
+                '<mei:measure n="1">',
+                    '<mei:staff n="1"/>',
+                    '<mei:staff n="2"/>',
+                '</mei:measure>',
+                '<mei:measure n="2">',
+                    '<mei:staff n="1"/>',
+                '</mei:measure>',
+            '</mei:section>',
+            ]
 
+        actual = lmei_to_mei.change_measure_hierarchy(initial)
 
-def test_change_measure_hierarchy_3():
-    '''
-    That change_measure_hierarchy() works when one of the staves is missing the second measure.
-    '''
-    initial = [
-        '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
-            '<mei:scoreDef/>',
-            '<mei:staff n="1">',
-                '<mei:measure n="1"/>',
-                '<mei:measure n="2"/>',
-            '</mei:staff>',
-            '<mei:staff n="2">',
-                '<mei:measure n="1"/>',
-            '</mei:staff>',
-        '</mei:section>',
-        ]
-    initial = etree.fromstringlist(initial)
-    expected = [
-        '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
-            '<mei:scoreDef/>',
-            '<mei:measure n="1">',
-                '<mei:staff n="1"/>',
-                '<mei:staff n="2"/>',
-            '</mei:measure>',
-            '<mei:measure n="2">',
-                '<mei:staff n="1"/>',
-            '</mei:measure>',
-        '</mei:section>',
-        ]
+        assert ''.join(expected) == etree.tostring(actual)
 
-    actual = lmei_to_mei.change_measure_hierarchy(initial)
+    # def test_change_measure_hierarchy_4(self):
+    #     '''
+    #     That change_measure_hierarchy() works when one of the staves is missing the first measure.
+    #     TODO: get this to work
+    #     '''
+    #     initial = [
+    #         '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
+    #             '<mei:scoreDef/>',
+    #             '<mei:staff n="1">',
+    #                 '<mei:measure n="1"/>',
+    #                 '<mei:measure n="2"/>',
+    #             '</mei:staff>',
+    #             '<mei:staff n="2">',
+    #                 '<mei:measure n="2"/>',
+    #             '</mei:staff>',
+    #         '</mei:section>',
+    #         ]
+    #     initial = etree.fromstringlist(initial)
+    #     expected = [
+    #         '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
+    #             '<mei:scoreDef/>',
+    #             '<mei:measure n="1">',
+    #                 '<mei:staff n="1"/>',
+    #             '<mei:measure n="2">',
+    #                 '<mei:staff n="1"/>',
+    #                 '<mei:staff n="2"/>',
+    #             '</mei:measure>',
+    #         '</mei:section>',
+    #         ]
+    #
+    #     actual = lmei_to_mei.change_measure_hierarchy(initial)
+    #
+    #     assert ''.join(expected) == etree.tostring(actual)
 
-    assert ''.join(expected) == etree.tostring(actual)
+    def test_change_measure_hierarchy_5(self):
+        '''
+        That change_measure_hierarchy() works when there are no measures. Perhaps this isn't the best
+        conversion, but we just want to make sure we don't fail completely.
+        '''
+        initial = [
+            '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
+                '<mei:scoreDef/>',
+                '<mei:staff n="1">',
+                '</mei:staff>',
+                '<mei:staff n="2">',
+                '</mei:staff>',
+            '</mei:section>',
+            ]
+        initial = etree.fromstringlist(initial)
+        expected = [
+            '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
+                '<mei:scoreDef/>',
+            '</mei:section>',
+            ]
 
+        actual = lmei_to_mei.change_measure_hierarchy(initial)
 
-# def test_change_measure_hierarchy_4():
-#     '''
-#     That change_measure_hierarchy() works when one of the staves is missing the first measure.
-#     TODO: get this to work
-#     '''
-#     initial = [
-#         '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
-#             '<mei:scoreDef/>',
-#             '<mei:staff n="1">',
-#                 '<mei:measure n="1"/>',
-#                 '<mei:measure n="2"/>',
-#             '</mei:staff>',
-#             '<mei:staff n="2">',
-#                 '<mei:measure n="2"/>',
-#             '</mei:staff>',
-#         '</mei:section>',
-#         ]
-#     initial = etree.fromstringlist(initial)
-#     expected = [
-#         '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
-#             '<mei:scoreDef/>',
-#             '<mei:measure n="1">',
-#                 '<mei:staff n="1"/>',
-#             '<mei:measure n="2">',
-#                 '<mei:staff n="1"/>',
-#                 '<mei:staff n="2"/>',
-#             '</mei:measure>',
-#         '</mei:section>',
-#         ]
-#
-#     actual = lmei_to_mei.change_measure_hierarchy(initial)
-#
-#     assert ''.join(expected) == etree.tostring(actual)
-
-
-def test_change_measure_hierarchy_5():
-    '''
-    That change_measure_hierarchy() works when there are no measures. Perhaps this isn't the best
-    conversion, but we just want to make sure we don't fail completely.
-    '''
-    initial = [
-        '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
-            '<mei:scoreDef/>',
-            '<mei:staff n="1">',
-            '</mei:staff>',
-            '<mei:staff n="2">',
-            '</mei:staff>',
-        '</mei:section>',
-        ]
-    initial = etree.fromstringlist(initial)
-    expected = [
-        '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',
-            '<mei:scoreDef/>',
-        '</mei:section>',
-        ]
-
-    actual = lmei_to_mei.change_measure_hierarchy(initial)
-
-    assert ''.join(expected) == etree.tostring(actual)
+        assert ''.join(expected) == etree.tostring(actual)
 
 
-@mock.patch('lychee.converters.lmei_to_verovio.lmei_to_mei.change_measure_hierarchy')
-@mock.patch('lychee.converters.lmei_to_verovio.lmei_to_mei.wrap_section_element')
-def test_export_for_verovio(mock_wrap, mock_change):
-    '''
-    Make sure it works.
-    '''
-    document = 'hello'
-    wrap_return = etree.fromstring('<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei"></mei:section>')
-    mock_wrap.return_value = wrap_return
-    expected = '<?xml version="1.0" encoding="UTF-8"?><section xmlns:mei="http://www.music-encoding.org/ns/mei"/>'
+class TestToVerovio:
 
-    actual = lmei_to_verovio.export_for_verovio(document)
+    @mock.patch('lychee.converters.lmei_to_verovio.lmei_to_mei.change_measure_hierarchy')
+    @mock.patch('lychee.converters.lmei_to_verovio.lmei_to_mei.wrap_section_element')
+    def test_export_for_verovio(self, mock_wrap, mock_change):
+        '''
+        Make sure it works.
+        '''
+        document = 'hello'
+        wrap_return = etree.fromstring('<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei"></mei:section>')
+        mock_wrap.return_value = wrap_return
+        expected = '<?xml version="1.0" encoding="UTF-8"?><section xmlns:mei="http://www.music-encoding.org/ns/mei"/>'
 
-    mock_change.assert_called_once_with(document)
-    assert expected == actual
-    assert isinstance(actual, unicode)
+        actual = lmei_to_verovio.export_for_verovio(document)
+
+        mock_change.assert_called_once_with(document)
+        assert expected == actual
+        assert isinstance(actual, unicode)

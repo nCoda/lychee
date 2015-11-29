@@ -25,14 +25,13 @@
 '''
 Converts a Lychee-MEI document to a more conventional document.
 '''
+# TODO: finish all the stuff for this module to work
 
 from lxml import etree
 
 import lychee
+from lychee.namespaces import mei
 from lychee.signals import outbound
-
-
-_MEINS = '{http://www.music-encoding.org/ns/mei}'
 
 
 def convert(document, **kwargs):
@@ -47,25 +46,36 @@ def convert(document, **kwargs):
     outbound.CONVERSION_STARTED.emit()
     lychee.log('{}.convert(document={})'.format(__name__, document))
 
-    if '{}section'.format(_MEINS) != document.tag:
+    if mei.SECTION != document.tag:
         outbound.CONVERSION_ERROR.emit(msg='LMEI-to-MEI did not receive a <section>')
         return
 
-    section = change_measure_hierarchy(document)
-
-    score = etree.Element('{}score'.format(_MEINS))
-    score.append(section)
-    mdiv = etree.Element('{}mdiv'.format(_MEINS))
-    mdiv.append(score)
-    body = etree.Element('{}body'.format(_MEINS))
-    body.append(mdiv)
-    music = etree.Element('{}music'.format(_MEINS))
-    music.append(body)
-    mei = etree.Element('{}mei'.format(_MEINS))
-    mei.append(music)
-
-    outbound.CONVERSION_FINISH.emit(converted=mei)
+    outbound.CONVERSION_FINISH.emit(converted=wrap_section_element(change_measure_hierarchy(document)))
     lychee.log('{}.convert() after finish signal'.format(__name__))
+
+
+def wrap_section_element(section):
+    '''
+    Wrap a <section> element in <score>, <mdiv>, <body>, <music>, and <mei> so that it can stand as
+    an independent document.
+
+    :param section: The <section> eleemnt to wrap.
+    :type section: :class:`xml.etree.ElementTree.Element`
+    :returns: The corresponding <mei> element.
+    :rtype: :class:`xml.etree.ElementTree.Element`
+    '''
+    score = etree.Element(mei.SCORE)
+    score.append(section)
+    mdiv = etree.Element(mei.MDIV)
+    mdiv.append(score)
+    body = etree.Element(mei.BODY)
+    body.append(mdiv)
+    music = etree.Element(mei.MUSIC)
+    music.append(body)
+    post = etree.Element(mei.MEI)
+    post.append(music)
+
+    return post
 
 
 def change_measure_hierarchy(lmei_section):
@@ -78,25 +88,28 @@ def change_measure_hierarchy(lmei_section):
     :returns: A converted <section>.
     :rtype: :class:`xml.etree.ElementTree.Element`
     '''
+    # TODO: get this to work with measures missing (or decide that LMEI can't have missing measures)
 
-    section = etree.Element('{}section'.format(_MEINS))
-    section.append(lmei_section.find('.//{}scoreDef'.format(_MEINS)))
+    section = etree.Element(mei.SECTION)
+    scoreDef = lmei_section.find('.//{}'.format(mei.SCORE_DEF))
+    if scoreDef is not None:
+        section.append(scoreDef)
     measure_num = 0
-    ran_out_of_measures = False
+    still_have_measures = True
 
-    while not ran_out_of_measures:
+    while still_have_measures:
         measure_num += 1
-        xpath_query = './/{meins}measure[@n="{n}"]'.format(meins=_MEINS, n=measure_num)
+        xpath_query = './/{tag}[@n="{n}"]'.format(tag=mei.MEASURE, n=measure_num)
         staffs = lmei_section.findall(xpath_query)
 
         if 0 == len(staffs):
-            ran_out_of_measures = True
+            still_have_measures = False
             continue
 
-        measure = etree.Element('{}measure'.format(_MEINS), n=str(measure_num))
+        measure = etree.Element(mei.MEASURE, n=str(measure_num))
 
         for i, each in enumerate(staffs):
-            each.tag = '{}staff'.format(_MEINS)
+            each.tag = mei.STAFF
             each.set('n', str(i+1))
             measure.append(each)
 

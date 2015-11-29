@@ -33,6 +33,8 @@ import lychee
 from lychee.namespaces import mei
 from lychee.signals import outbound
 
+_ERR_INPUT_NOT_SECTION = 'LMEI-to-MEI did not receive a <section>'
+
 
 def convert(document, **kwargs):
     '''
@@ -46,8 +48,8 @@ def convert(document, **kwargs):
     outbound.CONVERSION_STARTED.emit()
     lychee.log('{}.convert(document={})'.format(__name__, document))
 
-    if mei.SECTION != document.tag:
-        outbound.CONVERSION_ERROR.emit(msg='LMEI-to-MEI did not receive a <section>')
+    if not isinstance(document, etree._Element) or mei.SECTION != document.tag:
+        outbound.CONVERSION_ERROR.emit(msg=_ERR_INPUT_NOT_SECTION)
         return
 
     outbound.CONVERSION_FINISH.emit(converted=wrap_section_element(change_measure_hierarchy(document)))

@@ -48,6 +48,7 @@ from lychee.namespaces import mei
 from lychee.signals import outbound
 
 
+_ERR_INPUT_NOT_SECTION = 'LMEI-to-Verovio did not receive a <section>'
 _XML_DECLARATION = '<?xml version="1.0" encoding="UTF-8"?>'
 
 
@@ -63,8 +64,8 @@ def convert(document, **kwargs):
     outbound.CONVERSION_STARTED.emit()
     lychee.log('{}.convert(document={})'.format(__name__, document))
 
-    if mei.SECTION != document.tag:
-        outbound.CONVERSION_ERROR.emit(msg='LMEI-to-Verovio did not receive a <section>')
+    if not isinstance(document, etree._Element) or mei.SECTION != document.tag:
+        outbound.CONVERSION_ERROR.emit(msg=_ERR_INPUT_NOT_SECTION)
         return
 
     outbound.CONVERSION_FINISH.emit(converted=export_for_verovio(document))

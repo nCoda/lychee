@@ -5,7 +5,7 @@
 # Program Description:    MEI document manager for formalized document control
 #
 # Filename:               lychee/converters/test/test_lmei_to_mei.py
-# Purpose:                Tests for "lmei_to_mei.py"
+# Purpose:                Tests for "lmei_to_mei.py" and "lmei_to_verovio.py"
 #
 # Copyright (C) 2015 Christopher Antila
 #
@@ -23,11 +23,17 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 '''
-Tests for "lmei_to_mei.py"
+Tests for "lmei_to_mei.py" and "lmei_to_verovio.py"
 '''
 
 from lxml import etree
-from lychee.converters import lmei_to_mei
+
+try:
+    from unittest import mock
+except ImportError:
+    import mock
+
+from lychee.converters import lmei_to_mei, lmei_to_verovio
 from lychee.namespaces import mei
 
 
@@ -224,3 +230,21 @@ def test_change_measure_hierarchy_5():
     actual = lmei_to_mei.change_measure_hierarchy(initial)
 
     assert ''.join(expected) == etree.tostring(actual)
+
+
+@mock.patch('lychee.converters.lmei_to_verovio.lmei_to_mei.change_measure_hierarchy')
+@mock.patch('lychee.converters.lmei_to_verovio.lmei_to_mei.wrap_section_element')
+def test_export_for_verovio(mock_wrap, mock_change):
+    '''
+    Make sure it works.
+    '''
+    document = 'hello'
+    wrap_return = etree.fromstring('<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei"></mei:section>')
+    mock_wrap.return_value = wrap_return
+    expected = '<?xml version="1.0" encoding="UTF-8"?><section xmlns:mei="http://www.music-encoding.org/ns/mei"/>'
+
+    actual = lmei_to_verovio.export_for_verovio(document)
+
+    mock_change.assert_called_once_with(document)
+    assert expected == actual
+    assert isinstance(actual, unicode)

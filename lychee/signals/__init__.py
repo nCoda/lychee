@@ -66,9 +66,9 @@ class Signal(signalslot.Signal):
         '''
         global _module_fujian
         try:
-            _module_fujian
+            _module_fujian.write_message
             self._ws = True
-        except NameError:
+        except AttributeError:
             self._ws = False
         signalslot.Signal.__init__(self, args, name, threadsafe)
 
@@ -90,7 +90,7 @@ class Signal(signalslot.Signal):
 
             try:
                 _module_fujian.write_message(payload)
-            except NameError:
+            except AttributeError:
                 self._ws = False
 
         signalslot.Signal.emit(self, **kwargs)

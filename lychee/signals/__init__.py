@@ -60,24 +60,12 @@ class Signal(signalslot.Signal):
     the "Fujian" WebSocket server, if it's available.
     '''
 
-    def __init__(self, args=None, name=None, threadsafe=False):
-        '''
-        Determine whether Fujian is available then call the superclass constructor.
-        '''
-        global _module_fujian
-        try:
-            _module_fujian.write_message
-            self._ws = True
-        except AttributeError:
-            self._ws = False
-        signalslot.Signal.__init__(self, args, name, threadsafe)
-
     def emit(self, **kwargs):
         '''
         Emit the signal via Fujian if possible, then call the superclass :meth:`emit`.
         '''
         global _module_fujian
-        if self._ws:
+        if _module_fujian is not None:
             payload = {'signal': self.name}
             for arg in self.args:
                 if arg in kwargs:
@@ -91,7 +79,8 @@ class Signal(signalslot.Signal):
             try:
                 _module_fujian.write_message(payload)
             except AttributeError:
-                self._ws = False
+                # TODO: something useful?
+                pass
 
         signalslot.Signal.emit(self, **kwargs)
 

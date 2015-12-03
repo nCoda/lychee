@@ -29,30 +29,36 @@ Signals for the "outbound" step.
 from . import signal
 
 
-WHO_IS_LISTENING = signal.Signal(name='outbound.WHO_IS_LISTENING')
+REGISTER_FORMAT = signal.Signal(args=['dtype', 'who'], name='outbound.REGISTER_FORMAT')
 '''
-The :class:`WorkflowManager` emits this signal before beginning the outbound processing steps, in
-order to determine the outbound formats that are required at the moment. Every UI component that
-wants an update should emit the :const:`I_AM_LISTENING` signal with the required data type, to
-ensure the proper data type will be prepared.
+To request that Lychee produce output data in a given format, call this signal before calling
+:const:`ACTION_START`.
 
-UI components receive their data from the :const:`CONVERSION_FINISHED` signal, which is emitted
-for every data type prepared. Therefore, slots on UI components must double-check they have been
-called with the required data type, and not complain if the data is the wrong type, because they
-will very often be called with data of the wrong type.
+:kwarg str dtype: The data type to produce ('abjad', 'lilypond', 'mei', 'verovio').
+:kwarg str who: (Optional). A unique identifier for the component requesting a format.
 
-For as long as Lychee runs synchronously (which is likely to be always) the :const:`WHO_IS_LISTENING`
-call and :const:`I_AM_LISTENING` response pattern will work just fine because outbound processing
-cannot begin until all the :const:`WHO_IS_LISTENING` slots have finished execution.
+The "who" argument helps Lychee determine how manu user interface components are expecting data in
+a given format. If three UI components call :const:`REGISTER_FORMAT` with the same "dtype" argument,
+then one component sends the :const:`UNREGISTER_FORMAT` signal for that "dtype," the other two
+components will not receive new data. However, if each component registers with a unique "who"
+argument, Lychee will produce output for that "dtype" until all three components unregister.
+
+Therefore, while it is not required to pass the "who" argument, and while there are some use cases
+where Lychee may not benefit from such disambiguation (namely "one-shot" mode) we do recommend that
+long-running applications use a "who" argument.
 '''
+# TODO: when you register a new format, Lychee should emit the most recently produced data in the
+#       newly-registered format
 
-I_AM_LISTENING = signal.Signal(args=['dtype'], name='outbound.I_AM_LISTENING')
+
+UNREGISTER_FORMAT = signal.Signal(args=['dtype', 'who'], name='outbound.UNREGISTER_FORMAT')
 '''
-As described above, UI components should emit this signal with the proper data type to ensure they
-will receive the data they require. It is safe to emit this signal multiple times with the same
-argument---the :class:`WorkflowManager` will still only perform the conversion once per data type.
+Tell Lychee that an interface component is no longer expecting output for a specific "dtype".
 
-:kwarg str dtype: The requested data type ('abjad', 'lilypond', 'mei')
+:kwarg str dtype: The data type to produce ('abjad', 'lilypond', 'mei', 'verovio').
+:kwarg str who: (Optional). A unique identifier for the component requesting a format.
+
+Refer to the discussion above for :const:`REGISTER_FORMAT`.
 '''
 
 VIEWS_START = signal.Signal(args=['dtype'], name='outbound.VIEWS_START')

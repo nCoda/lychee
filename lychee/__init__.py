@@ -65,3 +65,9 @@ def log(message, level=None):
 # many other modules will want to import :mod:`exceptions`, so it should be imported first
 from lychee import exceptions
 from lychee import *
+
+
+# setup a Registrar instance for outbound format conversion
+the_registrar = converters.registrar.Registrar()
+signals.outbound.REGISTER_FORMAT.connect(the_registrar.register)
+signals.outbound.UNREGISTER_FORMAT.connect(the_registrar.unregister)

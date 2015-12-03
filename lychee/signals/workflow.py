@@ -56,7 +56,6 @@ class WorkflowManager(object):
     _VCS_FINISHED = 302
     _VCS_ERROR = 303
     _OUTBOUND_PRESTART = 200
-    _OUTBOUND_HAVE_LISTENERS = 201
     _OUTBOUND_VIEWS_STARTED = 202
     _OUTBOUND_VIEWS_FINISHED = 203
     _OUTBOUND_VIEWS_ERROR = 204
@@ -83,7 +82,6 @@ class WorkflowManager(object):
                     (vcs.FINISH, '_vcs_finish'),
                     (vcs.FINISHED, '_vcs_finished'),
                     (vcs.ERROR, '_vcs_error'),
-                    (outbound.I_AM_LISTENING, '_outbound_register_listener'),
                     (outbound.VIEWS_STARTED, '_outbound_views_started'),
                     (outbound.VIEWS_FINISH, '_outbound_views_finish'),
                     (outbound.VIEWS_FINISHED, '_outbound_views_finished'),
@@ -191,13 +189,10 @@ class WorkflowManager(object):
 
         # Outbound ------------------------------------------------------------
         self._status = WorkflowManager._OUTBOUND_PRESTART
-        outbound.WHO_IS_LISTENING.emit()
 
         # determine which formats are required
-        if self._status is not WorkflowManager._OUTBOUND_HAVE_LISTENERS:
-            if self._status is not WorkflowManager._OUTBOUND_VIEWS_ERROR:
-                lychee.log('nobody was listening')
-            return
+        self._o_dtypes = lychee.the_registrar.get_registered_formats()
+        lychee.log('Currently registered outbound dtypes: {}'.format(self._o_dtypes))
 
         # do the views processing
         successful_dtypes = []
@@ -430,15 +425,6 @@ class WorkflowManager(object):
             lychee.log('ERROR during vcs processing')
 
     # ----
-
-    def _outbound_register_listener(self, dtype, **kwargs):
-        '''
-        Slot for the :const:`outbound.I_AM_LISTENING` signal.
-        '''
-        if dtype not in self._o_dtypes:
-            lychee.log('registering {} for outbound conversion'.format(dtype))
-            self._status = WorkflowManager._OUTBOUND_HAVE_LISTENERS
-            self._o_dtypes.append(dtype)
 
     def _outbound_views_started(self, **kwargs):
         lychee.log('outbound views started')

@@ -28,35 +28,14 @@ Module that runs Lychee as a program.
 
 import subprocess
 
-from lxml import etree
-
 import lychee
-from lychee import signals
-from signals import outbound
+signals = lychee.signals
+outbound = lychee.signals.outbound
+# NB: it's weird, but this guarantees we won't accidentally reinitialize any of the signals
 
-_MEINS = '{http://www.music-encoding.org/ns/mei}'
-_MEINS_URL = 'http://www.music-encoding.org/ns/mei'
-
-
-test_which_format = None
-# NOTE: if you're running Lychee as a test program, you must uncomment one of these
 test_which_format = 'lilypond'
 #test_which_format = 'abjad'
 
-
-# register these fake "listeners" that will pretend they want data in whatever formats
-def generic_listener(dtype):
-    lychee.log("I'm listening for {}!".format(dtype))
-    outbound.I_AM_LISTENING.emit(dtype=dtype)
-
-def abj_listener(**kwargs):
-    generic_listener('abjad')
-
-def ly_listener(**kwargs):
-    generic_listener('lilypond')
-
-def mei_listener(**kwargs):
-    generic_listener('mei')
 
 def mei_through_verovio(dtype, placement, document, **kwargs):
     '''
@@ -67,15 +46,17 @@ def mei_through_verovio(dtype, placement, document, **kwargs):
     if 'verovio' != dtype:
         return
 
-    with open('testrepo/verovio_output', 'w') as the_file:
+    output_filename = 'testrepo/verovio_input'
+
+    with open(output_filename, 'w') as the_file:
         the_file.write(document)
 
     subprocess.call(['verovio', '-f', 'mei', '-o', 'testrepo/verovio_output', output_filename])
 
-#outbound.WHO_IS_LISTENING.connect(abj_listener)
-#outbound.WHO_IS_LISTENING.connect(ly_listener)
-outbound.WHO_IS_LISTENING.connect(mei_listener)
+
+outbound.REGISTER_FORMAT.emit(dtype='verovio', who='lychee.__main__')
 outbound.CONVERSION_FINISHED.connect(mei_through_verovio)
+
 
 # this is what starts a test "action"
 if 'lilypond' == test_which_format:

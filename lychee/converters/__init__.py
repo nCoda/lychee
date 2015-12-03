@@ -29,7 +29,7 @@ Initialization for :mod:`converters` module.
 # Jeff: "Well, a universal converter is, by definition, a pretty slutty thing."
 
 __all__ = ['mei_to_ly', 'ly_to_mei', 'lmei_to_abjad', 'abjad_to_lmei', 'mei_to_lmei', 'lmei_to_mei',
-    'lmei_to_verovio']
+    'lmei_to_verovio', 'registrar']
 
 from lychee.converters import *
 # TODO: we probably don't actually want to import all of these at runtime, because each convter

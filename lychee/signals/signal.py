@@ -26,10 +26,16 @@
 Lychee-specific Signal class.
 '''
 
+from lxml import etree
 import signalslot
 import six
 
-# from lychee import log
+from lychee import log
+
+
+# translatable strings
+_MISSING_ARG = '"{signal}" signal is missing "{argname}" argument'
+_INVALID_FUJIAN = 'Fujian seems to be missing the write_message() method'
 
 
 # This is a module-level FujianWebSocketHandler instance. The Signal class uses it to emit signals
@@ -42,7 +48,6 @@ def set_fujian(to_this):
     Call this with a :class:`fujian.FujianWebSocketHandler` instance. :class:`Signal` instances will
     use it to emit themselves over the WebSocket connection.
     '''
-
     global _module_fujian
     _module_fujian = to_this
 
@@ -52,9 +57,6 @@ class Signal(signalslot.Signal):
     A Lychee-specific extension of the :class:`signalslot.Signal` class that emits signals through
     the "Fujian" WebSocket server, if it's available.
     '''
-    def __init__(self, *args, **kwargs):
-        # print('initializing {}'.format(kwargs['name'])) ##############################################
-        signalslot.Signal.__init__(self, *args, **kwargs)
 
     def emit(self, **kwargs):
         '''
@@ -70,14 +72,11 @@ class Signal(signalslot.Signal):
                     else:
                         payload[arg] = six.text_type(kwargs[arg])
                 else:
-                    # log('Missing "{}" arg for "{}" signal'.format(arg, self.name))
-                    # TODO
-                    pass
+                    log(_MISSING_ARG.format(signal=self.name, argname=arg), 'WARN')
 
             try:
                 _module_fujian.write_message(payload)
             except AttributeError:
-                # TODO: something useful?
-                pass
+                log(_INVALID_FUJIAN, 'WARN')
 
         signalslot.Signal.emit(self, **kwargs)

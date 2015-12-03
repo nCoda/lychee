@@ -26,10 +26,10 @@
 Signals for the "outbound" step.
 '''
 
-import lychee.signals
+from . import signal
 
 
-WHO_IS_LISTENING = lychee.signals.Signal(name='outbound.WHO_IS_LISTENING')
+WHO_IS_LISTENING = signal.Signal(name='outbound.WHO_IS_LISTENING')
 '''
 The :class:`WorkflowManager` emits this signal before beginning the outbound processing steps, in
 order to determine the outbound formats that are required at the moment. Every UI component that
@@ -46,7 +46,7 @@ call and :const:`I_AM_LISTENING` response pattern will work just fine because ou
 cannot begin until all the :const:`WHO_IS_LISTENING` slots have finished execution.
 '''
 
-I_AM_LISTENING = lychee.signals.Signal(args=['dtype'], name='outbound.I_AM_LISTENING')
+I_AM_LISTENING = signal.Signal(args=['dtype'], name='outbound.I_AM_LISTENING')
 '''
 As described above, UI components should emit this signal with the proper data type to ensure they
 will receive the data they require. It is safe to emit this signal multiple times with the same
@@ -55,19 +55,19 @@ argument---the :class:`WorkflowManager` will still only perform the conversion o
 :kwarg str dtype: The requested data type ('abjad', 'lilypond', 'mei')
 '''
 
-VIEWS_START = lychee.signals.Signal(args=['dtype'], name='outbound.VIEWS_START')
+VIEWS_START = signal.Signal(args=['dtype'], name='outbound.VIEWS_START')
 '''
 Emitted to begin outbound views processing. (This is emitted several times---once per data type).
 
 :kwarg str dtypes: The desired outbound format.
 '''
 
-VIEWS_STARTED = lychee.signals.Signal(name='outbound.VIEWS_STARTED')
+VIEWS_STARTED = signal.Signal(name='outbound.VIEWS_STARTED')
 '''
 Emitted when outbound view processing begins.
 '''
 
-VIEWS_FINISH = lychee.signals.Signal(args=['dtype', 'views_info'], name='outbound.VIEWS_FINISH')
+VIEWS_FINISH = signal.Signal(args=['dtype', 'views_info'], name='outbound.VIEWS_FINISH')
 '''
 Emitted with the results of outbound views processing.
 
@@ -75,19 +75,19 @@ Emitted with the results of outbound views processing.
 :kwarg object views_info: The views information required for the "dtype" data format.
 '''
 
-VIEWS_FINISHED = lychee.signals.Signal(name='outbound.VIEWS_FINISHED')
+VIEWS_FINISHED = signal.Signal(name='outbound.VIEWS_FINISHED')
 '''
 Emitted after the views processing has completed for *all* data types.
 '''
 
-VIEWS_ERROR = lychee.signals.Signal(args=['msg'], name='outbound.VIEWS_ERROR')
+VIEWS_ERROR = signal.Signal(args=['msg'], name='outbound.VIEWS_ERROR')
 '''
 Emitted when there's an error while processing the outbound view.
 
 :kwarg str msg: A descriptive error message for the log file.
 '''
 
-CONVERSION_START = lychee.signals.Signal(args=['views_info', 'outbound'], name='outbound.CONVERSION_START')
+CONVERSION_START = signal.Signal(args=['views_info', 'outbound'], name='outbound.CONVERSION_START')
 '''
 Emitted to being outbound conversion. (This is emitted several times---once per data type).
 
@@ -96,19 +96,19 @@ Emitted to being outbound conversion. (This is emitted several times---once per 
 :type outbound: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
 '''
 
-CONVERSION_STARTED = lychee.signals.Signal(name='outbound.CONVERSION_STARTED')
+CONVERSION_STARTED = signal.Signal(name='outbound.CONVERSION_STARTED')
 '''
 Emitted when outbound conversion begins.
 '''
 
-CONVERSION_FINISH = lychee.signals.Signal(args=['converted'], name='outbound.CONVERSION_FINISH')
+CONVERSION_FINISH = signal.Signal(args=['converted'], name='outbound.CONVERSION_FINISH')
 '''
 Emitted with the results of an outbound conversion.
 
 :kwarg object converted: The converted document, ready for UI components.
 '''
 
-CONVERSION_FINISHED = lychee.signals.Signal(args=['dtype', 'placement', 'document'], name='outbound.CONVERSION_FINISHED')
+CONVERSION_FINISHED = signal.Signal(args=['dtype', 'placement', 'document'], name='outbound.CONVERSION_FINISHED')
 '''
 Emitted by the :class:`WorkflowManager` after all data types have been prepared, once per data type.
 Slots should pay attention to the "dtype" value to know whether they are interested in the document
@@ -128,7 +128,7 @@ formats are prepared before any :const:`CONVERSION_FINISHED` signal is emitted.
 - If ``dtype`` is ``'mei'`` then ``document`` should be an :class:`lxml.etree.Element`.
 '''
 
-CONVERSION_ERROR = lychee.signals.Signal(args=['msg'], name='outbound.CONVERSION_ERROR')
+CONVERSION_ERROR = signal.Signal(args=['msg'], name='outbound.CONVERSION_ERROR')
 '''
 Emitted when there's an error during the outbound conversion step.
 

@@ -26,10 +26,10 @@
 Signals for the "inbound" step.
 '''
 
-import lychee.signals
+from . import signal
 
 
-CONVERSION_START = lychee.signals.Signal(args=['document'], name='inbound.CONVERSION_START')
+CONVERSION_START = signal.Signal(args=['document'], name='inbound.CONVERSION_START')
 '''
 Emitted when the inbound conversion will start (i.e., this signal is emitted to cause a converter
 module to start the conversion).
@@ -38,14 +38,14 @@ module to start the conversion).
     converter module individually.
 '''
 
-CONVERSION_STARTED = lychee.signals.Signal(name='inbound.CONVERSION_STARTED')
+CONVERSION_STARTED = signal.Signal(name='inbound.CONVERSION_STARTED')
 # TODO: should this include info about the conversion started?
 '''
 Emitted as soon as the inbound conversion has started (i.e., as soon as the converter module has
 begun to process data).
 '''
 
-CONVERSION_FINISH = lychee.signals.Signal(args=['converted'], name='inbound.CONVERSION_FINISH')
+CONVERSION_FINISH = signal.Signal(args=['converted'], name='inbound.CONVERSION_FINISH')
 '''
 Emitted just before the inbound conversion finishes (i.e., emitting this signal is the last action
 of an inbound conversion module).
@@ -54,20 +54,20 @@ of an inbound conversion module).
 :type converted: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
 '''
 
-CONVERSION_FINISHED = lychee.signals.Signal(name='inbound.CONVERSION_FINISHED')
+CONVERSION_FINISHED = signal.Signal(name='inbound.CONVERSION_FINISHED')
 # TODO: should this include info about what was converted?
 '''
 Emitted when the inbound conversion is finished, before any "views" information is processed.
 '''
 
-CONVERSION_ERROR = lychee.signals.Signal(args=['msg'], name='inbound.CONVERSION_ERROR')
+CONVERSION_ERROR = signal.Signal(args=['msg'], name='inbound.CONVERSION_ERROR')
 '''
 Emitted when there's an error during the in bound conversion step.
 
 :kwarg str msg: A descriptive error message for the log file.
 '''
 
-VIEWS_START = lychee.signals.Signal(args=['dtype', 'doc', 'converted'], name='inbound.VIEWS_START')
+VIEWS_START = signal.Signal(args=['dtype', 'doc', 'converted'], name='inbound.VIEWS_START')
 '''
 Emitted when the inbound view processing will start (i.e., this signal is emitted to cause the views
 module to start its bit).
@@ -79,14 +79,14 @@ module to start its bit).
 :type converted: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
 '''
 
-VIEWS_STARTED = lychee.signals.Signal(name='inbound.VIEWS_STARTED')
+VIEWS_STARTED = signal.Signal(name='inbound.VIEWS_STARTED')
 # TODO: should this include information about the view being processed?
 '''
 Emitted as soon as the views module begins its inbound processing (i.e., as soon as the views module
 has begun to process data).
 '''
 
-VIEWS_FINISH = lychee.signals.Signal(args=['views_info'], name='inbound.VIEWS_FINISH')
+VIEWS_FINISH = signal.Signal(args=['views_info'], name='inbound.VIEWS_FINISH')
 '''
 Emitted just before the views module finishes its inbound processing (i.e., just before the views
 module returns).
@@ -94,13 +94,13 @@ module returns).
 :kwarg views_info: Information about the inbound "view."
 '''
 
-VIEWS_FINISHED = lychee.signals.Signal(name='inbound.VIEWS_FINISHED')
+VIEWS_FINISHED = signal.Signal(name='inbound.VIEWS_FINISHED')
 # TODO: should this include information about the view processed?
 '''
 Emitted when the inbound views processing is finished.
 '''
 
-VIEWS_ERROR = lychee.signals.Signal(args=['msg'], name='inbound.VIEWS_ERROR')
+VIEWS_ERROR = signal.Signal(args=['msg'], name='inbound.VIEWS_ERROR')
 '''
 Emitted when there's an error while processing the inbound view.
 

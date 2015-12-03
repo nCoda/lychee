@@ -36,12 +36,7 @@ from lychee import log
 
 __all__ = ['inbound', 'document', 'vcs', 'outbound']
 
-import signalslot
-
-
-# This is a module-level FujianWebSocketHandler instance. The Signal class uses it to emit signals
-# to the GUI over the WebSocket connection.
-_module_fujian = None
+from . import signal
 
 
 def set_fujian(to_this):
@@ -49,43 +44,11 @@ def set_fujian(to_this):
     Call this with a :class:`fujian.FujianWebSocketHandler` instance. :class:`Signal` instances will
     use it to emit themselves over the WebSocket connection.
     '''
-
-    global _module_fujian
-    _module_fujian = to_this
-
-
-class Signal(signalslot.Signal):
-    '''
-    A Lychee-specific extension of the :class:`signalslot.Signal` class that emits signals through
-    the "Fujian" WebSocket server, if it's available.
-    '''
-
-    def emit(self, **kwargs):
-        '''
-        Emit the signal via Fujian if possible, then call the superclass :meth:`emit`.
-        '''
-        global _module_fujian
-        if _module_fujian is not None:
-            payload = {'signal': self.name}
-            for arg in self.args:
-                if arg in kwargs:
-                    if isinstance(kwargs[arg], etree._Element):
-                        payload[arg] = etree.tostring(kwargs[arg])
-                    else:
-                        payload[arg] = six.text_type(kwargs[arg])
-                else:
-                    log('Missing "{}" arg for "{}" signal'.format(arg, self.name))
-
-            try:
-                _module_fujian.write_message(payload)
-            except AttributeError:
-                # TODO: something useful?
-                pass
-
-        signalslot.Signal.emit(self, **kwargs)
+    from . import signal
+    signal.set_fujian(to_this)
 
 
-ACTION_START = Signal(args=['dtype', 'doc'], name='ACTION_START')
+ACTION_START = signal.Signal(args=['dtype', 'doc'], name='ACTION_START')
 '''
 Emit this signal to start an "action" through Lychee.
 
@@ -99,7 +62,8 @@ def action_starter(dtype, doc, **kwargs):
     '''
     Default connection for the ACTION_START signal.
     '''
-    # NB: workflow imported here because, in the main module, it would cause circular import probs
+    # TODO: move this function definition and its signal connection to lychee.__init__
+    # NB: workflow imported here because, in the main module, it would cause a circular import
     from . import workflow
     workm = workflow.WorkflowManager(dtype, doc)
     workm.run()

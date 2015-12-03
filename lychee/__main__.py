@@ -64,22 +64,12 @@ def mei_through_verovio(dtype, placement, document, **kwargs):
     :const:`outbound.CONVERSION_FINISHED` signal.
     '''
 
-    if 'mei' != dtype:
+    if 'verovio' != dtype:
         return
 
-    # Verovio can only deal with MEI as the default namespace, which "lxml" doesn like to output,
-    # so this weird hack removes the MEI namespace prefix from all the tag names.
-    output_filename = 'testrepo/mei_for_verovio.xml'
-    document.set('xmlns', _MEINS_URL)
-    for elem in document.iter():
-        elem.tag = elem.tag.replace(_MEINS, '')
+    with open('testrepo/verovio_output', 'w') as the_file:
+        the_file.write(document)
 
-    # then we'll just make an ElementTree and output it
-    chree = etree.ElementTree(document)
-    chree.write_c14n(output_filename, exclusive=False, inclusive_ns_prefixes=['mei'])
-    #chree.write(output_filename, encoding='UTF-8', xml_declaration=True, pretty_print=True)
-
-    # and call Verovio!
     subprocess.call(['verovio', '-f', 'mei', '-o', 'testrepo/verovio_output', output_filename])
 
 #outbound.WHO_IS_LISTENING.connect(abj_listener)

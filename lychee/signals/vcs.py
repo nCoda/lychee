@@ -55,52 +55,85 @@ This signal is emitted by the ``lychee.vcs`` module when the VCS system will be 
 the configuration system.
 '''
 
-PREINIT = signal.Signal(name='vcs.PREINIT')
+PREINIT = signal.Signal(name='vcs.PREINIT', args=['repodir'])
 '''
 This signal is emitted before initializing a new repository.
+
+:kwarg repodir: The directory to the repository that will be initialized.
+:type repodir: str
 '''
 
-INIT = signal.Signal(name='vcs.INIT')
+INIT = signal.Signal(name='vcs.INIT', args=['repodir'])
 '''
 This signal is emitted to cause a repository initialization. Such initialization may consist either
-of creating a new, empty local repository, or of cloning a remote repository.
+of creating a new, empty local repository, of cloning a remote repository, or otherwise initializing
+an existing repository.
+
+.. note:: This signal is emitted before every :const:`ADD` and :const:`COMMIT`, so VCS implementation
+    modules (1) can and should use this signal to perform any initialization, rather than doing it
+    on Lychee startup; and (2) must not cause any harm when this signal is emitted with a repository
+    that is already initialized.
+
+:kwarg repodir: The directory to the repository that will be initialized.
+:type repodir: str
 '''
 
-POSTINIT = signal.Signal(name='vcs.POSTINIT')
+POSTINIT = signal.Signal(name='vcs.POSTINIT', args=['repodir'])
 '''
 This signal is emitted after a repository is initialized.
+
+:kwarg repodir: The directory to the repository that will be initialized.
+:type repodir: str
 '''
 
-PREADD = signal.Signal(name='vcs.PREADD')
+PREADD = signal.Signal(name='vcs.PREADD', args=['pathnames'])
 '''
 This signal is emitted before new files are added to the VCS.
+
+:kwarg pathnames: The pathnames modified for this commit.
+:type pathnames: list of str
 '''
 
-ADD = signal.Signal(name='vcs.ADD')
+ADD = signal.Signal(name='vcs.ADD', args=['pathnames'])
 '''
 This signal is emitted to cause files to be added to the VCS.
+
+:kwarg pathnames: The pathnames modified for this commit.
+:type pathnames: list of str
 '''
 
-POSTADD = signal.Signal(name='vcs.POSTADD')
+POSTADD = signal.Signal(name='vcs.POSTADD', args=['pathnames'])
 '''
 This signal is emitted after files are added to the VCS, before committing.
+
+:kwarg pathnames: The pathnames modified for this commit.
+:type pathnames: list of str
 '''
 
-PRECOMMIT = signal.Signal(name='vcs.PRECOMMIT')
+PRECOMMIT = signal.Signal(name='vcs.PRECOMMIT', args=['message'])
 '''
 This signal is emitted by the ``lychee.vcs`` module just before making a new commit.
+
+:kwarg message: An optional commit message.
+:type message: str
 '''
 
-COMMIT = signal.Signal(name='vcs.COMMIT')
+COMMIT = signal.Signal(name='vcs.COMMIT', args=['message'])
 '''
 This signal is emitted to cause a new commit.
+
+:kwarg message: An optional commit message.
+:type message: str
 '''
 
-POSTCOMMIT = signal.Signal(name='vcs.POSTCOMMIT')
+POSTCOMMIT = signal.Signal(name='vcs.POSTCOMMIT', args=['message'])
 '''
 Emitted after the commit finishes, before the FINISH signal. This signal is for other modules that
 want to do something after the commit, since only the :class:`WorkflowManager` should connect to
 the FINISH signal.
+
+:kwarg message: An optional commit message.
+:type message: str
 '''
 
 PREUPDATE_PERMANENT = signal.Signal(name='vcs.PREUPDATE_PERMANENT')

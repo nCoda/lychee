@@ -26,27 +26,36 @@
 Initialize the :mod:`vcs` module.
 '''
 
-from os import path
-import subprocess
-import time
-
 import lychee
 from lychee.signals import vcs
+from . import hg
+
+
+# TODO: (eventually [maybe]) make the implementation selection changeable
+hg.connect_signals()
 
 
 def vcs_processor(pathnames, **kwargs):
     vcs.STARTED.emit()
-    lychee.log('{}.vcs_processor(pathnames)'.format(__name__, pathnames))
+    lychee.log('{}.vcs_processor({})'.format(__name__, pathnames))
 
-    # TODO: this is going to cause problems later...
-    _, pathnames[0] = path.split(pathnames[0])
+    # TODO: we're not even close to using all the signals here!
 
-    for each_file in pathnames:
-        proc = subprocess.Popen(['hg', 'add', each_file], cwd='testrepo')
-        proc.wait()
+    # TODO: make the repodir dynamic
+    repodir = 'testrepo'
+    message = None
 
-    proc = subprocess.Popen(['hg', 'commit', '-m', '"some message {}"'.format(time.time())], cwd='testrepo')
-    proc.wait()
+    vcs.PREINIT.emit(repodir=repodir)
+    vcs.INIT.emit(repodir=repodir)
+    vcs.POSTINIT.emit(repodir=repodir)
+
+    vcs.PREADD.emit(pathnames=pathnames)
+    vcs.ADD.emit(pathnames=pathnames)
+    vcs.POSTADD.emit(pathnames=pathnames)
+
+    vcs.PRECOMMIT.emit(message=message)
+    vcs.COMMIT.emit(message=message)
+    vcs.POSTCOMMIT.emit(message=message)
 
     vcs.FINISH.emit()
     lychee.log('{}.vcs_processor() after finish signal'.format(__name__))

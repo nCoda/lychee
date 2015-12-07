@@ -29,7 +29,7 @@ Initialization for :mod:`converters` module.
 # Jeff: "Well, a universal converter is, by definition, a pretty slutty thing."
 
 __all__ = ['mei_to_ly', 'ly_to_mei', 'lmei_to_abjad', 'abjad_to_lmei', 'mei_to_lmei', 'lmei_to_mei',
-    'lmei_to_verovio', 'registrar']
+    'lmei_to_verovio', 'registrar', 'vcs_outbound']
 
 from lychee.converters import *
 # TODO: we probably don't actually want to import all of these at runtime, because each convter
@@ -37,7 +37,8 @@ from lychee.converters import *
 
 INBOUND_CONVERTERS = {'lilypond': ly_to_mei.convert,
                       'abjad': abjad_to_lmei.convert,
-                      'mei': mei_to_lmei.convert}
+                      'mei': mei_to_lmei.convert
+                     }
 '''
 Mapping from the lowercase name of an inbound converter format to the :func:`convert` function that
 converts from that format to Lychee-MEI.
@@ -46,7 +47,9 @@ converts from that format to Lychee-MEI.
 OUTBOUND_CONVERTERS = {'lilypond': mei_to_ly.convert,
                        'abjad': lmei_to_abjad.convert,
                        'mei': lmei_to_mei.convert,
-                       'verovio': lmei_to_verovio.convert}
+                       'verovio': lmei_to_verovio.convert,
+                       'vcs': vcs_outbound.convert,
+                      }
 '''
 Mapping from the lowercase name of an outbound converter format to the :func:`convert` function that
 converts from Lychee-MEI into hat format.

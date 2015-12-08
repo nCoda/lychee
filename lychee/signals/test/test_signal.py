@@ -159,3 +159,26 @@ def test_emit_with_fujian_4():
     assert sig_name == sig.name
     mock_fujian.write_message.assert_called_once_with({'signal': sig_name, 'a': exp_elem})
     slot_mock.assert_called_once_with(a=elem)
+
+def test_emit_with_fujian_5():
+    '''
+    When we have Fujian, the Signal should call write_message() and behave like a regular
+    signal (with a dict).
+    '''
+    mock_fujian = mock.Mock()
+    mock_fujian.write_message = mock.Mock()
+    signal._module_fujian = mock_fujian
+    slot_mock = mock.Mock()
+    def slot(**kwargs):
+        slot_mock(**kwargs)
+    sig_name = 'TestSignal'
+    sig = signal.Signal(name=sig_name, args=['a'])
+    sig.connect(slot)
+    the_dict = {'number': 42}
+    exp_dict = '{"number": 42}'
+
+    sig.emit(a=the_dict)
+
+    assert sig_name == sig.name
+    mock_fujian.write_message.assert_called_once_with({'signal': sig_name, 'a': exp_dict})
+    slot_mock.assert_called_once_with(a=the_dict)

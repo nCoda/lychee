@@ -26,6 +26,8 @@
 Lychee-specific Signal class.
 '''
 
+import json
+
 from lxml import etree
 import signalslot
 import six
@@ -69,6 +71,8 @@ class Signal(signalslot.Signal):
                 if arg in kwargs:
                     if isinstance(kwargs[arg], etree._Element):
                         payload[arg] = etree.tostring(kwargs[arg])
+                    elif isinstance(kwargs[arg], dict):
+                        payload[arg] = json.dumps(kwargs[arg], allow_nan=False, indent=None)
                     else:
                         payload[arg] = six.text_type(kwargs[arg])
                 else:
@@ -79,4 +83,5 @@ class Signal(signalslot.Signal):
             except AttributeError:
                 log(_INVALID_FUJIAN, 'WARN')
 
+        # NOTE: the "stringified" args are only sent through Fujian; here we keep Python objects
         signalslot.Signal.emit(self, **kwargs)

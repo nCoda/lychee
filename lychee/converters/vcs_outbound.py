@@ -104,16 +104,23 @@ def convert(document, **kwargs):
     post = {'history': [], 'users': {}, 'changesets': {}}
 
     for i in repo:
+        # get this changeset
         cset = repo[i]
 
-        post['history'].append(cset.hex())
+        # get its ID as hexadecimal string
+        cset_id = cset.hex()
 
+        # append the ID to the list of changeset order
+        post['history'].append(cset_id)
+
+        # add the ID to the author's list of changesets
         if cset.user() in post['users']:
-            post['users'][cset.user()].append(cset.hex())
+            post['users'][cset.user()].append(cset_id)
         else:
-            post['users'][cset.user()] = [cset.hex()]
+            post['users'][cset.user()] = [cset_id]
 
-        post['changesets'] = {
+        # add changeset details
+        post['changesets'][cset_id] = {
             'hash': cset.hex(),
             'user': cset.user(),
             'date': cset.date()[0],

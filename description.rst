@@ -120,6 +120,26 @@ go along; for now it involves the following characteristics:
       clarified in the future.
     - Every ``<staffDef>`` element must have an @n attribute that is the same as the corresponding
       ``<staff>`` element(s).
+- Limitations on ``<meiHead>``:
+    - All title parts must be contained in a single ``<title>`` element, and use of the @type
+      attribute is mandatory, with the possible values being those suggested by the MEI Guidelines:
+      main, subordinate, abbreviated, alternative, translated, uniform. This means every ``<meiHead>``
+      element will contain at least two ``<title>`` elements.
+    - The ``<respStmt>`` element contains ``<persName>`` elements referring to Lychee users.
+      Contributors who have not used Lychee (or a Lychee client application) should be identified
+      only with a more specific child element in the ``<titleStmt>``.
+    - The ``<persName>`` in ``<respStmt>`` should use child elements with @type="full", @type="given",
+      @type="other", and @type="family" attributes to encode name parts. Use as many as possible,
+      but only with values provided specifically by end users. That is, if a user provides only their
+      full name, it should not be automatically encoded as parts; likewise, if a user only provides
+      their name in parts, it should not be automatically encoded as a full name.
+    - The @xml:id on an outer ``<persName>`` element should simply be a UUID, and need not follow
+      the semantic @xml:id assignment scheme used for musical elements. However, this value must be
+      an NCName, and must therefore start with a letter.
+    - If the arranger, author, composer, editor, funder, librettist, lyricist, or sponsor elements
+      identify someone who is also represented in the ``<respStmt>``, then the ``<persName>`` in
+      the specific identifier should use a @nymref attribute with the @xml:id value of the
+      ``<persName>`` in the ``<respStmt>``.
 
 When this "description" document refers to a music document in an **arbitrary format**, it means the
 music document is encoded in one of the formats supported by Lychee (Abjad, LilyPond, MEI) without a

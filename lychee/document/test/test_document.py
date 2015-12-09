@@ -704,7 +704,7 @@ class TestGetPutHead(DocumentTestCase):
         Preconditions:
         - self._head missing
         - _all_files has <meiHead> with <ptr>
-        - try to load the file but it fails
+        - try to load the file but it doesn't exist
         Postconditions:
         - method raises exception
         '''
@@ -714,7 +714,29 @@ class TestGetPutHead(DocumentTestCase):
                                           attrib={'targettype': 'head', 'target': 'noexista.mei'}))
         with self.assertRaises(exceptions.HeaderNotFoundError) as hnferr:
             self.doc.get_head()
-        self.assertEqual(document._ERR_FAILED_LOADING_MEIHEAD, hnferr.exception.args[0])
+        self.assertEqual(document._ERR_MISSING_MEIHEAD, hnferr.exception.args[0])
+
+    def test_get_6(self):
+        '''
+        Preconditions:
+        - self._head missing
+        - _all_files has <meiHead> with <ptr>
+        - try to load the file but it's corrupt
+        Postconditions:
+        - method raises exception
+        '''
+        # copy the corrupt file into the repository, where get_head() expects to find it
+        filename = 'corrupt_meiHead.mei'
+        shutil.copyfile(os.path.join(os.path.split(__file__)[0], filename),
+                        os.path.join(self.repo_dir, filename))
+        self.doc._head = None
+        #
+        exp_mei_head = self.doc._all_files.find('./{}'.format(mei.MEI_HEAD))
+        exp_mei_head.append(etree.Element(mei.PTR,
+                                          attrib={'targettype': 'head', 'target': filename}))
+        with self.assertRaises(exceptions.HeaderNotFoundError) as hnferr:
+            self.doc.get_head()
+        self.assertEqual(document._ERR_CORRUPT_MEIHEAD, hnferr.exception.args[0])
 
     def test_put_1(self):
         '''

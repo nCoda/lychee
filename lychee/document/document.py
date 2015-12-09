@@ -128,7 +128,8 @@ from lychee.namespaces import mei, xlink, xml
 # translatable strings
 _SECTION_NOT_FOUND = 'Could not load <section xml:id="{xmlid}">'
 _ERR_MISSING_MEIHEAD = 'missing <meiHead> element in "all_files"'
-_ERR_FAILED_LOADING_MEIHEAD = 'failed to load <meiHead> file'
+_ERR_MISSING_MEIHEAD = 'File with <meiHead> is missing.'
+_ERR_CORRUPT_MEIHEAD = 'File with <meiHead> is inavlid.'
 _ERR_MISSING_REPO_PATH = 'This Document is not using external files.'
 _ERR_MISSING_FILE = 'Could not load indicated file.'
 _PUBSTMT_DEFAULT_CONTENTS = 'This is an unpublished Lychee-MEI document.'
@@ -533,10 +534,11 @@ class Document(object):
             else:
                 # otherwise we can load the file specified in the <ptr>
                 try:
-                    # TODO: use _load_in() for this
-                    self._head = etree.parse(ptr.get('target', default='')).getroot()
-                except (OSError, IOError):
-                    raise exceptions.HeaderNotFoundError(_ERR_FAILED_LOADING_MEIHEAD)
+                    self._head = _load_in(os.path.join(self._repo_path, ptr.get('target'))).getroot()
+                except exceptions.FileNotFoundError:
+                    raise exceptions.HeaderNotFoundError(_ERR_MISSING_MEIHEAD)
+                except exceptions.InvalidFileError:
+                    raise exceptions.HeaderNotFoundError(_ERR_CORRUPT_MEIHEAD)
 
         return self._head
 

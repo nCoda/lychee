@@ -352,6 +352,9 @@ class Document(object):
     a :obj:`with` statement). This way, you cannot forget to save your changes to the filesystem.
     '''
 
+    _APPROVED_HEAD_ELEMENTS = ('fileDesc', 'titleStmt', 'title', 'respStmt', 'arranger', 'author',
+        'composer', 'editor', 'funder', 'librettist', 'lyricist', 'sponsor', 'pubStmt')
+
     def __init__(self, repository_path=None):
         '''
         :param str repository_path: Path to a directory in which the files for this :class:`Document`
@@ -557,6 +560,56 @@ class Document(object):
                                                   xlink.ACTUATE: 'onRequest',
                                                   xlink.SHOW: 'embed'}))
         self._head = new_head
+
+    def get_from_head(self, what):
+        '''
+        Getter for elements in the ``<meiHead>``.
+
+        :param str what: The element name to find. See the list of valid values below.
+        :returns: The requested element, or None if it is not present.
+        :rtype: :class:`lxml.etree.Element` or NoneType
+
+        You may request the following elements:
+
+        - fileDesc
+        - titleStmt
+        - title
+        - respStmt
+        - a role (arranger, author, composer, editor, funder, librettist, lyricist, or sponsor)
+        - pubStmt
+
+        The "respStmt" child elements describe Lychee users who have edited this document, whether
+        or not they hold a more specific role.
+
+        Also note that, if a role-specific element (such as ``<composer>``) corresponds to a Lychee
+        user, the role-specific element will contain  a ``<persName>`` with a @nymref attribute
+        that holds the @xml:id value of a ``<persName>`` given in the ``<respStmt>``. For example,
+        if this work's composer is also the only person who has edited this score:
+
+        >>> etree.dump(doc.get_from_head('composer'))
+        <composer>
+            <persName nymref="#p1234"/>
+        </composer>
+        >>> etree.dump(doc.get_from_head('respStmt'))
+        <respStmt>
+            <persName xml:id="p1234">
+                <persName type="full">Danceathon Smith</persName>
+            </persName>
+        </respStmt>
+
+        .. note:: At this point in time, :meth:`get_from_head` does not raise (its own) exceptions.
+            If the "what" argument is invalid, this is treated the same as a missing element, so the
+            return value will be ``None``.
+        '''
+
+        if what in Document._APPROVED_HEAD_ELEMENTS:
+            return self.get_head().find('.//{ns}{tag}'.format(ns=mei.MEINS, tag=what))
+
+    def put_in_head(self, new_elem):
+        '''
+        As per :meth:`get_from_head`, but with setting instead.
+        '''
+        raise NotImplementedError('Document.set_in_head() is not implemented.')
 
     def get_ui(self):
         '''

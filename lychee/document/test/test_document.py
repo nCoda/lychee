@@ -1267,3 +1267,37 @@ class TestSaveLoadEverything(DocumentTestCase):
                     self.assertEqual(sections['2'], actual_section.getroot())
                 elif each_file.endswith('3.mei'):
                     self.assertEqual(sections['3'], actual_section.getroot())
+
+
+class TestGetFromPutInHead(DocumentTestCase):
+    '''
+    Tests for Document.get_from_head() and Document.put_in_head().
+    '''
+
+    def test_get_1(self):
+        '''
+        Try to "get" something that isn't approved for getting: it returns None.
+        '''
+        what = 'facePlant'
+        self.assertIsNone(self.doc.get_from_head(what))
+
+    def test_get_2(self):
+        '''
+        Try to "get" something that is approved, but not in this <meiHead>: it returns None.
+        '''
+        what = 'composer'
+        self.assertIsNone(self.doc.get_from_head(what))
+
+    def test_get_3(self):
+        '''
+        Try to "get" something that is approved and does exist: it returns that element.
+        '''
+        what = 'title'
+        etree.dump(self.doc.get_head())
+        actual = self.doc.get_from_head(what)
+        self.assertIsInstance(actual, etree._Element)
+        self.assertEqual(mei.TITLE, actual.tag)
+        actual = actual.find('./{}'.format(mei.TITLE))
+        self.assertEqual(mei.TITLE, actual.tag)
+        self.assertEqual('main', actual.get('type'))
+        self.assertEqual(document._PLACEHOLDER_TITLE, actual.text)

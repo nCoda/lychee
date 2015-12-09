@@ -650,7 +650,7 @@ class Document(object):
         if self._score is not None and _ensure_score_order(self._score, self._score_order):
             return self._score
         else:
-            score = etree.Element('{}'.format(mei.SCORE))
+            score = etree.Element(mei.SCORE)
             for xmlid in self._score_order:
                 score.append(self.get_section(xmlid))
             self._score = score

@@ -3,6 +3,17 @@
      - "test_document.py"
 -->
 <mei:meiCorpus xmlns:mei="http://www.music-encoding.org/ns/mei">
-    <mei:meiHead/>
+    <mei:meiHead xmlns:mei="http://www.music-encoding.org/ns/mei">
+        <mei:fileDesc>
+            <mei:titleStmt>
+                <mei:title>
+                    <mei:title type="main">(Untitled)</mei:title>
+                </mei:title>
+            </mei:titleStmt>
+            <mei:pubStmt>
+                <mei:unpub>This is an unpublished Lychee-MEI document.</mei:unpub>
+            </mei:pubStmt>
+        </mei:fileDesc>
+    </mei:meiHead>
     <mei:mei/>
 </mei:meiCorpus>

@@ -24,6 +24,94 @@
 #--------------------------------------------------------------------------------------------------
 '''
 Contains an object representing an MEI document.
+
+
+Metadata Currently Supported by Lychee
+--------------------------------------
+
+Here are all the metadata fields we'll support. Only the ones that say "required" are required,
+and they are included in the header returned by :func:`document._empty_head` with a placeholder.
+
+.. note:: Additional metadata will very likely be added in the future.
+
+<meiHead>
+    <fileDesc>  <!-- required -->
+        <titleStmt>  <!-- required -->
+            <!-- NB: having all title parts in a containing <title>, and using the @type attribute,
+                 are required for Lychee-MEI, and optional in standard MEI
+                 NB: the @xml:lang and @translit are optional, and their use will be specified later
+            -->
+            <title @xml:lang="??" @translit="?"> <!-- required -->
+                <title type="main"></title>  <!-- required -->
+                <title type="subordinate"></title>
+                <title type="abbreviated"></title>
+                <title type="alternative"></title>
+                <title type="translated"></title>
+                <title type="uniform"></title>
+            </title>
+            <!-- NB: the following <titleStmt> child elements are not required -->
+            <respStmt>
+                <!-- this is for users who worked on the document -->
+                <!-- users may wish to credit Abjad; translatable string -->
+                <name type="process">Abjad API for Formalized Score Control</name>
+                <persName @xml:id="p8109850029">
+                    <!-- NB: use as many of the @type="full", @type="given", @type="other", and
+                         @type="family" child elements as possible, according to what the person
+                         responsible wishes
+                         NB: the @xml:lang and @translit are optional, and their use will be specified later
+                    -->
+                    <persName type=""></persName>
+                </persName>
+            </respStmt>
+            <!-- NB: the following are what is written on the engraved score; if they correspond to
+                 a person in the <respStmt>, this should be done with a @nymref on the <persName>
+            -->
+            <arranger>
+                <!-- for an arranger who isn't a Lychee user -->
+                <persName xml:id="p12341234">
+                    <persName type="full">Robert W. Smith</persName>
+                </persName>
+            </arranger>
+            <author>
+                <!-- for an author who is a Lychee user -->
+                <persName nymref="#p8109850029"/>
+            </author>
+            <composer><persName/></composer>
+            <editor><persName/></editor>
+            <funder><persName/></funder>
+            <librettist><persName/></librettist>
+            <lyricist><persName/></lyricist>
+            <sponsor><persName/></sponsor>
+        </titleStmt>
+
+        <pubStmt>  <!-- required -->
+            <!-- NB: all Lychee scores are considered unpublished for now -->
+            <unpub>  <!-- required; text content is translatable -->
+                This is an unpublished Lychee-MEI document.
+            </unpub>
+        </pubStmt>
+    </fileDesc>
+
+    <workDesc>  <!-- (NB: not yet implemented) -->
+        <work>
+            <audience/  <!-- e.g., "beginner bands" (NB: not yet implemented) -->
+            <classification/>  <!-- like "keywords" (NB: not yet implemented) -->
+            <contents/>  <!-- a description of doc contents (NB: not yet implemented) -->
+            <context/>  <!-- socio-historical context (NB: not yet implemented) -->
+            <history/>  <!-- (NB: not yet implemented) -->
+            <key pname="" accid="" mode=""/>  <!-- (NB: not yet implemented) -->
+            <langUsage/>  <!-- related to @xml:lang elsewhere (NB: not yet implemented) -->
+            <mensuration/>  <!-- (NB: not yet implemented) -->
+            <meter count="" sym="" unit=""/>  <!--  (NB: not yet implemented) -->
+            <notesStmt/>  <!-- for score-wide notes left by users (NB: not yet implemented) -->
+            <perfMedium/>  <!-- intened performers of this version of the work (NB: not yet implemented) -->
+        </work>
+    </workDesc>
+
+    <revisionDesc>
+        <!-- TODO: implement this, coordinated with Mercurial -->
+    </revisionDesc>
+</meiHead>
 '''
 
 import os.path
@@ -37,11 +125,15 @@ from lychee import exceptions
 from lychee.namespaces import mei, xlink, xml
 
 
+# translatable strings
 _SECTION_NOT_FOUND = 'Could not load <section xml:id="{xmlid}">'
 _ERR_MISSING_MEIHEAD = 'missing <meiHead> element in "all_files"'
 _ERR_FAILED_LOADING_MEIHEAD = 'failed to load <meiHead> file'
 _ERR_MISSING_REPO_PATH = 'This Document is not using external files.'
 _ERR_MISSING_FILE = 'Could not load indicated file.'
+_PUBSTMT_DEFAULT_CONTENTS = 'This is an unpublished Lychee-MEI document.'
+_ABJAD_FULL_NAME = 'Abjad API for Formalized Score Control'
+_PLACEHOLDER_TITLE = '(Untitled)'
 
 
 def _check_xmlid_chars(xmlid):
@@ -86,7 +178,7 @@ def _make_empty_all_files(pathname):
     :rtype: :class:`lxml.etree.ElementTree`
     '''
     root = etree.Element(mei.MEI_CORPUS)
-    root.append(etree.Element(mei.MEI_HEAD))
+    root.append(_make_empty_head())
     root.append(etree.Element(mei.MEI))
     tree = etree.ElementTree(root)
     if pathname is not None:
@@ -197,6 +289,51 @@ def _make_ptr(targettype, target):
                                  xlink.SHOW: 'embed'})
 
 
+def _make_empty_head():
+    '''
+    Produce an "empty" <meiHead> element.
+
+    :returns: The <meiHead> element.
+    :rtype: :class:`lxml.etree.Element`
+
+    The output produced is not truly "empty." It contains the minimal information required:
+
+    <meiHead>
+        <fileDesc>
+            <titleStmt>
+                <title>
+                    <title type="main">(Untitled)</title>
+                </title>
+            </titleStmt>
+            <pubStmt>
+                <unpub>This is an unpublished Lychee-MEI document.</unpub>
+            </pubStmt>
+        </fileDesc>
+    </meiHead>
+    '''
+    mei_head = etree.Element(mei.MEI_HEAD)
+
+    title = mei_head.makeelement(mei.TITLE)
+    title_main = mei_head.makeelement(mei.TITLE, attrib={'type': 'main'})
+    title_main.text = _PLACEHOLDER_TITLE
+    title.append(title_main)
+    title_stmt = mei_head.makeelement(mei.TITLE_STMT)
+    title_stmt.append(title)
+
+    unpub = mei_head.makeelement(mei.UNPUB)
+    unpub.text = _PUBSTMT_DEFAULT_CONTENTS
+    pub_stmt = mei_head.makeelement(mei.PUB_STMT)
+    pub_stmt.append(unpub)
+
+    file_desc = mei_head.makeelement(mei.FILE_DESC)
+    file_desc.append(title_stmt)
+    file_desc.append(pub_stmt)
+
+    mei_head.append(file_desc)
+
+    return mei_head
+
+
 class Document(object):
     '''
     Object representing an MEI document. Use methods prefixed with ``get`` to obtain portions of
@@ -243,6 +380,7 @@ class Document(object):
         self._score_order = []
         # the <meiHead> element
         self._head = None
+        self._head = self.get_head()
 
     def __enter__(self):
         '''

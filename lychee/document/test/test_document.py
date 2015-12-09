@@ -164,6 +164,26 @@ class TestSmallThings(unittest.TestCase):
         self.assertEqual('onRequest', actual.get(xlink.ACTUATE))
         self.assertEqual('embed', actual.get(xlink.SHOW))
 
+    def test__make_empty_head(self):
+        '''
+        Thankfully, complicated though it is, _make_empty_head() only has one possible output!
+        '''
+        expected = etree.fromstring('''
+        <mei:meiHead xmlns:mei="http://www.music-encoding.org/ns/mei">
+            <mei:fileDesc>
+                <mei:titleStmt>
+                    <mei:title>
+                        <mei:title type="main">(Untitled)</mei:title>
+                    </mei:title>
+                </mei:titleStmt>
+                <mei:pubStmt>
+                    <mei:unpub>This is an unpublished Lychee-MEI document.</mei:unpub>
+                </mei:pubStmt>
+            </mei:fileDesc>
+        </mei:meiHead>
+        ''')
+        self.assertEqual(expected, document._make_empty_head())
+
 
 class TestSaveAndLoad(unittest.TestCase):
     '''
@@ -434,45 +454,54 @@ class TestDocumentInit(unittest.TestCase):
         '''
         all_files_path = os.path.join(self.repo_dir, 'all_files.mei')
         document._make_empty_all_files(all_files_path)
+
         with mock.patch('lychee.document.document._make_empty_all_files') as mock_meaf:
             doc = document.Document(self.repo_dir)
+
         self.assertEqual(0, mock_meaf.call_count)
         self.assertIsInstance(doc._all_files, etree._ElementTree)
         self.assertEqual({}, doc._sections)
         self.assertIsNone(doc._score)
         self.assertEqual([], doc._score_order)
-        self.assertIsNone(doc._head)
+        self.assertIsInstance(doc._head, etree._Element)
 
-    def test_init_2(self):
+    @mock.patch('lychee.document.document.Document.get_head')
+    @mock.patch('lychee.document.document._make_empty_all_files')
+    def test_init_2(self, mock_meaf, mock_ghead):
         '''
         Repository is empty. _make_empty_all_files() is called to create a new "all_files.mei" file.
         Instance variables are initialized as expected.
         '''
         all_files_path = os.path.join(self.repo_dir, 'all_files.mei')
-        with mock.patch('lychee.document.document._make_empty_all_files') as mock_meaf:
-            mock_meaf.return_value = 'five'
-            doc = document.Document(self.repo_dir)
+        mock_ghead.return_value = 5
+
+        doc = document.Document(self.repo_dir)
+
         mock_meaf.assert_called_once_with(all_files_path)
-        self.assertEqual('five', doc._all_files)
+        self.assertEqual(mock_meaf.return_value, doc._all_files)
         self.assertEqual({}, doc._sections)
         self.assertIsNone(doc._score)
         self.assertEqual([], doc._score_order)
-        self.assertIsNone(doc._head)
+        self.assertEqual(5, doc._head)
 
-    def test_init_3(self):
+    @mock.patch('lychee.document.document.Document.get_head')
+    @mock.patch('lychee.document.document._make_empty_all_files')
+    def test_init_3(self, mock_meaf, mock_ghead):
         '''
         Repository is None. _make_empty_all_files() is called to create a new "all_files.mei" file.
         Instance variables are initialized as expected.
         '''
-        with mock.patch('lychee.document.document._make_empty_all_files') as mock_meaf:
-            mock_meaf.return_value = 'five'
-            doc = document.Document(None)
+        mock_meaf.return_value = 'five'
+        mock_ghead.return_value = 5
+
+        doc = document.Document(None)
+
         mock_meaf.assert_called_once_with(None)
         self.assertEqual('five', doc._all_files)
         self.assertEqual({}, doc._sections)
         self.assertIsNone(doc._score)
         self.assertEqual([], doc._score_order)
-        self.assertIsNone(doc._head)
+        self.assertEqual(5, doc._head)
 
     @mock.patch('lychee.document.Document.save_everything')
     def test_with_1(self, mock_save):
@@ -517,6 +546,7 @@ class DocumentTestCase(unittest.TestCase):
         Type-specific equality function for :class:`lxml.etree.Element` and
         :class:`lxml.etree.ElementTree` objects.
         '''
+        # TODO: move this to a global TestCase
         first_list = [x for x in first.iter()]
         second_list = [x for x in second.iter()]
         if len(first_list) != len(second_list):
@@ -627,6 +657,7 @@ class TestGetPutHead(DocumentTestCase):
         - method raises exception
         '''
         self.doc._all_files = etree.Element(mei.MEI_CORPUS)
+        self.doc._head = None
         with self.assertRaises(exceptions.HeaderNotFoundError) as hnferr:
             self.doc.get_head()
         self.assertEqual(document._ERR_MISSING_MEIHEAD, hnferr.exception.args[0])
@@ -655,6 +686,7 @@ class TestGetPutHead(DocumentTestCase):
         - the <meiHead> is cached
         - the <meiHead> is returned
         '''
+        self.doc._head = None
         # @ident is a marker to ensure Document.get_head() loads from the file
         mei_head = etree.Element(mei.MEI_HEAD, attrib={'ident': '42'})
         mei_head = etree.ElementTree(mei_head)
@@ -676,6 +708,7 @@ class TestGetPutHead(DocumentTestCase):
         Postconditions:
         - method raises exception
         '''
+        self.doc._head = None
         exp_mei_head = self.doc._all_files.find('./{}'.format(mei.MEI_HEAD))
         exp_mei_head.append(etree.Element(mei.PTR,
                                           attrib={'targettype': 'head', 'target': 'noexista.mei'}))
@@ -1062,9 +1095,8 @@ class TestSaveLoadEverything(DocumentTestCase):
         '''
         Integration version of test_save_template() that tests proper structure of "all_files.mei".
         '''
-        exp_listdir = ['all_files.mei']
         files = self.test_save_template_nomock()
-        self.load_n_compare('exp_all_files_1.mei', files[0])
+        self.load_n_compare('exp_all_files_6.mei', files[0])
 
     def test_save_3a(self):
         '''

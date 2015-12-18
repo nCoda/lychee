@@ -30,14 +30,9 @@ virtualenv.
     1. ``source /path/to/virtualenv/bin/activate``
 1. Update the default ``pip`` and ``setuptools``, which otherwise may not be capable of installing
    the dependencies: ``pip install -U pip setuptools``.
-1. Temporarily comment the repository-based dependencies (Abjad and Lychee) in "pip_freeze_pypy40".
+1. Install ``weakrefmethod``, a dependency of ``signalslot`` that the developers graciously omitted
+   from its ``setup.py`` file.
 1. Run ``pip install -r pip_freeze_pypy40`` to install the dependencies.
-1. Install Abjad.
-   1. Check https://pypi.python.org/pypi/Abjad to see if Abjad 2.17 has been released. If so, run
-      ``pip install Abjad`` to install it.
-   1. Otherwise clone the Abjad repository (*not* into the ``lychee`` directory) from
-      https://github.com/Abjad/abjad, checkout commit 7e3af7f66, then install it by running
-      ``pip install -e .`` in the abjad directory.
 1. Then install Lychee by running ``pip install -e .`` in the Lychee directory.
 1. Finally, run ``py.test`` in the Lychee directory to run the automated test suite, and make
    sure that nothing is broken *before* you even start developing!

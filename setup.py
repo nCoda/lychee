@@ -9,16 +9,6 @@ setup(
     version = lychee.__version__,
     packages = ['lychee'],
 
-    install_requires = [
-        'Abjad>2.17',
-        'lxml>3.4,<3.5',
-        'Mercurial>3.6,<4',
-        'mock',
-        'signalslot>0.1,<0.2',
-        'six',
-        'weakrefmethod',
-    ],
-
     # metadata for upload to PyPI
     author = 'Christopher Antila',
     author_email = 'christopher@antila.ca',

@@ -335,6 +335,43 @@ def _make_empty_head():
     return mei_head
 
 
+def _load_score_order(repo_path, all_files):
+    '''
+    Determine the proper "self._score_order" instance variable from the local repository.
+
+    :param repo_path: The repository's directory path.
+    :type repo_path: str
+    :param all_files: The "all_files" document from which to determine the score order.
+    :type all_files: :class:`lxml.etree._Element`
+    :returns: An ordered list of the @xml:id attributes of <section> elements in the active score.
+    :rtype: list of str
+    :raises: :exc:`lychee.exceptions.InvalidFileError` if the <ptr> elements are malformed
+
+    This method requires that "self._all_files" exists. If this is the default returned by
+    :func:`_make_empty_all_files`, an empty list is returned. Otherwise, the "score" <ptr> is
+    loaded, and the returned value is the @target attributes of contained <ptr> elements for
+    which @targettype="section", but without the terminating ".mei" part of the filename. In
+    other words, if the repository contains a compliant Lychee-MEI file, this method returns
+    a list of the @xml:id of <section> elements in the active score.
+    '''
+
+    score_ptr = all_files.find('./{mei}/{ptr}[@targettype="score"]'.format(mei=mei.MEI, ptr=mei.PTR))
+
+    if score_ptr is None:
+        return []
+
+    score = _load_in(os.path.join(repo_path, score_ptr.get('target'))).getroot()
+
+    sections = []
+    for ptr in score.iterfind('./{ptr}'.format(ptr=mei.PTR)):
+        if not ptr.get('target').endswith('.mei'):
+            raise exceptions.InvalidFileError(_ERR_MISSING_FILE)
+        else:
+            sections.append(ptr.get('target')[:-4])
+
+    return sections
+
+
 class Document(object):
     '''
     Object representing an MEI document. Use methods prefixed with ``get`` to obtain portions of
@@ -379,9 +416,9 @@ class Document(object):
         # @xml:id to the <section> with that id
         self._sections = {}
         # the <score> element
-        self._score = None  # TODO: remove this (it should be created "on the fly")
+        self._score = None
         # the order of <section> elements in the <score>, indicated with @xml:id
-        self._score_order = []
+        self._score_order = _load_score_order(self._repo_path, self._all_files)
         # the <meiHead> element
         self._head = None
         self._head = self.get_head()
@@ -644,9 +681,6 @@ class Document(object):
 
         Caches the returned ``<score>`` for later access.
         '''
-        # TODO: refactor so it can deal with loading the _score_order by itself
-        # TODO: refactor it to not use self._score
-
         if self._score is not None and _ensure_score_order(self._score, self._score_order):
             return self._score
         else:

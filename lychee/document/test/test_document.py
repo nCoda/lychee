@@ -184,6 +184,50 @@ class TestSmallThings(unittest.TestCase):
         ''')
         self.assertEqual(expected, document._make_empty_head())
 
+    def test__load_score_order_1(self):
+        '''
+        - check that "all_files" contains a "score" <ptr> (if not, return empty list)
+        '''
+        # NOTE: the first arg must be None, because that's what Document.__init__() will give when
+        #       the repository path is missing
+        assert [] == document._load_score_order(None, document._make_empty_all_files(None))
+
+    def test__load_score_order_2(self):
+        '''
+        - check the <ptr>s have @target that ends with ".mei" (if not raise InvalidFileError)
+        '''
+        # this automatically inserts the path to the test file
+        all_files = etree.fromstring('''
+        <mei:meiCorpus xmlns:mei="http://www.music-encoding.org/ns/mei" xmlns:xlink="http://www.w3.org/1999/xlink">
+            <mei:mei>
+                <mei:ptr target="{}" targettype="score" xlink:actuate="onRequest" xlink:show="embed"/>
+            </mei:mei>
+        </mei:meiCorpus>
+        '''.format('bad_score.mei'))
+
+        with self.assertRaises(exceptions.InvalidFileError) as ife:
+            document._load_score_order(os.path.split(__file__)[0], all_files)
+
+        assert document._ERR_MISSING_FILE == ife.exception.args[0]
+
+    def test__load_score_order_3(self):
+        '''
+        - check that all the <ptr>s' @target attributes are returned properly
+        '''
+        expected = ['1', '2', '1']
+        # this automatically inserts the path to the test file
+        all_files = etree.fromstring('''
+        <mei:meiCorpus xmlns:mei="http://www.music-encoding.org/ns/mei" xmlns:xlink="http://www.w3.org/1999/xlink">
+            <mei:mei>
+                <mei:ptr target="{}" targettype="score" xlink:actuate="onRequest" xlink:show="embed"/>
+            </mei:mei>
+        </mei:meiCorpus>
+        '''.format('exp_score_1.mei'))
+
+        actual = document._load_score_order(os.path.split(__file__)[0], all_files)
+
+        assert expected == actual
+
 
 class TestSaveAndLoad(unittest.TestCase):
     '''
@@ -472,6 +516,7 @@ class TestDocumentInit(unittest.TestCase):
         Repository is empty. _make_empty_all_files() is called to create a new "all_files.mei" file.
         Instance variables are initialized as expected.
         '''
+        mock_meaf.return_value = etree.Element(mei.MEI_CORPUS)  # so _load_score_order() won't fail
         all_files_path = os.path.join(self.repo_dir, 'all_files.mei')
         mock_ghead.return_value = 5
 
@@ -491,13 +536,13 @@ class TestDocumentInit(unittest.TestCase):
         Repository is None. _make_empty_all_files() is called to create a new "all_files.mei" file.
         Instance variables are initialized as expected.
         '''
-        mock_meaf.return_value = 'five'
+        mock_meaf.return_value = etree.Element(mei.MEI_CORPUS)  # so _load_score_order() won't fail
         mock_ghead.return_value = 5
 
         doc = document.Document(None)
 
         mock_meaf.assert_called_once_with(None)
-        self.assertEqual('five', doc._all_files)
+        self.assertEqual(mock_meaf.return_value, doc._all_files)
         self.assertEqual({}, doc._sections)
         self.assertIsNone(doc._score)
         self.assertEqual([], doc._score_order)
@@ -1315,7 +1360,6 @@ class TestGetFromPutInHead(DocumentTestCase):
         Try to "get" something that is approved and does exist: it returns that element.
         '''
         what = 'title'
-        etree.dump(self.doc.get_head())
         actual = self.doc.get_from_head(what)
         self.assertIsInstance(actual, etree._Element)
         self.assertEqual(mei.TITLE, actual.tag)

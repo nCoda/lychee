@@ -1,0 +1,6 @@
+<!-- This file is an input for the test suite ("test_document.py").
+     The <ptr> has an invalid @target, which should end with ".mei"
+-->
+<mei:score xmlns:mei="http://www.music-encoding.org/ns/mei" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <mei:ptr target="s299" targettype="section" xlink:actuate="onRequest" xlink:show="embed"/>
+</mei:score>

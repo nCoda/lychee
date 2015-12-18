@@ -58,7 +58,7 @@ and they are included in the header returned by :func:`document._empty_head` wit
                     <!-- NB: use as many of the @type="full", @type="given", @type="other", and
                          @type="family" child elements as possible, according to what the person
                          responsible wishes
-                         NB: the @xml:lang and @translit are optional, and their use will be specified later
+                         NB: the @xml:lang and @translit are optional, and will be specified later
                     -->
                     <persName type=""></persName>
                 </persName>
@@ -104,7 +104,7 @@ and they are included in the header returned by :func:`document._empty_head` wit
             <mensuration/>  <!-- (NB: not yet implemented) -->
             <meter count="" sym="" unit=""/>  <!--  (NB: not yet implemented) -->
             <notesStmt/>  <!-- for score-wide notes left by users (NB: not yet implemented) -->
-            <perfMedium/>  <!-- intened performers of this version of the work (NB: not yet implemented) -->
+            <perfMedium/>  <!-- intened performers of this version (NB: not yet implemented) -->
         </work>
     </workDesc>
 

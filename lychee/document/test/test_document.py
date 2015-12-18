@@ -26,6 +26,8 @@
 Tests for the :mod:`lychee.document.document` module.
 '''
 
+# pylint: disable=protected-access
+
 import inspect
 import os
 import os.path
@@ -132,8 +134,8 @@ class TestSmallThings(unittest.TestCase):
         # 3.) ensure the returned "actual" document is proper
         self.assertEqual(expected, actual)
         # 4.) ensure the saved document is also proper
-        actualFile = etree.parse(test_path)
-        self.assertEqual(expected, actualFile)
+        actual_file = etree.parse(test_path)
+        self.assertEqual(expected, actual_file)
 
     def test__make_empty_all_files_2(self):
         '''
@@ -361,6 +363,7 @@ class TestSaveAndLoad(unittest.TestCase):
 
         actual = document._load_in(from_here, recover)
 
+        assert expected == actual
         mock_parse.assert_called_with(from_here, mock_parser)
         mock_parser_class.assert_called_with(recover=True)
 
@@ -982,7 +985,7 @@ class TestGetPutScore(DocumentTestCase):
         Uses self.get_section() to build a new score.
         Saves the result in self._score.
         '''
-        mock_get_section.side_effect = lambda x: etree.Element(x)
+        mock_get_section.side_effect = lambda x: etree.Element(x)  # pylint: disable=unnecessary-lambda
         the_score = mock.MagicMock()
         the_order = ['one', 'two', 'three']
         self.doc._score = the_score

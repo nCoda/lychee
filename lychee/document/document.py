@@ -452,11 +452,6 @@ class Document(object):
             than just the sections currently active in the score.
         :returns: A list of the section IDs.
         :rtype: list of str
-
-        .. note:: If this :class:`Document` instance has not been fully loaded, this method may
-            return incomplete information. In particular, a :class:`Document` object's record of the
-            currently-active ``<section>`` elements will only be initialized after a call to
-            :meth:`load_everything` or :meth:`load_score`.
         '''
 
         if all_sections:

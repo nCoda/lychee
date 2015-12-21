@@ -28,10 +28,12 @@ virtualenv.
 1. Set up a virtualenv and activate it.
     1. ``virtualenv -p /path/to/pypy /path/to/virtualenv``
     1. ``source /path/to/virtualenv/bin/activate``
+1. Change into the Lychee root directory.
 1. Update the default ``pip`` and ``setuptools``, which otherwise may not be capable of installing
    the dependencies: ``pip install -U pip setuptools``.
 1. Install ``weakrefmethod``, a dependency of ``signalslot`` that the developers graciously omitted
-   from its ``setup.py`` file.
+   from its ``setup.py`` file: ``pip install weakrefmethod``. (It's an understandable mistake:
+   ``weakrefmethod`` is only required for Python 2).
 1. Run ``pip install -r pip_freeze_pypy40`` to install the dependencies.
 1. Then install Lychee by running ``pip install -e .`` in the Lychee directory.
 1. Finally, run ``py.test`` in the Lychee directory to run the automated test suite, and make
@@ -44,9 +46,12 @@ be used as a back-end for the *Julius* nCoda user interface.
 
 1. Set up a Lychee virtualenv by following the steps in the "Install for Development" section.
 1. Clone *Fujian* (*not* into the Lychee directory) from git@jameson.adjectivenoun.ca:ncoda/fujian.git
-1. Checkout the "ncoda" branch: ``git checkout ncoda``. This branch has a minor change that allows
-   Lychee to run, which should not be pushed to GitHub. (If we do accidentally push it to GitHub,
-   it's not a problem, just useless to everyone not using *Fujian* with nCoda).
+   The top-level Lychee directory and the Fujian directory should probably be siblings (that is,
+   they should be contained in the same directory).
+1. From the "fujian" directory, checkout the "ncoda" branch: ``git checkout ncoda``. This branch
+   has a minor change that allows Lychee to run, which should not be pushed to GitHub. (If we do
+   accidentally push it to GitHub, it's not a problem, just useless to everyone not using
+   *Fujian* with nCoda).
 1. Run ``pip install "tornado<5"`` (with the double quote marks) to install *Tornado*.
 1. Run ``pip install -e .`` in the ``fujian`` directory to install *Fujian*.
 

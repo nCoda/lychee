@@ -120,6 +120,7 @@ def convert(document, **kwargs):
 
     # work everything into a <section>
     section = etree.Element('{}section'.format(_MEINS))
+    section.set(_XMLID, 's' + make_id(12))
     section.append(scoreDef)
     section.append(staff)
 
@@ -139,6 +140,7 @@ def make_id(length=None):
     post = [None] * length
     for i in range(length):
         post[i] = LETTERS_AND_DIGITS[random.randrange(0, len(LETTERS_AND_DIGITS))]
+    post[0] = 'z'
     return ''.join(post)
 
 def find_lowest_of(here, these):

@@ -733,7 +733,7 @@ class Document(object):
             raise exceptions.SectionNotFoundError(_SECTION_NOT_FOUND.format(xmlid=section_id))
         else:
             try:
-                return _load_in(os.path.join(self._repo_path, section_id + '.mei'))
+                return _load_in(os.path.join(self._repo_path, section_id + '.mei')).getroot()
             except (exceptions.FileNotFoundError, exceptions.InvalidFileError):
                 raise exceptions.SectionNotFoundError(_SECTION_NOT_FOUND.format(xmlid=section_id))
 

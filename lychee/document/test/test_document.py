@@ -851,13 +851,14 @@ class TestGetPutSection(DocumentTestCase):
         In this case, it does.
         '''
         section_id = '888'
-        the_section = 'some section'
+        expected = 'some section'
+        the_section = mock.Mock()
+        the_section.getroot = mock.Mock(return_value=expected)
         mock_load_in.return_value = the_section
-        expected = the_section
 
         actual = self.doc.get_section(section_id)
 
-        self.assertEqual(expected, actual)
+        assert expected is actual
         mock_load_in.assert_called_with(os.path.join(self.repo_dir, '888.mei'))
 
     @mock.patch('lychee.document.document._load_in')

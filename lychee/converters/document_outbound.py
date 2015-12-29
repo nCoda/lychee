@@ -149,7 +149,6 @@ def format_person(person):
 
     This function accepts and returns ``None`` to help simplify functions that call it.
     '''
-    # TODO: tests
     post = {}
 
     if not isinstance(person, etree._Element):

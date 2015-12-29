@@ -67,10 +67,9 @@ import lychee
 from lychee.signals import outbound
 
 
-REPODIR = 'testrepo'  # TODO: this should be automatic somehow
+REPODIR = 'testrepo'
 
 
-# TODO: rewrite this for reduce()
 def prep_files(files):
     '''
     Given the list of files modified, prepare the output for Julius.

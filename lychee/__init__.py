@@ -47,7 +47,6 @@ def log(message, level=None):
 
     This method may cause a message to be printed to stdout or stderr or into a file.
     '''
-    # TODO: use Python's actual logging mechanism
 
     if level is None:
         level = 'debug'

@@ -62,7 +62,6 @@ def action_starter(dtype, doc, **kwargs):
     '''
     Default connection for the ACTION_START signal.
     '''
-    # TODO: move this function definition and its signal connection to lychee.__init__
     # NB: workflow imported here because, in the main module, it would cause a circular import
     from . import workflow
     workm = workflow.WorkflowManager(dtype, doc)

@@ -286,7 +286,6 @@ class WorkflowManager(object):
         '''
         Choose an inbound views function based on ??? and the conversion result.
         '''
-        # TODO: do we need this method?
         pass
 
     def _choose_outbound_converter(self, dtype):

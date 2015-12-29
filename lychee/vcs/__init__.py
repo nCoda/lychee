@@ -31,7 +31,6 @@ from lychee.signals import vcs
 from . import hg
 
 
-# TODO: (eventually [maybe]) make the implementation selection changeable
 hg.connect_signals()
 
 
@@ -39,9 +38,6 @@ def vcs_processor(pathnames, **kwargs):
     vcs.STARTED.emit()
     lychee.log('{}.vcs_processor({})'.format(__name__, pathnames))
 
-    # TODO: we're not even close to using all the signals here!
-
-    # TODO: make the repodir dynamic
     repodir = 'testrepo'
     message = None
 

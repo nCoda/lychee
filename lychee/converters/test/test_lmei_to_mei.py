@@ -174,7 +174,7 @@ class TestToMei:
     # def test_change_measure_hierarchy_4(self):
     #     '''
     #     That change_measure_hierarchy() works when one of the staves is missing the first measure.
-    #     TODO: get this to work
+    #     NOTE: see Lychee issue 19 on GitLab
     #     '''
     #     initial = [
     #         '<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">',

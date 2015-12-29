@@ -63,9 +63,6 @@ def convert(document, **kwargs):
     inbound.CONVERSION_STARTED.emit()
     lychee.log('{}.convert(document="{}")'.format(document))
 
-    # TODO: put the conversion-handling bits here
-    # TODO: CONVERS_FINISH.emit() should be called with the converted Element or ElementTree
-
     inbound.CONVERSION_FINISH.emit(converted='<l-mei stuff>')
     lychee.log('{}.convert() after finish signal'.format(__name__))
 
@@ -85,9 +82,9 @@ def convert_accidental(abjad_accidental_string):
 
 def add_xml_ids(abjad_object, mei_element):
     '''
-    
+
     Attach the same SHA256 hash digest as xml ID to both an abjad object and an mei element.
-    
+
     :param abjad_object: The abjad object to attach the ID to.
     :type abjad_object: :class:`abjad.tools.abctools.AbjadObject.AbjadObject`
     :param mei_element: The MEI Element to attach the ID to.
@@ -236,7 +233,7 @@ def empty_tuplet_to_tupletspan_element(abjad_tuplet):
     Convert an empty Abjad Tuplet or FixedDurationTuplet container to an MEI tupletspan Element.
 
     :param abjad_tuplet: the empty Abjad Tuplet container to convert.
-    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet` 
+    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
     :returns: The corresponding MEI tupletspan Element.
     :rtype: :class:`lxml.etree.ElementTree.Element`
     '''
@@ -264,7 +261,7 @@ def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
     :param mei_tupletspan: The MEI tupletspan Element to initialize.
     :type mei_tupletspan: :class:`lxml.etree.ElementTree.Element`
     :param abjad_tuplet: the Abjad Tuplet container from which to initialize.
-    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet` 
+    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
     :returns: None
     :rtype: None
     '''
@@ -288,7 +285,7 @@ def tuplet_to_tupletspan(abjad_tuplet):
     element and followed by appropriate conversions of the container's leaves.
 
     :param abjad_tuplet: The Abjad Tuplet container to convert.
-    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet` 
+    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
     :returns: the corresponding MEI tupletspan Element or list of MEI Elements.
     :rtype: :class:`lxml.etree.ElementTree.Element` or list
     '''
@@ -327,9 +324,9 @@ def tuplet_to_tupletspan(abjad_tuplet):
 
 def leaf_to_element(abjad_object):
     '''
-    
+
     Convert an arbitrary abjad leaf (Rest, Note, or Chord) into the corresponding mei Element.
-    
+
     :param abjad_object: the Abjad leaf to convert.
     :type abjad_object: :class:`abjad.tools.scoretools.Leaf.Leaf`
     :returns: the corresponding MEI Element.
@@ -346,7 +343,7 @@ def leaf_to_element(abjad_object):
 def voice_to_layer(abjad_voice):
     '''
     Convert an abjad Voice into an mei layer Element.
-    
+
     :param abjad_voice: the Abjad Voice to convert.
     :type abjad_voice: :class:`abjad.tools.scoretools.Voice.Voice`
     :returns: the corresponding MEI layer Element.
@@ -365,7 +362,7 @@ def staff_to_staff(abjad_staff):
     '''
     Convert an abjad Staff to an mei staff Element.
     Handles sibling Voice and Leaf components by flattening all into a single Voice.
-    
+
     :param abjad_staff: the Abjad Staff to convert.
     :type abjad_staff: :class:`abjad.tools.scoretools.Staff.Staff`
     :returns: the corresponding MEI Element or list of Elements.
@@ -398,7 +395,7 @@ def staff_to_staff(abjad_staff):
 def score_to_section(abjad_score):
     '''
     Convert an abjad Score into an mei section Element.
-    
+
     :param abjad_score: the Abjad Score object to convert.
     :type abjad_score: :class:`abjad.tools.scoretools.Score.Score`
     :returns: the corresponding MEI section Element.

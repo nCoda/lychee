@@ -25,7 +25,6 @@
 '''
 Converts a Lychee-MEI document to a more conventional document.
 '''
-# TODO: finish all the stuff for this module to work
 
 from lxml import etree
 
@@ -90,7 +89,6 @@ def change_measure_hierarchy(lmei_section):
     :returns: A converted <section>.
     :rtype: :class:`xml.etree.ElementTree.Element`
     '''
-    # TODO: get this to work with measures missing (or decide that LMEI can't have missing measures)
 
     section = etree.Element(mei.SECTION)
     scoreDef = lmei_section.find('.//{}'.format(mei.SCORE_DEF))

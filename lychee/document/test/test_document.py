@@ -594,7 +594,6 @@ class DocumentTestCase(unittest.TestCase):
         Type-specific equality function for :class:`lxml.etree.Element` and
         :class:`lxml.etree.ElementTree` objects.
         '''
-        # TODO: move this to a global TestCase
         first_list = [x for x in first.iter()]
         second_list = [x for x in second.iter()]
         if len(first_list) != len(second_list):

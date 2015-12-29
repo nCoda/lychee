@@ -47,8 +47,6 @@ Therefore, while it is not required to pass the "who" argument, and while there 
 where Lychee may not benefit from such disambiguation (namely "one-shot" mode) we do recommend that
 long-running applications use a "who" argument.
 '''
-# TODO: when you register a new format, Lychee should emit the most recently produced data in the
-#       newly-registered format
 
 
 UNREGISTER_FORMAT = signal.Signal(args=['dtype', 'who'], name='outbound.UNREGISTER_FORMAT')

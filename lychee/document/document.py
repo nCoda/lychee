@@ -109,7 +109,7 @@ and they are included in the header returned by :func:`document._empty_head` wit
     </workDesc>
 
     <revisionDesc>
-        <!-- TODO: implement this, coordinated with Mercurial -->
+        <!-- NB: not yet implemented -->
     </revisionDesc>
 </meiHead>
 '''
@@ -466,7 +466,7 @@ class Document(object):
 
         .. note:: Unlike the other ``get``-prefixed methods, this method returns nothing.
         '''
-        # TODO: when you write this, it should just call the other methods
+        # NB: when you write this, it should just call the other methods
         raise NotImplementedError()
 
     def save_everything(self):
@@ -753,7 +753,6 @@ class Document(object):
         xmlid = new_section.get(xml.ID)
 
         if xmlid is None:
-            # TODO: replace this with a centralized @xml:id generator when possible
             xmlid = str(time.clock())[2:]
             new_section.set(xml.ID, xmlid)
 

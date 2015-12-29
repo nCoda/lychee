@@ -7,6 +7,11 @@
 *Lychee* is copyrighted according to the terms of the GNU GPLv3+. A copy of the license is held in
 the file called "LICENSE."
 
+The *Lychee* logo is modified from a file on the
+[Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Litchi_chinensis_fruits.JPG), borrowed
+for use under the terms of the [CC-BY-SA 3](https://creativecommons.org/licenses/by-sa/3.0/deed.en)
+licence.
+
 ## Python 2 and 3; CPython and PyPy
 
 For the nCoda prototype, with a targeted launch in September 2016, we're targeting the PyPy 4.0

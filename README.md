@@ -1,6 +1,6 @@
 # Lychee
 
-*Lychee* is an MEI document manager.
+*Lychee* is an engine for MEI document management and conversion.
 
 ## License
 

@@ -115,9 +115,10 @@ and they are included in the header returned by :func:`document._empty_head` wit
 '''
 
 import os.path
-import time
+import random
 
 import six
+from six.moves import range
 
 from lxml import etree
 
@@ -370,6 +371,52 @@ def _load_score_order(repo_path, all_files):
             sections.append(ptr.get('target')[:-4])
 
     return sections
+
+
+def _seven_digits():
+    '''
+    Produce a string of seven pseudo-random digits.
+
+    :returns: A string with seven pseudo-random digits.
+    :rtype: str
+
+    .. note:: The first character will never be 0, so you can rely on the output from this function
+        being greater than or equal to one million, and strictly less than ten million.
+    '''
+    digits = '1234567890'
+    len_digits = len(digits)
+    post = [None] * 7
+    for i in range(7):
+        post[i] = digits[random.randrange(0, len_digits)]
+    post = ''.join(post)
+
+    if post[0] == '0':
+        return _seven_digits()
+    else:
+        return post
+
+
+def _check_valid_section_id(xmlid):
+    '''
+    Determine whether "xmlid" is a valid Lychee-MEI @xml:id value for a ``<section>``.
+
+    :param str xmlid: The @xml:id value to check.
+    :returns: Whether "xmlid" is valid.
+    :rtype: bool
+    '''
+    expected_startswith = 'Sme-s-m-l-e'
+    expected_len = len('Sme-s-m-l-e1234567')
+    try:
+        e_part = int(xmlid[len(expected_startswith):])
+    except ValueError:
+        return False
+
+    if ((expected_len != len(xmlid)) or
+        (not xmlid.startswith(expected_startswith)) or
+        (e_part < 1000000)):
+        return False
+
+    return True
 
 
 class Document(object):
@@ -747,13 +794,14 @@ class Document(object):
         :returns: The @xml:id of the saved ``new_section``.
         :rtype: str
 
-        .. note:: If ``new_section`` does not have an @xml:id attribute, a new one is created.
+        .. note:: If ``new_section`` is missing an @xml:id attribute, or has an invalid @xml:id
+            attribute, a new one is created.
         '''
 
         xmlid = new_section.get(xml.ID)
 
-        if xmlid is None:
-            xmlid = str(time.clock())[2:]
+        if xmlid is None or not _check_valid_section_id(xmlid):
+            xmlid = 'Sme-s-m-l-e{}'.format(_seven_digits())
             new_section.set(xml.ID, xmlid)
 
         self._sections[xmlid] = new_section

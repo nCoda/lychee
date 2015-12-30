@@ -230,6 +230,64 @@ class TestSmallThings(unittest.TestCase):
 
         assert expected == actual
 
+    def test__seven_digits(self):
+        '''
+        _seven_digits()
+        '''
+        # Statistically, ten percent of the initial strings should begin with a zero. Given that,
+        # calling _seven_digits() 100 times gives us a pretty good chance of hitting that case at
+        # least once.
+        for _ in range(100):
+            actual = document._seven_digits()
+            assert 7 == len(actual)
+            assert not actual.startswith('0')
+            assert int(actual)
+
+    def test__check_valid_section_id_1(self):
+        '''
+        _check_valid_section_id() returns True when it's valid
+        '''
+        xmlid = 'Sme-s-m-l-e1234567'
+        expected = True
+        actual = document._check_valid_section_id(xmlid)
+        assert expected == actual
+
+    def test__check_valid_section_id_2(self):
+        '''
+        _check_valid_section_id() returns False when xmlid doesn't start with the right thing.
+        '''
+        xmlid = 'S!!-s-m-l-e1234567'
+        expected = False
+        actual = document._check_valid_section_id(xmlid)
+        assert expected == actual
+
+    def test__check_valid_section_id_3(self):
+        '''
+        _check_valid_section_id() returns False when the "e part" has too many digits
+        '''
+        xmlid = 'Sme-s-m-l-e123456789'
+        expected = False
+        actual = document._check_valid_section_id(xmlid)
+        assert expected == actual
+
+    def test__check_valid_section_id_4(self):
+        '''
+        _check_valid_section_id() returns False when the "e part" is less than 1 million
+        '''
+        xmlid = 'Sme-s-m-l-e0012345'
+        expected = False
+        actual = document._check_valid_section_id(xmlid)
+        assert expected == actual
+
+    def test__check_valid_section_id_5(self):
+        '''
+        _check_valid_section_id() returns False when the "e part" isn't an integer
+        '''
+        xmlid = 'Sme-s-m-l-e123gg67'
+        expected = False
+        actual = document._check_valid_section_id(xmlid)
+        assert expected == actual
+
 
 class TestSaveAndLoad(unittest.TestCase):
     '''
@@ -906,7 +964,7 @@ class TestGetPutSection(DocumentTestCase):
         '''
         When there's already an @xml:id, it's used just fine.
         '''
-        xmlid = '888'
+        xmlid = 'Sme-s-m-l-e8888888'
         section = etree.Element(mei.SECTION, attrib={xml.ID: xmlid})
         actual = self.doc.put_section(section)
         self.assertEqual(xmlid, actual)
@@ -918,8 +976,23 @@ class TestGetPutSection(DocumentTestCase):
         '''
         # use the @marker attribute to ensure it's the same <section>
         section = etree.Element(mei.SECTION, attrib={'marker': 'crayon'})
+
         actual = self.doc.put_section(section)
-        self.assertEqual('crayon', self.doc._sections[actual].get('marker'))
+
+        assert 'crayon' == self.doc._sections[actual].get('marker')
+        assert document._check_valid_section_id(actual)
+
+    def test_put_3(self):
+        '''
+        When there's already an @xml:id, but it's invalid, a new one is created
+        '''
+        # use the @marker attribute to ensure it's the same <section>
+        section = etree.Element(mei.SECTION, attrib={xml.ID: '888', 'marker': 'crayon'})
+
+        actual = self.doc.put_section(section)
+
+        assert 'crayon' == self.doc._sections[actual].get('marker')
+        assert document._check_valid_section_id(actual)
 
 
 class TestGetPutScore(DocumentTestCase):
@@ -944,10 +1017,10 @@ class TestGetPutScore(DocumentTestCase):
         '''
         section_tag = mei.SECTION
         the_score = etree.Element(mei.SCORE)
-        the_score.append(etree.Element(section_tag, attrib={xml.ID: '123'}))
-        the_score.append(etree.Element(section_tag, attrib={xml.ID: '456'}))
-        the_score.append(etree.Element(section_tag, attrib={xml.ID: '789'}))
-        exp_xmlids = ['123', '456', '789']
+        the_score.append(etree.Element(section_tag, attrib={xml.ID: 'Sme-s-m-l-e1234567'}))
+        the_score.append(etree.Element(section_tag, attrib={xml.ID: 'Sme-s-m-l-e2345678'}))
+        the_score.append(etree.Element(section_tag, attrib={xml.ID: 'Sme-s-m-l-e3456789'}))
+        exp_xmlids = ['Sme-s-m-l-e1234567', 'Sme-s-m-l-e2345678', 'Sme-s-m-l-e3456789']
 
         actual = self.doc.put_score(the_score)
 

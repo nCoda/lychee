@@ -194,65 +194,8 @@ class WorkflowManager(object):
         self._o_dtypes = lychee.the_registrar.get_registered_formats()
         lychee.log('Currently registered outbound dtypes: {}'.format(self._o_dtypes))
 
-        # do the views processing
-        successful_dtypes = []
-        for each_dtype in self._o_dtypes:
-            outbound.VIEWS_START.emit(dtype=each_dtype)
-            if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:
-                self._status = WorkflowManager._OUTBOUND_VIEWS_STARTED
-                continue
-            elif each_dtype not in self._o_views_info:
-                lychee.log('ERROR: {} did not return outbound views info'.format(each_dtype))
-                continue
-            else:
-                successful_dtypes.append(each_dtype)
+        self._the_outbound_stuff(self._o_dtypes)
 
-        # see if everything worked
-        if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:
-            # can't happen?
-            pass
-        if len(successful_dtypes) != len(self._o_dtypes):
-            if 0 == len(successful_dtypes):
-                outbound.VIEWS_ERROR.emit(msg='No registered outbound dtypes passed through views processing')
-            else:
-                lychee.log('ERROR: some registered outbound dtypes failed views processing')
-                self._o_dtypes = successful_dtypes
-        else:
-            outbound.VIEWS_FINISHED.emit()
-
-        if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:
-            return
-        lychee.log(next_step)
-
-        # do the outbound conversion
-        successful_dtypes = []
-        for each_dtype in self._o_dtypes:
-            self._choose_outbound_converter(each_dtype)
-            self._o_running_converter = each_dtype
-            outbound.CONVERSION_START.emit(views_info=self._o_views_info[each_dtype],
-                                           document=self._converted)
-            if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_ERROR:
-                self._status = WorkflowManager._OUTBOUND_CONVERSIONS_STARTED
-                continue
-            else:
-                successful_dtypes.append(each_dtype)
-
-        # see if everything worked
-        if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_ERROR:
-            # can't happen?
-            pass
-        if len(successful_dtypes) != len(self._o_dtypes):
-            if 0 == len(successful_dtypes):
-                outbound.CONVERSION_ERROR.emit(msg='No outbound converters succeeded')
-            else:
-                lychee.log('ERROR: some registered outbound dtypes failed conversion')
-                self._o_dtypes = successful_dtypes
-
-        # emit one signal per things returned
-        for each_dtype in successful_dtypes:
-            outbound.CONVERSION_FINISHED.emit(dtype=each_dtype,
-                                              placement=self._o_views_info[each_dtype],
-                                              document=self._o_converted[each_dtype])
 
     # ----
 
@@ -481,3 +424,77 @@ class WorkflowManager(object):
             lychee.log(kwargs['msg'])
         else:
             lychee.log('ERROR during outbound conversion')
+
+    # ----
+
+    def _the_outbound_stuff(self, dtypes):
+        '''
+        Do an "outbound" step for the given "dtypes."
+
+        :param dtypes: A list of the datatypes in which to produce outbound results.
+        :type dtypes: list of str
+        :raises: :exc:`RuntimeError` when something went wrong
+        '''
+        # TODO: use better exceptions when you rewrite the workflow stuff
+        next_step = '(WorkflowManager continues to the next step)\n------------------------------------------\n'
+
+        # do the views processing
+        successful_dtypes = []
+        for each_dtype in self._o_dtypes:
+            outbound.VIEWS_START.emit(dtype=each_dtype)
+            if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:
+                self._status = WorkflowManager._OUTBOUND_VIEWS_STARTED
+                continue
+            elif each_dtype not in self._o_views_info:
+                lychee.log('ERROR: {} did not return outbound views info'.format(each_dtype))
+                continue
+            else:
+                successful_dtypes.append(each_dtype)
+
+        # see if everything worked
+        if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:
+            # can't happen?
+            pass
+        if len(successful_dtypes) != len(self._o_dtypes):
+            if 0 == len(successful_dtypes):
+                outbound.VIEWS_ERROR.emit(msg='No registered outbound dtypes passed through views processing')
+            else:
+                lychee.log('ERROR: some registered outbound dtypes failed views processing')
+                self._o_dtypes = successful_dtypes
+        else:
+            outbound.VIEWS_FINISHED.emit()
+
+        if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:
+            # TODO: you can't even do this, because you'll ruin it for all the other dtypes that worked!
+            raise RuntimeError('Error during outbound views.')
+        lychee.log(next_step)
+
+        # do the outbound conversion
+        successful_dtypes = []
+        for each_dtype in self._o_dtypes:
+            self._choose_outbound_converter(each_dtype)
+            self._o_running_converter = each_dtype
+            outbound.CONVERSION_START.emit(views_info=self._o_views_info[each_dtype],
+                                           document=self._converted)
+            if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_ERROR:
+                self._status = WorkflowManager._OUTBOUND_CONVERSIONS_STARTED
+                continue
+            else:
+                successful_dtypes.append(each_dtype)
+
+        # see if everything worked
+        if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_ERROR:
+            # can't happen?
+            pass
+        if len(successful_dtypes) != len(self._o_dtypes):
+            if 0 == len(successful_dtypes):
+                outbound.CONVERSION_ERROR.emit(msg='No outbound converters succeeded')
+            else:
+                lychee.log('ERROR: some registered outbound dtypes failed conversion')
+                self._o_dtypes = successful_dtypes
+
+        # emit one signal per things returned
+        for each_dtype in successful_dtypes:
+            outbound.CONVERSION_FINISHED.emit(dtype=each_dtype,
+                                              placement=self._o_views_info[each_dtype],
+                                              document=self._o_converted[each_dtype])

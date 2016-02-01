@@ -68,3 +68,7 @@ from any directory.
 ## Install for Deployment
 
 Don't. It's not ready yet!
+
+## Troubleshooting
+
+If you get a segfault, delete the `__pycache__` directories and try again.

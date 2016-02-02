@@ -29,13 +29,17 @@ Signals for the "outbound" step.
 from . import signal
 
 
-REGISTER_FORMAT = signal.Signal(args=['dtype', 'who'], name='outbound.REGISTER_FORMAT')
+REGISTER_FORMAT = signal.Signal(args=['dtype', 'who', 'outbound'], name='outbound.REGISTER_FORMAT')
 '''
 To request that Lychee produce output data in a given format, call this signal before calling
 :const:`ACTION_START`.
 
 :kwarg str dtype: The data type to produce ('abjad', 'lilypond', 'mei', 'verovio').
 :kwarg str who: (Optional). A unique identifier for the component requesting a format.
+:kwarg bool outbound: (Optional). Whether to run an "outbound" step immediately.
+
+The "outbound" argument causes the outbound step to run immediately, producing data for the whole
+MEI document. Use this if you do not want to wait for data until an action has been run.
 
 The "who" argument helps Lychee determine how manu user interface components are expecting data in
 a given format. If three UI components call :const:`REGISTER_FORMAT` with the same "dtype" argument,

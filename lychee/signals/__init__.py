@@ -65,7 +65,7 @@ def action_starter(**kwargs):
     # NB: workflow imported here because, in the main module, it would cause a circular import
     from . import workflow
     if 'dtype' in kwargs and 'doc' in kwargs:
-        workm = workflow.WorkflowManager(dtype, doc)
+        workm = workflow.WorkflowManager(kwargs['dtype'], kwargs['doc'])
     else:
         workm = workflow.WorkflowManager()
     workm.run()

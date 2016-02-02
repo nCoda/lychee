@@ -29,6 +29,7 @@ Control the workflow progression through an "action."
 
 import lychee
 from lychee import converters
+from lychee.document import document as docModule
 from lychee.signals import inbound, document, vcs, outbound
 
 
@@ -92,18 +93,29 @@ class WorkflowManager(object):
                     (outbound.CONVERSION_ERROR, '_outbound_conversion_error'),
                    )
 
-    def __init__(self, dtype, doc, **kwargs):
+    def __init__(self, dtype=None, doc=None, **kwargs):
         self._status = WorkflowManager._PRESTART
 
         # set instance settings
+        # whether to do the "inbound" conversion step
+        self._do_inbound = False
+
         # inbound data type
-        self._i_dtype = dtype.lower()
+        self._i_dtype = None
         # inbound document
-        self._i_doc = doc  #.lower()
+        self._i_doc = None
         # inbound document after conversion
         self._converted = None
         # inbound information from the "views" module
         self._i_views = None
+
+        if dtype is not None and doc is not None:  # just in case we can lxml.Element
+            lychee.log('WorkflowManager will do a full conversion', 'debug')
+            self._do_inbound = True
+            self._i_dtype = dtype.lower()
+            self._i_doc = doc
+        else:
+            lychee.log('WorkflowManager will only do the outbound step', 'debug')
 
         # list of output "dtype" required
         self._o_dtypes = []
@@ -143,49 +155,52 @@ class WorkflowManager(object):
         '''
         next_step = '(WorkflowManager continues to the next step)\n------------------------------------------\n'
 
-        # Inbound -------------------------------------------------------------
-        if self._status is not WorkflowManager._PRESTART:
-            lychee.log('ERROR starting the action')
-            return
+        # I know it only seems to tell us whether to do the "inbound" step, but the Document and VCS
+        # steps only make sense when there was an inbound change!
+        if self._do_inbound:
+            # Inbound -------------------------------------------------------------
+            if self._status is not WorkflowManager._PRESTART:
+                lychee.log('ERROR starting the action')
+                return
 
-        self._status = WorkflowManager._INBOUND_PRECONVERSION
-        self._choose_inbound_converter()
-        inbound.CONVERSION_START.emit(document=self._i_doc)
+            self._status = WorkflowManager._INBOUND_PRECONVERSION
+            self._choose_inbound_converter()
+            inbound.CONVERSION_START.emit(document=self._i_doc)
 
-        if self._status is not WorkflowManager._INBOUND_CONVERSION_FINISHED:
-            if self._status is not WorkflowManager._INBOUND_CONVERSION_ERROR:
-                lychee.log('ERROR during inbound conversion')
-            return
-        lychee.log(next_step)
+            if self._status is not WorkflowManager._INBOUND_CONVERSION_FINISHED:
+                if self._status is not WorkflowManager._INBOUND_CONVERSION_ERROR:
+                    lychee.log('ERROR during inbound conversion')
+                return
+            lychee.log(next_step)
 
-        self._status = WorkflowManager._INBOUND_PREVIEWS
-        self._choose_inbound_views()
-        inbound.VIEWS_START.emit(dtype=self._i_dtype, doc=self._i_doc, converted=self._converted)
+            self._status = WorkflowManager._INBOUND_PREVIEWS
+            self._choose_inbound_views()
+            inbound.VIEWS_START.emit(dtype=self._i_dtype, doc=self._i_doc, converted=self._converted)
 
-        if self._status is not WorkflowManager._INBOUND_VIEWS_FINISHED:
-            lychee.log('ERROR during inbound views processing')
-            return
-        lychee.log(next_step)
+            if self._status is not WorkflowManager._INBOUND_VIEWS_FINISHED:
+                lychee.log('ERROR during inbound views processing')
+                return
+            lychee.log(next_step)
 
-        # Document ------------------------------------------------------------
-        self._status = WorkflowManager._DOCUMENT_PRESTART
-        document.START.emit(converted=self._converted)
+            # Document ------------------------------------------------------------
+            self._status = WorkflowManager._DOCUMENT_PRESTART
+            document.START.emit(converted=self._converted)
 
-        if self._status is not WorkflowManager._DOCUMENT_FINISHED:
-            if self._status is not WorkflowManager._DOCUMENT_ERROR:
-                lychee.log('ERROR during "document" step')
-            return
-        lychee.log(next_step)
+            if self._status is not WorkflowManager._DOCUMENT_FINISHED:
+                if self._status is not WorkflowManager._DOCUMENT_ERROR:
+                    lychee.log('ERROR during "document" step')
+                return
+            lychee.log(next_step)
 
-        # VCS -----------------------------------------------------------------
-        self._status = WorkflowManager._VCS_PRESTART
-        vcs.START.emit(pathnames=self._modified_pathnames)
+            # VCS -----------------------------------------------------------------
+            self._status = WorkflowManager._VCS_PRESTART
+            vcs.START.emit(pathnames=self._modified_pathnames)
 
-        if self._status is not WorkflowManager._VCS_FINISHED:
-            if self._status is not WorkflowManager._VCS_ERROR:
-                lychee.log('ERROR during "vcs" step')
-            return
-        lychee.log(next_step)
+            if self._status is not WorkflowManager._VCS_FINISHED:
+                if self._status is not WorkflowManager._VCS_ERROR:
+                    lychee.log('ERROR during "vcs" step')
+                return
+            lychee.log(next_step)
 
         # Outbound ------------------------------------------------------------
         self._status = WorkflowManager._OUTBOUND_PRESTART
@@ -464,6 +479,14 @@ class WorkflowManager(object):
         else:
             outbound.VIEWS_FINISHED.emit()
 
+        # After the "views" stuff, we know what we need to load for the outbound conversion...
+        # (for now, we have no "views" module, so that means everything).
+        convert_this = self._converted
+        if convert_this is None:
+            # ask the Document module to prepare a full <score> for us
+            doc = docModule.Document(repository_path='testrepo')
+            convert_this = doc.get_section(doc.get_section_ids()[0])
+
         if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:
             # TODO: you can't even do this, because you'll ruin it for all the other dtypes that worked!
             raise RuntimeError('Error during outbound views.')
@@ -475,7 +498,7 @@ class WorkflowManager(object):
             self._choose_outbound_converter(each_dtype)
             self._o_running_converter = each_dtype
             outbound.CONVERSION_START.emit(views_info=self._o_views_info[each_dtype],
-                                           document=self._converted)
+                                           document=convert_this)
             if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_ERROR:
                 self._status = WorkflowManager._OUTBOUND_CONVERSIONS_STARTED
                 continue

@@ -33,8 +33,9 @@ signals = lychee.signals
 outbound = lychee.signals.outbound
 # NB: it's weird, but this guarantees we won't accidentally reinitialize any of the signals
 
+# test_which_format = 'outbound only'
 test_which_format = 'lilypond'
-#test_which_format = 'abjad'
+# test_which_format = 'abjad'
 
 
 def mei_through_verovio(dtype, placement, document, **kwargs):
@@ -76,5 +77,7 @@ elif 'abjad' == test_which_format:
     tuba = Staff("c''''1 r c''''")
     score = Score([group,tuba])
     signals.ACTION_START.emit(dtype='abjad', doc=score)
+elif 'outbound only' == test_which_format:
+    signals.ACTION_START.emit()
 else:
     raise RuntimeError('you must choose a format in lychee.__main__')

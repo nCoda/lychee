@@ -76,7 +76,7 @@ class Signal(signalslot.Signal):
                     else:
                         payload[arg] = six.text_type(kwargs[arg])
                 else:
-                    log(_MISSING_ARG.format(signal=self.name, argname=arg), 'WARN')
+                    log(_MISSING_ARG.format(signal=self.name, argname=arg), 'DEBUG')
 
             try:
                 _module_fujian.write_message(payload)

@@ -26,6 +26,11 @@
 Tests for the "registrar" module.
 '''
 
+try:
+    from unittest import mock
+except ImportError:
+    import mock
+
 from lychee.converters import registrar
 
 
@@ -457,6 +462,30 @@ class TestManyDtypeWithWho(object):
         reg.unregister('verovio', '666')
         reg.unregister('lilypond', '666')
         assert [] == reg.get_registered_formats()
+
+
+class TestRegisterOutbound(object):
+    '''
+    Make sure the register() method's "outbound" argument works as advertised.
+    '''
+
+    @mock.patch('lychee.converters.registrar.signals')
+    def test_true(self, mock_signals):
+        '''
+        When the "outbound" argument is True, emit the ACTION_START signal.
+        '''
+        reg = registrar.Registrar()
+        reg.register('mei', '111', True)
+        mock_signals.ACTION_START.emit.assert_called_with()
+
+    @mock.patch('lychee.converters.registrar.signals')
+    def test_false(self, mock_signals):
+        '''
+        When the "outbound" argument is False, do not emit the ACTION_START signal.
+        '''
+        reg = registrar.Registrar()
+        reg.register('mei', '111', False)
+        assert 0 == mock_signals.ACTION_START.emit.call_count
 
 
 # Okay, I think that's far enough overboard for this module...

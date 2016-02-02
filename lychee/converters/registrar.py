@@ -32,6 +32,7 @@ module.
 import six
 
 import lychee
+from lychee import signals
 
 # translatable strings
 _DTYPE_DOES_NOT_EXIST = 'Cannot register an invalid dtype ({dtype}) for outbound conversion.'
@@ -61,12 +62,14 @@ class Registrar(object):
         ""
         self._registrations = {}
 
-    def register(self, dtype, who=None, **kwargs):
+    def register(self, dtype, who=None, outbound=False, **kwargs):
         '''
         Register a format for outbound conversion.
 
         :param str dtype: The format to register for conversion.
         :param str who: An optional identifying string.
+        :param bool outbound: An optional "True" to specify that the "ACTION_START" signal should
+            be emitted after registering the outbound format, which will run the outbound step.
 
         If ``dtype`` does not have a converter listed in :const:`lychee.converters.OUTBOUND_CONVERTERS`,
         the format will not be registered and WARN message will be written to the log.
@@ -78,6 +81,9 @@ class Registrar(object):
                 self._registrations[dtype].append(who)
         else:
             self._registrations[dtype] = [who]
+
+        if outbound:
+            signals.ACTION_START.emit()
 
     def unregister(self, dtype, who=None, **kwargs):
         '''

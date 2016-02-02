@@ -36,9 +36,6 @@ virtualenv.
 1. Change into the Lychee root directory.
 1. Update the default ``pip`` and ``setuptools``, which otherwise may not be capable of installing
    the dependencies: ``pip install -U pip setuptools``.
-1. Install ``weakrefmethod``, a dependency of ``signalslot`` that the developers graciously omitted
-   from its ``setup.py`` file: ``pip install weakrefmethod``. (It's an understandable mistake:
-   ``weakrefmethod`` is only required for Python 2).
 1. Run ``pip install -r pip_freeze_pypy40`` to install the dependencies.
 1. Then install Lychee by running ``pip install -e .`` in the Lychee directory.
 1. Finally, run ``py.test`` in the Lychee directory to run the automated test suite, and make

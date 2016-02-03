@@ -32,7 +32,7 @@ import time
 __version__ = '0.0.1'
 __all__ = ['converters', 'document', 'namespaces', 'signals', 'tui', 'vcs', 'views']
 
-DEBUG = True
+DEBUG = False
 
 
 def log(message, level=None):
@@ -50,6 +50,8 @@ def log(message, level=None):
 
     if level is None:
         level = 'debug'
+
+    level = level.lower()
 
     if 'debug' == level and not DEBUG:
         return

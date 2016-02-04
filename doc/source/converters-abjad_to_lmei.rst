@@ -1,5 +1,5 @@
 Converter: Abjad-to-LMEI
 ========================
 
-.. automodule:: lychee.converters.abjad_to_mei
+.. automodule:: lychee.converters.abjad_to_lmei
     :members:

@@ -7,5 +7,5 @@ Format Converters
 .. toctree::
     :maxdepth: 1
 
-    converters-abjad_to_mei
-    converters-mei_to_abjad
+    converters-abjad_to_lmei
+    converters-lmei_to_abjad

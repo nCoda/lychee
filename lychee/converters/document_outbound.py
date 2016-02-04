@@ -25,11 +25,11 @@
 '''
 "Converts" document metadata into an easier format for clients.
 
-NOTE: this module is likely to be rewritten, because I don't think I can accurately predict what
-    it needs to do and how.
+.. warning:: This module is likely to be rewritten, because I don't think I can accurately predict
+    what it needs to do and how.
 
 This module essentially uses the :mod:`lychee.document` module to extract metadata about the
-internal LMEI document so it may be used by UIs.
+internal LMEI document so it may be used in a user interface.
 
 Output Sample
 -------------
@@ -37,52 +37,54 @@ Output Sample
 Here is a sample of the data outputted from this module. This includes all possible values, but a
 real score is unlikely to do so.
 
-{
-    'headers': {
-        'fileDesc': {
-            'titleStmt': {
-                'title': {
-                    'main': 'This is the Main Title',
-                    'subordinate': 'This is a subtitle'
+::
+
+    {
+        'headers': {
+            'fileDesc': {
+                'titleStmt': {
+                    'title': {
+                        'main': 'This is the Main Title',
+                        'subordinate': 'This is a subtitle'
+                    }
+                },
+                'respStmt': [
+                    {
+                        'id': 'p1234',
+                        'full': 'Danceathon W. Smith',
+                        'given': 'Danceathon',
+                        'other': 'Wilfreda',
+                        'family': 'Smith'
+                    },
+                    {
+                        'id': 'p5678',
+                        'full': '卓文萱',
+                        'given': '文萱',
+                        'other': 'Genie',
+                        'family': '卓'
+                    },
+                ],
+                'arranger': {
+                    'full': 'Robert W. Smith'
+                },
+                'composer': {
+                    'id': 'p5678'
+                },
+                'author': { ... },
+                'editor': { ... },
+                'funder': { ... },
+                'librettist': { ... },
+                'lyricist': { ... },
+                'sponsor': { ... }
+                'pubStmt': {
+                    'unpub': 'This is an unpublished Lychee-MEI document.'
                 }
-            },
-            'respStmt': [
-                {
-                    'id': 'p1234',
-                    'full': 'Danceathon W. Smith',
-                    'given': 'Danceathon',
-                    'other': 'Wilfreda',
-                    'family': 'Smith'
-                },
-                {
-                    'id': 'p5678',
-                    'full': '卓文萱',
-                    'given': '文萱',
-                    'other': 'Genie',
-                    'family': '卓'
-                },
-            ],
-            'arranger': {
-                'full': 'Robert W. Smith'
-            },
-            'composer': {
-                'id': 'p5678'
-            },
-            'author': { ... },
-            'editor': { ... },
-            'funder': { ... },
-            'librettist': { ... },
-            'lyricist': { ... },
-            'sponsor': { ... }
-            'pubStmt': {
-                'unpub': 'This is an unpublished Lychee-MEI document.'
             }
+        },
+        'sections': {
+            # ??????????????
         }
-    },
-    'sections': {
-        # ??????????????
     }
-}
 
 Notes
 ^^^^^

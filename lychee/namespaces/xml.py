@@ -32,3 +32,4 @@ Constants for the "XML" namespace.
 XMLNS = '{http://www.w3.org/XML/1998/namespace}'
 
 ID = '{}id'.format(XMLNS)
+LANG = '{}lang'.format(XMLNS)

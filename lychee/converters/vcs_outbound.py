@@ -27,36 +27,39 @@
 
 Here is a sample of the data outputted from this module.
 
-{
-    # "history" is the order of changelogs leading to the current tip
-    'history': ['529003fcbb3d8394f324bbd6ccb5586101864cbb', '41962ee9069382d1fbbba5251ee0b5de99b18df6'],
-    # "users" is a dict where keys are the users responsible for a changelog leading to the current
-    #    tip, and values are a list of their changesets
-    'users': {
-        'Fortitude Johnson <strong_john@example.com>': ['529003fcbb3d8394f324bbd6ccb5586101864cbb'],
-        'Danceathon Smith <danceathon@example.com>': ['41962ee9069382d1fbbba5251ee0b5de99b18df6'],
-    },
-    # "changesets" is a dict of dicts with information about changesets
-    'changesets': {
-        '529003fcbb3d8394f324bbd6ccb5586101864cbb': {
-            'hash': '529003fcbb3d8394f324bbd6ccb5586101864cbb',
-            'user': 'Fortitude Johnson <strong_john@example.com>',
-            # "date" as a Unix timestamp in UTC...
-            # ... multiply by 1000 for JavaScript's Date.setTime()
-            'date': 1424721600.0,
-            # list of "score" and/or @xml:id of affected <section> elements
-            'files': ['score'],
-            'description': 'Add "section_B.mei" to all_files and score',
+::
+
+    {
+        # "history" is the order of changelogs leading to the current tip
+        'history': ['529003fcbb3d8394f324bbd6ccb5586101864cbb', '41962ee9069382d1fbbba5251ee0b5de99b18df6'],
+        # "users" is a dict where keys are the users responsible for a changelog leading to the current
+        #    tip, and values are a list of their changesets
+        'users': {
+            'Fortitude Johnson <strong_john@example.com>': ['529003fcbb3d8394f324bbd6ccb5586101864cbb'],
+            'Danceathon Smith <danceathon@example.com>': ['41962ee9069382d1fbbba5251ee0b5de99b18df6'],
         },
-        '41962ee9069382d1fbbba5251ee0b5de99b18df6': {
-            'hash': '41962ee9069382d1fbbba5251ee0b5de99b18df6',
-            'user': 'Danceathon Smith <danceathon@example.com>',
-            'date': 1424894400.0,
-            'files': ['270842928'],
-            'description': 'Add section C1',
-        },
+        # "changesets" is a dict of dicts with information about changesets
+        'changesets': {
+            '529003fcbb3d8394f324bbd6ccb5586101864cbb': {
+                'hash': '529003fcbb3d8394f324bbd6ccb5586101864cbb',
+                'user': 'Fortitude Johnson <strong_john@example.com>',
+                # "date" as a Unix timestamp in UTC...
+                # ... multiply by 1000 for JavaScript's Date.setTime()
+                'date': 1424721600.0,
+                # list of "score" and/or @xml:id of affected <section> elements
+                'files': ['score'],
+                'description': 'Add "section_B.mei" to all_files and score',
+            },
+            '41962ee9069382d1fbbba5251ee0b5de99b18df6': {
+                'hash': '41962ee9069382d1fbbba5251ee0b5de99b18df6',
+                'user': 'Danceathon Smith <danceathon@example.com>',
+                'date': 1424894400.0,
+                'files': ['270842928'],
+                'description': 'Add section C1',
+            },
+        }
     }
-}
+
 '''
 
 import datetime

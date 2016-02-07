@@ -7,7 +7,7 @@
 # Filename:               lychee/converters/test/test_registrar.py
 # Purpose:                Tests for the "registrar" module.
 #
-# Copyright (C) 2015 Christopher Antila
+# Copyright (C) 2015, 2016 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

@@ -650,8 +650,8 @@ class Document(object):
         Getter for elements in the ``<meiHead>``.
 
         :param str what: The element name to find. See the list of valid values below.
-        :returns: The requested element, or None if it is not present.
-        :rtype: :class:`lxml.etree.Element` or NoneType
+        :returns: A list of the requested elements.
+        :rtype: list of :class:`lxml.etree.Element`
 
         You may request the following elements:
 
@@ -670,11 +670,11 @@ class Document(object):
         that holds the @xml:id value of a ``<persName>`` given in the ``<respStmt>``. For example,
         if this work's composer is also the only person who has edited this score:
 
-        >>> etree.dump(doc.get_from_head('composer'))
+        >>> etree.dump(doc.get_from_head('composer')[0])
         <composer>
             <persName nymref="#p1234"/>
         </composer>
-        >>> etree.dump(doc.get_from_head('respStmt'))
+        >>> etree.dump(doc.get_from_head('respStmt')[0])
         <respStmt>
             <persName xml:id="p1234">
                 <persName type="full">Danceathon Smith</persName>
@@ -687,7 +687,12 @@ class Document(object):
         '''
 
         if what in Document._APPROVED_HEAD_ELEMENTS:
-            return self.get_head().find('.//{ns}{tag}'.format(ns=mei.MEINS, tag=what))
+            if 'title' == what:
+                return [self.get_head().find('.//{title}'.format(title=mei.TITLE))]
+            else:
+                return self.get_head().findall('.//{ns}{tag}'.format(ns=mei.MEINS, tag=what))
+        else:
+            return []
 
     def put_in_head(self, new_elem):
         '''

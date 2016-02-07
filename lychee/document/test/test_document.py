@@ -1419,27 +1419,46 @@ class TestGetFromPutInHead(DocumentTestCase):
 
     def test_get_1(self):
         '''
-        Try to "get" something that isn't approved for getting: it returns None.
+        Try to "get" something that isn't approved for getting: it returns an empty list.
         '''
         what = 'facePlant'
-        self.assertIsNone(self.doc.get_from_head(what))
+        assert [] == self.doc.get_from_head(what)
 
     def test_get_2(self):
         '''
-        Try to "get" something that is approved, but not in this <meiHead>: it returns None.
+        Try to "get" something that is approved, but not in this <meiHead>: it returns an empty list.
         '''
         what = 'composer'
-        self.assertIsNone(self.doc.get_from_head(what))
+        assert [] == self.doc.get_from_head(what)
 
     def test_get_3(self):
         '''
-        Try to "get" something that is approved and does exist: it returns that element.
+        Try to "get" something that is approved and does exist: it returns that element in a list.
+        '''
+        # add a "composer" element in the right spot
+        titleStmt = self.doc._head.find('.//{}'.format(mei.TITLE_STMT))
+        titleStmt.append(etree.Element(mei.COMPOSER))
+
+        what = 'composer'
+        actual = self.doc.get_from_head(what)
+
+        assert 1 == len(actual)
+        actual = actual[0]
+        assert isinstance(actual, etree._Element)
+        assert mei.COMPOSER == actual.tag
+
+    def test_get_4(self):
+        '''
+        Try to "get" the <title> element, which requires a different algorithm internally.
         '''
         what = 'title'
         actual = self.doc.get_from_head(what)
-        self.assertIsInstance(actual, etree._Element)
-        self.assertEqual(mei.TITLE, actual.tag)
+
+        assert 1 == len(actual)
+        actual = actual[0]
+        assert isinstance(actual, etree._Element)
+        assert mei.TITLE == actual.tag
         actual = actual.find('./{}'.format(mei.TITLE))
-        self.assertEqual(mei.TITLE, actual.tag)
-        self.assertEqual('main', actual.get('type'))
-        self.assertEqual(document._PLACEHOLDER_TITLE, actual.text)
+        assert mei.TITLE == actual.tag
+        assert 'main' == actual.get('type')
+        assert document._PLACEHOLDER_TITLE == actual.text

@@ -40,6 +40,7 @@ try:
 except ImportError:
     import mock
 
+import pytest
 import six
 
 from lxml import etree
@@ -365,6 +366,17 @@ class TestSaveAndLoad(unittest.TestCase):
         to_here = os.path.join(self.repo_dir, 'something.mei')
         document._save_out(elem, to_here)
         self.assertTrue(os.path.exists(to_here))
+
+    def test__save_out_4(self):
+        '''
+        Given an ElementTree, it tries to save but gets C14NError, so raises CannotSaveError.
+        '''
+        tree = mock.MagicMock(spec_set=etree._ElementTree)
+        tree.write_c14n.side_effect = etree.C14NError('lol')
+        to_here = 'whatever.mei'
+        with pytest.raises(exceptions.CannotSaveError) as err:
+            document._save_out(tree, to_here)
+        assert document._SAVE_OUT_ERROR == err.value[0]
 
     @mock.patch('lxml.etree.XMLParser')
     @mock.patch('lxml.etree.parse')

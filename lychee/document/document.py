@@ -139,6 +139,7 @@ _ERR_MISSING_FILE = 'Could not load indicated file.'
 _PUBSTMT_DEFAULT_CONTENTS = 'This is an unpublished Lychee-MEI document.'
 _ABJAD_FULL_NAME = 'Abjad API for Formalized Score Control'
 _PLACEHOLDER_TITLE = '(Untitled)'
+_SAVE_OUT_ERROR = 'Could not save an XML file (C14NError).'
 
 
 def _check_xmlid_chars(xmlid):
@@ -243,11 +244,14 @@ def _save_out(this, to_here):
     :type this: :class:`lxml.etree.Element` or :class:`lxml.etree.ElementTree`
     :param str to_here: The pathname in which to save the file.
     :returns: ``None``
-    :raises: :exc:`OSError` if something messes up
+    :raises: :exc:`lychee.exceptions.CannotSaveError` if something messes up
     '''
     if isinstance(this, etree._Element):  # pylint: disable=protected-access
         this = etree.ElementTree(this)
-    this.write_c14n(to_here)
+    try:
+        this.write_c14n(to_here)
+    except etree.C14NError:
+        raise exceptions.CannotSaveError(_SAVE_OUT_ERROR)
 
 
 def _load_in(from_here, recover=None):

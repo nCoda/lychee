@@ -7,7 +7,7 @@
 # Filename:               lychee/converters/document_outbound.py
 # Purpose:                "Converts" document metadata into an easier format for clients.
 #
-# Copyright (C) 2015 Christopher Antila
+# Copyright (C) 2015, 2016 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -113,7 +113,18 @@ from lychee.namespaces import mei, xml
 from lychee.signals import outbound
 
 
-# TODO: this should be set automatically
+# translatable strings
+# ---------------------
+# the 'label' for a <section> that doesn't have @label set
+_UNNAMED_SECTION_LABEL = '(unnamed)'
+# warning message for invalid <persName>
+_MISSING_PERS_NAME_DATA = '<persName> is missing required child elements'
+# log.warn() when prepare_headers() can't convert some elements
+_MISSING_HEADER_DATA = '{}: Some MEI header data is not exported.'.format(__name__)
+
+
+# non-translatable constants
+KNOWN_PERSNAME_TYPES = ('full', 'family', 'given', 'other')  # defined in Lychee-MEI
 TESTREPO = 'testrepo'
 
 
@@ -139,36 +150,39 @@ def convert(document, **kwargs):
         lychee.log('{}.convert() after finish signal'.format(__name__), level='debug')
 
 
-def format_person(person):
+def format_person(elem):
     '''
-    Given a ``<persName>`` :class:`Element` or ``None``, either prepare a dictionary with the
-    relevant keys and vales, or return ``None``.
+    Given a ``<persName>`` :class:`Element`, prepare it for output as a dictionary.
 
-    :param person: The ``<persName`` to convert, or ``None``.
-    :type person: :class:`lxml.etree._Element`
+    :param elem: A ``<persName>`` element to convert.
+    :type elem: :class:`lxml.etree._Element`
     :returns: The converted stuff or ``None``.
     :rtype: dict or NoneType
 
-    This function accepts and returns ``None`` to help simplify functions that call it.
+    This function also accepts ``None`` to help simplify functions that call it. The only time
+    ``None`` is returned is when ``elem`` is ``None`` to begin with.
     '''
     post = {}
 
-    if not isinstance(person, etree._Element):
+    if elem is None:
         post = None
 
-    elif person.get('nymref') is not None:
-        nymref = person.get('nymref')
+    elif elem.get('nymref') is not None:
+        nymref = elem.get('nymref')
         if nymref.startswith('#'):
             nymref = nymref[1:]
         post = {'id': nymref}
 
     else:
-        if person.get(xml.ID) is not None:
-            post['id'] = person.get(xml.ID)
-        for subElem in person:
-            # TODO: check it's a <persName> element
-            # TODO: check that @type is valid
-            post[subElem.get('type')] = subElem.text
+        if elem.get(xml.ID) is not None:
+            post['id'] = elem.get(xml.ID)
+        for person in elem.findall('./{}'.format(mei.PERS_NAME)):
+            pers_type = person.get('type')
+            if pers_type in KNOWN_PERSNAME_TYPES:
+                post[pers_type] = person.text
+
+        if len(post) < 2:
+            raise exceptions.LycheeMEIWarning(_MISSING_PERS_NAME_DATA)
 
     return post
 

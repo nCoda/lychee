@@ -36,6 +36,13 @@ class LycheeError(Exception):
     pass
 
 
+class LycheeWarning(UserWarning):
+    '''
+    Base class for all Lychee-specific warnings.
+    '''
+    pass
+
+
 class DocumentError(LycheeError):
     '''
     Generic base for errors related to the handling of Lychee's internal MEI document.
@@ -88,5 +95,27 @@ class InvalidFileError(InvalidDocumentError):
 class CannotSaveError(DocumentError):
     '''
     Error indicating the MEI document could not be saved as requested.
+    '''
+    pass
+
+
+class LycheeMEIWarning(LycheeWarning):
+    '''
+    When the Lychee-MEI specification (or MEI specification) has not been followed, so a function
+    cannot produce useful data, but the function's caller may be able to save the situation (for
+    example by continuing a file export with some data missing).
+
+    Use :class:`LycheeMEIError` correct operation is not possible.
+    '''
+    pass
+
+
+class LycheeMEIError(LycheeError):
+    '''
+    When the Lychee-MEI specification (or MEI specification) has not been followed, and correct
+    operation is not possible.
+
+    Use :class:`LycheeMEIWarning` when a function cannot produce useful data but its caller may be
+    able to correct the situation.
     '''
     pass

@@ -56,6 +56,8 @@ def mei_through_verovio(dtype, placement, document, **kwargs):
 
 
 outbound.REGISTER_FORMAT.emit(dtype='verovio', who='lychee.__main__')
+outbound.REGISTER_FORMAT.emit(dtype='vcs', who='lychee.__main__')
+outbound.REGISTER_FORMAT.emit(dtype='document', who='lychee.__main__')
 outbound.CONVERSION_FINISHED.connect(mei_through_verovio)
 
 

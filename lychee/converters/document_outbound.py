@@ -45,7 +45,9 @@ real score is unlikely to do so.
                 'titleStmt': {
                     'title': {
                         'main': 'This is the Main Title',
-                        'subordinate': 'This is a subtitle'
+                        'subordinate': 'This is a subtitle',
+                        'abbreviated': 'Main Title',
+                        'alternative': 'Sample Document for You',
                     }
                 },
                 'respStmt': [
@@ -121,10 +123,13 @@ _UNNAMED_SECTION_LABEL = '(unnamed)'
 _MISSING_PERS_NAME_DATA = '<persName> is missing required child elements'
 # log.warn() when prepare_headers() can't convert some elements
 _MISSING_HEADER_DATA = '{}: Some MEI header data is not exported.'.format(__name__)
+# warning message for invalid <titleStmt>
+_MISSING_TITLE_DATA = '<titleStmt> is missing required child elements'
 
 
 # non-translatable constants
 KNOWN_PERSNAME_TYPES = ('full', 'family', 'given', 'other')  # defined in Lychee-MEI
+KNOWN_TITLE_TYPES = ('main', 'subordinate', 'abbreviated', 'alternative')  # defined in Lychee-MEI
 TESTREPO = 'testrepo'
 
 
@@ -183,6 +188,35 @@ def format_person(elem):
 
         if len(post) < 2:
             raise exceptions.LycheeMEIWarning(_MISSING_PERS_NAME_DATA)
+
+    return post
+
+
+def format_title_stmt(elem):
+    '''
+    Given a ``<titleStmt>`` :class:`Element`, prepare it for output as a dictionary.
+
+    :param elem: A ``<titleStmt>`` element to convert.
+    :type elem: :class:`lxml.etree._Element`
+    :returns: The converted stuff or ``None``.
+    :rtype: dict or NoneType
+
+    This function also accepts ``None`` to help simplify functions that call it. The only time
+    ``None`` is returned is when ``elem`` is ``None`` to begin with.
+    '''
+    post = {}
+
+    if elem is None:
+        post = None
+
+    else:
+        for title in elem.findall('./{}'.format(mei.TITLE)):
+            title_type = title.get('type')
+            if title_type in KNOWN_TITLE_TYPES:
+                post[title_type] = title.text
+
+        if len(post) == 0:
+            raise exceptions.LycheeMEIWarning(_MISSING_TITLE_DATA)
 
     return post
 

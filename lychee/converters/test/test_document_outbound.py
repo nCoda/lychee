@@ -138,3 +138,92 @@ class TestFormatPerson(object):
         with pytest.raises(exceptions.LycheeMEIWarning) as exc:
             docout.format_person(person)
         assert docout._MISSING_PERS_NAME_DATA == exc.value[0]
+
+
+class TestFormatTitleStmt(object):
+    '''
+    Tests for document_outbound.format_title_stmt().
+    '''
+
+    def test_returns_none(self):
+        '''
+        When the argument is ``None``, format_title_stmt() should return ``None``.
+
+        But when the argument is another invalid type, ``None`` is not returned.
+        '''
+        assert docout.format_title_stmt(None) is None
+        with pytest.raises(AttributeError):
+            docout.format_title_stmt(5)
+
+    def test_full_title(self):
+        '''
+        When given a full <titleStmt> element with all valid children, it's correct.
+        '''
+        title = etree.fromstring('''
+            <mei:titleStmt xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:title type="main">Test Score in Lychee-MEI</mei:title>
+                <mei:title type="subordinate">An experiment with XML.</mei:title>
+                <mei:title type="abbreviated">Lychee-MEI Test</mei:title>
+                <mei:title type="alternative">Some Excerpts of Sibelius' Fifth Symphony</mei:title>
+            </mei:titleStmt>
+            ''')
+        expected = {
+            'main': 'Test Score in Lychee-MEI',
+            'subordinate': 'An experiment with XML.',
+            'abbreviated': 'Lychee-MEI Test',
+            'alternative': "Some Excerpts of Sibelius' Fifth Symphony",
+        }
+        actual = docout.format_title_stmt(title)
+        assert expected == actual
+
+    def test_ignore_bad_tags(self):
+        '''
+        When given <titleStmt> element with unknown children, they're ignored.
+        '''
+        title = etree.fromstring('''
+            <mei:titleStmt xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:title type="main">Test Score in Lychee-MEI</mei:title>
+                <mei:note pname="f" oct="2"/>
+            </mei:titleStmt>
+            ''')
+        expected = {'main': 'Test Score in Lychee-MEI'}
+        actual = docout.format_title_stmt(title)
+        assert expected == actual
+
+    def test_ignore_bad_type(self):
+        '''
+        When given <titleStmt> element where the child has an unknown @type, it's ignored.
+        '''
+        title = etree.fromstring('''
+            <mei:titleStmt xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:title type="main">Test Score in Lychee-MEI</mei:title>
+                <mei:title type="silly">Direct Deposit Enrolment Form</mei:title>
+            </mei:titleStmt>
+            ''')
+        expected = {'main': 'Test Score in Lychee-MEI'}
+        actual = docout.format_title_stmt(title)
+        assert expected == actual
+
+    def test_ignore_no_children_1(self):
+        '''
+        When given <titleStmt> element where the only child has an unknown @type, LycheeMEIWarning.
+        '''
+        title = etree.fromstring('''
+            <mei:titleStmt xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:title type="silly">Direct Deposit Enrolment Form</mei:title>
+            </mei:titleStmt>
+            ''')
+        with pytest.raises(exceptions.LycheeMEIWarning) as exc:
+            docout.format_title_stmt(title)
+        assert docout._MISSING_TITLE_DATA == exc.value[0]
+
+    def test_ignore_no_children_2(self):
+        '''
+        When given <titleStmt> element where there are no children, LycheeMEIWarning.
+        '''
+        title = etree.fromstring('''
+            <mei:titleStmt xmlns:mei="http://www.music-encoding.org/ns/mei"/>
+            ''')
+        with pytest.raises(exceptions.LycheeMEIWarning) as exc:
+            docout.format_title_stmt(title)
+        assert docout._MISSING_TITLE_DATA == exc.value[0]

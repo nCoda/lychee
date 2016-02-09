@@ -94,12 +94,25 @@ def convert(document, **kwargs):
     Prepare VCS data in a useful format for clients.
 
     :param document: Ignored.
-    :returns: Information from the Version Control System in the format described above.
-    :rtype: dict
     '''
     outbound.CONVERSION_STARTED.emit()
     lychee.log('{}.convert()'.format(__name__))
 
+    post = convert_helper()
+
+    outbound.CONVERSION_FINISH.emit(converted=post)
+    lychee.log('{}.convert() after finish signal'.format(__name__))
+
+
+def convert_helper():
+    '''
+    Do the actual work for :func:`convert`. This helper function exists so that the
+    :mod:`document_outbound` converter can call this converter without having to emit the
+    :const:`CONVERSION_FINISH` signal.
+
+    :returns: Information from the Version Control System in the format described above.
+    :rtype: dict
+    '''
     myui = ui.ui()
     repo = hg.repository(myui, REPODIR)
 
@@ -130,5 +143,4 @@ def convert(document, **kwargs):
             'description': cset.description(),
         }
 
-    outbound.CONVERSION_FINISH.emit(converted=post)
-    lychee.log('{}.convert() after finish signal'.format(__name__))
+    return post

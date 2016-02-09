@@ -23,13 +23,11 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 '''
-"Converts" document metadata into an easier format for clients.
+Export MEI document metadata as JSON objects.
 
-.. warning:: This module is likely to be rewritten, because I don't think I can accurately predict
-    what it needs to do and how.
+This module is only intended for use in the outbound stages, moving data about the Lychee-MEI score
+into a user interface.
 
-This module essentially uses the :mod:`lychee.document` module to extract metadata about the
-internal LMEI document so it may be used in a user interface.
 
 Output Sample
 -------------
@@ -84,12 +82,35 @@ real score is unlikely to do so.
             }
         },
         'sections': {
-            # ??????????????
+            'score_order': ['Sme-s-m-l-e1234567', 'Sme-s-m-l-e9029823'],
+            'Sme-s-m-l-e1234567': {
+                # things about the section with this "id"
+                # NOTE: many more things will be exported later
+                'label': 'A',
+                # NOTE: in <staffGrp> only @n and @label are exported at the moment
+                'staffGrp': [
+                    [{'n': '1', 'label': 'Violin I'}, {'n': '2', 'label': 'Violin II'}],
+                    {'n': '3', 'label': 'Viola'},
+                    [{'n': '4', 'label': 'Violoncello'}, {'n': '5', 'label': 'Contrabasso'}]
+                ],
+                'last_changeset': '34e92f3e7b17'
+            },
+            'Sme-s-m-l-e9029823': {
+                # things about the section with this "id"
+                # NOTE: many more things will be exported later
+                'label': 'B',
+                # NOTE: only <staffGrp> @n and @label are exported at the moment
+                'staffGrp': [
+                    [{'n': '1', 'label': 'Right Hand'}, {'n': '2', 'label': 'Left Hand'}]
+                ],
+                'last_changeset': '01d9ce76929b'
+            }
         }
     }
 
-Notes
-^^^^^
+
+Notes about Header Information
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Following Lychee-MEI, the different members of "title" may be one of the following: main, subordinate,
 abbreviated, alternative, translated, uniform. The "main" title will always be included, though it
@@ -98,17 +119,29 @@ may be a placeholder.
 The "roles" members ("arranger," "composer," and so on) refer to people. They may either use an "id"
 field to refer to a user described in the "respStmt" section, or they may contain names.
 
-While the "pubStmt" section is virtually useless as the moment (because Lychee is not aware when
+While the "pubStmt" section is virtually useless at the moment (because Lychee is not aware when
 one of its documents becomes published) it is included for completeness. It is required for a
 complete and valid MEI document.
 
 Data from the "workDesc" and "revisionDesc" MEI elements will be added later, as peers to the
 "fileDesc" member, once they are implemented in Lychee.
+
+
+Notes about Section Information
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The nesting of ``<staffGrp>`` information reflects the nesting of the original elements. The
+top-level "staffGrp" member is a list; its elements are either a dict (with at least "n" and "label"
+members) or another list (which will likewise contain dicts and lists).
+
+The ``'last_changeset'`` member holds the changeset ID of the most recent changeset in which that
+``<section>`` was modified.
 '''
 
 from lxml import etree
 
 import lychee
+from lychee.converters import vcs_outbound
 from lychee import document as documentModule
 from lychee import exceptions
 from lychee.namespaces import mei, xml
@@ -147,12 +180,20 @@ def convert(document, **kwargs):
     try:
         doc = documentModule.Document(TESTREPO)
     except exceptions.HeaderNotFoundError:
-        msg = '{} failed initializing a Document object; stopping conversion'.format(__name__)
-        outbound.CONVERSION_ERROR.emit(msg=msg)
+        outbound.CONVERSION_ERROR.emit(
+            msg='{} failed initializing a Document object; stopping conversion'.format(__name__)
+        )
     else:
         post = {'headers': prepare_headers(doc)}
-        outbound.CONVERSION_FINISH.emit(converted=post)
-        lychee.log('{}.convert() after finish signal'.format(__name__), level='debug')
+        try:
+            post['sections'] = prepare_sections(doc)
+        except exceptions.SectionNotFoundError:
+            outbound.CONVERSION_ERROR.emit(
+                msg='{} failed to load a <section>; stopping conversion'.format(__name__)
+            )
+        else:
+            outbound.CONVERSION_FINISH.emit(converted=post)
+            lychee.log('{}.convert() after finish signal'.format(__name__), level='debug')
 
 
 def format_person(elem):
@@ -230,40 +271,125 @@ def prepare_headers(doc):
     :returns: A dictionary with relevant header data.
     :rtype: dict
 
-    This function returns the "headers" dictionary described at the top of :mod:`document_outbound`.
+    This function returns the "headers" dictionary described at the top of
+    :mod:`~lychee.converters.document_outbound`.
     '''
-    # TODO: tests
 
     fileDesc = {}
 
-    titleStmt = {}
-    for elem in doc.get_from_head('title'):
-        if mei.TITLE == elem.tag:
-            titleStmt[elem.get('type')] = elem.text
-        else:
-            lychee.log('Unexpected element found in <titleStmt>: {}'.format(elem.tag), level='warning')
-    fileDesc['titleStmt'] = titleStmt
+    title_stmt = doc.get_from_head('titleStmt')
+    if title_stmt:
+        try:
+            fileDesc['titleStmt'] = format_title_stmt(title_stmt[0])
+        except exceptions.LycheeMEIWarning:
+            lychee.log(_MISSING_HEADER_DATA, level='warning')
+            fileDesc['titleStmt'] = {}
 
+    # TODO: this should be in a function
     respStmt = []
     respStmtElem = doc.get_from_head('respStmt')
-    if respStmtElem is not None:
+    if respStmtElem:
+        respStmtElem = respStmtElem[0]
         for elem in respStmtElem:
-            if mei.NAME == elem:
+            if mei.NAME == elem.tag:
                 # TODO: this may be insufficient in the long term
                 respStmt.append({'full': elem.text})
-            elif mei.PERS_NAME == elem:
-                respStmt.append(format_person(elem))
+            elif mei.PERS_NAME == elem.tag:
+                try:
+                    respStmt.append(format_person(elem))
+                except exceptions.LycheeMEIWarning:
+                    lychee.log(_MISSING_HEADER_DATA, level='warning')
             else:
                 lychee.log('Unexpected element found in <respStmt>: {}'.format(elem.tag), level='warning')
         fileDesc['respStmt'] = respStmt
 
-    roles = ('arranger', 'author', 'composer', 'editor', 'funder', 'librettist', 'lyricist', 'sponsor')
+    # TODO: this should be in a function
+    roles = ('arranger', 'author', 'composer', 'editor', 'funder', 'librettist', 'lyricist', 'sponsor')  # TODO: this should be module-level
     for role in roles:
-        result = format_person(doc.get_from_head('sponsor'))
-        if result is not None:
-            fileDesc[role] = result
+        person = doc.get_from_head(role)
+        if person:
+            # TODO: is it enough to take only the first?
+            person = person[0].find('./{}'.format(mei.PERS_NAME))
+            try:
+                fileDesc[role] = format_person(person)
+            except exceptions.LycheeMEIWarning:
+                lychee.log(_MISSING_HEADER_DATA, level='warning')
 
     pubStmt = {'unpub': 'This is an unpublished Lychee-MEI document.'}
     fileDesc['pubStmt'] = pubStmt
 
     return {'fileDesc': fileDesc}
+
+
+def parse_staffGrp(sect_id, staffGrp):
+    '''
+    '''
+    post = []
+
+    if staffGrp is None:
+        lychee.log('Section {} appears to have no staves.'.format(each_id), level='warning')
+
+    else:
+        for elem in staffGrp:
+            if mei.STAFF_GRP == elem.tag:
+                post.append(parse_staffGrp(sect_id, elem))
+            elif mei.STAFF_DEF == elem.tag:
+                post.append({'n': elem.get('n'), 'label': elem.get('label')})
+            else:
+                lychee.log('Section {} has unexpected <{}> in its <scoreDef>'.format(each_id, elem.tag), level='warning')
+
+    return post
+
+
+def find_last_changeset(section_id, revlog):
+    '''
+    Find the hash of the most changeset in which a file was modified.
+
+    :param str section_id: The @xml:id of a ``<section>``.
+    :param dict revlog: The outpuf of :func:`vcs_outbound.convert_helper`
+    :returns: The hash of the that file's last changeset.
+    :rtype: str
+
+    If the file is not found in a changeset, an empty string is returned.
+    '''
+    for cset in reversed(revlog['history']):
+        if section_id in revlog['changesets'][cset]['files']:
+            return cset
+
+    return ''
+
+
+def prepare_sections(doc):
+    '''
+    Given a :class:`Document`, prepare the "sections" portion of this module's output.
+
+    :param doc: The :class:`Document` from which to extract MEI header data.
+    :type doc: :class:`lychee.document.Document`
+    :returns: A dictionary with relevant header data.
+    :rtype: dict
+
+    This function returns the "sections" dictionary described at the top of
+    :mod:`~lychee.converters.document_outbound`.
+    '''
+
+    post = {'score_order': []}
+
+    section_ids = doc.get_section_ids()
+    vcs_data = vcs_outbound.convert_helper()
+
+    for each_id in section_ids:
+        post['score_order'].append(each_id)
+        section = doc.get_section(each_id)
+
+        sect_dict = {}
+
+        sect_dict['label'] = section.get('label', _UNNAMED_SECTION_LABEL)
+
+        staffGrp = section.find('./{}/{}'.format(mei.SCORE_DEF, mei.STAFF_GRP))
+        sect_dict['staffGrp'] = parse_staffGrp(each_id, staffGrp)
+
+        sect_dict['last_changeset'] = find_last_changeset(each_id, vcs_data)
+
+        post[each_id] = sect_dict
+
+    return post

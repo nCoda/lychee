@@ -7,7 +7,7 @@
 # Filename:               lychee/converters/mei_to_lmei.py
 # Purpose:                Converts a conventional MEI document to a Lychee-MEI document.
 #
-# Copyright (C) 2015 Christopher Antila
+# Copyright (C) 2016 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

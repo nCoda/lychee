@@ -7,7 +7,7 @@
 # Filename:               lychee/signals/document.py
 # Purpose:                Signals for the "document step."
 #
-# Copyright (C) 2015 Christopher Antila
+# Copyright (C) 2016 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

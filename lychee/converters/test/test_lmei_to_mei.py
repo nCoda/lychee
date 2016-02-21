@@ -7,7 +7,7 @@
 # Filename:               lychee/converters/test/test_lmei_to_mei.py
 # Purpose:                Tests for "lmei_to_mei.py" and "lmei_to_verovio.py"
 #
-# Copyright (C) 2015 Christopher Antila
+# Copyright (C) 2016 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

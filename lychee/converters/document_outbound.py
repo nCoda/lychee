@@ -96,14 +96,34 @@ real score is unlikely to do so.
                 'last_changeset': '34e92f3e7b17'
             },
             'Sme-s-m-l-e9029823': {
-                # things about the section with this "id"
-                # NOTE: many more things will be exported later
                 'label': 'B',
-                # NOTE: only <staffGrp> @n and @label are exported at the moment
                 'staffGrp': [
                     [{'n': '1', 'label': 'Right Hand'}, {'n': '2', 'label': 'Left Hand'}]
                 ],
                 'last_changeset': '01d9ce76929b'
+            },
+            'Sme-s-m-l-e9176572': {
+                # NOTE: this section has nested sections
+                'label': 'C',
+                'last_changeset': '8e552c8c9c2f',
+                'sections': {
+                    'score_order': ['Sme-s-m-l-e9029823', 'Sme-s-m-l-e1795937'],
+                        'Sme-s-m-l-e9029823': {
+                            # NOTE: this section is linked to the one earlier with the same @xml:id
+                            'label': 'a',
+                            'staffGrp': [
+                                [{'n': '1', 'label': 'Right Hand'}, {'n': '2', 'label': 'Left Hand'}]
+                            ],
+                            'last_changeset': '6074c498c731'
+                        },
+                        'Sme-s-m-l-e1795937': {
+                            'label': 'b',
+                            'staffGrp': [
+                                [{'n': '1', 'label': 'Right Hand'}, {'n': '2', 'label': 'Left Hand'}]
+                            ],
+                            'last_changeset': 'fac50d50a9d3'
+                        }
+                }
             }
         }
     }
@@ -326,17 +346,13 @@ def parse_staffGrp(sect_id, staffGrp):
     '''
     post = []
 
-    if staffGrp is None:
-        lychee.log('Section {} appears to have no staves.'.format(each_id), level='warning')
-
-    else:
-        for elem in staffGrp:
-            if mei.STAFF_GRP == elem.tag:
-                post.append(parse_staffGrp(sect_id, elem))
-            elif mei.STAFF_DEF == elem.tag:
-                post.append({'n': elem.get('n'), 'label': elem.get('label')})
-            else:
-                lychee.log('Section {} has unexpected <{}> in its <scoreDef>'.format(each_id, elem.tag), level='warning')
+    for elem in staffGrp:
+        if mei.STAFF_GRP == elem.tag:
+            post.append(parse_staffGrp(sect_id, elem))
+        elif mei.STAFF_DEF == elem.tag:
+            post.append({'n': elem.get('n'), 'label': elem.get('label')})
+        else:
+            lychee.log('Section {} has unexpected <{}> in its <scoreDef>'.format(sect_id, elem.tag), level='warning')
 
     return post
 
@@ -359,6 +375,45 @@ def find_last_changeset(section_id, revlog):
     return ''
 
 
+def prepare_sections_inner(doc, section_ids, vcs_data):
+    '''
+    Helper function for :func:`prepare_sections` that can be called recursively when the hierarchy
+    of ``<section>`` elements is not flat.
+
+    :param doc: The :class:`Document` from which to extract MEI header data.
+    :type doc: :class:`lychee.document.Document`
+    :param section_ids: The @xml:id attributes of the ``<section>`` elements, in score order.
+    :param vcs_data: The output of :func:`lychee.converters.vcs_outbound.convert_helper`.
+    :type vcs_data: dict
+    :type section_ids: list of str
+    :returns: A dictionary with relevant header data.
+    :rtype: dict
+
+    .. note:: Do not call this function directly; use :func:`prepare_sections`.
+    '''
+    post = {'score_order': []}
+
+    for each_id in section_ids:
+        post['score_order'].append(each_id)
+        section = doc.get_section(each_id)
+
+        sect_dict = {'label': section.get('label', _UNNAMED_SECTION_LABEL)}
+
+        staffGrp = section.find('./{}/{}'.format(mei.SCORE_DEF, mei.STAFF_GRP))
+        if staffGrp is None:
+            # this <section> contains other <section>s
+            ids = [e.get('target')[:-4] for e in section.findall('./{}'.format(mei.SECTION))]
+            sect_dict['sections'] = prepare_sections_inner(doc, ids, vcs_data)
+        else:
+            sect_dict['staffGrp'] = parse_staffGrp(each_id, staffGrp)
+
+        sect_dict['last_changeset'] = find_last_changeset(each_id, vcs_data)
+
+        post[each_id] = sect_dict
+
+    return post
+
+
 def prepare_sections(doc):
     '''
     Given a :class:`Document`, prepare the "sections" portion of this module's output.
@@ -371,25 +426,6 @@ def prepare_sections(doc):
     This function returns the "sections" dictionary described at the top of
     :mod:`~lychee.converters.document_outbound`.
     '''
-
-    post = {'score_order': []}
-
     section_ids = doc.get_section_ids()
     vcs_data = vcs_outbound.convert_helper()
-
-    for each_id in section_ids:
-        post['score_order'].append(each_id)
-        section = doc.get_section(each_id)
-
-        sect_dict = {}
-
-        sect_dict['label'] = section.get('label', _UNNAMED_SECTION_LABEL)
-
-        staffGrp = section.find('./{}/{}'.format(mei.SCORE_DEF, mei.STAFF_GRP))
-        sect_dict['staffGrp'] = parse_staffGrp(each_id, staffGrp)
-
-        sect_dict['last_changeset'] = find_last_changeset(each_id, vcs_data)
-
-        post[each_id] = sect_dict
-
-    return post
+    return prepare_sections_inner(doc, section_ids, vcs_data)

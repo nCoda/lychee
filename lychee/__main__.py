@@ -26,6 +26,7 @@
 Module that runs Lychee as a program.
 '''
 
+import json
 import subprocess
 
 import lychee
@@ -55,10 +56,23 @@ def mei_through_verovio(dtype, placement, document, **kwargs):
     subprocess.call(['verovio', '-f', 'mei', '-o', 'testrepo/verovio_output', output_filename])
 
 
+def print_outbound_json(dtype, placement, document, **kwargs):
+    '''
+    For the outbound data formats that output JSON strings, print them to the console.
+    '''
+    if dtype == 'document':
+        with open('scratch-doc_outbound.json', 'w') as the_file:
+            the_file.write(json.dumps(document, sort_keys=True, indent=4, separators=(',', ': ')))
+    elif dtype == 'vcs':
+        with open('scratch-vcs_outbound.json', 'w') as the_file:
+            the_file.write(json.dumps(document, sort_keys=True, indent=4, separators=(',', ': ')))
+
+
 outbound.REGISTER_FORMAT.emit(dtype='verovio', who='lychee.__main__')
 outbound.REGISTER_FORMAT.emit(dtype='vcs', who='lychee.__main__')
 outbound.REGISTER_FORMAT.emit(dtype='document', who='lychee.__main__')
 outbound.CONVERSION_FINISHED.connect(mei_through_verovio)
+outbound.CONVERSION_FINISHED.connect(print_outbound_json)
 
 
 # this is what starts a test "action"

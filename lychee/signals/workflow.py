@@ -29,8 +29,8 @@ Control the workflow progression through an "action."
 
 import lychee
 from lychee import converters
-from lychee.document import document as docModule
-from lychee.signals import inbound, document, vcs, outbound
+from lychee import document
+from lychee.signals import inbound, vcs, outbound
 
 
 class WorkflowManager(object):
@@ -75,10 +75,6 @@ class WorkflowManager(object):
                     (inbound.VIEWS_FINISH, '_inbound_views_finish'),
                     (inbound.VIEWS_FINISHED, '_inbound_views_finished'),
                     (inbound.VIEWS_ERROR, '_inbound_views_error'),
-                    (document.STARTED, '_document_started'),
-                    (document.FINISH, '_document_finish'),
-                    (document.FINISHED, '_document_finished'),
-                    (document.ERROR, '_document_error'),
                     (vcs.STARTED, '_vcs_started'),
                     (vcs.FINISH, '_vcs_finish'),
                     (vcs.FINISHED, '_vcs_finished'),
@@ -183,13 +179,7 @@ class WorkflowManager(object):
             lychee.log(next_step)
 
             # Document ------------------------------------------------------------
-            self._status = WorkflowManager._DOCUMENT_PRESTART
-            document.START.emit(converted=self._converted)
-
-            if self._status is not WorkflowManager._DOCUMENT_FINISHED:
-                if self._status is not WorkflowManager._DOCUMENT_ERROR:
-                    lychee.log('ERROR during "document" step')
-                return
+            self._modified_pathnames = document._document_processor(converted=self._converted)
             lychee.log(next_step)
 
             # VCS -----------------------------------------------------------------
@@ -319,37 +309,6 @@ class WorkflowManager(object):
             lychee.log(kwargs['msg'])
         else:
             lychee.log('ERROR during inbound views processing')
-
-    # ----
-
-    def _document_started(self, **kwargs):
-        lychee.log('document started')
-        self._status = WorkflowManager._DOCUMENT_STARTED
-
-    def _document_finish(self, pathnames, **kwargs):
-        lychee.log('document finishing; modified {}'.format(pathnames))
-        if self._status is WorkflowManager._DOCUMENT_STARTED:
-            if 5 is None:  # TODO: put in the appropriate arg here
-                document.ERROR.emit(msg='Document processing did not return views_info')
-            else:
-                self._modified_pathnames = pathnames
-                self._status = WorkflowManager._DOCUMENT_FINISHED
-        else:
-            lychee.log('ERROR during document processing')
-        document.FINISHED.emit()
-
-    def _document_finished(self, **kwargs):
-        '''
-        Called when document.FINISHED is emitted, for logging and debugging.
-        '''
-        lychee.log('document processing finished')
-
-    def _document_error(self, **kwargs):
-        self._status = WorkflowManager._DOCUMENT_ERROR
-        if 'msg' in kwargs:
-            lychee.log(kwargs['msg'])
-        else:
-            lychee.log('ERROR during document processing')
 
     # ----
 
@@ -484,7 +443,7 @@ class WorkflowManager(object):
         convert_this = self._converted
         if convert_this is None:
             # ask the Document module to prepare a full <score> for us
-            doc = docModule.Document(repository_path='testrepo')
+            doc = document.Document(repository_path='testrepo')
             convert_this = doc.get_section(doc.get_section_ids()[0])
 
         if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:

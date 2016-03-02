@@ -29,7 +29,6 @@ Initializes the :mod:`document` module.
 from lxml import etree
 
 import lychee
-from lychee.signals import document as document_signals
 from lychee.document.document import Document
 
 
@@ -37,7 +36,6 @@ _MEINS = '{http://www.music-encoding.org/ns/mei}'
 
 
 def _document_processor(converted, **kwargs):
-    document_signals.STARTED.emit()
     lychee.log('{}.document_processor(converted={})'.format(__name__, converted))
 
     score = etree.Element('{}score'.format(_MEINS))
@@ -47,8 +45,4 @@ def _document_processor(converted, **kwargs):
     doc.put_score(score)
     output_filenames = doc.save_everything()
 
-    document_signals.FINISH.emit(pathnames=output_filenames)
-    lychee.log('{}.document_processor() after finish signal'.format(__name__))
-
-
-document_signals.START.connect(_document_processor)
+    return output_filenames

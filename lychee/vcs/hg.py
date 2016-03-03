@@ -67,7 +67,7 @@ def init_repo(repodir, **kwargs):
     Initialize a repository in the "repodir" directory.
     '''
     global _HUG
-    _HUG = hug.Hug(repodir)
+    _HUG = hug.Hug(repodir, safe=True)
 
 
 def add(pathnames, **kwargs):

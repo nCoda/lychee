@@ -37,13 +37,12 @@ cmds.commit(myui, repo, message='')
 from os import path
 import time
 
-from mercurial import error, ui, hg, commands
+import hug
 
 from lychee.signals import vcs
 
 
-_MYUI = None
-_REPO = None
+_HUG = None  # created by init_repo()
 _SIGNALS = None  # NOTE: this is defined at the end of this module
 
 
@@ -65,35 +64,18 @@ def disconnect_signals():
 
 def init_repo(repodir, **kwargs):
     '''
-    If necessary, initialize a repository in the "repodir" directory.
+    Initialize a repository in the "repodir" directory.
     '''
-    global _MYUI
-    global _REPO
-    if _MYUI is None:
-        _MYUI = ui.ui()
-
-    repodir = path.abspath(repodir)
-
-    try:
-        _REPO = hg.repository(_MYUI, repodir)
-    except error.RepoError:
-        commands.init(_MYUI, repodir)
-        _REPO = hg.repository(_MYUI, repodir)
+    global _HUG
+    _HUG = hug.Hug(repodir)
 
 
 def add(pathnames, **kwargs):
     '''
     Given a list of pathnames, ensure they are all tracked in the repository.
     '''
-    global _MYUI
-    global _REPO
-
-    # these paths are assumed to be in the repository directory, which our "pathnames" may not be
-    unknown = _REPO.status(unknown=True).unknown
-
-    for each_path in pathnames:
-        if path.split(each_path)[1] in unknown:
-            commands.add(_MYUI, _REPO, path.abspath(each_path))
+    global _HUG
+    _HUG.add(pathnames)
 
 
 def commit(message=None, **kwargs):
@@ -105,18 +87,12 @@ def commit(message=None, **kwargs):
 
     If no commit message is supplied, a default is used.
     '''
-    global _MYUI
-    global _REPO
-
-    # don't try to commit if nothing has changed
-    stat = _REPO.status()
-    if 0 == (len(stat.added) + len(stat.deleted) + len(stat.modified) + len(stat.removed)):
-        return
+    global _HUG
 
     if message is None:
         message = 'Lychee autocommit {}'.format(time.time())
 
-    commands.commit(_MYUI, _REPO, message=message)
+    _HUG.commit(message)
 
 
 _SIGNALS = [

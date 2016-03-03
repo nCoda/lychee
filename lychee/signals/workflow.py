@@ -48,10 +48,6 @@ class WorkflowManager(object):
     _INBOUND_VIEWS_STARTED = 6
     _INBOUND_VIEWS_FINISHED = 7
     _INBOUND_VIEWS_ERROR = 8
-    _VCS_PRESTART = 300
-    _VCS_STARTED = 301
-    _VCS_FINISHED = 302
-    _VCS_ERROR = 303
     _OUTBOUND_PRESTART = 200
     _OUTBOUND_VIEWS_STARTED = 202
     _OUTBOUND_VIEWS_FINISHED = 203
@@ -71,8 +67,7 @@ class WorkflowManager(object):
                     (inbound.VIEWS_FINISH, '_inbound_views_finish'),
                     (inbound.VIEWS_FINISHED, '_inbound_views_finished'),
                     (inbound.VIEWS_ERROR, '_inbound_views_error'),
-                    (vcs.STARTED, '_vcs_started'),
-                    (vcs.FINISH, '_vcs_finish'),
+                    (vcs.START, '_vcs_driver'),
                     (vcs.FINISHED, '_vcs_finished'),
                     (vcs.ERROR, '_vcs_error'),
                     (outbound.VIEWS_STARTED, '_outbound_views_started'),
@@ -176,16 +171,13 @@ class WorkflowManager(object):
 
             # Document ------------------------------------------------------------
             self._modified_pathnames = document._document_processor(converted=self._converted)
+            vcs.FINISHED.emit()
             lychee.log(next_step)
 
             # VCS -----------------------------------------------------------------
-            self._status = WorkflowManager._VCS_PRESTART
+            # NOTE: why bother with the signal at all? Why not just call self._vcs_driver() ? Because
+            # this way we can enable/disable the VCS step by changing who's listening to vcs.START.
             vcs.START.emit(pathnames=self._modified_pathnames)
-
-            if self._status is not WorkflowManager._VCS_FINISHED:
-                if self._status is not WorkflowManager._VCS_ERROR:
-                    lychee.log('ERROR during "vcs" step')
-                return
             lychee.log(next_step)
 
         # Outbound ------------------------------------------------------------
@@ -308,20 +300,17 @@ class WorkflowManager(object):
 
     # ----
 
-    def _vcs_started(self, **kwargs):
-        lychee.log('vcs started')
-        self._status = WorkflowManager._VCS_STARTED
+    def _vcs_driver(self, pathnames, **kwargs):
+        '''
+        Slot for vcs.START that runs the "VCS step."
+        '''
+        # TODO: these must be set properly
+        repodir = 'testrepo'
+        message = None
 
-    def _vcs_finish(self, **kwargs):
-        lychee.log('vcs finishing'.format(kwargs))
-        if self._status is WorkflowManager._VCS_STARTED:
-            if 5 is None:  # TODO: put in the appropriate arg here
-                vcs.ERROR.emit(msg='Document processing did not return views_info')
-            else:
-                self._status = WorkflowManager._VCS_FINISHED
-        else:
-            lychee.log('ERROR during vcs processing')
-        vcs.FINISHED.emit()
+        vcs.INIT.emit(repodir=repodir)
+        vcs.ADD.emit(pathnames=pathnames)
+        vcs.COMMIT.emit(message=message)
 
     def _vcs_finished(self, **kwargs):
         '''

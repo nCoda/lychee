@@ -45,15 +45,17 @@ def mei_through_verovio(dtype, placement, document, **kwargs):
     :const:`outbound.CONVERSION_FINISHED` signal.
     '''
 
+    repodir = lychee.get_repo_dir()
+
     if 'verovio' != dtype:
         return
 
-    output_filename = 'testrepo/verovio_input'
+    output_filename = '{}/verovio_input'.format(repodir)
 
     with open(output_filename, 'w') as the_file:
         the_file.write(document)
 
-    subprocess.call(['verovio', '-f', 'mei', '-o', 'testrepo/verovio_output', output_filename])
+    subprocess.call(['verovio', '-f', 'mei', '-o', '{}/verovio_output'.format(repodir), output_filename])
 
 
 def print_outbound_json(dtype, placement, document, **kwargs):
@@ -73,6 +75,10 @@ outbound.REGISTER_FORMAT.emit(dtype='vcs', who='lychee.__main__')
 outbound.REGISTER_FORMAT.emit(dtype='document', who='lychee.__main__')
 outbound.CONVERSION_FINISHED.connect(mei_through_verovio)
 outbound.CONVERSION_FINISHED.connect(print_outbound_json)
+
+
+lychee.set_repo_dir('testrepo')
+print('this is the repodir: {}'.format(lychee.get_repo_dir()))
 
 
 # this is what starts a test "action"

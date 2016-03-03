@@ -119,3 +119,10 @@ class LycheeMEIError(LycheeError):
     able to correct the situation.
     '''
     pass
+
+
+class RepositoryError(LycheeError):
+    '''
+    When there was an error related to Lychee's repository.
+    '''
+    pass

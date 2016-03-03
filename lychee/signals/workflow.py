@@ -305,10 +305,9 @@ class WorkflowManager(object):
         Slot for vcs.START that runs the "VCS step."
         '''
         # TODO: these must be set properly
-        repodir = 'testrepo'
         message = None
 
-        vcs.INIT.emit(repodir=repodir)
+        vcs.INIT.emit(repodir=lychee.get_repo_dir())
         vcs.ADD.emit(pathnames=pathnames)
         vcs.COMMIT.emit(message=message)
 
@@ -428,7 +427,7 @@ class WorkflowManager(object):
         convert_this = self._converted
         if convert_this is None:
             # ask the Document module to prepare a full <score> for us
-            doc = document.Document(repository_path='testrepo')
+            doc = document.Document(repository_path=lychee.get_repo_dir())
             convert_this = doc.get_section(doc.get_section_ids()[0])
 
         if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:

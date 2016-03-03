@@ -70,9 +70,6 @@ import lychee
 from lychee.signals import outbound
 
 
-REPODIR = 'testrepo'
-
-
 def prep_files(files):
     '''
     Given the list of files modified, prepare the output for Julius.
@@ -115,7 +112,7 @@ def convert_helper():
     :rtype: dict
     '''
     myui = ui.ui()
-    repo = hg.repository(myui, REPODIR)
+    repo = hg.repository(myui, lychee.get_repo_dir())
 
     post = {'history': [], 'users': {}, 'changesets': {}}
 

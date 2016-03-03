@@ -171,13 +171,13 @@ class WorkflowManager(object):
 
             # Document ------------------------------------------------------------
             self._modified_pathnames = document._document_processor(converted=self._converted)
-            vcs.FINISHED.emit()
             lychee.log(next_step)
 
             # VCS -----------------------------------------------------------------
             # NOTE: why bother with the signal at all? Why not just call self._vcs_driver() ? Because
             # this way we can enable/disable the VCS step by changing who's listening to vcs.START.
             vcs.START.emit(pathnames=self._modified_pathnames)
+            vcs.FINISHED.emit()
             lychee.log(next_step)
 
         # Outbound ------------------------------------------------------------

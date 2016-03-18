@@ -325,7 +325,7 @@ def tuplet_to_tupletspan(abjad_tuplet):
 def leaf_to_element(abjad_object):
     '''
 
-    Convert an arbitrary abjad leaf (Rest, Note, or Chord) into the corresponding mei Element.
+    Convert an arbitrary abjad leaf (Rest, Note, Chord) container into the corresponding mei Element.
 
     :param abjad_object: the Abjad leaf to convert.
     :type abjad_object: :class:`abjad.tools.scoretools.Leaf.Leaf`
@@ -338,6 +338,8 @@ def leaf_to_element(abjad_object):
         return note_to_note(abjad_object)
     elif isinstance(abjad_object, Chord):
         return chord_to_chord(abjad_object)
+    elif isinstance(abjad_object, Skip):
+        return skip_to_space(abjad_object)
 
 
 def voice_to_layer(abjad_voice):
@@ -352,7 +354,7 @@ def voice_to_layer(abjad_voice):
     mei_layer = etree.Element('{}layer'.format(_MEINS),n="1")
     for child in abjad_voice:
         if isinstance(child, Tuplet):
-            mei_layer.extend(leaf_to_element(child))
+            mei_layer.extend(tuplet_to_tupletspan(child))
         else:
             mei_layer.append(leaf_to_element(child))
     add_xml_ids(abjad_voice, mei_layer)

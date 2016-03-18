@@ -375,6 +375,8 @@ def element_to_leaf(mei_element):
         return note_to_note(mei_element)
     elif mei_element.tag == 'chord':
         return chord_to_chord(mei_element)
+    elif mei_elemement.tag == 'space':
+        return space_to_skip(mei_elmement)
 
 def layer_to_voice(mei_layer):
     '''
@@ -387,7 +389,10 @@ def layer_to_voice(mei_layer):
     '''
     abjad_voice = Voice()
     for child in mei_layer:
-        abjad_voice.append(element_to_leaf(child))
+        if isinstance(child, list):
+            abjad_voice.append(tupletspan_to_tuplet(child))
+        else:
+            abjad_voice.append(element_to_leaf(child))
     return abjad_voice
 
 def staff_to_staff(mei_staff):

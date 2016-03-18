@@ -296,26 +296,33 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
 
     def test_voice_to_layer_full(self):
         '''
-        precondition: abjad Voice containing rest, note, and chord
-        postcondition: mei layer Element containing rest, note and chord
+        precondition: abjad Voice containing rest, note, chord, skip, and Tuplet.
+        postcondition: mei layer Element containing rest, note, chord, space, and tupletspan
         '''
-        abjad_voice = Voice("r4 c'4 <c' d'>4")
+        abjad_voice = Voice("r4 c'4 <c' d'>4 s4")
+        abjad_voice.append(Tuplet((2,3), "c' r4 c'"))
         mei_layer = abjad_to_lmei.voice_to_layer(abjad_voice)
         self.assertAttribsEqual(mei_layer.attrib, {'n': '1'})
-        self.assertEqual(len(mei_layer), 3)
+        self.assertEqual(len(mei_layer), 7)
         self.assertEqual(mei_layer.tag, '{}layer'.format(_MEINS))
         self.assertEqual(mei_layer[0].tag, '{}rest'.format(_MEINS))
         self.assertEqual(mei_layer[1].tag, '{}note'.format(_MEINS))
         self.assertEqual(mei_layer[2].tag, '{}chord'.format(_MEINS))
+        self.assertEqual(mei_layer[3].tag, '{}space'.format(_MEINS))
+        self.assertEqual(mei_layer[4].tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(mei_layer[5].tag, '{}note'.format(_MEINS))
+        self.assertEqual(mei_layer[6].tag, '{}rest'.format(_MEINS))
+        self.assertEqual(mei_layer[7].tag, '{}note'.format(_MEINS))
         self.assertIsNotNone(mei_layer.get(_XMLNS))
 
     @mock.patch("lychee.converters.abjad_to_lmei.chord_to_chord")
     @mock.patch("lychee.converters.abjad_to_lmei.note_to_note")
     @mock.patch("lychee.converters.abjad_to_lmei.rest_to_rest")
-    def test_voice_to_layer_full_mock(self,mock_rest,mock_note, mock_chord):
+    @mock.patch("lychee.converters.abjad_to_lmei.skip_to_space")
+    def test_voice_to_layer_full_mock(self,mock_skip, mock_rest,mock_note, mock_chord):
         '''
-        precondition: abjad Voice containing rest, note, and chord
-        postcondition: mei layer Element containing rest, note and chord
+        precondition: abjad Voice containing rest, note, chord, skip, and Tuplet.
+        postcondition: mei layer Element containing rest, note, chord, space, and tupletspan.
         '''
         abjad_voice = Voice("r4 c'4 <c' d'>4")
         mock_rest.return_value = etree.Element('{}rest'.format(_MEINS))
@@ -323,11 +330,16 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         mock_chord.return_value = etree.Element('{}chord'.format(_MEINS))
         mei_layer = abjad_to_lmei.voice_to_layer(abjad_voice)
         self.assertAttribsEqual(mei_layer.attrib, {'n': '1'})
-        self.assertEqual(len(mei_layer), 3)
+        self.assertEqual(len(mei_layer), 7)
         self.assertEqual(mei_layer.tag, '{}layer'.format(_MEINS))
         self.assertEqual(mei_layer[0].tag, '{}rest'.format(_MEINS))
         self.assertEqual(mei_layer[1].tag, '{}note'.format(_MEINS))
         self.assertEqual(mei_layer[2].tag, '{}chord'.format(_MEINS))
+        self.assertEqual(mei_layer[3].tag, '{}space'.format(_MEINS))
+        self.assertEqual(mei_layer[4].tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(mei_layer[5].tag, '{}note'.format(_MEINS))
+        self.assertEqual(mei_layer[6].tag, '{}rest'.format(_MEINS))
+        self.assertEqual(mei_layer[7].tag, '{}note'.format(_MEINS))
         self.assertIsNotNone(mei_layer.get(_XMLNS))
 
     # inconsistencies:

@@ -1,3 +1,27 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#--------------------------------------------------------------------------------------------------
+# Program Name:           Lychee
+# Program Description:    MEI document manager for formalized document control
+#
+# Filename:               lychee/converters/test/test_lmei_to_abjad.py
+# Purpose:                Tests conversion from lmei to abjad. 
+#
+# Copyright (C) 2016 Jeffrey Treviño
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+#--------------------------------------------------------------------------------------------------
 from lxml import etree as ETree
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
@@ -31,7 +55,7 @@ ETree.register_namespace('mei', _MEINS[1:-1])
 
 #every method in the class starts with test_ will be run as a test
 
-class TestMeiToAbjadConversions(abjad_test_case.AbjadTestCase):
+class TestLmeiToAbjadConversions(abjad_test_case.AbjadTestCase):
 
     # note conversion
 

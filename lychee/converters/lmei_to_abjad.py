@@ -1,13 +1,13 @@
-    #!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #--------------------------------------------------------------------------------------------------
 # Program Name:           Lychee
 # Program Description:    MEI document manager for formalized document control
 #
-# Filename:               lychee/converters/abjad_to_lmei.py
-# Purpose:                Converts an MEI document to an Abjad document.
+# Filename:               lychee/converters/lmei_to_abjad.py
+# Purpose:                Converts an lmei document to an abjad document.
 #
-# Copyright (C) 2015 Jeffrey Treviño
+# Copyright (C) 2016 Jeffrey Treviño
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

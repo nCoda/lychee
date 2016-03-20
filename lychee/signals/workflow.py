@@ -29,8 +29,8 @@ Control the workflow progression through an "action."
 
 import lychee
 from lychee import converters
-from lychee.document import document as docModule
-from lychee.signals import inbound, document, vcs, outbound
+from lychee import document
+from lychee.signals import inbound, vcs, outbound
 
 
 class WorkflowManager(object):
@@ -48,14 +48,6 @@ class WorkflowManager(object):
     _INBOUND_VIEWS_STARTED = 6
     _INBOUND_VIEWS_FINISHED = 7
     _INBOUND_VIEWS_ERROR = 8
-    _DOCUMENT_PRESTART = 100
-    _DOCUMENT_STARTED = 101
-    _DOCUMENT_FINISHED = 102
-    _DOCUMENT_ERROR = 103
-    _VCS_PRESTART = 300
-    _VCS_STARTED = 301
-    _VCS_FINISHED = 302
-    _VCS_ERROR = 303
     _OUTBOUND_PRESTART = 200
     _OUTBOUND_VIEWS_STARTED = 202
     _OUTBOUND_VIEWS_FINISHED = 203
@@ -75,12 +67,7 @@ class WorkflowManager(object):
                     (inbound.VIEWS_FINISH, '_inbound_views_finish'),
                     (inbound.VIEWS_FINISHED, '_inbound_views_finished'),
                     (inbound.VIEWS_ERROR, '_inbound_views_error'),
-                    (document.STARTED, '_document_started'),
-                    (document.FINISH, '_document_finish'),
-                    (document.FINISHED, '_document_finished'),
-                    (document.ERROR, '_document_error'),
-                    (vcs.STARTED, '_vcs_started'),
-                    (vcs.FINISH, '_vcs_finish'),
+                    (vcs.START, '_vcs_driver'),
                     (vcs.FINISHED, '_vcs_finished'),
                     (vcs.ERROR, '_vcs_error'),
                     (outbound.VIEWS_STARTED, '_outbound_views_started'),
@@ -183,23 +170,14 @@ class WorkflowManager(object):
             lychee.log(next_step)
 
             # Document ------------------------------------------------------------
-            self._status = WorkflowManager._DOCUMENT_PRESTART
-            document.START.emit(converted=self._converted)
-
-            if self._status is not WorkflowManager._DOCUMENT_FINISHED:
-                if self._status is not WorkflowManager._DOCUMENT_ERROR:
-                    lychee.log('ERROR during "document" step')
-                return
+            self._modified_pathnames = document._document_processor(converted=self._converted)
             lychee.log(next_step)
 
             # VCS -----------------------------------------------------------------
-            self._status = WorkflowManager._VCS_PRESTART
+            # NOTE: why bother with the signal at all? Why not just call self._vcs_driver() ? Because
+            # this way we can enable/disable the VCS step by changing who's listening to vcs.START.
             vcs.START.emit(pathnames=self._modified_pathnames)
-
-            if self._status is not WorkflowManager._VCS_FINISHED:
-                if self._status is not WorkflowManager._VCS_ERROR:
-                    lychee.log('ERROR during "vcs" step')
-                return
+            vcs.FINISHED.emit()
             lychee.log(next_step)
 
         # Outbound ------------------------------------------------------------
@@ -322,51 +300,16 @@ class WorkflowManager(object):
 
     # ----
 
-    def _document_started(self, **kwargs):
-        lychee.log('document started')
-        self._status = WorkflowManager._DOCUMENT_STARTED
-
-    def _document_finish(self, pathnames, **kwargs):
-        lychee.log('document finishing; modified {}'.format(pathnames))
-        if self._status is WorkflowManager._DOCUMENT_STARTED:
-            if 5 is None:  # TODO: put in the appropriate arg here
-                document.ERROR.emit(msg='Document processing did not return views_info')
-            else:
-                self._modified_pathnames = pathnames
-                self._status = WorkflowManager._DOCUMENT_FINISHED
-        else:
-            lychee.log('ERROR during document processing')
-        document.FINISHED.emit()
-
-    def _document_finished(self, **kwargs):
+    def _vcs_driver(self, pathnames, **kwargs):
         '''
-        Called when document.FINISHED is emitted, for logging and debugging.
+        Slot for vcs.START that runs the "VCS step."
         '''
-        lychee.log('document processing finished')
+        # TODO: these must be set properly
+        message = None
 
-    def _document_error(self, **kwargs):
-        self._status = WorkflowManager._DOCUMENT_ERROR
-        if 'msg' in kwargs:
-            lychee.log(kwargs['msg'])
-        else:
-            lychee.log('ERROR during document processing')
-
-    # ----
-
-    def _vcs_started(self, **kwargs):
-        lychee.log('vcs started')
-        self._status = WorkflowManager._VCS_STARTED
-
-    def _vcs_finish(self, **kwargs):
-        lychee.log('vcs finishing'.format(kwargs))
-        if self._status is WorkflowManager._VCS_STARTED:
-            if 5 is None:  # TODO: put in the appropriate arg here
-                vcs.ERROR.emit(msg='Document processing did not return views_info')
-            else:
-                self._status = WorkflowManager._VCS_FINISHED
-        else:
-            lychee.log('ERROR during vcs processing')
-        vcs.FINISHED.emit()
+        vcs.INIT.emit(repodir=lychee.get_repo_dir())
+        vcs.ADD.emit(pathnames=pathnames)
+        vcs.COMMIT.emit(message=message)
 
     def _vcs_finished(self, **kwargs):
         '''
@@ -484,8 +427,10 @@ class WorkflowManager(object):
         convert_this = self._converted
         if convert_this is None:
             # ask the Document module to prepare a full <score> for us
-            doc = docModule.Document(repository_path='testrepo')
-            convert_this = doc.get_section(doc.get_section_ids()[0])
+            doc = document.Document(repository_path=lychee.get_repo_dir())
+            if len(doc.get_section_ids()) > 0:
+                # TODO: we shouldn't be using the first <section> by default; we should have a Document cursor that knows which section
+                convert_this = doc.get_section(doc.get_section_ids()[0])
 
         if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:
             # TODO: you can't even do this, because you'll ruin it for all the other dtypes that worked!
@@ -494,22 +439,41 @@ class WorkflowManager(object):
 
         # do the outbound conversion
         successful_dtypes = []
-        for each_dtype in self._o_dtypes:
-            self._choose_outbound_converter(each_dtype)
-            self._o_running_converter = each_dtype
-            outbound.CONVERSION_START.emit(views_info=self._o_views_info[each_dtype],
-                                           document=convert_this)
-            if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_ERROR:
-                self._status = WorkflowManager._OUTBOUND_CONVERSIONS_STARTED
-                continue
-            else:
-                successful_dtypes.append(each_dtype)
+        expected_conversions = len(self._o_dtypes)  # NB: when there's no musical content, this is
+                                                    # decremented with every music-only converter,
+                                                    # so that we don't get errors when the score is empty
+        if convert_this is None:
+            # when there is no musical content, only some of the outbound converters will work
+            for each_dtype in self._o_dtypes:
+                if each_dtype in ('document', 'vcs'):
+                    self._choose_outbound_converter(each_dtype)
+                    self._o_running_converter = each_dtype
+                    outbound.CONVERSION_START.emit(views_info=self._o_views_info[each_dtype], document=None)
+                    if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_ERROR:
+                        self._status = WorkflowManager._OUTBOUND_CONVERSIONS_STARTED
+                        continue
+                    else:
+                        successful_dtypes.append(each_dtype)
+                else:
+                        expected_conversions -= 1
+
+        else:
+            for each_dtype in self._o_dtypes:
+                self._choose_outbound_converter(each_dtype)
+                self._o_running_converter = each_dtype
+                outbound.CONVERSION_START.emit(views_info=self._o_views_info[each_dtype],
+                                               document=convert_this)
+                if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_ERROR:
+                    self._status = WorkflowManager._OUTBOUND_CONVERSIONS_STARTED
+                    continue
+                else:
+                    successful_dtypes.append(each_dtype)
 
         # see if everything worked
         if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_ERROR:
             # can't happen?
             pass
-        if len(successful_dtypes) != len(self._o_dtypes):
+        if len(successful_dtypes) < expected_conversions:
             if 0 == len(successful_dtypes):
                 outbound.CONVERSION_ERROR.emit(msg='No outbound converters succeeded')
             else:

@@ -70,9 +70,6 @@ import lychee
 from lychee.signals import outbound
 
 
-REPODIR = 'testrepo'
-
-
 def prep_files(files):
     '''
     Given the list of files modified, prepare the output for Julius.
@@ -105,6 +102,7 @@ def convert(document, **kwargs):
 
 
 def convert_helper():
+    # TODO: migrate this functionality to the "mercurial-hug" library
     '''
     Do the actual work for :func:`convert`. This helper function exists so that the
     :mod:`document_outbound` converter can call this converter without having to emit the
@@ -114,7 +112,7 @@ def convert_helper():
     :rtype: dict
     '''
     myui = ui.ui()
-    repo = hg.repository(myui, REPODIR)
+    repo = hg.repository(myui, lychee.get_repo_dir())
 
     post = {'history': [], 'users': {}, 'changesets': {}}
 

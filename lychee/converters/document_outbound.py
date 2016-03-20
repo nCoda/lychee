@@ -183,7 +183,6 @@ _MISSING_TITLE_DATA = '<titleStmt> is missing required child elements'
 # non-translatable constants
 KNOWN_PERSNAME_TYPES = ('full', 'family', 'given', 'other')  # defined in Lychee-MEI
 KNOWN_TITLE_TYPES = ('main', 'subordinate', 'abbreviated', 'alternative')  # defined in Lychee-MEI
-TESTREPO = 'testrepo'
 
 
 def convert(document, **kwargs):
@@ -198,7 +197,7 @@ def convert(document, **kwargs):
     lychee.log('{}.convert() begins'.format(__name__), level='debug')
 
     try:
-        doc = documentModule.Document(TESTREPO)
+        doc = documentModule.Document(lychee.get_repo_dir())
     except exceptions.HeaderNotFoundError:
         outbound.CONVERSION_ERROR.emit(
             msg='{} failed initializing a Document object; stopping conversion'.format(__name__)

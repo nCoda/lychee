@@ -5,9 +5,9 @@
 # Program Description:    MEI document manager for formalized document control
 #
 # Filename:               lychee/converters/abjad_to_lmei.py
-# Purpose:                Converts an Abjad document to an MEI document.
+# Purpose:                Converts an abjad document to an lmei document.
 #
-# Copyright (C) 2015 Jeffrey Treviño
+# Copyright (C) 2016 Jeffrey Treviño, Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -45,11 +45,7 @@ from abjad.tools.topleveltools.attach import attach
 
 import lychee
 from lychee.signals import inbound
-
-
-_MEINS = '{http://www.music-encoding.org/ns/mei}'
-_XMLNS = '{http://www.w3.org/XML/1998/namespace}id'
-etree.register_namespace('mei', _MEINS[1:-1])
+from lychee.namespaces import mei, xml
 
 
 def convert(document, **kwargs):
@@ -98,7 +94,7 @@ def add_xml_ids(abjad_object, mei_element):
     hasher = hashlib.new('SHA256', abjad_id)
     the_xmlid = hasher.hexdigest()
     attach(the_xmlid, abjad_object)
-    mei_element.set(_XMLNS, the_xmlid)
+    mei_element.set(xml.ID, the_xmlid)
 
 
 def note_to_note(abjad_note):
@@ -137,21 +133,21 @@ def note_to_note(abjad_note):
     dictionary = {'octave': str(octave),
                     'pname': pitchname}
     #make the MEI note according to the information collected above
-    mei_note = etree.Element("{}note".format(_MEINS), dictionary)
+    mei_note = etree.Element(mei.NOTE, dictionary)
     if duration:
         mei_note.set('dur',str(duration))
     if dots:
         mei_note.set('dots',str(dots))
     if accidental:
         if is_cautionary:
-            accid = etree.SubElement(mei_note,'{}accid'.format(_MEINS),accid=accidental,func='cautionary')
+            accid = etree.SubElement(mei_note,mei.ACCID,accid=accidental,func='cautionary')
         else:
             mei_note.set('accid.ges', accidental)
             if is_forced:
                 mei_note.set('accid', accidental)
     else:
         if is_cautionary:
-            accid = etree.SubElement(mei_note,'{}accid'.format(_MEINS),accid='n',func='cautionary')
+            accid = etree.SubElement(mei_note,mei.ACCID,accid='n',func='cautionary')
         if is_forced:
             mei_note.set('accid.ges', 'n')
             mei_note.set('accid', 'n')
@@ -172,7 +168,7 @@ def rest_to_rest(abjad_rest):
     '''
     duration = abjad_rest.written_duration.lilypond_duration_string
     dots = abjad_rest.written_duration.dot_count
-    mei_rest = etree.Element('{}rest'.format(_MEINS))
+    mei_rest = etree.Element(mei.REST)
     if dots:
         dot_index = duration.find('.')
         dur_number_string = duration[:dot_index]
@@ -194,7 +190,7 @@ def skip_to_space(abjad_skip):
     '''
     duration = abjad_skip.written_duration.lilypond_duration_string
     dots = abjad_skip.written_duration.dot_count
-    mei_space = etree.Element('{}space'.format(_MEINS))
+    mei_space = etree.Element(mei.SPACE)
     if dots:
         dot_index = duration.find('.')
         dur_number_string = duration[:dot_index]
@@ -215,7 +211,7 @@ def chord_to_chord(abjad_chord):
     :returns: the corresponding MEI chord Element.
     :rtype: :class:`lxml.etree.ElementTree.Element`
     '''
-    mei_chord = etree.Element('{}chord'.format(_MEINS))
+    mei_chord = etree.Element(mei.CHORD)
     dots = abjad_chord.written_duration.dot_count
     dur_string = abjad_chord.written_duration.lilypond_duration_string
     if dots:
@@ -240,13 +236,13 @@ def empty_tuplet_to_tupletspan_element(abjad_tuplet):
     if isinstance(abjad_tuplet, Tuplet) and not isinstance(abjad_tuplet, FixedDurationTuplet):
         numerator = six.b(str(abjad_tuplet.multiplier.numerator))
         denominator = six.b(str(abjad_tuplet.multiplier.denominator))
-        tupletspan = etree.Element('{}tupletspan'.format(_MEINS),num=denominator, numBase=numerator)
+        tupletspan = etree.Element(mei.TUPLET_SPAN,num=denominator, numBase=numerator)
         add_xml_ids(abjad_tuplet, tupletspan)
         return tupletspan
     elif isinstance(abjad_tuplet, FixedDurationTuplet):
         dots = abjad_tuplet.target_duration.dot_count
         dur = abjad_tuplet.target_duration.lilypond_duration_string
-        tupletspan = etree.Element('{}tupletspan'.format(_MEINS))
+        tupletspan = etree.Element(mei.TUPLET_SPAN)
         if dots:
             dur = dur[:dur.find('.')]
             tupletspan.set('dots', six.b(str(dots)))
@@ -296,7 +292,7 @@ def tuplet_to_tupletspan(abjad_tuplet):
             abjad_tuplet = abjad_tuplet.to_fixed_duration_tuplet()
         span_n = 1
         component_n = 1
-        outermost_span = etree.Element('{}tupletspan'.format(_MEINS))
+        outermost_span = etree.Element(mei.TUPLET_SPAN)
         setup_outermost_tupletspan(outermost_span, abjad_tuplet)
         output_list = [outermost_span]
         plist = ''
@@ -314,10 +310,10 @@ def tuplet_to_tupletspan(abjad_tuplet):
                 add_xml_ids(abjad_tuplet[x], mei_component)
                 output_list.append(mei_component)
         for element in output_list[1:]:
-            plist = plist + str(element.get(_XMLNS)) + ' '
+            plist = plist + str(element.get(xml.ID)) + ' '
         plist = plist[:-1]
-        outermost_span.set('startid',six.b(str(output_list[1].get(_XMLNS))))
-        outermost_span.set('endid',six.b(str(output_list[-1].get(_XMLNS))))
+        outermost_span.set('startid',six.b(str(output_list[1].get(xml.ID))))
+        outermost_span.set('endid',six.b(str(output_list[-1].get(xml.ID))))
         outermost_span.set('plist',plist)
         return output_list
 
@@ -351,7 +347,7 @@ def voice_to_layer(abjad_voice):
     :returns: the corresponding MEI layer Element.
     :rtype: :class:`lxml.etree.ElementTree.Element`
     '''
-    mei_layer = etree.Element('{}layer'.format(_MEINS),n="1")
+    mei_layer = etree.Element(mei.LAYER,n="1")
     for child in abjad_voice:
         if isinstance(child, Tuplet):
             mei_layer.extend(tuplet_to_tupletspan(child))
@@ -370,7 +366,7 @@ def staff_to_staff(abjad_staff):
     :returns: the corresponding MEI Element or list of Elements.
     :rtype: :class:`lxml.etree.ElementTree.Element`
     '''
-    mei_staff = etree.Element('{}staff'.format(_MEINS),n='1')
+    mei_staff = etree.Element(mei.STAFF,n='1')
     if len(abjad_staff) != 0:
         #if the staff contains two or more parallel voices,
         if abjad_staff.is_simultaneous and 1 < len(abjad_staff) and isinstance(abjad_staff[0], Voice):
@@ -405,16 +401,16 @@ def score_to_section(abjad_score):
     '''
     #an empty abjad Score returns an empty mei section Element
     if len(abjad_score) == 0:
-        mei_section = etree.Element('{}section'.format(_MEINS),n='1')
+        mei_section = etree.Element(mei.SECTION,n='1')
         add_xml_ids(abjad_score, mei_section)
         return mei_section
     #otherwise set up a section element containing a master staff group
-    mei_section = etree.Element('{}section'.format(_MEINS), n='1')
+    mei_section = etree.Element(mei.SECTION, n='1')
     add_xml_ids(abjad_score, mei_section)
-    score_def = etree.Element('{}scoreDef'.format(_MEINS))
-    score_def.set(_XMLNS, mei_section.get(_XMLNS) + 'scoreDef')
+    score_def = etree.Element(mei.SCORE_DEF)
+    score_def.set(xml.ID, mei_section.get(xml.ID) + 'scoreDef')
     mei_section.append(score_def)
-    mei_main_staff_group = etree.Element('{}staffGrp'.format(_MEINS),symbol='line')
+    mei_main_staff_group = etree.Element(mei.STAFF_GRP,symbol='line')
     score_def.append(mei_main_staff_group)
     staffCounter = 1
     for component in abjad_score:
@@ -425,14 +421,14 @@ def score_to_section(abjad_score):
             mei_staff.set('n', str(staffCounter))
             mei_section.append(mei_staff)
             add_xml_ids(abjad_staff, mei_staff)
-            staff_def = etree.Element('{}staffDef'.format(_MEINS),lines='5',n=str(staffCounter))
-            staff_def.set(_XMLNS, mei_staff.get(_XMLNS) + 'staffDef')
+            staff_def = etree.Element(mei.STAFF_DEF,lines='5',n=str(staffCounter))
+            staff_def.set(xml.ID, mei_staff.get(xml.ID) + 'staffDef')
             mei_main_staff_group.append(staff_def)
             staffCounter += 1
         elif isinstance(component, StaffGroup):
             #if it's a staff group, convert to a staff group containing staff Elements
             abjad_staff_group = component
-            mei_staff_group = etree.Element('{}staffGrp'.format(_MEINS),symbol='bracket')
+            mei_staff_group = etree.Element(mei.STAFF_GRP,symbol='bracket')
             add_xml_ids(abjad_staff_group, mei_staff_group)
             mei_main_staff_group.append(mei_staff_group)
             for staff in abjad_staff_group:
@@ -441,8 +437,8 @@ def score_to_section(abjad_score):
                 add_xml_ids(abjad_staff, mei_staff)
                 mei_staff.set('n', str(staffCounter))
                 mei_section.append(mei_staff)
-                staff_def = etree.Element('{}staffDef'.format(_MEINS),lines='5',n=str(staffCounter))
-                staff_def.set(_XMLNS, mei_staff.get(_XMLNS) + 'staffDef')
+                staff_def = etree.Element(mei.STAFF_DEF,lines='5',n=str(staffCounter))
+                staff_def.set(xml.ID, mei_staff.get(xml.ID) + 'staffDef')
                 mei_staff_group.append(staff_def)
                 staffCounter += 1
     return mei_section

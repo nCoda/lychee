@@ -1,3 +1,27 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#--------------------------------------------------------------------------------------------------
+# Program Name:           Lychee
+# Program Description:    MEI document manager for formalized document control
+#
+# Filename:               lychee/converters/test/test_abjad_to_lmei.py
+# Purpose:                Tests conversion from abjad to lmei.
+#
+# Copyright (C) 2016 Jeffrey Treviño, Christopher Antila
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+#--------------------------------------------------------------------------------------------------
 from lxml import etree as etree
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
@@ -15,6 +39,7 @@ from abjad.tools.scoretools.Score import Score
 from abjad.tools.topleveltools.inspect_ import inspect_
 from abjad.tools.topleveltools.attach import attach
 from lychee.converters import abjad_to_lmei
+from lychee.namespaces import mei, xml
 import unittest
 import abjad_test_case
 
@@ -23,11 +48,8 @@ try:
 except ImportError:
     import mock
 
-_MEINS = '{http://www.music-encoding.org/ns/mei}'
-_XMLNS = '{http://www.w3.org/XML/1998/namespace}id'
-etree.register_namespace('mei', _MEINS[1:-1])
 
-class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
+class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
 
     # note conversion
 
@@ -38,9 +60,9 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         '''
         abjad_note = Note("c'4")
         mei_note = abjad_to_lmei.note_to_note(abjad_note)
-        self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
+        self.assertEqual(mei_note.tag, mei.NOTE)
         self.assertAttribsEqual(mei_note.attrib, {'dur': '4', 'pname': 'c', 'octave': '4'})
-        self.assertIsNotNone(mei_note.get(_XMLNS))
+        self.assertIsNotNone(mei_note.get(xml.ID))
 
     def test_note_dotted(self):
         '''
@@ -49,8 +71,8 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         '''
         abjad_note = Note("c'4.")
         mei_note = abjad_to_lmei.note_to_note(abjad_note)
-        self.assertIsNotNone(mei_note.get(_XMLNS))
-        self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
+        self.assertIsNotNone(mei_note.get(xml.ID))
+        self.assertEqual(mei_note.tag, mei.NOTE)
         self.assertAttribsEqual(mei_note.attrib, {'dots': '1', 'dur': '4', 'pname': 'c', 'octave': '4'})
 
     def test_note_accid(self):
@@ -60,8 +82,8 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         '''
         abjad_note = Note("cf'4")
         mei_note = abjad_to_lmei.note_to_note(abjad_note)
-        self.assertIsNotNone(mei_note.get(_XMLNS))
-        self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
+        self.assertIsNotNone(mei_note.get(xml.ID))
+        self.assertEqual(mei_note.tag, mei.NOTE)
         self.assertAttribsEqual(mei_note.attrib, {'accid.ges': 'f', 'dur': '4', 'pname': 'c', 'octave': '4'})
 
     def test_note_accid_and_cautionary(self):
@@ -72,11 +94,11 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         abjad_note = Note("cf'?4")
         mei_note = abjad_to_lmei.note_to_note(abjad_note)
         self.assertAttribsEqual(mei_note.attrib, {'dur': '4', 'pname': 'c', 'octave': '4'})
-        accid = mei_note.findall('./{}accid'.format(_MEINS))
+        accid = mei_note.findall('./'+mei.ACCID)
         accid = accid[0]
-        self.assertIsNotNone(mei_note.get(_XMLNS))
-        self.assertEqual(accid.tag, '{}accid'.format(_MEINS))
-        self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
+        self.assertIsNotNone(mei_note.get(xml.ID))
+        self.assertEqual(accid.tag, mei.ACCID)
+        self.assertEqual(mei_note.tag, mei.NOTE)
         self.assertAttribsEqual(accid.attrib, {'accid': 'f', 'func': 'cautionary'})
 
     def test_note_accid_and_forced(self):
@@ -86,8 +108,8 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         '''
         abjad_note = Note("cf'!4")
         mei_note = abjad_to_lmei.note_to_note(abjad_note)
-        self.assertIsNotNone(mei_note.get(_XMLNS))
-        self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
+        self.assertIsNotNone(mei_note.get(xml.ID))
+        self.assertEqual(mei_note.tag, mei.NOTE)
         self.assertAttribsEqual(mei_note.attrib, {'accid.ges': 'f', 'accid': 'f', 'dur': '4', 'pname': 'c', 'octave': '4'})
 
     def test_note_cautionary(self):
@@ -98,12 +120,12 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         abjad_note = Note("c'?4")
         mei_note = abjad_to_lmei.note_to_note(abjad_note)
         self.assertAttribsEqual(mei_note.attrib, {'dur': '4', 'pname': 'c', 'octave': '4'})
-        accid = mei_note.findall('./{}accid'.format(_MEINS))
+        accid = mei_note.findall('./' + mei.ACCID)
         accid = accid[0]
-        self.assertEqual(accid.tag, '{}accid'.format(_MEINS))
-        self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
+        self.assertEqual(accid.tag, mei.ACCID)
+        self.assertEqual(mei_note.tag, mei.NOTE)
         self.assertAttribsEqual(accid.attrib, {'accid': 'n', 'func': 'cautionary'})
-        self.assertIsNotNone(mei_note.get(_XMLNS))
+        self.assertIsNotNone(mei_note.get(xml.ID))
 
     def test_note_forced(self):
         '''
@@ -112,9 +134,9 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         '''
         abjad_note = Note("c'!4")
         mei_note = abjad_to_lmei.note_to_note(abjad_note)
-        self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
+        self.assertEqual(mei_note.tag, mei.NOTE)
         self.assertAttribsEqual(mei_note.attrib, {'accid.ges': 'n', 'accid': 'n', 'dur': '4', 'pname': 'c', 'octave': '4'} )
-        self.assertIsNotNone(mei_note.get(_XMLNS))
+        self.assertIsNotNone(mei_note.get(xml.ID))
 
     def test_notehead(self):
         '''
@@ -123,7 +145,7 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         '''
         head = NoteHead("c'")
         mei_note = abjad_to_lmei.note_to_note(head)
-        self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
+        self.assertEqual(mei_note.tag, mei.NOTE)
         self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'octave': '4'})
 
     def test_notehead_cautionary(self):
@@ -135,17 +157,17 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         head.is_cautionary = True
         mei_note = abjad_to_lmei.note_to_note(head)
         self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'octave': '4'})
-        accid = mei_note.findall('./{}accid'.format(_MEINS))
+        accid = mei_note.findall('./' + mei.ACCID)
         accid = accid[0]
-        self.assertEqual(accid.tag, '{}accid'.format(_MEINS))
-        self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
+        self.assertEqual(accid.tag, mei.ACCID)
+        self.assertEqual(mei_note.tag, mei.NOTE)
         self.assertAttribsEqual(accid.attrib, {'accid': 'n', 'func': 'cautionary'})
 
     def test_notehead_forced(self):
         head = NoteHead("c'")
         head.is_forced = True
         mei_note = abjad_to_lmei.note_to_note(head)
-        self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
+        self.assertEqual(mei_note.tag, mei.NOTE)
         self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'octave': '4', 'accid.ges': 'n', 'accid': 'n'})
 
     def test_notehead_accid(self):
@@ -155,7 +177,7 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         '''
         head = NoteHead("cf'")
         mei_note = abjad_to_lmei.note_to_note(head)
-        self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
+        self.assertEqual(mei_note.tag, mei.NOTE)
         self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'octave': '4', 'accid.ges': 'f'})
 
     def test_notehead_accid_cautionary(self):
@@ -167,17 +189,17 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         head.is_cautionary = True
         mei_note = abjad_to_lmei.note_to_note(head)
         self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'octave': '4'})
-        accid = mei_note.findall('./{}accid'.format(_MEINS))
+        accid = mei_note.findall('./' + mei.ACCID)
         accid = accid[0]
-        self.assertEqual(accid.tag, '{}accid'.format(_MEINS))
-        self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
+        self.assertEqual(accid.tag, mei.ACCID)
+        self.assertEqual(mei_note.tag, mei.NOTE)
         self.assertAttribsEqual(accid.attrib, {'accid': 'f', 'func': 'cautionary'})
 
     def test_notehead_accid_forced(self):
         head = NoteHead("cf'")
         head.is_forced = True
         mei_note = abjad_to_lmei.note_to_note(head)
-        self.assertEqual(mei_note.tag, '{}note'.format(_MEINS))
+        self.assertEqual(mei_note.tag, mei.NOTE)
         self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'octave': '4', 'accid.ges': 'f', 'accid': 'f'})
 
     def test_rest(self):
@@ -186,12 +208,12 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         postcondition: mei rest Element with no dots.
         '''
         abjad_rest = Rest("r32")
-        
+
         mei_rest = abjad_to_lmei.rest_to_rest(abjad_rest)
-        
-        self.assertEqual(mei_rest.tag, '{}rest'.format(_MEINS))
+
+        self.assertEqual(mei_rest.tag, mei.REST)
         self.assertAttribsEqual(mei_rest.attrib, {'dur': '32'} )
-        self.assertIsNotNone(mei_rest.get(_XMLNS))
+        self.assertIsNotNone(mei_rest.get(xml.ID))
 
     def test_rest_dotted(self):
         '''
@@ -199,25 +221,25 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         postcondition: dotted mei rest Element.
         '''
         abjad_rest = Rest("r32..")
-        
+
         mei_rest = abjad_to_lmei.rest_to_rest(abjad_rest)
-        
-        self.assertEqual(mei_rest.tag, '{}rest'.format(_MEINS))
+
+        self.assertEqual(mei_rest.tag, mei.REST)
         self.assertAttribsEqual(mei_rest.attrib, {'dots': '2', 'dur': '32'})
-        self.assertIsNotNone(mei_rest.get(_XMLNS))
-    
+        self.assertIsNotNone(mei_rest.get(xml.ID))
+
     def test_skip_to_space(self):
         '''
         precondition: abjad Skip with no dots.
         postcondition: mei space Element with no dots.
         '''
         abjad_skip = Skip("s32")
-        
+
         mei_space = abjad_to_lmei.skip_to_space(abjad_skip)
-        
-        self.assertEqual(mei_space.tag, '{}space'.format(_MEINS))
+
+        self.assertEqual(mei_space.tag, mei.SPACE)
         self.assertAttribsEqual(mei_space.attrib, {'dur': '32'} )
-        self.assertIsNotNone(mei_space.get(_XMLNS))
+        self.assertIsNotNone(mei_space.get(xml.ID))
 
     def test_skip_to_space_dotted(self):
         '''
@@ -225,12 +247,12 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         postcondition: dotted mei space Element.
         '''
         abjad_skip = Skip("s32..")
-        
+
         mei_space = abjad_to_lmei.skip_to_space(abjad_skip)
-        
-        self.assertEqual(mei_space.tag, '{}space'.format(_MEINS))
+
+        self.assertEqual(mei_space.tag, mei.SPACE)
         self.assertAttribsEqual(mei_space.attrib, {'dots': '2', 'dur': '32'})
-        self.assertIsNotNone(mei_space.get(_XMLNS))
+        self.assertIsNotNone(mei_space.get(xml.ID))
 
     def test_chord_empty(self):
         '''
@@ -240,9 +262,9 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         abjad_chord = Chord([],(1,4))
         mei_chord = abjad_to_lmei.chord_to_chord(abjad_chord)
         self.assertAttribsEqual(mei_chord.attrib, {'dur': '4'})
-        self.assertEqual(mei_chord.tag, '{}chord'.format(_MEINS))
+        self.assertEqual(mei_chord.tag, mei.CHORD)
         self.assertEqual(len(mei_chord), 0)
-        self.assertIsNotNone(mei_chord.get(_XMLNS))
+        self.assertIsNotNone(mei_chord.get(xml.ID))
 
     def test_chord_empty_dotted(self):
         '''
@@ -252,9 +274,9 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         abjad_chord = Chord([],(3,8))
         mei_chord = abjad_to_lmei.chord_to_chord(abjad_chord)
         self.assertAttribsEqual(mei_chord.attrib, {'dur': '4','dots': '1'})
-        self.assertEqual(mei_chord.tag, '{}chord'.format(_MEINS))
+        self.assertEqual(mei_chord.tag, mei.CHORD)
         self.assertEqual(len(mei_chord), 0)
-        self.assertIsNotNone(mei_chord.get(_XMLNS))
+        self.assertIsNotNone(mei_chord.get(xml.ID))
 
     def test_chord_full(self):
         '''
@@ -264,10 +286,10 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         abjad_chord = Chord("<c' d'>4")
         mei_chord = abjad_to_lmei.chord_to_chord(abjad_chord)
         self.assertAttribsEqual(mei_chord.attrib, {'dur': '4'})
-        self.assertEqual(mei_chord.tag, '{}chord'.format(_MEINS))
+        self.assertEqual(mei_chord.tag, mei.CHORD)
         self.assertAttribsEqual(mei_chord[0].attrib, {'pname': 'c', 'octave': '4'})
         self.assertAttribsEqual(mei_chord[1].attrib, {'pname': 'd', 'octave': '4'})
-        self.assertIsNotNone(mei_chord.get(_XMLNS))
+        self.assertIsNotNone(mei_chord.get(xml.ID))
 
     def test_chord_full_dotted(self):
         '''
@@ -276,11 +298,11 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         '''
         abjad_chord = Chord("<c' d'>4.")
         mei_chord = abjad_to_lmei.chord_to_chord(abjad_chord)
-        self.assertEqual(mei_chord.tag, '{}chord'.format(_MEINS))
+        self.assertEqual(mei_chord.tag, mei.CHORD)
         self.assertAttribsEqual(mei_chord.attrib, {'dur': '4', 'dots': '1'})
         self.assertAttribsEqual(mei_chord[0].attrib, {'pname': 'c', 'octave': '4'})
         self.assertAttribsEqual(mei_chord[1].attrib, {'pname': 'd', 'octave': '4'})
-        self.assertIsNotNone(mei_chord.get(_XMLNS))
+        self.assertIsNotNone(mei_chord.get(xml.ID))
 
     def test_voice_to_layer_empty(self):
         '''
@@ -289,58 +311,49 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         '''
         abjad_voice = Voice()
         mei_layer = abjad_to_lmei.voice_to_layer(abjad_voice)
-        self.assertEqual(mei_layer.tag, '{}layer'.format(_MEINS))
+        self.assertEqual(mei_layer.tag, mei.LAYER)
         self.assertAttribsEqual(mei_layer.attrib, {'n': '1'})
         self.assertEqual(len(mei_layer),0)
-        self.assertIsNotNone(mei_layer.get(_XMLNS))
+        self.assertIsNotNone(mei_layer.get(xml.ID))
 
     def test_voice_to_layer_full(self):
         '''
         precondition: abjad Voice containing rest, note, chord, skip, and Tuplet.
         postcondition: mei layer Element containing rest, note, chord, space, and tupletspan
         '''
-        abjad_voice = Voice("r4 c'4 <c' d'>4 s4")
-        abjad_voice.append(Tuplet((2,3), "c' r4 c'"))
-        mei_layer = abjad_to_lmei.voice_to_layer(abjad_voice)
+        abjad_voice = Voice()
+	abjad_voice.append( Tuplet((2,3), "c' c' c'"))
+	abjad_voice.append(Skip("s4"))
+	mei_layer = abjad_to_lmei.voice_to_layer(abjad_voice)
         self.assertAttribsEqual(mei_layer.attrib, {'n': '1'})
-        self.assertEqual(len(mei_layer), 7)
-        self.assertEqual(mei_layer.tag, '{}layer'.format(_MEINS))
-        self.assertEqual(mei_layer[0].tag, '{}rest'.format(_MEINS))
-        self.assertEqual(mei_layer[1].tag, '{}note'.format(_MEINS))
-        self.assertEqual(mei_layer[2].tag, '{}chord'.format(_MEINS))
-        self.assertEqual(mei_layer[3].tag, '{}space'.format(_MEINS))
-        self.assertEqual(mei_layer[4].tag, '{}tupletspan'.format(_MEINS))
-        self.assertEqual(mei_layer[5].tag, '{}note'.format(_MEINS))
-        self.assertEqual(mei_layer[6].tag, '{}rest'.format(_MEINS))
-        self.assertEqual(mei_layer[7].tag, '{}note'.format(_MEINS))
-        self.assertIsNotNone(mei_layer.get(_XMLNS))
+        self.assertEqual(mei_layer.tag, mei.LAYER)
+	self.assertEqual(len(mei_layer), 5)
+	self.assertEqual(mei_layer[0].tag, mei.TUPLET_SPAN)
+	self.assertEqual(mei_layer[-1].tag, mei.SPACE)
+	self.assertIsNotNone(mei_layer.get(xml.ID))
 
-    @mock.patch("lychee.converters.abjad_to_lmei.chord_to_chord")
-    @mock.patch("lychee.converters.abjad_to_lmei.note_to_note")
-    @mock.patch("lychee.converters.abjad_to_lmei.rest_to_rest")
-    @mock.patch("lychee.converters.abjad_to_lmei.skip_to_space")
-    def test_voice_to_layer_full_mock(self,mock_skip, mock_rest,mock_note, mock_chord):
+    @mock.patch("lychee.converters.abjad_to_lmei.tuplet_to_tupletspan")
+    @mock.patch("lychee.converters.abjad_to_lmei.leaf_to_element")
+    @mock.patch("lychee.converters.abjad_to_lmei.add_xml_ids")
+    def test_voice_to_layer_full_mock(self, mock_xml_id, mock_element, mock_tupletspan):
         '''
         precondition: abjad Voice containing rest, note, chord, skip, and Tuplet.
         postcondition: mei layer Element containing rest, note, chord, space, and tupletspan.
         '''
         abjad_voice = Voice("r4 c'4 <c' d'>4")
-        mock_rest.return_value = etree.Element('{}rest'.format(_MEINS))
-        mock_note.return_value = etree.Element('{}note'.format(_MEINS))
-        mock_chord.return_value = etree.Element('{}chord'.format(_MEINS))
+	skip = Skip((1,4))
+	abjad_voice.append(skip)
+	tuplet = Tuplet((2,3), "c' r4 c'")
+	abjad_voice.append(tuplet)
+
+        mock_element.return_value = etree.Element(mei.SPACE)
+
+
         mei_layer = abjad_to_lmei.voice_to_layer(abjad_voice)
         self.assertAttribsEqual(mei_layer.attrib, {'n': '1'})
-        self.assertEqual(len(mei_layer), 7)
-        self.assertEqual(mei_layer.tag, '{}layer'.format(_MEINS))
-        self.assertEqual(mei_layer[0].tag, '{}rest'.format(_MEINS))
-        self.assertEqual(mei_layer[1].tag, '{}note'.format(_MEINS))
-        self.assertEqual(mei_layer[2].tag, '{}chord'.format(_MEINS))
-        self.assertEqual(mei_layer[3].tag, '{}space'.format(_MEINS))
-        self.assertEqual(mei_layer[4].tag, '{}tupletspan'.format(_MEINS))
-        self.assertEqual(mei_layer[5].tag, '{}note'.format(_MEINS))
-        self.assertEqual(mei_layer[6].tag, '{}rest'.format(_MEINS))
-        self.assertEqual(mei_layer[7].tag, '{}note'.format(_MEINS))
-        self.assertIsNotNone(mei_layer.get(_XMLNS))
+        mock_element.assert_called_with(skip)
+	mock_tupletspan.assert_called_with(tuplet)
+	mock_xml_id.assert_called_with(abjad_voice, mei_layer)
 
     # inconsistencies:
     # layer added en route to mei; shouldn't be there when translated back to abjad
@@ -355,11 +368,10 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         abjad_staff = Staff()
 
         mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
-
-        self.assertEqual(mei_staff.tag, '{}staff'.format(_MEINS))
+        self.assertEqual(mei_staff.tag, mei.STAFF)
         self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
         self.assertEqual(len(mei_staff), 0)
-        self.assertIsNotNone(mei_staff.get(_XMLNS))
+        self.assertIsNotNone(mei_staff.get(xml.ID))
 
     # staff with one voice
     def test_staff_one_voice(self):
@@ -372,11 +384,11 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
 
         mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
 
-        self.assertEqual(mei_staff.tag, '{}staff'.format(_MEINS))
+        self.assertEqual(mei_staff.tag, mei.STAFF)
         self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
         self.assertEqual(len(mei_staff), 1)
-        self.assertEqual(mei_staff[0].tag, '{}layer'.format(_MEINS))
-        self.assertIsNotNone(mei_staff.get(_XMLNS))
+        self.assertEqual(mei_staff[0].tag, mei.LAYER)
+        self.assertIsNotNone(mei_staff.get(xml.ID))
 
     @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
     def test_staff_one_voice_mock(self,mock_layer):
@@ -386,15 +398,15 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         '''
         voice = Voice("r4 c'4 <c' d'>4")
         abjad_staff = Staff([voice])
-        mock_layer.return_value = etree.Element('{}layer'.format(_MEINS))
+        mock_layer.return_value = etree.Element(mei.LAYER)
 
         mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
 
-        self.assertEqual(mei_staff.tag, '{}staff'.format(_MEINS))
+        self.assertEqual(mei_staff.tag, mei.STAFF)
         self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
         self.assertEqual(len(mei_staff), 1)
-        self.assertEqual(mei_staff[0].tag, '{}layer'.format(_MEINS))
-        self.assertIsNotNone(mei_staff.get(_XMLNS))
+        self.assertEqual(mei_staff[0].tag, mei.LAYER)
+        self.assertIsNotNone(mei_staff.get(xml.ID))
 
 
     # staff with parallel voices (enumerate n based on staff n)
@@ -410,14 +422,14 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
 
         mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
 
-        self.assertEqual(mei_staff.tag, '{}staff'.format(_MEINS))
+        self.assertEqual(mei_staff.tag, mei.STAFF)
         self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
         self.assertEqual(len(mei_staff), 2)
-        self.assertEqual(mei_staff[0].tag, '{}layer'.format(_MEINS))
+        self.assertEqual(mei_staff[0].tag, mei.LAYER)
         self.assertEqual(mei_staff[0].get('n'),'1')
-        self.assertEqual(mei_staff[1].tag, '{}layer'.format(_MEINS))
+        self.assertEqual(mei_staff[1].tag, mei.LAYER)
         self.assertEqual(mei_staff[1].get('n'),'2')
-        self.assertIsNotNone(mei_staff.get(_XMLNS))
+        self.assertIsNotNone(mei_staff.get(xml.ID))
 
     @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
     def test_staff_parallel_mock(self,mock_layer):
@@ -429,18 +441,18 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         voice_two = Voice("r4 d'4 <d' e'>4")
         abjad_staff = Staff([voice_one, voice_two])
         abjad_staff.is_simultaneous = True
-        mock_layer.side_effect = lambda x: etree.Element('{}layer'.format(_MEINS))
+        mock_layer.side_effect = lambda x: etree.Element(mei.LAYER)
 
         mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
 
-        self.assertEqual(mei_staff.tag, '{}staff'.format(_MEINS))
+        self.assertEqual(mei_staff.tag, mei.STAFF)
         self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
         self.assertEqual(len(mei_staff), 2)
-        self.assertEqual(mei_staff[0].tag, '{}layer'.format(_MEINS))
+        self.assertEqual(mei_staff[0].tag, mei.LAYER)
         self.assertEqual(mei_staff[0].get('n'),'1')
-        self.assertEqual(mei_staff[1].tag, '{}layer'.format(_MEINS))
+        self.assertEqual(mei_staff[1].tag, mei.LAYER)
         self.assertEqual(mei_staff[1].get('n'),'2')
-        self.assertIsNotNone(mei_staff.get(_XMLNS))
+        self.assertIsNotNone(mei_staff.get(xml.ID))
 
     # staff with consecutive voices
     def test_staff_consecutive(self):
@@ -454,12 +466,12 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
 
         mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
 
-        self.assertEqual(mei_staff.tag, '{}staff'.format(_MEINS))
+        self.assertEqual(mei_staff.tag, mei.STAFF)
         self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
         self.assertEqual(len(mei_staff), 1)
-        self.assertEqual(mei_staff[0].tag, '{}layer'.format(_MEINS))
+        self.assertEqual(mei_staff[0].tag, mei.LAYER)
         self.assertEqual(mei_staff[0].get('n'),'1')
-        self.assertIsNotNone(mei_staff.get(_XMLNS))
+        self.assertIsNotNone(mei_staff.get(xml.ID))
 
     @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
     def test_staff_consecutive_mock(self,mock_layer):
@@ -470,16 +482,16 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         voice_one = Voice("r4 c'4 <c' d'>4")
         voice_two = Voice("r4 d'4 <d' e'>4")
         abjad_staff = Staff([voice_one, voice_two])
-        mock_layer.return_value = etree.Element('{}layer'.format(_MEINS),n='1')
+        mock_layer.return_value = etree.Element(mei.LAYER, n='1')
 
         mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
 
-        self.assertEqual(mei_staff.tag, '{}staff'.format(_MEINS))
+        self.assertEqual(mei_staff.tag, mei.STAFF)
         self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
         self.assertEqual(len(mei_staff), 1)
-        self.assertEqual(mei_staff[0].tag, '{}layer'.format(_MEINS))
+        self.assertEqual(mei_staff[0].tag, mei.LAYER)
         self.assertEqual(mei_staff[0].get('n'),'1')
-        self.assertIsNotNone(mei_staff.get(_XMLNS))
+        self.assertIsNotNone(mei_staff.get(xml.ID))
 
     # staff with leaves and no voice(s)
     def test_staff_leaves(self):
@@ -491,12 +503,12 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
 
         mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
 
-        self.assertEqual(mei_staff.tag, '{}staff'.format(_MEINS))
+        self.assertEqual(mei_staff.tag, mei.STAFF)
         self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
         self.assertEqual(len(mei_staff), 1)
-        self.assertEqual(mei_staff[0].tag, '{}layer'.format(_MEINS))
+        self.assertEqual(mei_staff[0].tag, mei.LAYER)
         self.assertEqual(mei_staff[0].get('n'),'1')
-        self.assertIsNotNone(mei_staff.get(_XMLNS))
+        self.assertIsNotNone(mei_staff.get(xml.ID))
 
     @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
     def test_staff_leaves_mock(self, mock_layer):
@@ -505,16 +517,16 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         postcondition: mei layer Element containing children leaf Elements
         '''
         abjad_staff = Staff("r4 c'4 <c' d'>4")
-        mock_layer.return_value = etree.Element('{}layer'.format(_MEINS), n='1')
+        mock_layer.return_value = etree.Element(mei.LAYER, n='1')
 
         mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
 
-        self.assertEqual(mei_staff.tag, '{}staff'.format(_MEINS))
+        self.assertEqual(mei_staff.tag, mei.STAFF)
         self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
         self.assertEqual(len(mei_staff), 1)
-        self.assertEqual(mei_staff[0].tag, '{}layer'.format(_MEINS))
+        self.assertEqual(mei_staff[0].tag, mei.LAYER)
         self.assertEqual(mei_staff[0].get('n'),'1')
-        self.assertIsNotNone(mei_staff.get(_XMLNS))
+        self.assertIsNotNone(mei_staff.get(xml.ID))
 
     # staff with some combination of leaves and voices
     def test_staff_leaves_and_voices(self):
@@ -532,13 +544,13 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
 
         mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
 
-        self.assertEqual(mei_staff.tag, '{}staff'.format(_MEINS))
+        self.assertEqual(mei_staff.tag, mei.STAFF)
         self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
         self.assertEqual(len(mei_staff), 1)
-        self.assertEqual(mei_staff[0].tag, '{}layer'.format(_MEINS))
+        self.assertEqual(mei_staff[0].tag, mei.LAYER)
         self.assertEqual(mei_staff[0].get('n'),'1')
         self.assertEqual(len(mei_staff[0]), 8)
-        self.assertIsNotNone(mei_staff.get(_XMLNS))
+        self.assertIsNotNone(mei_staff.get(xml.ID))
 
     @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
     def test_staff_leaves_and_voices_mock(self, mock_layer):
@@ -553,21 +565,21 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         voice_two = Voice("r4 d'4")
         abjad_staff.append(voice_two)
         abjad_staff.append(Note("c''4"))
-        dummy = etree.Element('{}layer'.format(_MEINS),n='1')
+        dummy = etree.Element(mei.LAYER,n='1')
         for _ in range(8):
-            etree.SubElement(dummy, '{}note'.format(_MEINS))
+            etree.SubElement(dummy, mei.NOTE)
         mock_layer.return_value = dummy
 
         mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
 
         self.assertEqual(1, mock_layer.call_count)
-        self.assertEqual(mei_staff.tag, '{}staff'.format(_MEINS))
+        self.assertEqual(mei_staff.tag, mei.STAFF)
         self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
         self.assertEqual(len(mei_staff), 1)
-        self.assertEqual(mei_staff[0].tag, '{}layer'.format(_MEINS))
+        self.assertEqual(mei_staff[0].tag, mei.LAYER)
         self.assertEqual(mei_staff[0].get('n'),'1')
         self.assertEqual(len(mei_staff[0]), 8)
-        self.assertIsNotNone(mei_staff.get(_XMLNS))
+        self.assertIsNotNone(mei_staff.get(xml.ID))
 
     def test_section_empty(self):
         '''
@@ -576,10 +588,10 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         '''
         abjad_score = Score()
         mei_section = abjad_to_lmei.score_to_section(abjad_score)
-        self.assertEqual(mei_section.tag, '{}section'.format(_MEINS))
+        self.assertEqual(mei_section.tag, mei.SECTION)
         self.assertEqual(mei_section.get('n'), '1')
         self.assertEqual(len(mei_section), 0)
-        self.assertIsNotNone(mei_section.get(_XMLNS))
+        self.assertIsNotNone(mei_section.get(xml.ID))
 
     def test_section_full(self):
         '''
@@ -595,29 +607,29 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
 
         mei_section = abjad_to_lmei.score_to_section(abjad_score)
 
-        self.assertEqual(mei_section.tag, '{}section'.format(_MEINS))
+        self.assertEqual(mei_section.tag, mei.SECTION)
         self.assertEqual(len(mei_section), 5)
-        self.assertEqual(mei_section[0].tag, '{}scoreDef'.format(_MEINS))
+        self.assertEqual(mei_section[0].tag, mei.SCORE_DEF)
         self.assertEqual(len(mei_section[0]), 1)
-        self.assertEqual(mei_section[0][0].tag, '{}staffGrp'.format(_MEINS))
+        self.assertEqual(mei_section[0][0].tag, mei.STAFF_GRP)
         self.assertEqual(len(mei_section[0][0]), 3)
-        self.assertEqual(mei_section[0][0][0].tag, '{}staffDef'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][0].tag, mei.STAFF_DEF)
         self.assertEqual(mei_section[0][0][0].get('lines'), '5')
         self.assertEqual(mei_section[0][0][0].get('n'), '1')
-        self.assertEqual(mei_section[0][0][1].tag, '{}staffGrp'.format(_MEINS))
-        self.assertEqual(mei_section[0][0][1][0].tag, '{}staffDef'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][1].tag, mei.STAFF_GRP)
+        self.assertEqual(mei_section[0][0][1][0].tag, mei.STAFF_DEF)
         self.assertEqual(mei_section[0][0][1][0].get('lines'), '5')
         self.assertEqual(mei_section[0][0][1][0].get('n'), '2')
-        self.assertEqual(mei_section[0][0][1][1].tag, '{}staffDef'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][1][1].tag, mei.STAFF_DEF)
         self.assertEqual(mei_section[0][0][1][1].get('n'), '3')
         self.assertEqual(mei_section[0][0][1][1].get('lines'), '5')
-        self.assertEqual(mei_section[0][0][2].tag, '{}staffDef'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][2].tag, mei.STAFF_DEF)
         self.assertEqual(mei_section[0][0][2].get('n'), '4')
         self.assertEqual(mei_section[0][0][2].get('lines'), '5')
         for x in range(1,5):
-            self.assertEqual(mei_section[x].tag, '{}staff'.format(_MEINS))
+            self.assertEqual(mei_section[x].tag, mei.STAFF)
             self.assertEqual(mei_section[x].get('n'), str(x))
-        self.assertIsNotNone(mei_section.get(_XMLNS))
+        self.assertIsNotNone(mei_section.get(xml.ID))
 
     @mock.patch("lychee.converters.abjad_to_lmei.staff_to_staff")
     def test_section_full_mock(self,mock_section):
@@ -631,33 +643,33 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         abjad_score.append(Staff())
         abjad_score.append( StaffGroup([Staff(), Staff()]) )
         abjad_score.append(Staff())
-        mock_section.side_effect = lambda x: etree.Element('{}staff'.format(_MEINS),n='1')
+        mock_section.side_effect = lambda x: etree.Element(mei.STAFF, n='1')
 
         mei_section = abjad_to_lmei.score_to_section(abjad_score)
 
-        self.assertEqual(mei_section.tag, '{}section'.format(_MEINS))
+        self.assertEqual(mei_section.tag, mei.SECTION)
         self.assertEqual(len(mei_section), 5)
-        self.assertEqual(mei_section[0].tag, '{}scoreDef'.format(_MEINS))
+        self.assertEqual(mei_section[0].tag, mei.SCORE_DEF)
         self.assertEqual(len(mei_section[0]), 1)
-        self.assertEqual(mei_section[0][0].tag, '{}staffGrp'.format(_MEINS))
+        self.assertEqual(mei_section[0][0].tag, mei.STAFF_GRP)
         self.assertEqual(len(mei_section[0][0]), 3)
-        self.assertEqual(mei_section[0][0][0].tag, '{}staffDef'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][0].tag, mei.STAFF_DEF)
         self.assertEqual(mei_section[0][0][0].get('lines'), '5')
         self.assertEqual(mei_section[0][0][0].get('n'), '1')
-        self.assertEqual(mei_section[0][0][1].tag, '{}staffGrp'.format(_MEINS))
-        self.assertEqual(mei_section[0][0][1][0].tag, '{}staffDef'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][1].tag, mei.STAFF_GRP)
+        self.assertEqual(mei_section[0][0][1][0].tag, mei.STAFF_DEF)
         self.assertEqual(mei_section[0][0][1][0].get('lines'), '5')
         self.assertEqual(mei_section[0][0][1][0].get('n'), '2')
-        self.assertEqual(mei_section[0][0][1][1].tag, '{}staffDef'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][1][1].tag, mei.STAFF_DEF)
         self.assertEqual(mei_section[0][0][1][1].get('n'), '3')
         self.assertEqual(mei_section[0][0][1][1].get('lines'), '5')
-        self.assertEqual(mei_section[0][0][2].tag, '{}staffDef'.format(_MEINS))
+        self.assertEqual(mei_section[0][0][2].tag, mei.STAFF_DEF)
         self.assertEqual(mei_section[0][0][2].get('n'), '4')
         self.assertEqual(mei_section[0][0][2].get('lines'), '5')
         for x in range(1,5):
-            self.assertEqual(mei_section[x].tag, '{}staff'.format(_MEINS))
+            self.assertEqual(mei_section[x].tag, mei.STAFF)
             self.assertEqual(mei_section[x].get('n'), str(x))
-        self.assertIsNotNone(mei_section.get(_XMLNS))
+        self.assertIsNotNone(mei_section.get(xml.ID))
 
     def test_tuplet_to_tupletspan_empty_fixed(self):
         '''
@@ -670,14 +682,14 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
 
         self.assertTrue(isinstance(mei_element, etree._Element))
         tupletspan = mei_element
-        self.assertEqual(tupletspan.tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(tupletspan.tag, mei.TUPLET_SPAN)
         self.assertEqual(tupletspan.get('dur'), '4')
         self.assertIsNone(tupletspan.get('dots'))
         self.assertIsNone(tupletspan.get('num'))
         self.assertIsNone(tupletspan.get('numBase'))
         self.assertIsNone(tupletspan.get('startid'))
         self.assertIsNone(tupletspan.get('endid'))
-        self.assertIsNotNone(tupletspan.get(_XMLNS))
+        self.assertIsNotNone(tupletspan.get(xml.ID))
 
     def test_tuplet_to_tupletspan_empty_fixed_dotted(self):
         '''
@@ -690,14 +702,14 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
 
         self.assertTrue(isinstance(mei_element, etree._Element))
         tupletspan = mei_element
-        self.assertEqual(tupletspan.tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(tupletspan.tag, mei.TUPLET_SPAN)
         self.assertEqual(tupletspan.get('dur'), '4')
         self.assertEqual(tupletspan.get('dots'), '1')
         self.assertIsNone(tupletspan.get('num'))
         self.assertIsNone(tupletspan.get('numBase'))
         self.assertIsNone(tupletspan.get('startid'))
         self.assertIsNone(tupletspan.get('endid'))
-        self.assertIsNotNone(tupletspan.get(_XMLNS))
+        self.assertIsNotNone(tupletspan.get(xml.ID))
 
     def test_tuplet_to_tupletspan_empty(self):
         '''
@@ -710,14 +722,14 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
 
         self.assertTrue(isinstance(mei_element, etree._Element))
         tupletspan = mei_element
-        self.assertEqual(tupletspan.tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(tupletspan.tag, mei.TUPLET_SPAN)
         self.assertEqual(tupletspan.get('dur'), None)
         self.assertEqual(tupletspan.get('dots'), None)
         self.assertEqual(tupletspan.get('num'), '3')
         self.assertEqual(tupletspan.get('numBase'), '2')
         self.assertEqual(tupletspan.get('startid'), None)
         self.assertEqual(tupletspan.get('endid'), None)
-        self.assertIsNotNone(tupletspan.get(_XMLNS))
+        self.assertIsNotNone(tupletspan.get(xml.ID))
 
     def test_tuplet_to_tupletspan_full(self):
         '''
@@ -731,17 +743,17 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
 
         self.assertTrue(isinstance(mei_elements, list))
         self.assertEqual(len(mei_elements), 4)
-        self.assertEqual(mei_elements[0].tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(mei_elements[0].tag, mei.TUPLET_SPAN)
         self.assertEqual(mei_elements[0].get('dur'), '4')
         self.assertIsNone(mei_elements[0].get('dots'))
         self.assertEqual(mei_elements[0].get('num'), '3')
         self.assertEqual(mei_elements[0].get('numBase'), '2')
-        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(_XMLNS))
-        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(_XMLNS))
+        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
+        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
         chunked_plist = mei_elements[0].get('plist').split()
         self.assertEqual(len(chunked_plist), 3)
         for note_element in mei_elements[1:]:
-            self.assertTrue(note_element.get(_XMLNS) in chunked_plist)
+            self.assertTrue(note_element.get(xml.ID) in chunked_plist)
 
     @mock.patch("lychee.converters.abjad_to_lmei.leaf_to_element")
     def test_tuplet_to_tupletspan_full_mock(self, mock_element):
@@ -751,23 +763,23 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         '''
         # returns list containing tupletspan followed by leaf elements
         abjad_tuplet = Tuplet(Multiplier(2,3), "c'8 c' c'")
-        mock_element.side_effect = lambda x: etree.Element('{}note'.format(_MEINS), pname='c', octave='4', dur='8')
+        mock_element.side_effect = lambda x: etree.Element(mei.NOTE, pname='c', octave='4', dur='8')
 
         mei_elements = abjad_to_lmei.tuplet_to_tupletspan(abjad_tuplet)
 
         self.assertTrue(isinstance(mei_elements, list))
         self.assertEqual(len(mei_elements), 4)
-        self.assertEqual(mei_elements[0].tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(mei_elements[0].tag, mei.TUPLET_SPAN)
         self.assertEqual(mei_elements[0].get('dur'), '4')
         self.assertIsNone(mei_elements[0].get('dots'))
         self.assertEqual(mei_elements[0].get('num'), '3')
         self.assertEqual(mei_elements[0].get('numBase'), '2')
-        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(_XMLNS))
-        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(_XMLNS))
+        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
+        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
         chunked_plist = mei_elements[0].get('plist').split()
         self.assertEqual(len(chunked_plist), 3)
         for note_element in mei_elements[1:]:
-            self.assertTrue(note_element.get(_XMLNS) in chunked_plist)
+            self.assertTrue(note_element.get(xml.ID) in chunked_plist)
 
     def test_tuplet_to_tupletspan_full_dotted(self):
         '''
@@ -781,17 +793,17 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
 
         self.assertTrue(isinstance(mei_elements, list))
         self.assertEqual(len(mei_elements), 6)
-        self.assertEqual(mei_elements[0].tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(mei_elements[0].tag, mei.TUPLET_SPAN)
         self.assertEqual(mei_elements[0].get('dur'), '4')
         self.assertEqual(mei_elements[0].get('dots'), '1')
         self.assertEqual(mei_elements[0].get('num'), '5')
         self.assertEqual(mei_elements[0].get('numBase'), '3')
-        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(_XMLNS))
-        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(_XMLNS))
+        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
+        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
         chunked_plist = mei_elements[0].get('plist').split()
         self.assertEqual(len(chunked_plist), 5)
         for note_element in mei_elements[1:]:
-            self.assertTrue(note_element.get(_XMLNS) in chunked_plist)
+            self.assertTrue(note_element.get(xml.ID) in chunked_plist)
 
     @mock.patch("lychee.converters.abjad_to_lmei.leaf_to_element")
     def test_tuplet_to_tupletspan_full_dotted_mock(self, mock_element):
@@ -801,23 +813,23 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         '''
         abjad_tuplet = Tuplet()
         abjad_tuplet = abjad_tuplet.from_duration_and_ratio(Duration(3,8), [1] * 5)
-        mock_element.side_effect = lambda x: etree.Element('{}note'.format(_MEINS), pname='c', octave='4', dur='8')
+        mock_element.side_effect = lambda x: etree.Element(mei.NOTE, pname='c', octave='4', dur='8')
 
         mei_elements = abjad_to_lmei.tuplet_to_tupletspan(abjad_tuplet)
 
         self.assertTrue(isinstance(mei_elements, list))
         self.assertEqual(len(mei_elements), 6)
-        self.assertEqual(mei_elements[0].tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(mei_elements[0].tag, mei.TUPLET_SPAN)
         self.assertEqual(mei_elements[0].get('dur'), '4')
         self.assertEqual(mei_elements[0].get('dots'), '1')
         self.assertEqual(mei_elements[0].get('num'), '5')
         self.assertEqual(mei_elements[0].get('numBase'), '3')
-        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(_XMLNS))
-        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(_XMLNS))
+        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
+        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
         chunked_plist = mei_elements[0].get('plist').split()
         self.assertEqual(len(chunked_plist), 5)
         for note_element in mei_elements[1:]:
-            self.assertTrue(note_element.get(_XMLNS) in chunked_plist)
+            self.assertTrue(note_element.get(xml.ID) in chunked_plist)
 
     def test_tuplet_to_tupletspan_full_nested(self):
         '''
@@ -835,30 +847,30 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(len(mei_elements), 8)
         outer_tupletspan = mei_elements[0]
         inner_tupletspan = mei_elements[1]
-        self.assertEqual(outer_tupletspan.tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(outer_tupletspan.tag, mei.TUPLET_SPAN)
         self.assertEqual(outer_tupletspan.get('dur'), '4')
         self.assertEqual(outer_tupletspan.get('dots'), '1')
         self.assertEqual(outer_tupletspan.get('num'), '5')
         self.assertEqual(outer_tupletspan.get('numBase'), '3')
-        self.assertEqual(inner_tupletspan.tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(inner_tupletspan.tag, mei.TUPLET_SPAN)
         self.assertEqual(inner_tupletspan.get('dur'), '4')
         self.assertIsNone(inner_tupletspan.get('dots'))
         self.assertEqual(inner_tupletspan.get('num'), '3')
         self.assertEqual(inner_tupletspan.get('numBase'), '2')
         for note in mei_elements[2:]:
-            self.assertEqual(note.tag, '{}note'.format(_MEINS))
+            self.assertEqual(note.tag, mei.NOTE)
         inner_ids = mei_elements[1].get('plist').split()
         for inner_tuplet_note in mei_elements[2:5]:
-            self.assertTrue(inner_tuplet_note.get(_XMLNS) in inner_ids)
-        self.assertEqual(mei_elements[1].get('startid'), mei_elements[2].get(_XMLNS))
-        self.assertEqual(mei_elements[1].get('endid'), mei_elements[4].get(_XMLNS))
+            self.assertTrue(inner_tuplet_note.get(xml.ID) in inner_ids)
+        self.assertEqual(mei_elements[1].get('startid'), mei_elements[2].get(xml.ID))
+        self.assertEqual(mei_elements[1].get('endid'), mei_elements[4].get(xml.ID))
         outer_ids = mei_elements[0].get('plist').split()
         for outer_tuplet_element in mei_elements[1:]:
-            self.assertTrue(outer_tuplet_element.get(_XMLNS) in outer_ids)
-        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(_XMLNS))
-        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(_XMLNS))
+            self.assertTrue(outer_tuplet_element.get(xml.ID) in outer_ids)
+        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
+        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
         for note_element in mei_elements[1:]:
-            self.assertTrue(note_element.get(_XMLNS) in outer_ids)
+            self.assertTrue(note_element.get(xml.ID) in outer_ids)
 
     @mock.patch("lychee.converters.abjad_to_lmei.leaf_to_element")
     def test_tuplet_to_tupletspan_full_nested_mock(self, mock_element):
@@ -870,7 +882,7 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         outer_tuplet = FixedDurationTuplet((3,8), [])
         outer_tuplet.append(inner_tuplet)
         outer_tuplet.extend("d'8 d' d'")
-        mock_element.side_effect = lambda x: etree.Element('{}note'.format(_MEINS), pname='c', octave='4', dur='8')
+        mock_element.side_effect = lambda x: etree.Element(mei.NOTE, pname='c', octave='4', dur='8')
 
         mei_elements = abjad_to_lmei.tuplet_to_tupletspan(outer_tuplet)
 
@@ -878,27 +890,27 @@ class TestAbjadToMeiConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(len(mei_elements), 8)
         outer_tupletspan = mei_elements[0]
         inner_tupletspan = mei_elements[1]
-        self.assertEqual(outer_tupletspan.tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(outer_tupletspan.tag, mei.TUPLET_SPAN)
         self.assertEqual(outer_tupletspan.get('dur'), '4')
         self.assertEqual(outer_tupletspan.get('dots'), '1')
         self.assertEqual(outer_tupletspan.get('num'), '5')
         self.assertEqual(outer_tupletspan.get('numBase'), '3')
-        self.assertEqual(inner_tupletspan.tag, '{}tupletspan'.format(_MEINS))
+        self.assertEqual(inner_tupletspan.tag, mei.TUPLET_SPAN)
         self.assertEqual(inner_tupletspan.get('dur'), '4')
         self.assertIsNone(inner_tupletspan.get('dots'))
         self.assertEqual(inner_tupletspan.get('num'), '3')
         self.assertEqual(inner_tupletspan.get('numBase'), '2')
         for note in mei_elements[2:]:
-            self.assertEqual(note.tag, '{}note'.format(_MEINS))
+            self.assertEqual(note.tag, mei.NOTE)
         inner_ids = mei_elements[1].get('plist').split()
         for inner_tuplet_note in mei_elements[2:5]:
-            self.assertTrue(inner_tuplet_note.get(_XMLNS) in inner_ids)
-        self.assertEqual(mei_elements[1].get('startid'), mei_elements[2].get(_XMLNS))
-        self.assertEqual(mei_elements[1].get('endid'), mei_elements[4].get(_XMLNS))
+            self.assertTrue(inner_tuplet_note.get(xml.ID) in inner_ids)
+        self.assertEqual(mei_elements[1].get('startid'), mei_elements[2].get(xml.ID))
+        self.assertEqual(mei_elements[1].get('endid'), mei_elements[4].get(xml.ID))
         outer_ids = mei_elements[0].get('plist').split()
         for outer_tuplet_element in mei_elements[1:]:
-            self.assertTrue(outer_tuplet_element.get(_XMLNS) in outer_ids)
-        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(_XMLNS))
-        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(_XMLNS))
+            self.assertTrue(outer_tuplet_element.get(xml.ID) in outer_ids)
+        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
+        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
         for note_element in mei_elements[1:]:
-            self.assertTrue(note_element.get(_XMLNS) in outer_ids)
+            self.assertTrue(note_element.get(xml.ID) in outer_ids)

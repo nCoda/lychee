@@ -7,7 +7,7 @@
 # Filename:               lychee/converters/abjad_to_lmei.py
 # Purpose:                Converts an abjad document to an lmei document.
 #
-# Copyright (C) 2016 Jeffrey Treviño
+# Copyright (C) 2016 Jeffrey Treviño, Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -45,10 +45,7 @@ from abjad.tools.topleveltools.attach import attach
 
 import lychee
 from lychee.signals import inbound
-from lychee.namespaces import mei
-
-
-_XMLNS = '{http://www.w3.org/XML/1998/namespace}id'
+from lychee.namespaces import mei, xml
 
 
 def convert(document, **kwargs):
@@ -97,7 +94,7 @@ def add_xml_ids(abjad_object, mei_element):
     hasher = hashlib.new('SHA256', abjad_id)
     the_xmlid = hasher.hexdigest()
     attach(the_xmlid, abjad_object)
-    mei_element.set(_XMLNS, the_xmlid)
+    mei_element.set(xml.ID, the_xmlid)
 
 
 def note_to_note(abjad_note):
@@ -143,14 +140,14 @@ def note_to_note(abjad_note):
         mei_note.set('dots',str(dots))
     if accidental:
         if is_cautionary:
-            accid = etree.SubElement(mei_note,mei.ACCIDENTAL,accid=accidental,func='cautionary')
+            accid = etree.SubElement(mei_note,mei.ACCID,accid=accidental,func='cautionary')
         else:
             mei_note.set('accid.ges', accidental)
             if is_forced:
                 mei_note.set('accid', accidental)
     else:
         if is_cautionary:
-            accid = etree.SubElement(mei_note,mei.ACCIDENTAL,accid='n',func='cautionary')
+            accid = etree.SubElement(mei_note,mei.ACCID,accid='n',func='cautionary')
         if is_forced:
             mei_note.set('accid.ges', 'n')
             mei_note.set('accid', 'n')
@@ -239,13 +236,13 @@ def empty_tuplet_to_tupletspan_element(abjad_tuplet):
     if isinstance(abjad_tuplet, Tuplet) and not isinstance(abjad_tuplet, FixedDurationTuplet):
         numerator = six.b(str(abjad_tuplet.multiplier.numerator))
         denominator = six.b(str(abjad_tuplet.multiplier.denominator))
-        tupletspan = etree.Element(mei.TUPLETSPAN,num=denominator, numBase=numerator)
+        tupletspan = etree.Element(mei.TUPLET_SPAN,num=denominator, numBase=numerator)
         add_xml_ids(abjad_tuplet, tupletspan)
         return tupletspan
     elif isinstance(abjad_tuplet, FixedDurationTuplet):
         dots = abjad_tuplet.target_duration.dot_count
         dur = abjad_tuplet.target_duration.lilypond_duration_string
-        tupletspan = etree.Element(mei.TUPLETSPAN)
+        tupletspan = etree.Element(mei.TUPLET_SPAN)
         if dots:
             dur = dur[:dur.find('.')]
             tupletspan.set('dots', six.b(str(dots)))
@@ -295,7 +292,7 @@ def tuplet_to_tupletspan(abjad_tuplet):
             abjad_tuplet = abjad_tuplet.to_fixed_duration_tuplet()
         span_n = 1
         component_n = 1
-        outermost_span = etree.Element(mei.TUPLETSPAN)
+        outermost_span = etree.Element(mei.TUPLET_SPAN)
         setup_outermost_tupletspan(outermost_span, abjad_tuplet)
         output_list = [outermost_span]
         plist = ''
@@ -313,10 +310,10 @@ def tuplet_to_tupletspan(abjad_tuplet):
                 add_xml_ids(abjad_tuplet[x], mei_component)
                 output_list.append(mei_component)
         for element in output_list[1:]:
-            plist = plist + str(element.get(_XMLNS)) + ' '
+            plist = plist + str(element.get(xml.ID)) + ' '
         plist = plist[:-1]
-        outermost_span.set('startid',six.b(str(output_list[1].get(_XMLNS))))
-        outermost_span.set('endid',six.b(str(output_list[-1].get(_XMLNS))))
+        outermost_span.set('startid',six.b(str(output_list[1].get(xml.ID))))
+        outermost_span.set('endid',six.b(str(output_list[-1].get(xml.ID))))
         outermost_span.set('plist',plist)
         return output_list
 
@@ -411,7 +408,7 @@ def score_to_section(abjad_score):
     mei_section = etree.Element(mei.SECTION, n='1')
     add_xml_ids(abjad_score, mei_section)
     score_def = etree.Element(mei.SCORE_DEF)
-    score_def.set(_XMLNS, mei_section.get(_XMLNS) + 'scoreDef')
+    score_def.set(xml.ID, mei_section.get(xml.ID) + 'scoreDef')
     mei_section.append(score_def)
     mei_main_staff_group = etree.Element(mei.STAFF_GRP,symbol='line')
     score_def.append(mei_main_staff_group)
@@ -425,7 +422,7 @@ def score_to_section(abjad_score):
             mei_section.append(mei_staff)
             add_xml_ids(abjad_staff, mei_staff)
             staff_def = etree.Element(mei.STAFF_DEF,lines='5',n=str(staffCounter))
-            staff_def.set(_XMLNS, mei_staff.get(_XMLNS) + 'staffDef')
+            staff_def.set(xml.ID, mei_staff.get(xml.ID) + 'staffDef')
             mei_main_staff_group.append(staff_def)
             staffCounter += 1
         elif isinstance(component, StaffGroup):
@@ -441,7 +438,7 @@ def score_to_section(abjad_score):
                 mei_staff.set('n', str(staffCounter))
                 mei_section.append(mei_staff)
                 staff_def = etree.Element(mei.STAFF_DEF,lines='5',n=str(staffCounter))
-                staff_def.set(_XMLNS, mei_staff.get(_XMLNS) + 'staffDef')
+                staff_def.set(xml.ID, mei_staff.get(xml.ID) + 'staffDef')
                 mei_staff_group.append(staff_def)
                 staffCounter += 1
     return mei_section

@@ -34,7 +34,8 @@ from lychee import log
 # NOTE that you must import the :mod:`lychee.signals.workflow` separately because it isn't imported
 # by ``from lychee import *`` by default, because it caused too much trouble.
 
-__all__ = ['inbound', 'vcs', 'outbound']
+__all__ = ['document', 'inbound', 'vcs', 'outbound']
+from . import *
 
 from . import signal
 

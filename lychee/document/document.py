@@ -125,6 +125,7 @@ from six.moves import range
 
 from lxml import etree
 
+import lychee
 from lychee import exceptions
 from lychee.namespaces import mei, xlink, xml
 
@@ -427,6 +428,7 @@ def _check_valid_section_id(xmlid):
     return True
 
 
+
 def _init_sections_dict(all_files):
     '''
     Initialize a dictionary with keys corresponding to all the ``<section>`` elements in the
@@ -451,6 +453,42 @@ def _init_sections_dict(all_files):
             raise exceptions.InvalidDocumentError(_ERR_CORRUPT_TARGET.format(target))
 
     return post
+
+def _move_section_to(xmlid, position):  # TODO: this function is untested
+    '''
+    Slot for the "document.MOVE_SECTION_TO" signal.
+
+    :arg string xmlid: The @xml:id attribute of the ``<section>`` to move. The section may or may
+        not already be in the active score, but it must already be part of the document.
+    :arg int position: The requested new index of the section in the active score.
+
+    Note that this isn't the slot itself. After the work for MOVE_SECTION_TO is completed by this
+    function, an "outbound" conversion must run. That must be done by whichever function calls this.
+    '''
+    position = int(position)
+
+    doc = Document(repository_path=lychee.get_repo_dir())
+    if xmlid not in doc.get_section_ids(all_sections=True):
+        # TODO: panic
+        pass
+
+    score_order = doc.get_section_ids()
+
+    if xmlid in score_order:
+        curr_pos = score_order.index(xmlid)
+        if curr_pos < position:
+            position -= 1
+        del score_order[curr_pos]
+
+    score_order.insert(position, xmlid)
+
+    new_score = etree.Element(mei.SCORE)
+    for section in score_order:
+        new_score.append(doc.get_section(section))
+
+    doc.put_score(new_score)
+    doc.save_everything()
+
 
 
 class Document(object):
@@ -545,7 +583,7 @@ class Document(object):
         Load all portions of the MEI document from files. This method effectively caches the
         document in memory for faster access later.
 
-        .. note:: Unlike the other ``get``-prefixed methods, this method returns nothing.
+        .. caution:: This method is not yet implemented.
         '''
         # NB: when you write this, it should just call the other methods
         raise NotImplementedError()
@@ -850,3 +888,35 @@ class Document(object):
 
         self._sections[xmlid] = new_section
         return xmlid
+
+    def move_section_to(self, xmlid, position):
+        '''
+        Move a ``<section>`` to another position in the score.
+
+        Slot for the "document.MOVE_SECTION_TO" signal.
+
+        :arg string xmlid: The @xml:id attribute of the ``<section>`` to move. The section may or may
+            not already be in the active score, but it must already be part of the document.
+        :arg int position: The requested new index of the section in the active score.
+        :raises: :exc:`~lychee.exceptions.SectionNotFoundError` if the ``<section>`` to move is not
+            found in the repository.
+
+        Note that this isn't the slot itself. After the work for MOVE_SECTION_TO is completed by this
+        function, an "outbound" conversion must run. That must be done by whichever function calls this.
+        '''
+        position = int(position)
+
+        if xmlid not in self.get_section_ids(all_sections=True):
+            raise exceptions.SectionNotFoundError(_SECTION_NOT_FOUND.format(xmlid=xmlid))
+
+        score_order = self._score_order
+
+        if xmlid in score_order:
+            curr_pos = score_order.index(xmlid)
+            if curr_pos < position:
+                position -= 1
+            del score_order[curr_pos]
+
+        score_order.insert(position, xmlid)
+
+        self._score_order = score_order

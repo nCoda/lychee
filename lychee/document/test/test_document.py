@@ -45,6 +45,9 @@ import six
 
 from lxml import etree
 
+import hug
+
+import lychee
 from lychee import exceptions
 from lychee.document import document
 from lychee.namespaces import mei, xlink, xml
@@ -1560,3 +1563,89 @@ class TestInitSectionsDict(object):
         with pytest.raises(exceptions.InvalidDocumentError) as err:
             document._init_sections_dict(root)
         assert err.value[0] == document._ERR_CORRUPT_TARGET.format('bsdf')
+
+
+class TestMoveSectionTo(DocumentTestCase):
+    '''
+    Tests for Document.move_section_to().
+    '''
+
+    def setUp(self):
+        super(TestMoveSectionTo, self).setUp()
+        # The superclass already put some files into the repo, so we need to "unsafely" initialize
+        # it ourselves or else set_repo_dir() will raise an exception
+        hug.Hug(self.repo_dir, safe=False)
+        lychee.set_repo_dir(self.repo_dir)
+
+    def test_section_missing(self):
+        '''
+        when the section to move is actually missing (SectionNotFoundError)
+        '''
+        xmlid = 'Sme-s-l-e11111'
+        with pytest.raises(exceptions.SectionNotFoundError) as err:
+            self.doc.move_section_to(xmlid, 14)
+        assert err.value[0] == document._SECTION_NOT_FOUND.format(xmlid=xmlid)
+
+    def test_not_yet_active(self):
+        '''
+        When the section is not in the active score.
+        We'll test with 3 sections, and add them in a variety of ways.
+        '''
+        sect_ids = []
+        for _ in range(3):
+            sect_ids.append(self.doc.put_section(etree.Element(mei.SECTION)))
+
+        self.doc.move_section_to(sect_ids[0], 0)
+        self.doc.move_section_to(sect_ids[1], 40)
+        self.doc.move_section_to(sect_ids[2], 1)
+
+        assert self.doc.get_section_ids() == [sect_ids[0], sect_ids[2], sect_ids[1]]
+
+    def test_move_later(self):
+        '''
+        When the section is in the score, moving to a later place.
+        In this test, it amounts to swapping the first 2 of 3 sections.
+        '''
+        sect_ids = []
+        for _ in range(3):
+            sect_ids.append(self.doc.put_section(etree.Element(mei.SECTION)))
+        score = etree.Element(mei.SCORE)
+        for each_id in sect_ids:
+            score.append(self.doc.get_section(each_id))
+        self.doc.put_score(score)
+
+        self.doc.move_section_to(sect_ids[0], 2)
+
+        assert self.doc.get_section_ids() == [sect_ids[1], sect_ids[0], sect_ids[2]]
+
+    def test_move_to_end(self):
+        '''
+        when the section is in the score, move it to the end
+        '''
+        sect_ids = []
+        for _ in range(3):
+            sect_ids.append(self.doc.put_section(etree.Element(mei.SECTION)))
+        score = etree.Element(mei.SCORE)
+        for each_id in sect_ids:
+            score.append(self.doc.get_section(each_id))
+        self.doc.put_score(score)
+
+        self.doc.move_section_to(sect_ids[0], 3)
+
+        assert self.doc.get_section_ids() == [sect_ids[1], sect_ids[2], sect_ids[0]]
+
+    def test_move_earlier(self):
+        '''
+        when the section is in the score, moving to an earlier place
+        '''
+        sect_ids = []
+        for _ in range(3):
+            sect_ids.append(self.doc.put_section(etree.Element(mei.SECTION)))
+        score = etree.Element(mei.SCORE)
+        for each_id in sect_ids:
+            score.append(self.doc.get_section(each_id))
+        self.doc.put_score(score)
+
+        self.doc.move_section_to(sect_ids[2], 0)
+
+        assert self.doc.get_section_ids() == [sect_ids[2], sect_ids[0], sect_ids[1]]

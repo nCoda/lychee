@@ -136,6 +136,7 @@ _ERR_MISSING_MEIHEAD = 'File with <meiHead> is missing.'
 _ERR_CORRUPT_MEIHEAD = 'File with <meiHead> is inavlid.'
 _ERR_MISSING_REPO_PATH = 'This Document is not using external files.'
 _ERR_MISSING_FILE = 'Could not load indicated file.'
+_ERR_CORRUPT_TARGET = '@target does not end with ".mei": {0}'
 _PUBSTMT_DEFAULT_CONTENTS = 'This is an unpublished Lychee-MEI document.'
 _ABJAD_FULL_NAME = 'Abjad API for Formalized Score Control'
 _PLACEHOLDER_TITLE = '(Untitled)'
@@ -426,6 +427,32 @@ def _check_valid_section_id(xmlid):
     return True
 
 
+def _init_sections_dict(all_files):
+    '''
+    Initialize a dictionary with keys corresponding to all the ``<section>`` elements in the
+    document, but the keys set to ``None``. In effect, this is enough information to know which
+    sections are in a document, but does not spend time loading and caching the sections.
+
+    :param all_files: The "all_files" ``<meiCorpus>`` element from which to load sections.
+    :type all_files: :class:`lxml.etree._Element`
+    :returns: A dictionary with keys as @xml:id of every ``<section>``.
+    :rtype: dict
+    :raises: :exc:`lychee.exceptions.InvalidDocumentError` if the @target attribute of a ``<ptr>``
+        to a ``<section>`` does not end with ``".mei"``.
+    '''
+    post = {}
+
+    xpath_query = './{mei}/{ptr}[@targettype="section"]'.format(mei=mei.MEI, ptr=mei.PTR)
+    for ptr in all_files.findall(xpath_query):
+        target = ptr.get('target')
+        if len(target) > 4 and target.endswith('.mei'):
+            post[target[:-4]] = None
+        else:
+            raise exceptions.InvalidDocumentError(_ERR_CORRUPT_TARGET.format(target))
+
+    return post
+
+
 class Document(object):
     '''
     Object representing an MEI document. Use methods prefixed with ``get`` to obtain portions of
@@ -468,7 +495,7 @@ class Document(object):
                 self._all_files = _make_empty_all_files(self._all_files_path)
 
         # @xml:id to the <section> with that id
-        self._sections = {}
+        self._sections = _init_sections_dict(self._all_files)
         # the <score> element
         self._score = None
         # the order of <section> elements in the <score>, indicated with @xml:id
@@ -527,8 +554,7 @@ class Document(object):
         '''
         Write the MEI document(s) into files.
 
-        :returns: A list of the absolute pathnames written out. This does not imply that all the
-            files have changed---just that they are part of the MEI document as it now exists.
+        :returns: A list of the absolute pathnames that are part of this Lychee-MEI document.
         :rtype: list of str
         :raises: :exc:`lychee.exceptions.CannotSaveError` if the document cannot be written to the
             filesystem (this happens when ``repository_path`` was not supplied on initialization).
@@ -536,6 +562,10 @@ class Document(object):
         A Lychee-MEI document is a complex of various XML elements. This method arranges for the
         documents stored in memory to be saved into files in the proper arrangement as specified
         by the order.
+
+        Note that the return value includes any file in the document. The files may not have been
+        modified, and in fact may not even have been saved at all---they are simply part of this
+        document.
         '''
 
         if self._repo_path is None:
@@ -578,9 +608,11 @@ class Document(object):
         for xmlid, section in self._sections.items():
             section_path = '{}.mei'.format(xmlid)  # path relative to "all_files.mei"
             section_paths.append(section_path)
-            section_path = os.path.join(self._repo_path, section_path)  # build absolute path
-            _save_out(section, section_path)
-            saved_files.append(section_path)
+            abs_section_path = os.path.join(self._repo_path, section_path)  # build absolute path
+            saved_files.append(abs_section_path)
+            if section is not None:
+                # assume this <section> was never loaded to begin with
+                _save_out(section, abs_section_path)
         section_paths = sorted(section_paths)
         for each_path in section_paths:
             mei_elem.append(_make_ptr('section', each_path))
@@ -786,7 +818,7 @@ class Document(object):
         if section_id.startswith('#'):
             section_id = section_id[1:]
 
-        if section_id in self._sections:
+        if section_id in self._sections and self._sections[section_id] is not None:
             return self._sections[section_id]
         elif self._repo_path is None:
             raise exceptions.SectionNotFoundError(_SECTION_NOT_FOUND.format(xmlid=section_id))

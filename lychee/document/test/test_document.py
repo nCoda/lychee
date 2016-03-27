@@ -45,6 +45,9 @@ import six
 
 from lxml import etree
 
+import hug
+
+import lychee
 from lychee import exceptions
 from lychee.document import document
 from lychee.namespaces import mei, xlink, xml
@@ -972,6 +975,36 @@ class TestGetPutSection(DocumentTestCase):
         self.assertEqual(document._SECTION_NOT_FOUND.format(xmlid=section_id), exc.exception.args[0])
         self.assertEqual(0, mock_load_in.call_count)
 
+    @mock.patch('lychee.document.document._load_in')
+    def test_get_7(self, mock_load_in):
+        '''
+        When the "id" is in self._sections but it's None, call self.load_everything().
+        '''
+        section_id = '888'
+        expected = 'some section'
+        the_section = mock.Mock()
+        the_section.getroot = mock.Mock(return_value=expected)
+        mock_load_in.return_value = the_section
+        self.doc._sections = {section_id: None}
+
+        actual = self.doc.get_section(section_id)
+
+        assert expected is actual
+
+    @mock.patch('lychee.document.document._load_in')
+    def test_get_8(self, mock_load_in):
+        '''
+        When the "id" is in self._sections and it's not None, return that.
+        '''
+        section_id = '888'
+        expected = 'Fulbright'
+        self.doc._sections = {section_id: expected}
+
+        actual = self.doc.get_section(section_id)
+
+        assert expected == actual
+        assert 0 == mock_load_in.call_count
+
     def test_put_1(self):
         '''
         When there's already an @xml:id, it's used just fine.
@@ -1423,6 +1456,20 @@ class TestSaveLoadEverything(DocumentTestCase):
                 elif each_file.endswith('3.mei'):
                     self.assertEqual(sections['3'], actual_section.getroot())
 
+    def test_save_7a(self):
+        '''
+        Preconditions:
+        - there are three contained <section> elements
+        - none of the <section>s were loaded
+        - _score_order is empty
+        Postconditions:
+        - _save_out() not called with each <section>
+        - each section's filename is returned
+        '''
+        self.test_save_template(sections={'1': None, '2': None, '3': None},
+                                expected=['1.mei', '2.mei', '3.mei', 'all_files.mei'],
+                                save_out_calls=[])
+
 
 class TestGetFromPutInHead(DocumentTestCase):
     '''
@@ -1474,3 +1521,131 @@ class TestGetFromPutInHead(DocumentTestCase):
         assert mei.TITLE == actual.tag
         assert 'main' == actual.get('type')
         assert document._PLACEHOLDER_TITLE == actual.text
+
+
+class TestInitSectionsDict(object):
+    '''
+    Tests for the _init_sections_dict() helper function.
+    '''
+
+    def test_empty_doc(self):
+        '''
+        There are no <ptr targettype="section">.
+        '''
+        mei_elem = etree.Element(mei.MEI)
+        root = etree.Element(mei.MEI_CORPUS)
+        assert {} == document._init_sections_dict(root)
+
+    def test_three_valid_sections(self):
+        '''
+        There are three valid <ptr targettype="section">.
+        '''
+        mei_elem = etree.Element(mei.MEI)
+        mei_elem.append(etree.Element(mei.PTR, attrib={'targettype': 'section', 'target': 'asdf.mei'}))
+        mei_elem.append(etree.Element(mei.PTR, attrib={'targettype': 'section', 'target': 'bsdf.mei'}))
+        mei_elem.append(etree.Element(mei.PTR, attrib={'targettype': 'section', 'target': 'csdf.mei'}))
+        expected = {'asdf': None, 'bsdf': None, 'csdf': None}
+        root = etree.Element(mei.MEI_CORPUS)
+        root.append(mei_elem)
+
+        assert expected == document._init_sections_dict(root)
+
+    def test_invalid_section(self):
+        '''
+        There is one valid and one invalid <ptr targettype="section">.
+        '''
+        mei_elem = etree.Element(mei.MEI)
+        mei_elem.append(etree.Element(mei.PTR, attrib={'targettype': 'section', 'target': 'asdf.mei'}))
+        mei_elem.append(etree.Element(mei.PTR, attrib={'targettype': 'section', 'target': 'bsdf'}))
+        root = etree.Element(mei.MEI_CORPUS)
+        root.append(mei_elem)
+
+        with pytest.raises(exceptions.InvalidDocumentError) as err:
+            document._init_sections_dict(root)
+        assert err.value[0] == document._ERR_CORRUPT_TARGET.format('bsdf')
+
+
+class TestMoveSectionTo(DocumentTestCase):
+    '''
+    Tests for Document.move_section_to().
+    '''
+
+    def setUp(self):
+        super(TestMoveSectionTo, self).setUp()
+        # The superclass already put some files into the repo, so we need to "unsafely" initialize
+        # it ourselves or else set_repo_dir() will raise an exception
+        hug.Hug(self.repo_dir, safe=False)
+        lychee.set_repo_dir(self.repo_dir)
+
+    def test_section_missing(self):
+        '''
+        when the section to move is actually missing (SectionNotFoundError)
+        '''
+        xmlid = 'Sme-s-l-e11111'
+        with pytest.raises(exceptions.SectionNotFoundError) as err:
+            self.doc.move_section_to(xmlid, 14)
+        assert err.value[0] == document._SECTION_NOT_FOUND.format(xmlid=xmlid)
+
+    def test_not_yet_active(self):
+        '''
+        When the section is not in the active score.
+        We'll test with 3 sections, and add them in a variety of ways.
+        '''
+        sect_ids = []
+        for _ in range(3):
+            sect_ids.append(self.doc.put_section(etree.Element(mei.SECTION)))
+
+        self.doc.move_section_to(sect_ids[0], 0)
+        self.doc.move_section_to(sect_ids[1], 40)
+        self.doc.move_section_to(sect_ids[2], 1)
+
+        assert self.doc.get_section_ids() == [sect_ids[0], sect_ids[2], sect_ids[1]]
+
+    def test_move_later(self):
+        '''
+        When the section is in the score, moving to a later place.
+        In this test, it amounts to swapping the first 2 of 3 sections.
+        '''
+        sect_ids = []
+        for _ in range(3):
+            sect_ids.append(self.doc.put_section(etree.Element(mei.SECTION)))
+        score = etree.Element(mei.SCORE)
+        for each_id in sect_ids:
+            score.append(self.doc.get_section(each_id))
+        self.doc.put_score(score)
+
+        self.doc.move_section_to(sect_ids[0], 2)
+
+        assert self.doc.get_section_ids() == [sect_ids[1], sect_ids[0], sect_ids[2]]
+
+    def test_move_to_end(self):
+        '''
+        when the section is in the score, move it to the end
+        '''
+        sect_ids = []
+        for _ in range(3):
+            sect_ids.append(self.doc.put_section(etree.Element(mei.SECTION)))
+        score = etree.Element(mei.SCORE)
+        for each_id in sect_ids:
+            score.append(self.doc.get_section(each_id))
+        self.doc.put_score(score)
+
+        self.doc.move_section_to(sect_ids[0], 3)
+
+        assert self.doc.get_section_ids() == [sect_ids[1], sect_ids[2], sect_ids[0]]
+
+    def test_move_earlier(self):
+        '''
+        when the section is in the score, moving to an earlier place
+        '''
+        sect_ids = []
+        for _ in range(3):
+            sect_ids.append(self.doc.put_section(etree.Element(mei.SECTION)))
+        score = etree.Element(mei.SCORE)
+        for each_id in sect_ids:
+            score.append(self.doc.get_section(each_id))
+        self.doc.put_score(score)
+
+        self.doc.move_section_to(sect_ids[2], 0)
+
+        assert self.doc.get_section_ids() == [sect_ids[2], sect_ids[0], sect_ids[1]]

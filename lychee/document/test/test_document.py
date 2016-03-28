@@ -51,6 +51,7 @@ import lychee
 from lychee import exceptions
 from lychee.document import document
 from lychee.namespaces import mei, xlink, xml
+from lychee.workflow import session
 
 
 class TestSmallThings(unittest.TestCase):
@@ -686,24 +687,17 @@ class DocumentTestCase(unittest.TestCase):
         directory's name is stored in "self.repo_dir." There should already be an "all_files.mei"
         file, in accordance with how Document.__init__() works.
         '''
-        try:
-            # Python 3.2+
-            self._temp_dir = tempfile.TemporaryDirectory()
-            self.repo_dir = self._temp_dir.name
-        except AttributeError:
-            # Python Boring
-            self._temp_dir = None
-            self.repo_dir = tempfile.mkdtemp()
-        self.doc = document.Document(self.repo_dir)
         self.addTypeEqualityFunc(etree._Element, self.assertElementsEqual)
         self.addTypeEqualityFunc(etree._ElementTree, self.assertElementsEqual)
+        self._session = session.InteractiveSession()
+        self.repo_dir = self._session.set_repo_dir('')
+        self.doc = self._session.get_document()
 
     def tearDown(self):
         '''
         In Python before 3.2, we need to clean up the temporary directory ourselves.
         '''
-        if self._temp_dir is None:
-            shutil.rmtree(self.repo_dir)
+        self._session.unset_repo_dir()
 
 
 class TestGetSectionIds(DocumentTestCase):
@@ -1302,9 +1296,10 @@ class TestSaveLoadEverything(DocumentTestCase):
         '''
         Integration test for test_save_3a().
         '''
-        exp_listdir = ['all_files.mei', 'head.mei']
+        saved_out = ['all_files.mei', 'head.mei']
+        exp_listdir = saved_out + ['.hg']
         head = etree.parse(os.path.join(self.path_to_here, 'input_meiHead.mei'))
-        files = self.test_save_template_nomock(head=head, expected=exp_listdir)
+        files = self.test_save_template_nomock(head=head, expected=saved_out)
         listdir = os.listdir(os.path.dirname(files[0]))
         six.assertCountEqual(self, exp_listdir, listdir)
         for each_file in files:
@@ -1334,8 +1329,9 @@ class TestSaveLoadEverything(DocumentTestCase):
                     '2': etree.Element(mei.SECTION, attrib={xml.ID: '2'}),
                     '3': etree.Element(mei.SECTION, attrib={xml.ID: '3'})
                    }
-        exp_listdir = ['all_files.mei', '1.mei', '2.mei', '3.mei']
-        files = self.test_save_template_nomock(sections=sections, expected=exp_listdir)
+        saved_out = ['all_files.mei', '1.mei', '2.mei', '3.mei']
+        exp_listdir = saved_out + ['.hg']
+        files = self.test_save_template_nomock(sections=sections, expected=saved_out)
         listdir = os.listdir(os.path.dirname(files[0]))
         six.assertCountEqual(self, exp_listdir, listdir)
         for each_file in files:
@@ -1378,9 +1374,10 @@ class TestSaveLoadEverything(DocumentTestCase):
                     '2': etree.Element(mei.SECTION, attrib={xml.ID: '2'}),
                     '3': etree.Element(mei.SECTION, attrib={xml.ID: '3'})
                    }
-        exp_listdir = ['all_files.mei', 'score.mei', '1.mei', '2.mei', '3.mei']
+        saved_out = ['all_files.mei', 'score.mei', '1.mei', '2.mei', '3.mei']
+        exp_listdir = saved_out + ['.hg']
         files = self.test_save_template_nomock(sections=sections, score_order=['1', '2', '1'],
-                                               expected=exp_listdir)
+                                               expected=saved_out)
         listdir = os.listdir(os.path.dirname(files[0]))
         six.assertCountEqual(self, exp_listdir, listdir)
         for each_file in files:
@@ -1432,9 +1429,10 @@ class TestSaveLoadEverything(DocumentTestCase):
                     '2': etree.Element(mei.SECTION, attrib={xml.ID: '2'}),
                     '3': etree.Element(mei.SECTION, attrib={xml.ID: '3'})
                    }
-        exp_listdir = ['all_files.mei', 'head.mei', 'score.mei', '1.mei', '2.mei', '3.mei']
+        saved_out = ['all_files.mei', 'head.mei', 'score.mei', '1.mei', '2.mei', '3.mei']
+        exp_listdir = saved_out + ['.hg']
         files = self.test_save_template_nomock(sections=sections, score_order=['1', '2', '1'],
-                                               head=head, expected=exp_listdir)
+                                               head=head, expected=saved_out)
         listdir = os.listdir(os.path.dirname(files[0]))
         six.assertCountEqual(self, exp_listdir, listdir)
         for each_file in files:
@@ -1569,13 +1567,6 @@ class TestMoveSectionTo(DocumentTestCase):
     '''
     Tests for Document.move_section_to().
     '''
-
-    def setUp(self):
-        super(TestMoveSectionTo, self).setUp()
-        # The superclass already put some files into the repo, so we need to "unsafely" initialize
-        # it ourselves or else set_repo_dir() will raise an exception
-        hug.Hug(self.repo_dir, safe=False)
-        lychee.set_repo_dir(self.repo_dir)
 
     def test_section_missing(self):
         '''

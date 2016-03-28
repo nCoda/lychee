@@ -39,7 +39,7 @@ import hug
 
 
 __version__ = '0.0.1'
-__all__ = ['converters', 'document', 'namespaces', 'signals', 'tui', 'vcs', 'views']
+__all__ = ['converters', 'document', 'namespaces', 'signals', 'tui', 'workflow', 'vcs', 'views']
 
 DEBUG = False
 
@@ -159,6 +159,8 @@ def get_repo_dir():
 
 from lychee import *
 
+
+InteractiveSession = workflow.session.InteractiveSession
 
 # setup a Registrar instance for outbound format conversion
 the_registrar = converters.registrar.Registrar()

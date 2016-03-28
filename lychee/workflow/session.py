@@ -27,7 +27,9 @@ Manage a document editing session through several workflow actions.
 '''
 
 
+from lychee.converters import registrar
 from lychee.document import document
+from lychee import signals
 
 
 class InteractiveSession(object):
@@ -40,3 +42,7 @@ class InteractiveSession(object):
         '''
         '''
         self._doc = None
+
+        self._registrar = registrar.Registrar()
+        signals.outbound.REGISTER_FORMAT.connect(self._registrar.register)
+        signals.outbound.UNREGISTER_FORMAT.connect(self._registrar.unregister)

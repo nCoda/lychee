@@ -161,8 +161,3 @@ from lychee import *
 
 
 InteractiveSession = workflow.session.InteractiveSession
-
-# setup a Registrar instance for outbound format conversion
-the_registrar = converters.registrar.Registrar()
-signals.outbound.REGISTER_FORMAT.connect(the_registrar.register)
-signals.outbound.UNREGISTER_FORMAT.connect(the_registrar.unregister)

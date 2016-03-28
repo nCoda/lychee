@@ -25,3 +25,23 @@
 '''
 Tests for the :mod:`lychee.workflow.session` module.
 '''
+
+
+from lychee.converters import registrar
+from lychee import signals
+from lychee.workflow import session
+
+
+class TestInteractiveSession(object):
+    '''
+    Tests for the InteractiveSession object.
+    '''
+
+    def test_init_1(self):
+        '''
+        Everything works as intended.
+        '''
+        actual = session.InteractiveSession()
+        assert isinstance(actual._registrar, registrar.Registrar)
+        assert signals.outbound.REGISTER_FORMAT.is_connected(actual._registrar.register)
+        assert signals.outbound.UNREGISTER_FORMAT.is_connected(actual._registrar.unregister)

@@ -95,13 +95,15 @@ Emitted when there's an error while processing the outbound view.
 :kwarg str msg: A descriptive error message for the log file.
 '''
 
-CONVERSION_START = signal.Signal(args=['views_info', 'outbound'], name='outbound.CONVERSION_START')
+CONVERSION_START = signal.Signal(args=['views_info', 'outbound', 'session'], name='outbound.CONVERSION_START')
 '''
 Emitted to being outbound conversion. (This is emitted several times---once per data type).
 
 :kwarg object views_info: The views information required for the "dtype" data format.
 :kwarg outbound: The Lychee-MEI document required to prepare the outbound data.
 :type outbound: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
+:kwarg session: The session object for which an outbound conversion is being signalled to start.
+:type session: :class:`lychee.workflow.session.InteractiveSession`
 '''
 
 CONVERSION_STARTED = signal.Signal(name='outbound.CONVERSION_STARTED')

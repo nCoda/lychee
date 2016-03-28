@@ -68,6 +68,29 @@ class InteractiveSession(object):
         '''
         self.unset_repo_dir()
 
+    def get_document(self):
+        '''
+        Get a :class:`~lychee.document.document.Document` for this session's repository.
+
+        :returns: The :class:`Document` for this session.
+        :rtype: :class:`lychee.document.document.Document`
+        :raises: :exc:`~lychee.exceptions.RepositoryError` as per :meth:`set_repo_dir`.
+
+        Do be aware that, if the repository directory is changed or unset, the :class:`Document`
+        returned by this method will no longer be valid---but it won't know that.
+
+        .. note:: If no repository directory has been set, this method creates a new repository in
+            a temporary directory.
+        '''
+        if self._doc:
+            return self._doc
+
+        if self._repo_dir is None:
+            self.set_repo_dir('')
+
+        self._doc = document.Document(self._repo_dir)
+        return self._doc
+
     def set_repo_dir(self, path):
         '''
         Change the pathname to Lychee's repository.
@@ -125,6 +148,7 @@ class InteractiveSession(object):
         self._repo_dir = None
         self._temp_dir = False
         self._hug = None
+        self._doc = None
 
     def get_repo_dir(self):
         '''

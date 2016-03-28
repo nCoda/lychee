@@ -103,6 +103,7 @@ class TestRepository(object):
         assert actual._repo_dir is None
         assert actual._temp_dir is False
         assert actual._hug is None
+        assert actual._doc is None
 
     def test_unset_repo_dir_2(self):
         '''
@@ -122,6 +123,7 @@ class TestRepository(object):
         assert actual._repo_dir is None
         assert actual._temp_dir is False
         assert actual._hug is None
+        assert actual._doc is None
 
     def test_unset_repo_dir_3(self):
         '''
@@ -190,3 +192,45 @@ class TestRepository(object):
         with pytest.raises(exceptions.RepositoryError) as exc:
             sess.set_repo_dir('/bin/delete_me')
         assert session._CANNOT_MAKE_HG_DIR == exc.value.args[0]
+
+
+class TestDocument(object):
+    '''
+    Tests for InteractiveSession's management of Document instances.
+    '''
+
+    def test_get_document_1(self):
+        '''
+        When self._doc is already set.
+        '''
+        sess = session.InteractiveSession()
+        sess._doc = 5
+        assert 5 == sess.get_document()
+
+    def test_get_document_2(self):
+        '''
+        When self._doc is not set but repo_dir is.
+        '''
+        sess = session.InteractiveSession()
+        repo_dir = sess.set_repo_dir('')
+        actual = sess.get_document()
+        assert repo_dir == actual._repo_path
+
+    def test_get_document_3(self):
+        '''
+        When self._doc and repo_dir are both unset.
+        '''
+        sess = session.InteractiveSession()
+        actual = sess.get_document()
+        assert sess._repo_dir == actual._repo_path
+
+    def test_unset_repo_dir(self):
+        '''
+        Cross-check that the document instance is deleted when the repo_dir is changed.
+        '''
+        sess = session.InteractiveSession()
+        actual = sess.get_document()
+
+        sess.set_repo_dir('')
+
+        assert sess._doc is None

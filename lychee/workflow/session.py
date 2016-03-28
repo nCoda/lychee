@@ -62,6 +62,15 @@ class InteractiveSession(object):
         signals.outbound.REGISTER_FORMAT.connect(self._registrar.register)
         signals.outbound.UNREGISTER_FORMAT.connect(self._registrar.unregister)
 
+    @property
+    def registrar(self):
+        '''
+        Get this session's outbound format registrar.
+
+        :returns: This session's :class:`lychee.converter.registrar.Registrar`
+        '''
+        return self._registrar
+
     def __del__(self):
         '''
         If this session is using a temporary directory, delete it.

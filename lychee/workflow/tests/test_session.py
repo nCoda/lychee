@@ -29,6 +29,7 @@ Tests for the :mod:`lychee.workflow.session` module.
 import os.path
 import shutil
 import tempfile
+import unittest
 
 try:
     from unittest import mock
@@ -44,16 +45,30 @@ from lychee import signals
 from lychee.workflow import session
 
 
-class TestInit(object):
+class TestInteractiveSession(unittest.TestCase):
     '''
-    Tests initialization functionality.
+    Makes sure to clean up the session before and after every test.
+    '''
+
+    def setUp(self):
+        "Make an InteractiveSession."
+        self.session = session.InteractiveSession()
+
+    def tearDown(self):
+        "Clean up the InteractiveSession."
+        self.session.unset_repo_dir()
+
+
+class TestGeneral(TestInteractiveSession):
+    '''
+    Tests general functionality.
     '''
 
     def test_init_1(self):
         '''
         Everything works as intended.
         '''
-        actual = session.InteractiveSession()
+        actual = self.session
         assert actual._doc is None
         assert actual._hug is None
         assert actual._temp_dir is False
@@ -62,8 +77,15 @@ class TestInit(object):
         assert signals.outbound.REGISTER_FORMAT.is_connected(actual._registrar.register)
         assert signals.outbound.UNREGISTER_FORMAT.is_connected(actual._registrar.unregister)
 
+    def test_registrar_property(self):
+        '''
+        The "registrar" property works.
+        '''
+        actual = self.session
+        assert actual._registrar is actual.registrar
 
-class TestRepository(object):
+
+class TestRepository(TestInteractiveSession):
     '''
     Test functionality related to the repository.
     '''
@@ -72,7 +94,7 @@ class TestRepository(object):
         '''
         When a repository directory is set, return it.
         '''
-        actual = session.InteractiveSession()
+        actual = self.session
         actual._repo_dir = 'five'
         assert 'five' == actual.get_repo_dir()
 
@@ -80,7 +102,7 @@ class TestRepository(object):
         '''
         When the repository directory isn't set, ask set_repo_dir() to set a new one.
         '''
-        actual = session.InteractiveSession()
+        actual = self.session
         actual._repo_dir = None
         actual.set_repo_dir = mock.MagicMock(return_value='six')
         assert 'six' == actual.get_repo_dir()
@@ -92,7 +114,7 @@ class TestRepository(object):
         '''
         path = tempfile.mkdtemp()
         assert os.path.exists(path)
-        actual = session.InteractiveSession()
+        actual = self.session
         actual._repo_dir = path
         actual._temp_dir = True
         actual._hug = 'hug'
@@ -111,7 +133,7 @@ class TestRepository(object):
         '''
         path = tempfile.mkdtemp()
         assert os.path.exists(path)
-        actual = session.InteractiveSession()
+        actual = self.session
         actual._repo_dir = path
         actual._temp_dir = False
         actual._hug = 'hug'
@@ -129,7 +151,7 @@ class TestRepository(object):
         '''
         When the _temp_dir is True but the repository is already missing.
         '''
-        actual = session.InteractiveSession()
+        actual = self.session
         actual._repo_dir = None
         actual._temp_dir = True
 
@@ -142,7 +164,7 @@ class TestRepository(object):
         '''
         When "path" is '', it makes a temp dir and initializes a new Hg repo.
         '''
-        sess = session.InteractiveSession()
+        sess = self.session
         actual = sess.set_repo_dir('')
         assert actual.startswith('/tmp/')
         assert os.path.exists(os.path.join(actual, '.hg'))
@@ -152,7 +174,7 @@ class TestRepository(object):
         '''
         When it makes a temp dir but can't initialize a new Hg repo.
         '''
-        sess = session.InteractiveSession()
+        sess = self.session
         mock_hug.Hug.side_effect = hg_error.RepoError
         with pytest.raises(exceptions.RepositoryError) as exc:
             sess.set_repo_dir('')
@@ -165,7 +187,7 @@ class TestRepository(object):
         '''
         When the path exists, and it initializes fine.
         '''
-        sess = session.InteractiveSession()
+        sess = self.session
         actual = sess.set_repo_dir('../tests')
         assert actual.endswith('tests')
         assert sess._hug is not None
@@ -178,7 +200,7 @@ class TestRepository(object):
         When the path must be created, and it initializes fine.
         '''
         assert not os.path.exists('zests')  # for the test to work, this dir must not already exist
-        sess = session.InteractiveSession()
+        sess = self.session
         actual = sess.set_repo_dir('zests')
         assert actual.endswith('zests')
         assert os.path.exists(actual)
@@ -188,13 +210,13 @@ class TestRepository(object):
         '''
         When the path must be created, but it can't be.
         '''
-        sess = session.InteractiveSession()
+        sess = self.session
         with pytest.raises(exceptions.RepositoryError) as exc:
             sess.set_repo_dir('/bin/delete_me')
         assert session._CANNOT_MAKE_HG_DIR == exc.value.args[0]
 
 
-class TestDocument(object):
+class TestDocument(TestInteractiveSession):
     '''
     Tests for InteractiveSession's management of Document instances.
     '''
@@ -203,34 +225,28 @@ class TestDocument(object):
         '''
         When self._doc is already set.
         '''
-        sess = session.InteractiveSession()
-        sess._doc = 5
-        assert 5 == sess.get_document()
+        self.session._doc = 5
+        assert 5 == self.session.get_document()
 
     def test_get_document_2(self):
         '''
         When self._doc is not set but repo_dir is.
         '''
-        sess = session.InteractiveSession()
-        repo_dir = sess.set_repo_dir('')
-        actual = sess.get_document()
+        repo_dir = self.session.set_repo_dir('')
+        actual = self.session.get_document()
         assert repo_dir == actual._repo_path
 
     def test_get_document_3(self):
         '''
         When self._doc and repo_dir are both unset.
         '''
-        sess = session.InteractiveSession()
-        actual = sess.get_document()
-        assert sess._repo_dir == actual._repo_path
+        actual = self.session.get_document()
+        assert self.session._repo_dir == actual._repo_path
 
     def test_unset_repo_dir(self):
         '''
         Cross-check that the document instance is deleted when the repo_dir is changed.
         '''
-        sess = session.InteractiveSession()
-        actual = sess.get_document()
-
-        sess.set_repo_dir('')
-
-        assert sess._doc is None
+        self.session.get_document()
+        self.session.set_repo_dir('')
+        assert self.session._doc is None

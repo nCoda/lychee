@@ -35,13 +35,13 @@ from lychee.document.document import Document
 _MEINS = '{http://www.music-encoding.org/ns/mei}'
 
 
-def _document_processor(converted, **kwargs):
+def _document_processor(converted, session, **kwargs):
     lychee.log('{}.document_processor(converted={})'.format(__name__, converted))
 
     score = etree.Element('{}score'.format(_MEINS))
     score.append(converted)
 
-    doc = Document(repository_path=lychee.get_repo_dir())
+    doc = session.get_document()
     doc.put_score(score)
     output_filenames = doc.save_everything()
 

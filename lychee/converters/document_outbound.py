@@ -162,7 +162,6 @@ from lxml import etree
 
 import lychee
 from lychee.converters import vcs_outbound
-from lychee import document as documentModule
 from lychee import exceptions
 from lychee.namespaces import mei, xml
 from lychee.signals import outbound
@@ -185,11 +184,12 @@ KNOWN_PERSNAME_TYPES = ('full', 'family', 'given', 'other')  # defined in Lychee
 KNOWN_TITLE_TYPES = ('main', 'subordinate', 'abbreviated', 'alternative')  # defined in Lychee-MEI
 
 
-def convert(document, **kwargs):
+def convert(session, **kwargs):
     '''
     Prepare document metadata in a useful format for clients.
 
-    :param document: Ignored.
+    :param session: The session object for which an outbound conversion is being signalled to start.
+    :type session: :class:`lychee.workflow.session.InteractiveSession`
     :returns: Information from the internal LMEI document in the format described above.
     :rtype: dict
     '''
@@ -197,7 +197,7 @@ def convert(document, **kwargs):
     lychee.log('{}.convert() begins'.format(__name__), level='debug')
 
     try:
-        doc = documentModule.Document(lychee.get_repo_dir())
+        doc = session.get_document()
     except exceptions.HeaderNotFoundError:
         outbound.CONVERSION_ERROR.emit(
             msg='{} failed initializing a Document object; stopping conversion'.format(__name__)
@@ -205,7 +205,7 @@ def convert(document, **kwargs):
     else:
         post = {'headers': prepare_headers(doc)}
         try:
-            post['sections'] = prepare_sections(doc)
+            post['sections'] = prepare_sections(doc, session)
         except exceptions.SectionNotFoundError:
             outbound.CONVERSION_ERROR.emit(
                 msg='{} failed to load a <section>; stopping conversion'.format(__name__)
@@ -413,12 +413,14 @@ def prepare_sections_inner(doc, section_ids, vcs_data):
     return post
 
 
-def prepare_sections(doc):
+def prepare_sections(doc, session):
     '''
     Given a :class:`Document`, prepare the "sections" portion of this module's output.
 
     :param doc: The :class:`Document` from which to extract MEI header data.
     :type doc: :class:`lychee.document.Document`
+    :param session: The session object for which an outbound conversion is being signalled to start.
+    :type session: :class:`lychee.workflow.session.InteractiveSession`
     :returns: A dictionary with relevant header data.
     :rtype: dict
 
@@ -426,5 +428,5 @@ def prepare_sections(doc):
     :mod:`~lychee.converters.document_outbound`.
     '''
     section_ids = doc.get_section_ids()
-    vcs_data = vcs_outbound.convert_helper()
+    vcs_data = vcs_outbound.convert_helper(session.get_repo_dir())
     return prepare_sections_inner(doc, section_ids, vcs_data)

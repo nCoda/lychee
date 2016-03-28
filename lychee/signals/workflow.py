@@ -80,7 +80,12 @@ class WorkflowManager(object):
                     (outbound.CONVERSION_ERROR, '_outbound_conversion_error'),
                    )
 
-    def __init__(self, dtype=None, doc=None, **kwargs):
+    def __init__(self, dtype=None, doc=None, session=None, **kwargs):
+        if session is None:
+            raise NotImplementedError('WorkflowManager requires a "session" argument!')
+        else:
+            self._session = session
+
         self._status = WorkflowManager._PRESTART
 
         # set instance settings
@@ -170,7 +175,9 @@ class WorkflowManager(object):
             lychee.log(next_step)
 
             # Document ------------------------------------------------------------
-            self._modified_pathnames = document._document_processor(converted=self._converted)
+            self._modified_pathnames = document._document_processor(
+                converted=self._converted,
+                session=self._session)
             lychee.log(next_step)
 
             # VCS -----------------------------------------------------------------
@@ -184,7 +191,7 @@ class WorkflowManager(object):
         self._status = WorkflowManager._OUTBOUND_PRESTART
 
         # determine which formats are required
-        self._o_dtypes = lychee.the_registrar.get_registered_formats()
+        self._o_dtypes = self._session.registrar.get_registered_formats()
         lychee.log('Currently registered outbound dtypes: {}'.format(self._o_dtypes))
 
         self._the_outbound_stuff(self._o_dtypes)
@@ -307,7 +314,7 @@ class WorkflowManager(object):
         # TODO: these must be set properly
         message = None
 
-        vcs.INIT.emit(repodir=lychee.get_repo_dir())
+        vcs.INIT.emit(repodir=self._session.get_repo_dir())
         vcs.ADD.emit(pathnames=pathnames)
         vcs.COMMIT.emit(message=message)
 
@@ -427,7 +434,7 @@ class WorkflowManager(object):
         convert_this = self._converted
         if convert_this is None:
             # ask the Document module to prepare a full <score> for us
-            doc = document.Document(repository_path=lychee.get_repo_dir())
+            doc = self._session.get_document()
             if len(doc.get_section_ids()) > 0:
                 # TODO: we shouldn't be using the first <section> by default; we should have a Document cursor that knows which section
                 convert_this = doc.get_section(doc.get_section_ids()[0])
@@ -448,7 +455,10 @@ class WorkflowManager(object):
                 if each_dtype in ('document', 'vcs'):
                     self._choose_outbound_converter(each_dtype)
                     self._o_running_converter = each_dtype
-                    outbound.CONVERSION_START.emit(views_info=self._o_views_info[each_dtype], document=None)
+                    outbound.CONVERSION_START.emit(
+                        views_info=self._o_views_info[each_dtype],
+                        document=None,
+                        session=self._session)
                     if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_ERROR:
                         self._status = WorkflowManager._OUTBOUND_CONVERSIONS_STARTED
                         continue
@@ -461,8 +471,10 @@ class WorkflowManager(object):
             for each_dtype in self._o_dtypes:
                 self._choose_outbound_converter(each_dtype)
                 self._o_running_converter = each_dtype
-                outbound.CONVERSION_START.emit(views_info=self._o_views_info[each_dtype],
-                                               document=convert_this)
+                outbound.CONVERSION_START.emit(
+                    views_info=self._o_views_info[each_dtype],
+                    document=convert_this,
+                    session=self._session)
                 if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_ERROR:
                     self._status = WorkflowManager._OUTBOUND_CONVERSIONS_STARTED
                     continue

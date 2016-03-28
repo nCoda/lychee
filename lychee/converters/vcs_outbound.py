@@ -86,33 +86,35 @@ def prep_files(files):
     return post
 
 
-def convert(document, **kwargs):
+def convert(session, **kwargs):
     '''
     Prepare VCS data in a useful format for clients.
 
-    :param document: Ignored.
+    :param session: The session object for which an outbound conversion is being signalled to start.
+    :type session: :class:`lychee.workflow.session.InteractiveSession`
     '''
     outbound.CONVERSION_STARTED.emit()
     lychee.log('{}.convert()'.format(__name__))
 
-    post = convert_helper()
+    post = convert_helper(session.get_repo_dir())
 
     outbound.CONVERSION_FINISH.emit(converted=post)
     lychee.log('{}.convert() after finish signal'.format(__name__))
 
 
-def convert_helper():
+def convert_helper(repo_dir):
     # TODO: migrate this functionality to the "mercurial-hug" library
     '''
     Do the actual work for :func:`convert`. This helper function exists so that the
     :mod:`document_outbound` converter can call this converter without having to emit the
     :const:`CONVERSION_FINISH` signal.
 
+    :param str repo_dir: Absolute pathname to the Mercurial repository's directory.
     :returns: Information from the Version Control System in the format described above.
     :rtype: dict
     '''
     myui = ui.ui()
-    repo = hg.repository(myui, lychee.get_repo_dir())
+    repo = hg.repository(myui, repo_dir)
 
     post = {'history': [], 'users': {}, 'changesets': {}}
 

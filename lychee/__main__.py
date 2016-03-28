@@ -39,13 +39,17 @@ test_which_format = 'lilypond'
 # test_which_format = 'abjad'
 
 
+session = lychee.InteractiveSession()
+session.set_repo_dir('testrepo')
+
+
 def mei_through_verovio(dtype, placement, document, **kwargs):
     '''
     Outputs a document to a file, then runs Verovio on it. Parameters work as per the
     :const:`outbound.CONVERSION_FINISHED` signal.
     '''
 
-    repodir = lychee.get_repo_dir()
+    repodir = session.get_repo_dir()
 
     if 'verovio' != dtype:
         return
@@ -77,8 +81,7 @@ outbound.CONVERSION_FINISHED.connect(mei_through_verovio)
 outbound.CONVERSION_FINISHED.connect(print_outbound_json)
 
 
-lychee.set_repo_dir('testrepo')
-print('this is the repodir: {}'.format(lychee.get_repo_dir()))
+print('this is the repodir: {}'.format(session.get_repo_dir()))
 
 
 # this is what starts a test "action"
@@ -103,3 +106,7 @@ elif 'outbound only' == test_which_format:
     signals.ACTION_START.emit()
 else:
     raise RuntimeError('you must choose a format in lychee.__main__')
+
+
+# be sure to clean up!
+session.unset_repo_dir()

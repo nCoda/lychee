@@ -62,6 +62,8 @@ class InteractiveSession(object):
         signals.outbound.REGISTER_FORMAT.connect(self._registrar.register)
         signals.outbound.UNREGISTER_FORMAT.connect(self._registrar.unregister)
 
+        signals.ACTION_START.connect(self._action_start)  # NOTE: this connection isn't tested
+
     @property
     def registrar(self):
         '''
@@ -173,3 +175,19 @@ class InteractiveSession(object):
             return self._repo_dir
         else:
             return self.set_repo_dir('')
+
+    def _action_start(self, **kwargs):  # NOTE: this method is untested
+        '''
+        Slot for the ACTION_START signal.
+
+        :kwarg dtype:
+        :kwarg doc:
+        '''
+        # NB: workflow imported here because it's soon going away
+        from lychee.signals import workflow
+        if 'dtype' in kwargs and 'doc' in kwargs:
+            workm = workflow.WorkflowManager(kwargs['dtype'], kwargs['doc'], session=self)
+        else:
+            workm = workflow.WorkflowManager(session=self)
+        workm.run()
+        del workm

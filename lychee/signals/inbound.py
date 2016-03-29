@@ -65,13 +65,13 @@ Emitted when there's an error during the in bound conversion step.
 :kwarg str msg: A descriptive error message for the log file.
 '''
 
-VIEWS_START = signal.Signal(args=['doc', 'converted'], name='inbound.VIEWS_START')
+VIEWS_START = signal.Signal(args=['document', 'converted'], name='inbound.VIEWS_START')
 '''
 Emitted when the inbound view processing will start (i.e., this signal is emitted to cause the views
 module to start its bit).
 
-:kwarg object doc: The inbound musical document. The required type is determined by each converter
-    module individually.
+:kwarg object document: The inbound musical document. The required type is determined by each
+    converter module individually.
 :kwarg converted: The inbound musical document, converted to Lychee-MEI format.
 :type converted: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
 '''

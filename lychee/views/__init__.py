@@ -45,5 +45,4 @@ def outbound_views_processor(dtype, **kwargs):
     lychee.log('{}.outbound_views_processor() after finish signal'.format(__name__))
 
 
-inbound.VIEWS_START.connect(inbound_views_processor)
 outbound.VIEWS_START.connect(outbound_views_processor)

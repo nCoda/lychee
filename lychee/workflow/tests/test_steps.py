@@ -234,3 +234,78 @@ class TestInboundConversionStep(TestInteractiveSession):
         finally:
             signals.inbound.CONVERSION_FINISH.disconnect(finish_slot)
             signals.inbound.CONVERSION_ERROR.disconnect(error_slot)
+
+
+class TestInboundViewsStep(TestInteractiveSession):
+    '''
+    Tests for the inbound views step.
+    '''
+
+    @mock.patch('lychee.workflow.steps.flush_inbound_views')
+    @mock.patch('lychee.workflow.steps._choose_inbound_views')
+    def test_do_inbound_views_1(self, mock_choose, mock_flush):
+        '''
+        When it works.
+        '''
+        dtype = 'dtype'
+        document = 'document'
+        converted = 'converted'
+        start_slot = make_slot_mock()
+        assert 0 == len(signals.inbound.VIEWS_START.slots)
+        signals.inbound.VIEWS_START.connect(start_slot)
+
+        try:
+            steps.do_inbound_views(self.session, dtype, document, converted=converted)
+            mock_choose.assert_called_once_with(dtype)
+            start_slot.assert_called_once_with(document=document, converted=converted)
+            mock_flush.assert_called_once_with()
+        finally:
+            signals.inbound.VIEWS_START.disconnect(start_slot)
+
+    @mock.patch('lychee.workflow.steps.flush_inbound_views')
+    @mock.patch('lychee.workflow.steps._choose_inbound_views')
+    def test_do_inbound_views_2(self, mock_choose, mock_flush):
+        '''
+        When it fails with a InvalidDataTypeError.
+        '''
+        dtype = 'dtype'
+        document = 'document'
+        converted = 'converted'
+        mock_choose.side_effect = exceptions.InvalidDataTypeError('rawr')
+        finish_slot = make_slot_mock()
+        signals.inbound.VIEWS_FINISH.connect(finish_slot)
+        error_slot = make_slot_mock()
+        signals.inbound.VIEWS_ERROR.connect(error_slot)
+
+        try:
+            steps.do_inbound_views(self.session, dtype, document, converted)
+            finish_slot.assert_called_once_with(views_info=None)
+            error_slot.assert_called_once_with(msg='rawr')
+            mock_flush.assert_called_once_with()
+        finally:
+            signals.inbound.VIEWS_FINISH.disconnect(finish_slot)
+            signals.inbound.VIEWS_ERROR.disconnect(error_slot)
+
+    @mock.patch('lychee.workflow.steps.flush_inbound_views')
+    @mock.patch('lychee.workflow.steps._choose_inbound_views')
+    def test_do_inbound_views_3(self, mock_choose, mock_flush):
+        '''
+        When it fails with another exception.
+        '''
+        dtype = 'dtype'
+        document = 'document'
+        converted = 'converted'
+        mock_choose.side_effect = TypeError
+        finish_slot = make_slot_mock()
+        signals.inbound.VIEWS_FINISH.connect(finish_slot)
+        error_slot = make_slot_mock()
+        signals.inbound.VIEWS_ERROR.connect(error_slot)
+
+        try:
+            steps.do_inbound_views(self.session, dtype, document, converted)
+            finish_slot.assert_called_once_with(views_info=None)
+            error_slot.assert_called_once_with(msg=steps._UNEXP_ERR_INBOUND_VIEWS)
+            mock_flush.assert_called_once_with()
+        finally:
+            signals.inbound.VIEWS_FINISH.disconnect(finish_slot)
+            signals.inbound.VIEWS_ERROR.disconnect(error_slot)

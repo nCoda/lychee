@@ -58,6 +58,7 @@ from lychee import signals
 # translatable strings
 _INVALID_INBOUND_DTYPE = 'Invalid "dtype" for inbound conversion: "{0}"'
 _UNEXP_ERR_INBOUND_CONVERSION = 'Unexpected error during inbound conversion'
+_UNEXP_ERR_INBOUND_VIEWS = 'Unexpected error during inbound views processing'
 
 
 def do_inbound_conversion(session, dtype, document):
@@ -68,6 +69,8 @@ def do_inbound_conversion(session, dtype, document):
     :type session: :class:`lychee.workflow.session.InteractiveSession`
     :param str dtype: The inbound data type as specified in the
         :const:`lychee.converters.INBOUND_CONVERTERS` mapping.
+    :param document: The incoming (partial) document for conversion.
+    :type document: As required by the converter.
 
     This function chooses an inbound converter then runs it. Resulting data is emitted from the
     converter with the :const:`~lychee.signals.inbound.CONVERSION_FINISH` signal and not returned
@@ -89,14 +92,38 @@ def do_inbound_conversion(session, dtype, document):
         flush_inbound_converters()
 
 
-def do_inbound_views(session):
+def do_inbound_views(session, dtype, document, converted):
     '''
     Run the "inbound views" step.
 
     :param session: A session instance for the ongoing notation session.
     :type session: :class:`lychee.workflow.session.InteractiveSession`
+    :param str dtype: The inbound data type as specified in the
+        :const:`lychee.converters.INBOUND_CONVERTERS` mapping.
+    :param document: The incoming (partial) document for conversion, as supplied to
+        :func:`do_inbound_conversion`.
+    :type document: As required by the converter.
+    :param converted: The incoming (partial) document, already converted.
+    :type converted: :class:`lxml.etree.Element`
+
+    This function chooses an inbound views-processor then runs it. Resulting data is emitted from
+    the processor with the :const:`~lychee.signals.inbound.VIEWS_FINISH` signal and not returned
+    by this function. If an error occurs during processing, this function emits the
+    :const:`~lychee.signals.inbound.VIEWS_ERROR` signal with an error message, then the
+    :const:`~lychee.signals.inbound.VIEWS_FINISH` signal with ``None``.
     '''
-    raise NotImplementedError()
+    try:
+        _choose_inbound_views(dtype)
+        signals.inbound.VIEWS_START.emit(document=document, converted=converted)
+    except Exception as exc:
+        if isinstance(exc, exceptions.InvalidDataTypeError):
+            msg = exc.args[0]
+        else:
+            msg = _UNEXP_ERR_INBOUND_VIEWS
+        signals.inbound.VIEWS_ERROR.emit(msg=msg)
+        signals.inbound.VIEWS_FINISH.emit(views_info=None)
+    finally:
+        flush_inbound_views()
 
 
 def do_document(session, converted, views_info):
@@ -195,3 +222,30 @@ def flush_inbound_converters():
     '''
     for each_converter in converters.INBOUND_CONVERTERS.values():
         signals.inbound.CONVERSION_START.disconnect(each_converter)
+
+
+def _dummy_inbound_views_slot(**kwargs):  # TODO: remove with T33
+    signals.inbound.VIEWS_FINISH.emit(views_info='<dummy views info>')
+
+
+def _choose_inbound_views(dtype):  # TODO: untested until T33
+    '''
+    Connect the "inbound.VIEWS_START" signal to the appropriate views processor according to the
+    inbound data type.
+
+    :param str dtype: The inbound data type as specified somewhere???????
+    :raises: :exc:`~lychee.exceptions.InvalidDataTypeError` when there is not inbound views
+        processor for the given ``dtype``.
+
+    .. warning:: This function is not implemented. Refer to T33.
+    '''
+    signals.inbound.VIEWS_START.connect(_dummy_inbound_views_slot)
+
+
+def flush_inbound_views():  # TODO: untested until T33
+    '''
+    Clear any inbound views processors that may be connected.
+
+    .. warning:: This function is not implemented. Refer to T33.
+    '''
+    pass

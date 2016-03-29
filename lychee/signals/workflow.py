@@ -59,15 +59,7 @@ class WorkflowManager(object):
 
     # connections
     # NB: they'll be connected as SIGNAL.connect(self.whatever)
-    _CONNECTIONS = ((inbound.CONVERSION_STARTED, '_inbound_conversion_started'),
-                    (inbound.CONVERSION_FINISH, '_inbound_conversion_finish'),
-                    (inbound.CONVERSION_FINISHED, '_inbound_conversion_finished'),
-                    (inbound.CONVERSION_ERROR, '_inbound_conversion_error'),
-                    (inbound.VIEWS_STARTED, '_inbound_views_started'),
-                    (inbound.VIEWS_FINISH, '_inbound_views_finish'),
-                    (inbound.VIEWS_FINISHED, '_inbound_views_finished'),
-                    (inbound.VIEWS_ERROR, '_inbound_views_error'),
-                    (outbound.VIEWS_STARTED, '_outbound_views_started'),
+    _CONNECTIONS = ((outbound.VIEWS_STARTED, '_outbound_views_started'),
                     (outbound.VIEWS_FINISH, '_outbound_views_finish'),
                     (outbound.VIEWS_FINISHED, '_outbound_views_finished'),
                     (outbound.VIEWS_ERROR, '_outbound_views_error'),
@@ -88,15 +80,6 @@ class WorkflowManager(object):
         # set instance settings
         # whether to do the "inbound" conversion step
         self._do_inbound = False
-
-        # inbound data type
-        self._i_dtype = None
-        # inbound document
-        self._i_doc = None
-        # inbound document after conversion
-        self._converted = None
-        # inbound information from the "views" module
-        self._i_views = None
 
         if dtype is not None and doc is not None:  # just in case we can lxml.Element
             lychee.log('WorkflowManager will do a full conversion', 'debug')
@@ -125,7 +108,8 @@ class WorkflowManager(object):
         '''
         for signal, slot in WorkflowManager._CONNECTIONS:
             signal.disconnect(getattr(self, slot))
-        self._flush_inbound_converters()
+        steps.flush_inbound_converters()
+        steps.flush_inbound_views()
         self._flush_outbound_converters()
 
     def run(self):
@@ -150,27 +134,20 @@ class WorkflowManager(object):
             # Inbound -------------------------------------------------------------
             steps.do_inbound_conversion(
                 session=self._session,
-                dtypeself._i_dtype,
+                dtype=self._i_dtype,
                 document=self._i_doc)
 
-            # if self._status is not WorkflowManager._INBOUND_CONVERSION_FINISHED:
-            #     if self._status is not WorkflowManager._INBOUND_CONVERSION_ERROR:
-            #         lychee.log('ERROR during inbound conversion')
-            #     return
-            # lychee.log(next_step)
-            #
-            # self._status = WorkflowManager._INBOUND_PREVIEWS
-            self._choose_inbound_views()
-            inbound.VIEWS_START.emit(dtype=self._i_dtype, doc=self._i_doc, converted=self._converted)
+            steps.do_inbound_views(
+                session=self._session,
+                dtype=self._i_dtype,
+                document=self._i_doc,
+                converted=self._session._inbound_converted)
 
-            # if self._status is not WorkflowManager._INBOUND_VIEWS_FINISHED:
-            #     lychee.log('ERROR during inbound views processing')
-            #     return
             lychee.log(next_step)
 
             # Document ------------------------------------------------------------
             self._modified_pathnames = steps.do_document(
-                converted=self._converted,
+                converted=self._session._inbound_converted,
                 session=self._session,
                 views_info='placeholder views info')
             lychee.log(next_step)
@@ -341,7 +318,7 @@ class WorkflowManager(object):
 
         # After the "views" stuff, we know what we need to load for the outbound conversion...
         # (for now, we have no "views" module, so that means everything).
-        convert_this = self._converted
+        convert_this = self._session._inbound_converted
         if convert_this is None:
             # ask the Document module to prepare a full <score> for us
             doc = self._session.get_document()

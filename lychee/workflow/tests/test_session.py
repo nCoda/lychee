@@ -86,9 +86,11 @@ class TestGeneral(TestInteractiveSession):
         assert signals.outbound.UNREGISTER_FORMAT.is_connected(actual._registrar.unregister)
         assert signals.vcs.START.is_connected(steps._vcs_driver)
         assert signals.inbound.CONVERSION_FINISH.is_connected(actual.inbound_conversion_finish)
+        assert signals.inbound.VIEWS_FINISH.is_connected(actual.inbound_views_finish)
 
         # things cleaned up for every action
         assert actual._inbound_converted is None
+        assert actual._inbound_views_info is None
 
     def test_registrar_property(self):
         '''
@@ -105,6 +107,7 @@ class TestGeneral(TestInteractiveSession):
         self.session._inbound_converted = 'five'
         self.session._cleanup_for_new_action()
         assert self.session._inbound_converted is None
+        assert self.session._inbound_views_info is None
         mock_flush.assert_called_once_with()
 
 
@@ -290,3 +293,14 @@ class TestInbound(TestInteractiveSession):
             finished_slot.assert_called_once_with()
         finally:
             signals.inbound.CONVERSION_FINISHED.disconnect(finished_slot)
+
+    def test_views_finished(self):
+        "It works."
+        finished_slot = make_slot_mock()
+        signals.inbound.VIEWS_FINISHED.connect(finished_slot)
+        try:
+            self.session.inbound_views_finish(views_info='lol')
+            assert 'lol' == self.session._inbound_views_info
+            finished_slot.assert_called_once_with()
+        finally:
+            signals.inbound.VIEWS_FINISHED.disconnect(finished_slot)

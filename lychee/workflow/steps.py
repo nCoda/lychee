@@ -49,18 +49,44 @@ possibly simultaneously, depending on which outbound formats are registered.
 from lxml import etree
 
 import lychee
+from lychee import converters
+from lychee import exceptions
 from lychee.namespaces import mei
 from lychee import signals
 
 
-def do_inbound_conversion(session):
+# translatable strings
+_INVALID_INBOUND_DTYPE = 'Invalid "dtype" for inbound conversion: "{0}"'
+_UNEXP_ERR_INBOUND_CONVERSION = 'Unexpected error during inbound conversion'
+
+
+def do_inbound_conversion(session, dtype, document):
     '''
     Run the "inbound conversion" step.
 
     :param session: A session instance for the ongoing notation session.
     :type session: :class:`lychee.workflow.session.InteractiveSession`
+    :param str dtype: The inbound data type as specified in the
+        :const:`lychee.converters.INBOUND_CONVERTERS` mapping.
+
+    This function chooses an inbound converter then runs it. Resulting data is emitted from the
+    converter with the :const:`~lychee.signals.inbound.CONVERSION_FINISH` signal and not returned
+    by this function. If an error occurs during conversion, this function emits the
+    :const:`~lychee.signals.inbound.CONVERSION_ERROR` signal with an error message, then the
+    :const:`~lychee.signals.inbound.CONVERSION_FINISH` signal with ``None``.
     '''
-    raise NotImplementedError()
+    try:
+        _choose_inbound_converter(dtype)
+        signals.inbound.CONVERSION_START.emit(document=document)
+    except Exception as exc:
+        if isinstance(exc, exceptions.InvalidDataTypeError):
+            msg = exc.args[0]
+        else:
+            msg = _UNEXP_ERR_INBOUND_CONVERSION
+        signals.inbound.CONVERSION_ERROR.emit(msg=msg)
+        signals.inbound.CONVERSION_FINISH.emit(converted=None)
+    finally:
+        flush_inbound_converters()
 
 
 def do_inbound_views(session):
@@ -145,3 +171,27 @@ def _vcs_driver(repo_dir, pathnames, **kwargs):
     signals.vcs.INIT.emit(repodir=repo_dir)
     signals.vcs.ADD.emit(pathnames=pathnames)
     signals.vcs.COMMIT.emit(message=None)
+
+
+def _choose_inbound_converter(dtype):
+    '''
+    Connect the "inbound.CONVERSION_START" signal to the appropriate converter according to the
+    inbound data type.
+
+    :param str dtype: The inbound data type as specified in the
+        :const:`lychee.converters.INBOUND_CONVERTERS` mapping.
+    :raises: :exc:`~lychee.exceptions.InvalidDataTypeError` when there is not inbound converter
+        for the given ``dtype``.
+    '''
+    if dtype in converters.INBOUND_CONVERTERS:
+        signals.inbound.CONVERSION_START.connect(converters.INBOUND_CONVERTERS[dtype])
+    else:
+        raise exceptions.InvalidDataTypeError(_INVALID_INBOUND_DTYPE.format(dtype))
+
+
+def flush_inbound_converters():
+    '''
+    Clear any inbound converters that may be connected.
+    '''
+    for each_converter in converters.INBOUND_CONVERTERS.values():
+        signals.inbound.CONVERSION_START.disconnect(each_converter)

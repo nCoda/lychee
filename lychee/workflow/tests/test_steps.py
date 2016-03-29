@@ -34,14 +34,23 @@ except ImportError:
     import mock
 
 from lxml import etree
+import pytest
 import signalslot
 
+from lychee import converters
+from lychee import exceptions
 from lychee.namespaces import mei, xml
 from lychee import signals
 from lychee.vcs import hg as vcs_hg_module
 from lychee.workflow import steps
 
 from test_session import TestInteractiveSession
+
+
+def make_slot_mock():
+    slot = mock.MagicMock(spec=signalslot.slot.BaseSlot)
+    slot.is_alive = True
+    return slot
 
 
 class TestDocumentStep(TestInteractiveSession):
@@ -70,12 +79,6 @@ class TestVCSStep(TestInteractiveSession):
     Tests for the "VCS" step.
     '''
 
-    @staticmethod
-    def make_slot_mock():
-        slot = mock.MagicMock(spec=signalslot.slot.BaseSlot)
-        slot.is_alive = True
-        return slot
-
     def test_do_vcs_1(self):
         '''
         That do_vcs() works.
@@ -84,8 +87,8 @@ class TestVCSStep(TestInteractiveSession):
         assert 0 == len(signals.vcs.START.slots)  # pre-condition
         assert 0 == len(signals.vcs.FINISHED.slots)  # pre-condition
         # create and connect some mock slots for vcs.START and vcs.FINISHED
-        start_slot = TestVCSStep.make_slot_mock()
-        finished_slot = TestVCSStep.make_slot_mock()
+        start_slot = make_slot_mock()
+        finished_slot = make_slot_mock()
         signals.vcs.START.connect(start_slot)
         signals.vcs.FINISHED.connect(finished_slot)
 
@@ -106,9 +109,9 @@ class TestVCSStep(TestInteractiveSession):
         assert 0 == len(signals.vcs.INIT.slots)  # pre-condition
         assert 0 == len(signals.vcs.ADD.slots)  # pre-condition
         assert 0 == len(signals.vcs.COMMIT.slots)  # pre-condition
-        init_slot = TestVCSStep.make_slot_mock()
-        add_slot = TestVCSStep.make_slot_mock()
-        commit_slot = TestVCSStep.make_slot_mock()
+        init_slot = make_slot_mock()
+        add_slot = make_slot_mock()
+        commit_slot = make_slot_mock()
         signals.vcs.INIT.connect(init_slot)
         signals.vcs.ADD.connect(add_slot)
         signals.vcs.COMMIT.connect(commit_slot)
@@ -121,3 +124,113 @@ class TestVCSStep(TestInteractiveSession):
         signals.vcs.INIT.disconnect(init_slot)
         signals.vcs.ADD.disconnect(add_slot)
         signals.vcs.COMMIT.disconnect(commit_slot)
+
+
+class TestInboundConversionStep(TestInteractiveSession):
+    '''
+    Tests for the inbound conversion step.
+    '''
+
+    def test_choose_converter_1(self):
+        '''
+        When the converter connects.
+        '''
+        dtype = 'lilypond'
+        assert 0 == len(signals.inbound.CONVERSION_START.slots)
+        steps._choose_inbound_converter(dtype)
+        assert signals.inbound.CONVERSION_START.is_connected(converters.INBOUND_CONVERTERS[dtype])
+        signals.inbound.CONVERSION_START.disconnect(converters.INBOUND_CONVERTERS[dtype])
+
+    def test_choose_converter_2(self):
+        '''
+        When the "dtype" is invalid.
+        '''
+        dtype = 'red-black tree'
+        assert 0 == len(signals.inbound.CONVERSION_START.slots)
+        with pytest.raises(exceptions.InvalidDataTypeError) as exc:
+            steps._choose_inbound_converter(dtype)
+        assert steps._INVALID_INBOUND_DTYPE.format(dtype) == exc.value.args[0]
+        assert 0 == len(signals.inbound.CONVERSION_START.slots)
+
+    def test_flush_inbound_converters_1(self):
+        '''
+        It works when all the converters are connected.
+        '''
+        for each_converter in converters.INBOUND_CONVERTERS.values():
+            signals.inbound.CONVERSION_START.connect(each_converter)
+        assert len(converters.INBOUND_CONVERTERS) == len(signals.inbound.CONVERSION_START.slots)
+        steps.flush_inbound_converters()
+        assert 0 == len(signals.inbound.CONVERSION_START.slots)
+
+    def test_flush_inbound_converters_2(self):
+        '''
+        It works when none of the converters are connected.
+        '''
+        assert 0 == len(signals.inbound.CONVERSION_START.slots)
+        steps.flush_inbound_converters()
+        assert 0 == len(signals.inbound.CONVERSION_START.slots)
+
+    @mock.patch('lychee.workflow.steps.flush_inbound_converters')
+    @mock.patch('lychee.workflow.steps._choose_inbound_converter')
+    def test_do_inbound_conversion_1(self, mock_choose, mock_flush):
+        '''
+        When it works.
+        '''
+        dtype = 'dtype'
+        document = 'document'
+        start_slot = make_slot_mock()
+        signals.inbound.CONVERSION_START.connect(start_slot)
+
+        try:
+            steps.do_inbound_conversion(self.session, dtype, document)
+            mock_choose.assert_called_once_with(dtype)
+            start_slot.assert_called_once_with(document=document)
+            mock_flush.assert_called_once_with()
+        finally:
+            signals.inbound.CONVERSION_START.disconnect(start_slot)
+
+    @mock.patch('lychee.workflow.steps.flush_inbound_converters')
+    @mock.patch('lychee.workflow.steps._choose_inbound_converter')
+    def test_do_inbound_conversion_2(self, mock_choose, mock_flush):
+        '''
+        When it fails with a InvalidDataTypeError.
+        '''
+        dtype = 'dtype'
+        document = 'document'
+        mock_choose.side_effect = exceptions.InvalidDataTypeError('rawr')
+        finish_slot = make_slot_mock()
+        signals.inbound.CONVERSION_FINISH.connect(finish_slot)
+        error_slot = make_slot_mock()
+        signals.inbound.CONVERSION_ERROR.connect(error_slot)
+
+        try:
+            steps.do_inbound_conversion(self.session, dtype, document)
+            finish_slot.assert_called_once_with(converted=None)
+            error_slot.assert_called_once_with(msg='rawr')
+            mock_flush.assert_called_once_with()
+        finally:
+            signals.inbound.CONVERSION_FINISH.disconnect(finish_slot)
+            signals.inbound.CONVERSION_ERROR.disconnect(error_slot)
+
+    @mock.patch('lychee.workflow.steps.flush_inbound_converters')
+    @mock.patch('lychee.workflow.steps._choose_inbound_converter')
+    def test_do_inbound_conversion_3(self, mock_choose, mock_flush):
+        '''
+        When it fails with another exception.
+        '''
+        dtype = 'dtype'
+        document = 'document'
+        mock_choose.side_effect = TypeError
+        finish_slot = make_slot_mock()
+        signals.inbound.CONVERSION_FINISH.connect(finish_slot)
+        error_slot = make_slot_mock()
+        signals.inbound.CONVERSION_ERROR.connect(error_slot)
+
+        try:
+            steps.do_inbound_conversion(self.session, dtype, document)
+            finish_slot.assert_called_once_with(converted=None)
+            error_slot.assert_called_once_with(msg=steps._UNEXP_ERR_INBOUND_CONVERSION)
+            mock_flush.assert_called_once_with()
+        finally:
+            signals.inbound.CONVERSION_FINISH.disconnect(finish_slot)
+            signals.inbound.CONVERSION_ERROR.disconnect(error_slot)

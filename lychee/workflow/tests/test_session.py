@@ -38,12 +38,19 @@ except ImportError:
 
 from mercurial import error as hg_error
 import pytest
+import signalslot
 
 from lychee.converters import registrar
 from lychee import exceptions
 from lychee import signals
 from lychee.workflow import session
 from lychee.workflow import steps
+
+
+def make_slot_mock():
+    slot = mock.MagicMock(spec=signalslot.slot.BaseSlot)
+    slot.is_alive = True
+    return slot
 
 
 class TestInteractiveSession(unittest.TestCase):
@@ -78,6 +85,10 @@ class TestGeneral(TestInteractiveSession):
         assert signals.outbound.REGISTER_FORMAT.is_connected(actual._registrar.register)
         assert signals.outbound.UNREGISTER_FORMAT.is_connected(actual._registrar.unregister)
         assert signals.vcs.START.is_connected(steps._vcs_driver)
+        assert signals.inbound.CONVERSION_FINISH.is_connected(actual.inbound_conversion_finish)
+
+        # things cleaned up for every action
+        assert actual._inbound_converted is None
 
     def test_registrar_property(self):
         '''
@@ -85,6 +96,16 @@ class TestGeneral(TestInteractiveSession):
         '''
         actual = self.session
         assert actual._registrar is actual.registrar
+
+    @mock.patch('lychee.workflow.session.steps.flush_inbound_converters')
+    def test_cleanup_for_new_action(self, mock_flush):
+        '''
+        Make sure cleanup_for_new_action() actually cleans up!
+        '''
+        self.session._inbound_converted = 'five'
+        self.session._cleanup_for_new_action()
+        assert self.session._inbound_converted is None
+        mock_flush.assert_called_once_with()
 
 
 class TestRepository(TestInteractiveSession):
@@ -252,3 +273,20 @@ class TestDocument(TestInteractiveSession):
         self.session.get_document()
         self.session.set_repo_dir('')
         assert self.session._doc is None
+
+
+class TestInbound(TestInteractiveSession):
+    '''
+    Tests for the inbound stage.
+    '''
+
+    def test_conversion_finished(self):
+        "It works."
+        finished_slot = make_slot_mock()
+        signals.inbound.CONVERSION_FINISHED.connect(finished_slot)
+        try:
+            self.session.inbound_conversion_finish(converted='lol')
+            assert 'lol' == self.session._inbound_converted
+            finished_slot.assert_called_once_with()
+        finally:
+            signals.inbound.CONVERSION_FINISHED.disconnect(finished_slot)

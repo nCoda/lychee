@@ -58,14 +58,16 @@ class InteractiveSession(object):
         self._hug = None
         self._temp_dir = False
         self._repo_dir = None
-
         self._registrar = registrar.Registrar()
+
         signals.outbound.REGISTER_FORMAT.connect(self._registrar.register)
         signals.outbound.UNREGISTER_FORMAT.connect(self._registrar.unregister)
-
         signals.ACTION_START.connect(self._action_start)  # NOTE: this connection isn't tested
-
         signals.vcs.START.connect(steps._vcs_driver)
+        signals.inbound.CONVERSION_FINISH.connect(self.inbound_conversion_finish)
+
+        # thse should be cleared for each action
+        self._inbound_converted = None
 
     @property
     def registrar(self):
@@ -186,6 +188,7 @@ class InteractiveSession(object):
         :kwarg dtype:
         :kwarg doc:
         '''
+        self._cleanup_for_new_action()
         # NB: workflow imported here because it's soon going away
         from lychee.signals import workflow
         if 'dtype' in kwargs and 'doc' in kwargs:
@@ -194,3 +197,23 @@ class InteractiveSession(object):
             workm = workflow.WorkflowManager(session=self)
         workm.run()
         del workm
+
+    def _cleanup_for_new_action(self):
+        '''
+        Perform required cleanup before starting a new "action."
+
+        This cleanup should not normally be needed. This method is a cross-check in case a module
+        failed or errored, or otherwise did not clean up after itself.
+        '''
+        self._inbound_converted = None
+        steps.flush_inbound_converters()
+
+    def inbound_conversion_finish(self, converted, **kwargs):
+        '''
+        Accept the data emitted by an inbound converter. Slot for :const:`inbound.CONVERSION_FINISHED`.
+
+        :param converted: Lychee-MEI data for an incoming change.
+        :type converted: :class:`lxml.etree.Element`
+        '''
+        self._inbound_converted = converted
+        signals.inbound.CONVERSION_FINISHED.emit()

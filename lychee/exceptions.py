@@ -126,3 +126,10 @@ class RepositoryError(LycheeError):
     When there was an error related to Lychee's repository.
     '''
     pass
+
+
+class InvalidDataTypeError(LycheeError):
+    '''
+    When an error is caused by an invalid data type.
+    '''
+    pass

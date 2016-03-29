@@ -23,19 +23,19 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 '''
-Control the workflow progression through an "action."
+.. warning:: This module is deprecated.
 '''
 
 
 import lychee
 from lychee import converters
-from lychee import document
 from lychee.signals import inbound, vcs, outbound
+from lychee.workflow import steps
 
 
 class WorkflowManager(object):
     '''
-    It manages the workflow.
+    If you use this class, I will find you, and I will take you out.
     '''
 
     # statusses
@@ -175,9 +175,10 @@ class WorkflowManager(object):
             lychee.log(next_step)
 
             # Document ------------------------------------------------------------
-            self._modified_pathnames = document._document_processor(
+            self._modified_pathnames = steps.do_document(
                 converted=self._converted,
-                session=self._session)
+                session=self._session,
+                views_info='placeholder views info')
             lychee.log(next_step)
 
             # VCS -----------------------------------------------------------------

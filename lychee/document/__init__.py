@@ -26,23 +26,4 @@
 Initializes the :mod:`document` module.
 '''
 
-from lxml import etree
-
-import lychee
 from lychee.document.document import Document
-
-
-_MEINS = '{http://www.music-encoding.org/ns/mei}'
-
-
-def _document_processor(converted, session, **kwargs):
-    lychee.log('{}.document_processor(converted={})'.format(__name__, converted))
-
-    score = etree.Element('{}score'.format(_MEINS))
-    score.append(converted)
-
-    doc = session.get_document()
-    doc.put_score(score)
-    output_filenames = doc.save_everything()
-
-    return output_filenames

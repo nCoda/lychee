@@ -25,3 +25,33 @@
 '''
 Tests for the :mod:`lychee.workflow.steps` module.
 '''
+
+import os.path
+
+from lxml import etree
+
+from lychee.namespaces import mei, xml
+from lychee.workflow import steps
+
+from test_session import TestInteractiveSession
+
+
+class TestDocumentStep(TestInteractiveSession):
+    '''
+    Tests for the "document" step.
+    '''
+
+    def test_document_1(self):
+        '''
+        That do_document() works.
+        '''
+        xmlid = 'Sme-s-m-l-e1111111'
+        section_pathname = os.path.join(self.session.get_repo_dir(), '{}.mei'.format(xmlid))
+        converted = etree.Element(mei.SECTION, attrib={xml.ID: xmlid})
+        pathnames = steps.do_document(self.session, converted, 'views info')
+
+        assert section_pathname in pathnames
+        doc = self.session.get_document()
+        assert [xmlid] == doc.get_section_ids()
+        assert [xmlid] == doc.get_section_ids(all_sections=True)
+        assert os.path.exists(section_pathname)

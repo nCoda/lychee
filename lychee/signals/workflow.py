@@ -67,9 +67,6 @@ class WorkflowManager(object):
                     (inbound.VIEWS_FINISH, '_inbound_views_finish'),
                     (inbound.VIEWS_FINISHED, '_inbound_views_finished'),
                     (inbound.VIEWS_ERROR, '_inbound_views_error'),
-                    (vcs.START, '_vcs_driver'),
-                    (vcs.FINISHED, '_vcs_finished'),
-                    (vcs.ERROR, '_vcs_error'),
                     (outbound.VIEWS_STARTED, '_outbound_views_started'),
                     (outbound.VIEWS_FINISH, '_outbound_views_finish'),
                     (outbound.VIEWS_FINISHED, '_outbound_views_finished'),
@@ -182,10 +179,7 @@ class WorkflowManager(object):
             lychee.log(next_step)
 
             # VCS -----------------------------------------------------------------
-            # NOTE: why bother with the signal at all? Why not just call self._vcs_driver() ? Because
-            # this way we can enable/disable the VCS step by changing who's listening to vcs.START.
-            vcs.START.emit(pathnames=self._modified_pathnames)
-            vcs.FINISHED.emit()
+            steps.do_vcs(session=self._session, pathnames=self._modified_pathnames)
             lychee.log(next_step)
 
         # Outbound ------------------------------------------------------------
@@ -305,32 +299,6 @@ class WorkflowManager(object):
             lychee.log(kwargs['msg'])
         else:
             lychee.log('ERROR during inbound views processing')
-
-    # ----
-
-    def _vcs_driver(self, pathnames, **kwargs):
-        '''
-        Slot for vcs.START that runs the "VCS step."
-        '''
-        # TODO: these must be set properly
-        message = None
-
-        vcs.INIT.emit(repodir=self._session.get_repo_dir())
-        vcs.ADD.emit(pathnames=pathnames)
-        vcs.COMMIT.emit(message=message)
-
-    def _vcs_finished(self, **kwargs):
-        '''
-        Called when vcs.FINISHED is emitted, for logging and debugging.
-        '''
-        lychee.log('vcs processing finished')
-
-    def _vcs_error(self, **kwargs):
-        self._status = WorkflowManager._VCS_ERROR
-        if 'msg' in kwargs:
-            lychee.log(kwargs['msg'])
-        else:
-            lychee.log('ERROR during vcs processing')
 
     # ----
 

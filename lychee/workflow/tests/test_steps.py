@@ -28,9 +28,17 @@ Tests for the :mod:`lychee.workflow.steps` module.
 
 import os.path
 
+try:
+    from unittest import mock
+except ImportError:
+    import mock
+
 from lxml import etree
+import signalslot
 
 from lychee.namespaces import mei, xml
+from lychee import signals
+from lychee.vcs import hg as vcs_hg_module
 from lychee.workflow import steps
 
 from test_session import TestInteractiveSession
@@ -55,3 +63,61 @@ class TestDocumentStep(TestInteractiveSession):
         assert [xmlid] == doc.get_section_ids()
         assert [xmlid] == doc.get_section_ids(all_sections=True)
         assert os.path.exists(section_pathname)
+
+
+class TestVCSStep(TestInteractiveSession):
+    '''
+    Tests for the "VCS" step.
+    '''
+
+    @staticmethod
+    def make_slot_mock():
+        slot = mock.MagicMock(spec=signalslot.slot.BaseSlot)
+        slot.is_alive = True
+        return slot
+
+    def test_do_vcs_1(self):
+        '''
+        That do_vcs() works.
+        '''
+        signals.vcs.START.disconnect(steps._vcs_driver)
+        assert 0 == len(signals.vcs.START.slots)  # pre-condition
+        assert 0 == len(signals.vcs.FINISHED.slots)  # pre-condition
+        # create and connect some mock slots for vcs.START and vcs.FINISHED
+        start_slot = TestVCSStep.make_slot_mock()
+        finished_slot = TestVCSStep.make_slot_mock()
+        signals.vcs.START.connect(start_slot)
+        signals.vcs.FINISHED.connect(finished_slot)
+
+        steps.do_vcs(self.session, ['pathnames'])
+
+        start_slot.assert_called_with(repo_dir=self.session.get_repo_dir(), pathnames=['pathnames'])
+        finished_slot.assert_called_with()
+        signals.vcs.START.disconnect(start_slot)
+        signals.vcs.FINISHED.disconnect(finished_slot)
+
+    def test_vcs_driver_1(self):
+        '''
+        That _vcs_driver() works.
+        '''
+        signals.vcs.INIT.disconnect(vcs_hg_module.init_repo)
+        signals.vcs.ADD.disconnect(vcs_hg_module.add)
+        signals.vcs.COMMIT.disconnect(vcs_hg_module.commit)
+        assert 0 == len(signals.vcs.INIT.slots)  # pre-condition
+        assert 0 == len(signals.vcs.ADD.slots)  # pre-condition
+        assert 0 == len(signals.vcs.COMMIT.slots)  # pre-condition
+        init_slot = TestVCSStep.make_slot_mock()
+        add_slot = TestVCSStep.make_slot_mock()
+        commit_slot = TestVCSStep.make_slot_mock()
+        signals.vcs.INIT.connect(init_slot)
+        signals.vcs.ADD.connect(add_slot)
+        signals.vcs.COMMIT.connect(commit_slot)
+
+        steps._vcs_driver('dir', 'names')
+
+        init_slot.assert_called_with(repodir='dir')
+        add_slot.assert_called_with(pathnames='names')
+        commit_slot.assert_called_with(message=None)
+        signals.vcs.INIT.disconnect(init_slot)
+        signals.vcs.ADD.disconnect(add_slot)
+        signals.vcs.COMMIT.disconnect(commit_slot)

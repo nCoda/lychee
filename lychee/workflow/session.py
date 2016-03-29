@@ -38,6 +38,7 @@ from lychee.converters import registrar
 from lychee.document import document
 from lychee import exceptions
 from lychee import signals
+from lychee.workflow import steps
 
 
 _CANNOT_SAFELY_HG_INIT = 'Could not safely initialize the repository'
@@ -63,6 +64,8 @@ class InteractiveSession(object):
         signals.outbound.UNREGISTER_FORMAT.connect(self._registrar.unregister)
 
         signals.ACTION_START.connect(self._action_start)  # NOTE: this connection isn't tested
+
+        signals.vcs.START.connect(steps._vcs_driver)
 
     @property
     def registrar(self):

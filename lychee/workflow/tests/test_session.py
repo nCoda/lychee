@@ -43,6 +43,7 @@ from lychee.converters import registrar
 from lychee import exceptions
 from lychee import signals
 from lychee.workflow import session
+from lychee.workflow import steps
 
 
 class TestInteractiveSession(unittest.TestCase):
@@ -76,6 +77,7 @@ class TestGeneral(TestInteractiveSession):
         assert isinstance(actual._registrar, registrar.Registrar)
         assert signals.outbound.REGISTER_FORMAT.is_connected(actual._registrar.register)
         assert signals.outbound.UNREGISTER_FORMAT.is_connected(actual._registrar.unregister)
+        assert signals.vcs.START.is_connected(steps._vcs_driver)
 
     def test_registrar_property(self):
         '''

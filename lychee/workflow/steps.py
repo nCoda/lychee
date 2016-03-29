@@ -50,16 +50,25 @@ from lxml import etree
 
 import lychee
 from lychee.namespaces import mei
+from lychee import signals
 
 
 def do_inbound_conversion(session):
     '''
+    Run the "inbound conversion" step.
+
+    :param session: A session instance for the ongoing notation session.
+    :type session: :class:`lychee.workflow.session.InteractiveSession`
     '''
     raise NotImplementedError()
 
 
 def do_inbound_views(session):
     '''
+    Run the "inbound views" step.
+
+    :param session: A session instance for the ongoing notation session.
+    :type session: :class:`lychee.workflow.session.InteractiveSession`
     '''
     raise NotImplementedError()
 
@@ -68,7 +77,8 @@ def do_document(session, converted, views_info):
     '''
     Run the "document" step.
 
-    :param session:
+    :param session: A session instance for the ongoing notation session.
+    :type session: :class:`lychee.workflow.session.InteractiveSession`
     :param converted:
     :param views_info:
     :returns: A list of the pathnames in this Lychee-MEI document.
@@ -90,19 +100,48 @@ def do_document(session, converted, views_info):
     return document_pathnames
 
 
-def do_vcs(session):
+def do_vcs(session, pathnames):
     '''
+    Run the "VCS" step.
+
+    :param session: A session instance for the ongoing notation session.
+    :type session: :class:`lychee.workflow.session.InteractiveSession`
+    :param pathnames: A list of the pathnames in this Lychee-MEI document (as returned by
+        :func:`do_document`).
+    :type pathnames: list of str
+    :returns: ``None``
     '''
-    raise NotImplementedError()
+    # NOTE: why bother with the signal at all? Why not just call self._vcs_driver() ? Because
+    # this way we can enable/disable the VCS step by changing who's listening to vcs.START.
+    signals.vcs.START.emit(repo_dir=session.get_repo_dir(), pathnames=pathnames)
+    signals.vcs.FINISHED.emit()
 
 
 def do_outbound_views(session):
     '''
+    Run the "outbound views" step.
+
+    :param session: A session instance for the ongoing notation session.
+    :type session: :class:`lychee.workflow.session.InteractiveSession`
     '''
     raise NotImplementedError()
 
 
 def do_outbound_conversion(session):
     '''
+    Run the "outbound conversion" step.
+
+    :param session: A session instance for the ongoing notation session.
+    :type session: :class:`lychee.workflow.session.InteractiveSession`
     '''
     raise NotImplementedError()
+
+
+def _vcs_driver(repo_dir, pathnames, **kwargs):
+    '''
+    Slot for vcs.START that actually runs the "VCS step," and will only be called when the VCS
+    system is enabled.
+    '''
+    signals.vcs.INIT.emit(repodir=repo_dir)
+    signals.vcs.ADD.emit(pathnames=pathnames)
+    signals.vcs.COMMIT.emit(message=None)

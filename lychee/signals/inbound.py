@@ -39,7 +39,6 @@ module to start the conversion).
 '''
 
 CONVERSION_STARTED = signal.Signal(name='inbound.CONVERSION_STARTED')
-# TODO: should this include info about the conversion started?
 '''
 Emitted as soon as the inbound conversion has started (i.e., as soon as the converter module has
 begun to process data).
@@ -55,7 +54,6 @@ of an inbound conversion module).
 '''
 
 CONVERSION_FINISHED = signal.Signal(name='inbound.CONVERSION_FINISHED')
-# TODO: should this include info about what was converted?
 '''
 Emitted when the inbound conversion is finished, before any "views" information is processed.
 '''
@@ -67,12 +65,11 @@ Emitted when there's an error during the in bound conversion step.
 :kwarg str msg: A descriptive error message for the log file.
 '''
 
-VIEWS_START = signal.Signal(args=['dtype', 'doc', 'converted'], name='inbound.VIEWS_START')
+VIEWS_START = signal.Signal(args=['doc', 'converted'], name='inbound.VIEWS_START')
 '''
 Emitted when the inbound view processing will start (i.e., this signal is emitted to cause the views
 module to start its bit).
 
-:kwarg str dtype: The format (data type) of the inbound musical document. LilyPond, Abjad, etc.
 :kwarg object doc: The inbound musical document. The required type is determined by each converter
     module individually.
 :kwarg converted: The inbound musical document, converted to Lychee-MEI format.
@@ -80,7 +77,6 @@ module to start its bit).
 '''
 
 VIEWS_STARTED = signal.Signal(name='inbound.VIEWS_STARTED')
-# TODO: should this include information about the view being processed?
 '''
 Emitted as soon as the views module begins its inbound processing (i.e., as soon as the views module
 has begun to process data).
@@ -95,7 +91,6 @@ module returns).
 '''
 
 VIEWS_FINISHED = signal.Signal(name='inbound.VIEWS_FINISHED')
-# TODO: should this include information about the view processed?
 '''
 Emitted when the inbound views processing is finished.
 '''

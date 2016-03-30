@@ -188,38 +188,6 @@ class WorkflowManager(object):
 
     # ----
 
-    def _inbound_views_started(self, **kwargs):
-        lychee.log('inbound views started')
-        self._status = WorkflowManager._INBOUND_VIEWS_STARTED
-
-    def _inbound_views_finish(self, views_info, **kwargs):
-        lychee.log('inbound views finishing'.format(kwargs))
-        if self._status is WorkflowManager._INBOUND_VIEWS_STARTED:
-            if views_info is None:
-                inbound.VIEWS_ERROR.emit(msg='Inbound views processing did not return views_info')
-            else:
-                lychee.log('\t(we got "{}")'.format(views_info))
-                self._i_views = views_info
-                self._status = WorkflowManager._INBOUND_VIEWS_FINISHED
-        else:
-            lychee.log('ERROR during inbound views processing')
-        inbound.VIEWS_FINISHED.emit()
-
-    def _inbound_views_finished(self, **kwargs):
-        '''
-        Called when inbound.VIEWS_FINISHED is emitted, for logging and debugging.
-        '''
-        lychee.log('inbound views finished')
-
-    def _inbound_views_error(self, **kwargs):
-        self._status = WorkflowManager._INBOUND_VIEWS_ERROR
-        if 'msg' in kwargs:
-            lychee.log(kwargs['msg'])
-        else:
-            lychee.log('ERROR during inbound views processing')
-
-    # ----
-
     def _outbound_views_started(self, **kwargs):
         lychee.log('outbound views started')
         self._status = WorkflowManager._OUTBOUND_VIEWS_STARTED

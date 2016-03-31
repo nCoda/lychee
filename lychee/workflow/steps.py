@@ -271,7 +271,7 @@ def flush_inbound_views():  # TODO: untested until T33
 
     .. warning:: This function is not implemented. Refer to T33.
     '''
-    pass
+    signals.inbound.VIEWS_START.disconnect(_dummy_inbound_views_slot)
 
 
 def _do_outbound_views(repo_dir, views_info, dtype):  # TODO: untested until T33

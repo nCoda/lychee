@@ -162,6 +162,7 @@ from lxml import etree
 
 import lychee
 from lychee.converters import vcs_outbound
+from lychee import document
 from lychee import exceptions
 from lychee.namespaces import mei, xml
 from lychee.signals import outbound
@@ -184,35 +185,27 @@ KNOWN_PERSNAME_TYPES = ('full', 'family', 'given', 'other')  # defined in Lychee
 KNOWN_TITLE_TYPES = ('main', 'subordinate', 'abbreviated', 'alternative')  # defined in Lychee-MEI
 
 
-def convert(session, **kwargs):
+def convert(repo_dir, **kwargs):
     '''
     Prepare document metadata in a useful format for clients.
 
-    :param session: The session object for which an outbound conversion is being signalled to start.
-    :type session: :class:`lychee.workflow.session.InteractiveSession`
+    :param str repo_dir: The absolute pathname to the repository for which to produce data.
     :returns: Information from the internal LMEI document in the format described above.
     :rtype: dict
+    :raises: :exc:`lychee.exceptions.OutboundConversionError` when there is a forseeable error.
     '''
-    outbound.CONVERSION_STARTED.emit()
-    lychee.log('{}.convert() begins'.format(__name__), level='debug')
-
     try:
-        doc = session.get_document()
+        doc = document.Document(repo_dir)
     except exceptions.HeaderNotFoundError:
-        outbound.CONVERSION_ERROR.emit(
-            msg='{} failed initializing a Document object; stopping conversion'.format(__name__)
-        )
+        raise OutboundConversionError('{} failed initializing a Document object; stopping conversion'.format(__name__))
     else:
         post = {'headers': prepare_headers(doc)}
         try:
-            post['sections'] = prepare_sections(doc, session)
+            post['sections'] = prepare_sections(doc, repo_dir)
         except exceptions.SectionNotFoundError:
-            outbound.CONVERSION_ERROR.emit(
-                msg='{} failed to load a <section>; stopping conversion'.format(__name__)
-            )
+            raise OutboundConversionError('{} failed to load a <section>; stopping conversion'.format(__name__))
         else:
-            outbound.CONVERSION_FINISH.emit(converted=post)
-            lychee.log('{}.convert() after finish signal'.format(__name__), level='debug')
+            return post
 
 
 def format_person(elem):
@@ -413,14 +406,13 @@ def prepare_sections_inner(doc, section_ids, vcs_data):
     return post
 
 
-def prepare_sections(doc, session):
+def prepare_sections(doc, repo_dir):
     '''
     Given a :class:`Document`, prepare the "sections" portion of this module's output.
 
     :param doc: The :class:`Document` from which to extract MEI header data.
     :type doc: :class:`lychee.document.Document`
-    :param session: The session object for which an outbound conversion is being signalled to start.
-    :type session: :class:`lychee.workflow.session.InteractiveSession`
+    :param str repo_dir: The absolute pathname to the repository for which to produce data.
     :returns: A dictionary with relevant header data.
     :rtype: dict
 
@@ -428,5 +420,5 @@ def prepare_sections(doc, session):
     :mod:`~lychee.converters.document_outbound`.
     '''
     section_ids = doc.get_section_ids()
-    vcs_data = vcs_outbound.convert_helper(session.get_repo_dir())
+    vcs_data = vcs_outbound.convert_helper(repo_dir)
     return prepare_sections_inner(doc, section_ids, vcs_data)

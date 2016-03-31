@@ -28,8 +28,7 @@
 
 
 import lychee
-from lychee import converters
-from lychee.signals import inbound, vcs, outbound
+from lychee.signals import inbound, outbound
 from lychee.workflow import steps
 
 
@@ -38,44 +37,11 @@ class WorkflowManager(object):
     If you use this class, I will find you, and I will take you out.
     '''
 
-    # statusses
-    _PRESTART = 0
-    _INBOUND_PRECONVERSION = 1
-    _INBOUND_CONVERSION_STARTED = 2
-    _INBOUND_CONVERSION_FINISHED = 3
-    _INBOUND_CONVERSION_ERROR = 4
-    _INBOUND_PREVIEWS = 5
-    _INBOUND_VIEWS_STARTED = 6
-    _INBOUND_VIEWS_FINISHED = 7
-    _INBOUND_VIEWS_ERROR = 8
-    _OUTBOUND_PRESTART = 200
-    _OUTBOUND_VIEWS_STARTED = 202
-    _OUTBOUND_VIEWS_FINISHED = 203
-    _OUTBOUND_VIEWS_ERROR = 204
-    _OUTBOUND_CONVERSIONS_STARTED = 205
-    _OUTBOUND_CONVERSIONS_FINISHED = 206
-    _OUTBOUND_CONVERSIONS_ERROR = 207
-    _OUTBOUND_FINISHING = 208
-
-    # connections
-    # NB: they'll be connected as SIGNAL.connect(self.whatever)
-    _CONNECTIONS = ((outbound.VIEWS_STARTED, '_outbound_views_started'),
-                    (outbound.VIEWS_FINISH, '_outbound_views_finish'),
-                    (outbound.VIEWS_FINISHED, '_outbound_views_finished'),
-                    (outbound.VIEWS_ERROR, '_outbound_views_error'),
-                    (outbound.CONVERSION_STARTED, '_outbound_conversion_started'),
-                    (outbound.CONVERSION_FINISH, '_outbound_conversion_finish'),
-                    (outbound.CONVERSION_FINISHED, '_outbound_conversion_finished'),
-                    (outbound.CONVERSION_ERROR, '_outbound_conversion_error'),
-                   )
-
     def __init__(self, dtype=None, doc=None, session=None, **kwargs):
         if session is None:
             raise NotImplementedError('WorkflowManager requires a "session" argument!')
         else:
             self._session = session
-
-        self._status = WorkflowManager._PRESTART
 
         # set instance settings
         # whether to do the "inbound" conversion step
@@ -89,28 +55,13 @@ class WorkflowManager(object):
         else:
             lychee.log('WorkflowManager will only do the outbound step', 'debug')
 
-        # list of output "dtype" required
-        self._o_dtypes = []
-        # mapping from dtype to its outbound views_info
-        self._o_views_info = {}
-        # mapping from dtype to its outbound converted form
-        self._o_converted = {}
-        # dtype of the currently running outbound converter
-        self._o_running_converter = None
-
-        for signal, slot in WorkflowManager._CONNECTIONS:
-            signal.connect(getattr(self, slot))
-
     def end(self):
         '''
         Disconnect all signals from this :class:`WorkflowManager` so it can be deleted. Does not
         attempt to ensure running processes are allowed to finish.
         '''
-        for signal, slot in WorkflowManager._CONNECTIONS:
-            signal.disconnect(getattr(self, slot))
         steps.flush_inbound_converters()
         steps.flush_inbound_views()
-        self._flush_outbound_converters()
 
     def run(self):
         '''
@@ -126,7 +77,6 @@ class WorkflowManager(object):
         Actually does what :meth:`run` says it does. The other method is intended as a wrapper for
         this method, to ensure that :meth:`end` is always run, regardless of how this method exits.
         '''
-        next_step = '(WorkflowManager continues to the next step)\n------------------------------------------\n'
 
         # I know it only seems to tell us whether to do the "inbound" step, but the Document and VCS
         # steps only make sense when there was an inbound change!
@@ -143,212 +93,24 @@ class WorkflowManager(object):
                 document=self._i_doc,
                 converted=self._session._inbound_converted)
 
-            lychee.log(next_step)
-
             # Document ------------------------------------------------------------
             self._modified_pathnames = steps.do_document(
                 converted=self._session._inbound_converted,
                 session=self._session,
                 views_info='placeholder views info')
-            lychee.log(next_step)
 
             # VCS -----------------------------------------------------------------
             steps.do_vcs(session=self._session, pathnames=self._modified_pathnames)
-            lychee.log(next_step)
 
         # Outbound ------------------------------------------------------------
-        self._status = WorkflowManager._OUTBOUND_PRESTART
-
         # determine which formats are required
-        self._o_dtypes = self._session.registrar.get_registered_formats()
-        lychee.log('Currently registered outbound dtypes: {}'.format(self._o_dtypes))
-
-        self._the_outbound_stuff(self._o_dtypes)
-
-
-    # ----
-
-    def _flush_outbound_converters(self):
-        '''
-        Clear any outbound converters that may be connected.
-        '''
-        for each_converter in converters.OUTBOUND_CONVERTERS.values():
-            outbound.CONVERSION_START.disconnect(each_converter)
-
-    def _choose_outbound_converter(self, dtype):
-        '''
-        Choose an outbound converter based on the "dtype" argument. This should be called once for
-        every outbound converter format required.
-        '''
-        self._flush_outbound_converters()
-        if dtype in converters.OUTBOUND_CONVERTERS:
-            outbound.CONVERSION_START.connect(converters.OUTBOUND_CONVERTERS[dtype])
-        else:
-            outbound.CONVERSION_ERROR.emit(msg='Invalid "dtype" ({})'.format(dtype))
-
-    # ----
-
-    def _outbound_views_started(self, **kwargs):
-        lychee.log('outbound views started')
-        self._status = WorkflowManager._OUTBOUND_VIEWS_STARTED
-
-    def _outbound_views_finish(self, dtype, views_info, **kwargs):
-        '''
-        Slot for outbound.VIEWS_FINISH
-        '''
-        lychee.log('outbound views finishing'.format(kwargs))
-        if self._status is WorkflowManager._OUTBOUND_VIEWS_STARTED:
-            self._o_views_info[dtype] = views_info
-            self._status = WorkflowManager._OUTBOUND_VIEWS_FINISHED
-        else:
-            lychee.log('ERROR during outbound views processing')
-
-    def _outbound_views_finished(self, **kwargs):
-        '''
-        Called when outbound.VIEWS_FINISHED is emitted, for logging and debugging.
-        '''
-        lychee.log('outbound views finished')
-
-    def _outbound_views_error(self, **kwargs):
-        self._status = WorkflowManager._OUTBOUND_VIEWS_ERROR
-        if 'msg' in kwargs:
-            lychee.log(kwargs['msg'])
-        else:
-            lychee.log('ERROR during outbound views processing')
-
-    def _outbound_conversion_started(self, **kwargs):
-        lychee.log('outbound conversion started')
-        self._status = WorkflowManager._OUTBOUND_CONVERSIONS_STARTED
-
-    def _outbound_conversion_finish(self, converted, **kwargs):
-        lychee.log('outbound conversion finishing')
-        if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_STARTED:
-            if converted is None:
-                outbound.CONVERSION_ERROR.emit(msg='Outbound converter did not return a document')
-            else:
-                lychee.log('\t(we got "{}")'.format(converted))
-                self._o_converted[self._o_running_converter] = converted
-                self._status = WorkflowManager._OUTBOUND_CONVERSIONS_FINISHED
-        else:
-            lychee.log('ERROR during outbound conversion')
-
-    def _outbound_conversion_finished(self, dtype, placement, document, **kwargs):
-        '''
-        Called when outbound.CONVERSION_FINISHED is emitted, for logging and debugging.
-        '''
-        lychee.log('outbound conversion finished\n\tdtype: {}\n\tplacement: {}\n\tdocument: {}\n'.format(dtype, placement, document))
-
-    def _outbound_conversion_error(self, **kwargs):
-        self._status = WorkflowManager._OUTBOUND_CONVERSIONS_ERROR
-        if 'msg' in kwargs:
-            lychee.log(kwargs['msg'])
-        else:
-            lychee.log('ERROR during outbound conversion')
-
-    # ----
-
-    def _the_outbound_stuff(self, dtypes):
-        '''
-        Do an "outbound" step for the given "dtypes."
-
-        :param dtypes: A list of the datatypes in which to produce outbound results.
-        :type dtypes: list of str
-        :raises: :exc:`RuntimeError` when something went wrong
-        '''
-        # TODO: use better exceptions when you rewrite the workflow stuff
-        next_step = '(WorkflowManager continues to the next step)\n------------------------------------------\n'
-
-        # do the views processing
-        successful_dtypes = []
-        for each_dtype in self._o_dtypes:
-            outbound.VIEWS_START.emit(dtype=each_dtype)
-            if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:
-                self._status = WorkflowManager._OUTBOUND_VIEWS_STARTED
-                continue
-            elif each_dtype not in self._o_views_info:
-                lychee.log('ERROR: {} did not return outbound views info'.format(each_dtype))
-                continue
-            else:
-                successful_dtypes.append(each_dtype)
-
-        # see if everything worked
-        if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:
-            # can't happen?
-            pass
-        if len(successful_dtypes) != len(self._o_dtypes):
-            if 0 == len(successful_dtypes):
-                outbound.VIEWS_ERROR.emit(msg='No registered outbound dtypes passed through views processing')
-            else:
-                lychee.log('ERROR: some registered outbound dtypes failed views processing')
-                self._o_dtypes = successful_dtypes
-        else:
-            outbound.VIEWS_FINISHED.emit()
-
-        # After the "views" stuff, we know what we need to load for the outbound conversion...
-        # (for now, we have no "views" module, so that means everything).
-        convert_this = self._session._inbound_converted
-        if convert_this is None:
-            # ask the Document module to prepare a full <score> for us
-            doc = self._session.get_document()
-            if len(doc.get_section_ids()) > 0:
-                # TODO: we shouldn't be using the first <section> by default; we should have a Document cursor that knows which section
-                convert_this = doc.get_section(doc.get_section_ids()[0])
-
-        if self._status is WorkflowManager._OUTBOUND_VIEWS_ERROR:
-            # TODO: you can't even do this, because you'll ruin it for all the other dtypes that worked!
-            raise RuntimeError('Error during outbound views.')
-        lychee.log(next_step)
-
-        # do the outbound conversion
-        successful_dtypes = []
-        expected_conversions = len(self._o_dtypes)  # NB: when there's no musical content, this is
-                                                    # decremented with every music-only converter,
-                                                    # so that we don't get errors when the score is empty
-        if convert_this is None:
-            # when there is no musical content, only some of the outbound converters will work
-            for each_dtype in self._o_dtypes:
-                if each_dtype in ('document', 'vcs'):
-                    self._choose_outbound_converter(each_dtype)
-                    self._o_running_converter = each_dtype
-                    outbound.CONVERSION_START.emit(
-                        views_info=self._o_views_info[each_dtype],
-                        document=None,
-                        session=self._session)
-                    if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_ERROR:
-                        self._status = WorkflowManager._OUTBOUND_CONVERSIONS_STARTED
-                        continue
-                    else:
-                        successful_dtypes.append(each_dtype)
-                else:
-                        expected_conversions -= 1
-
-        else:
-            for each_dtype in self._o_dtypes:
-                self._choose_outbound_converter(each_dtype)
-                self._o_running_converter = each_dtype
-                outbound.CONVERSION_START.emit(
-                    views_info=self._o_views_info[each_dtype],
-                    document=convert_this,
-                    session=self._session)
-                if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_ERROR:
-                    self._status = WorkflowManager._OUTBOUND_CONVERSIONS_STARTED
-                    continue
-                else:
-                    successful_dtypes.append(each_dtype)
-
-        # see if everything worked
-        if self._status is WorkflowManager._OUTBOUND_CONVERSIONS_ERROR:
-            # can't happen?
-            pass
-        if len(successful_dtypes) < expected_conversions:
-            if 0 == len(successful_dtypes):
-                outbound.CONVERSION_ERROR.emit(msg='No outbound converters succeeded')
-            else:
-                lychee.log('ERROR: some registered outbound dtypes failed conversion')
-                self._o_dtypes = successful_dtypes
-
-        # emit one signal per things returned
-        for each_dtype in successful_dtypes:
-            outbound.CONVERSION_FINISHED.emit(dtype=each_dtype,
-                                              placement=self._o_views_info[each_dtype],
-                                              document=self._o_converted[each_dtype])
+        outbound.STARTED.emit()
+        for dtype in self._session.registrar.get_registered_formats():
+            post = steps.do_outbound_steps(
+                self._session.get_repo_dir(),
+                self._session._inbound_views_info,
+                dtype)
+            outbound.CONVERSION_FINISHED.emit(
+                dtype=dtype,
+                placement=post['placement'],
+                document=post['document'])

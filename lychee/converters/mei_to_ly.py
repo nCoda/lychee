@@ -37,9 +37,6 @@ def convert(**kwargs):
     :type document: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
     :returns: The corresponding LilyPond document.
     :rtype: str
+    :raises: :exc:`lychee.exceptions.OutboundConversionError` when there is a forseeable error.
     '''
-    outbound.CONVERSION_STARTED.emit()
-    lychee.log('{}.convert(document="{}")'.format(__name__, kwargs['document']))
-    #outbound.CONVERSION_ERROR.emit()
-    outbound.CONVERSION_FINISH.emit(converted='<ly stuff>')
-    lychee.log('{}.convert() after finish signal'.format(__name__))
+    raise NotImplementedError('sorry!')

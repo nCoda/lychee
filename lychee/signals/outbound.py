@@ -63,60 +63,12 @@ Tell Lychee that an interface component is no longer expecting output for a spec
 Refer to the discussion above for :const:`REGISTER_FORMAT`.
 '''
 
-VIEWS_START = signal.Signal(args=['dtype'], name='outbound.VIEWS_START')
-'''
-Emitted to begin outbound views processing. (This is emitted several times---once per data type).
 
-:kwarg str dtypes: The desired outbound format.
+STARTED = signal.Signal(name='outbound.STARTED')
 '''
-
-VIEWS_STARTED = signal.Signal(name='outbound.VIEWS_STARTED')
-'''
-Emitted when outbound view processing begins.
+Emitted when outbound steps begin.
 '''
 
-VIEWS_FINISH = signal.Signal(args=['dtype', 'views_info'], name='outbound.VIEWS_FINISH')
-'''
-Emitted with the results of outbound views processing.
-
-:kwarg str dtype: The data type this views information corresponds to.
-:kwarg object views_info: The views information required for the "dtype" data format.
-'''
-
-VIEWS_FINISHED = signal.Signal(name='outbound.VIEWS_FINISHED')
-'''
-Emitted after the views processing has completed for *all* data types.
-'''
-
-VIEWS_ERROR = signal.Signal(args=['msg'], name='outbound.VIEWS_ERROR')
-'''
-Emitted when there's an error while processing the outbound view.
-
-:kwarg str msg: A descriptive error message for the log file.
-'''
-
-CONVERSION_START = signal.Signal(args=['views_info', 'outbound', 'session'], name='outbound.CONVERSION_START')
-'''
-Emitted to being outbound conversion. (This is emitted several times---once per data type).
-
-:kwarg object views_info: The views information required for the "dtype" data format.
-:kwarg outbound: The Lychee-MEI document required to prepare the outbound data.
-:type outbound: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
-:kwarg session: The session object for which an outbound conversion is being signalled to start.
-:type session: :class:`lychee.workflow.session.InteractiveSession`
-'''
-
-CONVERSION_STARTED = signal.Signal(name='outbound.CONVERSION_STARTED')
-'''
-Emitted when outbound conversion begins.
-'''
-
-CONVERSION_FINISH = signal.Signal(args=['converted'], name='outbound.CONVERSION_FINISH')
-'''
-Emitted with the results of an outbound conversion.
-
-:kwarg object converted: The converted document, ready for UI components.
-'''
 
 CONVERSION_FINISHED = signal.Signal(args=['dtype', 'placement', 'document'], name='outbound.CONVERSION_FINISHED')
 '''
@@ -138,9 +90,10 @@ formats are prepared before any :const:`CONVERSION_FINISHED` signal is emitted.
 - If ``dtype`` is ``'mei'`` then ``document`` should be an :class:`lxml.etree.Element`.
 '''
 
-CONVERSION_ERROR = signal.Signal(args=['msg'], name='outbound.CONVERSION_ERROR')
+
+ERROR = signal.Signal(args=['msg'], name='outbound.ERROR')
 '''
-Emitted when there's an error during the outbound conversion step.
+Emitted when there's an error during the outbound step.
 
 :kwarg str msg: A descriptive error message for the log file.
 '''

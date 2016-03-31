@@ -309,3 +309,66 @@ class TestInboundViewsStep(TestInteractiveSession):
         finally:
             signals.inbound.VIEWS_FINISH.disconnect(finish_slot)
             signals.inbound.VIEWS_ERROR.disconnect(error_slot)
+
+
+class TestOutboundSteps(object):  # TestInteractiveSession):
+    '''
+    Tests for the outbound steps.
+    '''
+
+    def test_noviews_converters(self):
+        '''
+        Some outbound converters don't need "views" information, so we don't process it for them.
+        '''
+        dtype = 'vcs'
+        views_info = 'views'
+        repo_dir = 'dirrrrr!'
+        vcs_mock = mock.MagicMock()
+        vcs_mock.return_value = 'vcs4u.com'
+        expected = {'dtype': dtype, 'document': vcs_mock.return_value, 'placement': None}
+
+        orig_vcs = converters.OUTBOUND_CONVERTERS[dtype]
+        converters.OUTBOUND_CONVERTERS[dtype] = vcs_mock
+        try:
+            actual = steps.do_outbound_steps(repo_dir, views_info, dtype)
+        finally:
+            converters.OUTBOUND_CONVERTERS[dtype] = orig_vcs
+
+        vcs_mock.assert_called_once_with(repo_dir)
+        assert expected == actual
+
+    @mock.patch('lychee.workflow.steps._do_outbound_views')
+    def test_views_converters(self, mock_views):
+        '''
+        Most outbound converters do need "views" information.
+        '''
+        dtype = 'mei'
+        views_info = 'views'
+        repo_dir = 'dirrrrr!'
+        mei_mock = mock.MagicMock()
+        mei_mock.return_value = 'mei4u.net'
+        mock_views.return_value = {'convert': 'vc', 'placement': 'vp'}
+        expected = {'dtype': dtype, 'document': mei_mock.return_value, 'placement': 'vp'}
+
+        orig_mei = converters.OUTBOUND_CONVERTERS[dtype]
+        converters.OUTBOUND_CONVERTERS[dtype] = mei_mock
+        try:
+            actual = steps.do_outbound_steps(repo_dir, views_info, dtype)
+        finally:
+            converters.OUTBOUND_CONVERTERS[dtype] = orig_mei
+
+        mei_mock.assert_called_once_with(mock_views.return_value['convert'])
+        assert expected == actual
+
+    def test_invalid_dtype(self):
+        '''
+        When the "dtype" is invalid, we expect an InvalidDataTypeError.
+        '''
+        dtype = 'butterfly'
+        views_info = 'views'
+        repo_dir = 'dirrrrr!'
+
+        with pytest.raises(exceptions.InvalidDataTypeError) as exc:
+            steps.do_outbound_steps(repo_dir, views_info, dtype)
+
+        assert steps._INVALID_OUTBOUND_DTYPE.format(dtype) == exc.value.args[0]

@@ -86,20 +86,15 @@ def prep_files(files):
     return post
 
 
-def convert(session, **kwargs):
+def convert(repo_dir, **kwargs):
     '''
     Prepare VCS data in a useful format for clients.
 
-    :param session: The session object for which an outbound conversion is being signalled to start.
-    :type session: :class:`lychee.workflow.session.InteractiveSession`
+    :param str repo_dir: The absolute pathname to the repository for which to produce data.
+    :raises: :exc:`lychee.exceptions.OutboundConversionError` when there is a forseeable error.
     '''
-    outbound.CONVERSION_STARTED.emit()
-    lychee.log('{}.convert()'.format(__name__))
-
-    post = convert_helper(session.get_repo_dir())
-
-    outbound.CONVERSION_FINISH.emit(converted=post)
-    lychee.log('{}.convert() after finish signal'.format(__name__))
+    print('vcs_outbound("{}")'.format(repo_dir))
+    return convert_helper(repo_dir)
 
 
 def convert_helper(repo_dir):

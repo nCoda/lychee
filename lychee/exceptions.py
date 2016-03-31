@@ -133,3 +133,10 @@ class InvalidDataTypeError(LycheeError):
     When an error is caused by an invalid data type.
     '''
     pass
+
+
+class OutboundConversionError(LycheeError):
+    '''
+    When an error occurs during outbound conversion.
+    '''
+    pass

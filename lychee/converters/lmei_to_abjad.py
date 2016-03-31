@@ -54,12 +54,9 @@ def convert(document, **kwargs):
     :type document: :class:`lxml.etree.ElementTree.Element` or :class:`lxml.etree.ElementTree.ElementTree`
     :returns: The corresponding MEI document.
     :rtype: object
+    :raises: :exc:`lychee.exceptions.OutboundConversionError` when there is a forseeable error.
     '''
-    outbound.CONVERSION_STARTED.emit()
-    lychee.log('{}.convert(document="{}")'.format(__name__, document))
-
-    outbound.CONVERSION_FINISH.emit(converted='<Abjad stuff>')
-    lychee.log('{}.convert() after finish signal'.format(__name__))
+    raise NotImplementedError('pretty straightforward, innit?')
 
 
 def convert_accidental(mei_accidental_string):

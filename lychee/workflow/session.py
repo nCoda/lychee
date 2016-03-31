@@ -210,6 +210,7 @@ class InteractiveSession(object):
         self._inbound_converted = None
         self._inbound_views_info = None
         steps.flush_inbound_converters()
+        steps.flush_inbound_views()
 
     def inbound_conversion_finish(self, converted, **kwargs):
         '''

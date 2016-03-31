@@ -100,7 +100,8 @@ class TestGeneral(TestInteractiveSession):
         assert actual._registrar is actual.registrar
 
     @mock.patch('lychee.workflow.session.steps.flush_inbound_converters')
-    def test_cleanup_for_new_action(self, mock_flush):
+    @mock.patch('lychee.workflow.session.steps.flush_inbound_views')
+    def test_cleanup_for_new_action(self, mock_flush_views, mock_flush_conv):
         '''
         Make sure cleanup_for_new_action() actually cleans up!
         '''
@@ -108,7 +109,8 @@ class TestGeneral(TestInteractiveSession):
         self.session._cleanup_for_new_action()
         assert self.session._inbound_converted is None
         assert self.session._inbound_views_info is None
-        mock_flush.assert_called_once_with()
+        mock_flush_conv.assert_called_once_with()
+        mock_flush_views.assert_called_once_with()
 
 
 class TestRepository(TestInteractiveSession):

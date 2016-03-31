@@ -175,15 +175,17 @@ class TestInboundConversionStep(TestInteractiveSession):
     def test_do_inbound_conversion_1(self, mock_choose, mock_flush):
         '''
         When it works.
+
+        Also make sure the "dtype" is automatically lowercased.
         '''
-        dtype = 'dtype'
+        dtype = 'dTypE'
         document = 'document'
         start_slot = make_slot_mock()
         signals.inbound.CONVERSION_START.connect(start_slot)
 
         try:
             steps.do_inbound_conversion(self.session, dtype, document)
-            mock_choose.assert_called_once_with(dtype)
+            mock_choose.assert_called_once_with('dtype')
             start_slot.assert_called_once_with(document=document)
             mock_flush.assert_called_once_with()
         finally:

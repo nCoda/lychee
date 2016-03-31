@@ -81,7 +81,7 @@ def do_inbound_conversion(session, dtype, document):
     :const:`~lychee.signals.inbound.CONVERSION_FINISH` signal with ``None``.
     '''
     try:
-        _choose_inbound_converter(dtype)
+        _choose_inbound_converter(dtype.lower())
         signals.inbound.CONVERSION_START.emit(document=document)
     except Exception as exc:
         if isinstance(exc, exceptions.InvalidDataTypeError):

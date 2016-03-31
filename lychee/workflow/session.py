@@ -34,6 +34,7 @@ import tempfile
 from mercurial import error as hg_error
 import hug
 
+import lychee
 from lychee.converters import registrar
 from lychee.document import document
 from lychee import exceptions
@@ -43,6 +44,22 @@ from lychee.workflow import steps
 
 _CANNOT_SAFELY_HG_INIT = 'Could not safely initialize the repository'
 _CANNOT_MAKE_HG_DIR = 'Could not create repository directory'
+
+
+def _error_slot(**kwargs):
+    '''
+    Slot for *_ERROR signals in any module.
+    '''
+    if 'msg' in kwargs:
+        lychee.log('Caught an ERROR signal: {}'.format(kwargs['msg']))
+    else:
+        lychee.log('Caught an ERROR signal without a messge.')
+
+
+signals.inbound.CONVERSION_ERROR.connect(_error_slot)
+signals.inbound.VIEWS_ERROR.connect(_error_slot)
+signals.vcs.ERROR.connect(_error_slot)
+signals.outbound.ERROR.connect(_error_slot)
 
 
 class InteractiveSession(object):

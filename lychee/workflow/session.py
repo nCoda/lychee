@@ -183,22 +183,69 @@ class InteractiveSession(object):
         else:
             return self.set_repo_dir('')
 
-    def _action_start(self, **kwargs):  # NOTE: this method is untested
+    def _action_start(self, **kwargs):
         '''
         Slot for the ACTION_START signal.
 
-        :kwarg dtype:
-        :kwarg doc:
+        :kwarg dtype: As the :const:`lychee.signals.ACTION_START` signal.
+        :kwarg doc: As the :const:`lychee.signals.ACTION_START` signal.
+
+        Emits the :const:`lychee.signals.outbound.CONVERSION_FINISHED` signal on completion. May
+        also cause a bunch of different error signals if there's a problem.
         '''
         self._cleanup_for_new_action()
-        # NB: workflow imported here because it's soon going away
-        from lychee.signals import workflow
-        if 'dtype' in kwargs and 'doc' in kwargs:
-            workm = workflow.WorkflowManager(kwargs['dtype'], kwargs['doc'], session=self)
-        else:
-            workm = workflow.WorkflowManager(session=self)
-        workm.run()
-        del workm
+
+        try:
+            if 'dtype' in kwargs and 'doc' in kwargs:
+                # only do the inbound, document, and VCS steps if there's an incoming change
+                self._run_inbound_doc_vcs(kwargs['dtype'], kwargs['doc'])
+
+            signals.outbound.STARTED.emit()
+            for outbound_dtype in self.registrar.get_registered_formats():
+                post = steps.do_outbound_steps(
+                    self.get_repo_dir(),
+                    self._inbound_views_info,  # might be None, but that's okay
+                    outbound_dtype)
+                signals.outbound.CONVERSION_FINISHED.emit(
+                    dtype=outbound_dtype,
+                    placement=post['placement'],
+                    document=post['document'])
+
+        finally:
+            self._cleanup_for_new_action()
+
+    def _run_inbound_doc_vcs(self, dtype, doc):
+        '''
+        Helper method for :meth:`_action_start`.
+
+        :arg str dtype: From the :const:`~lychee.signals.ACTION_START` signal.
+        :arg ??? doc: From the :const:`~lychee.signals.ACTION_START` signal.
+
+        When there is an incoming change, :meth:`_action_start` uses this method to run the inbound
+        conversion and views processing, document, and VCS steps. The functionality is held in this
+        helper method to ease testing and error-handling.
+        '''
+        steps.do_inbound_conversion(
+            session=self,
+            dtype=dtype,
+            document=doc)
+        if self._inbound_converted is None:
+            return
+
+        steps.do_inbound_views(
+            session=self,
+            dtype=dtype,
+            document=doc,
+            converted=self._inbound_converted)
+        if self._inbound_views_info is None:
+            return
+
+        document_pathnames = steps.do_document(
+            converted=self._inbound_converted,
+            session=self,
+            views_info=self._inbound_views_info)
+
+        steps.do_vcs(session=self, pathnames=document_pathnames)
 
     def _cleanup_for_new_action(self):
         '''

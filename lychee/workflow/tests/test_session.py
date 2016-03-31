@@ -36,6 +36,7 @@ try:
 except ImportError:
     import mock
 
+from lxml import etree
 from mercurial import error as hg_error
 import pytest
 import signalslot
@@ -306,3 +307,146 @@ class TestInbound(TestInteractiveSession):
             finished_slot.assert_called_once_with()
         finally:
             signals.inbound.VIEWS_FINISHED.disconnect(finished_slot)
+
+
+class TestActionStart(TestInteractiveSession):
+    '''
+    Tests for InteractiveSession._action_start(), the slot for the ACTION_START signal, and its
+    helper methods.
+    '''
+
+    @mock.patch('lychee.workflow.steps.do_outbound_steps')
+    @mock.patch('lychee.signals.outbound.CONVERSION_FINISHED')
+    @mock.patch('lychee.signals.outbound.STARTED')
+    def test_everything_works_unit(self, mock_out_started, mock_out_finished, mock_do_out):
+        '''
+        A unit test (fully mocked) for when everything works and all code paths are executed.
+        '''
+        dtype = 'silly format'
+        doc = '<silly/>'
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session._run_inbound_doc_vcs = mock.Mock()
+        mock_do_out.return_value = {'placement': 'ABC', 'document': 'DEF'}
+        outbound_dtype = 'mei'
+        self.session._inbound_views_info = 'IBV'
+
+        self.session.registrar.register(outbound_dtype, 'test_everything_works_unit')
+        try:
+            self.session._action_start(dtype=dtype, doc=doc)
+        finally:
+            self.session.registrar.unregister(outbound_dtype, 'test_everything_works_unit')
+
+        self.session._run_inbound_doc_vcs.assert_called_once_with(dtype, doc)
+        assert 2 == self.session._cleanup_for_new_action.call_count
+        mock_out_started.emit.assert_called_once_with()
+        mock_do_out.assert_called_once_with(
+            self.session.get_repo_dir(),
+            self.session._inbound_views_info,
+            outbound_dtype)
+        mock_out_finished.emit.assert_called_once_with(
+            dtype=outbound_dtype,
+            placement=mock_do_out.return_value['placement'],
+            document=mock_do_out.return_value['document'])
+
+    def test_everything_works_unmocked(self):
+        '''
+        An integration test (no mocks) for when everything works and all code paths are excuted.
+        '''
+        input_ly = "\clef treble a''4( b'16 c''2)  | \clef \"bass\" d?2 e!2  | f,,2( fis,2)  |"
+        assert not os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
+        # unfortunately we need a mock for this, so we can be sure it was called
+        finish_mock = make_slot_mock()
+        def finish_side_effect(dtype, placement, document, **kwargs):
+            called = True
+            assert 'mei' == dtype
+            assert isinstance(document, etree._Element)
+        finish_mock.side_effect = finish_side_effect
+
+        self.session.registrar.register('mei', 'test_everything_works_unmocked')
+        signals.outbound.CONVERSION_FINISHED.connect(finish_mock)
+        try:
+            self.session._action_start(dtype='LilyPond', doc=input_ly)
+        finally:
+            self.session.registrar.unregister('mei', 'test_everything_works_unmocked')
+            signals.outbound.CONVERSION_FINISHED.disconnect(finish_mock)
+
+        assert os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
+
+    @mock.patch('lychee.workflow.steps.do_inbound_conversion')
+    @mock.patch('lychee.workflow.steps.do_inbound_views')
+    @mock.patch('lychee.workflow.steps.do_document')
+    @mock.patch('lychee.workflow.steps.do_vcs')
+    def test_run_inbound_unit_1(self, mock_vcs, mock_doc, mock_views, mock_conv):
+        '''
+        Unit test for _run_inbound_doc_vcs().
+
+        - do_inbound_conversion() is called correctly
+        - do_inbound_conversion() fails so there's an early return
+        - the following functions aren't called
+        '''
+        dtype = 'meh'
+        doc = 'document'
+
+        self.session._run_inbound_doc_vcs(dtype, doc)
+
+        mock_conv.assert_called_once_with(
+            session=self.session,
+            dtype=dtype,
+            document=doc)
+        assert 0 == mock_views.call_count
+        assert 0 == mock_doc.call_count
+        assert 0 == mock_vcs.call_count
+
+    @mock.patch('lychee.workflow.steps.do_inbound_conversion')
+    @mock.patch('lychee.workflow.steps.do_inbound_views')
+    @mock.patch('lychee.workflow.steps.do_document')
+    @mock.patch('lychee.workflow.steps.do_vcs')
+    def test_run_inbound_unit_2(self, mock_vcs, mock_doc, mock_views, mock_conv):
+        '''
+        Unit test for _run_inbound_doc_vcs().
+
+        - do_inbound_views() is called correctly
+        - do_inbound_views() fails so there's an early return
+        - the following functions aren't called
+        '''
+        dtype = 'meh'
+        doc = 'document'
+        self.session._inbound_converted = 'whatever'
+
+        self.session._run_inbound_doc_vcs(dtype, doc)
+
+        assert 1 == mock_conv.call_count
+        mock_views.assert_called_once_with(
+            session=self.session,
+            dtype=dtype,
+            document=doc,
+            converted=self.session._inbound_converted)
+        assert 0 == mock_doc.call_count
+        assert 0 == mock_vcs.call_count
+
+    @mock.patch('lychee.workflow.steps.do_inbound_conversion')
+    @mock.patch('lychee.workflow.steps.do_inbound_views')
+    @mock.patch('lychee.workflow.steps.do_document')
+    @mock.patch('lychee.workflow.steps.do_vcs')
+    def test_run_inbound_unit_3(self, mock_vcs, mock_doc, mock_views, mock_conv):
+        '''
+        Unit test for _run_inbound_doc_vcs().
+
+        - do_document() is called correctly
+        - do_vcs() is called correctly
+        '''
+        dtype = 'meh'
+        doc = 'document'
+        self.session._inbound_converted = 'whatever'
+        self.session._inbound_views_info = 'something'
+        mock_doc.return_value = ['pathnames!']
+
+        self.session._run_inbound_doc_vcs(dtype, doc)
+
+        assert 1 == mock_conv.call_count
+        assert 1 == mock_views.call_count
+        mock_doc.assert_called_once_with(
+            converted=self.session._inbound_converted,
+            session=self.session,
+            views_info=self.session._inbound_views_info)
+        mock_vcs.assert_called_once_with(session=self.session, pathnames=mock_doc.return_value)

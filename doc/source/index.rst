@@ -6,6 +6,14 @@
 Documentation for Lychee
 ========================
 
+Workflow and Action Management
+------------------------------
+
+.. toctree::
+    :maxdepth: 3
+
+    workflow
+
 Converters
 ----------
 
@@ -52,7 +60,6 @@ Signals
     :maxdepth: 2
 
     signals
-    signals-workflow
 
 Views
 -----

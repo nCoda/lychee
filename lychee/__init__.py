@@ -29,7 +29,19 @@ Initialize Lychee.
 import time
 
 
-__version__ = '0.0.1'
+# we'll keep PyPI metadata here so they can be used by Sphinx in the API too
+__metadata__ = {
+    'author': 'Christopher Antila',
+    'author_email': 'christopher.antila@ncodamusic.org',
+    'copyright': u'2016 Christopher Antila and Jeffrey Treviño',
+    'description': 'An engine for MEI document management and converion.',
+    'license': 'GPLv3+',
+    'name': 'Lychee',
+    'url': 'https://ncodamusic.org/lychee/',
+    'version': '0.1.0',
+}
+
+__version__ = __metadata__['version']
 __all__ = ['converters', 'document', 'namespaces', 'signals', 'tui', 'workflow', 'vcs', 'views']
 
 DEBUG = False

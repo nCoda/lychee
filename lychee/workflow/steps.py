@@ -177,8 +177,8 @@ def do_outbound_steps(repo_dir, views_info, dtype):
     Run the outbound veiws and conversion steps for a single outbound "dtype."
 
     :param str repo_dir: Absolute pathname to the repository directory.
-    :param views_info: ????????????
-    :type views_info:  ????????????
+    :param views_info: unknown
+    :type views_info: unknown
     :param str dtype: The data type to use for outbound conversion, as specified in
         :const:`lychee.converters.OUTBOUND_CONVERTERS`.
     :returns: Post-conversion data as described below.
@@ -256,7 +256,7 @@ def _choose_inbound_views(dtype):  # TODO: untested until T33
     Connect the "inbound.VIEWS_START" signal to the appropriate views processor according to the
     inbound data type.
 
-    :param str dtype: The inbound data type as specified somewhere???????
+    :param str dtype: The inbound data type as specified in an as-yet-unknwon place.
     :raises: :exc:`~lychee.exceptions.InvalidDataTypeError` when there is not inbound views
         processor for the given ``dtype``.
 

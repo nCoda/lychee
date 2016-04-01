@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 
 from setuptools import setup, Command
-import lychee  # for __version__
+import lychee  # for metadata
 
 
 setup(
-    name = 'Lychee',
-    version = lychee.__version__,
+    name = lychee.__metadata__['name'],
+    version = lychee.__metadata__['version'],
     packages = ['lychee'],
 
     # metadata for upload to PyPI
-    author = 'Christopher Antila',
-    author_email = 'christopher@antila.ca',
-    description = 'The tastiest fruit around!',
-    license = 'GPLv3+',
-    url = 'http://ncodamusic.org/lychee',
+    author = lychee.__metadata__['author'],
+    author_email = lychee.__metadata__['author_email'],
+    description = lychee.__metadata__['description'],
+    license = lychee.__metadata__['license'],
+    url = lychee.__metadata__['url'],
     # TODO: keywords, long_description, download_url, classifiers, etc.
 )

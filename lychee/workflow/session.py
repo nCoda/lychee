@@ -64,7 +64,7 @@ signals.outbound.ERROR.connect(_error_slot)
 
 class InteractiveSession(object):
     '''
-    Manage the Lychee-MEI :class:`~lychee.document.document.Document`, Mercurial repository, and
+    Manage the Lychee-MEI :class:`~lychee.document.Document`, Mercurial repository, and
     other related data for an interactive music notation session.
     '''
 
@@ -105,10 +105,10 @@ class InteractiveSession(object):
 
     def get_document(self):
         '''
-        Get a :class:`~lychee.document.document.Document` for this session's repository.
+        Get a :class:`~lychee.document.Document` for this session's repository.
 
         :returns: The :class:`Document` for this session.
-        :rtype: :class:`lychee.document.document.Document`
+        :rtype: :class:`lychee.document.Document`
         :raises: :exc:`~lychee.exceptions.RepositoryError` as per :meth:`set_repo_dir`.
 
         Do be aware that, if the repository directory is changed or unset, the :class:`Document`

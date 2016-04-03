@@ -10,12 +10,6 @@ Inbound Step
 .. automodule:: lychee.signals.inbound
     :members:
 
-Document Step
--------------
-
-.. automodule:: lychee.signals.document
-    :members:
-
 VCS Step
 --------
 

@@ -119,3 +119,24 @@ class LycheeMEIError(LycheeError):
     able to correct the situation.
     '''
     pass
+
+
+class RepositoryError(LycheeError):
+    '''
+    When there was an error related to Lychee's repository.
+    '''
+    pass
+
+
+class InvalidDataTypeError(LycheeError):
+    '''
+    When an error is caused by an invalid data type.
+    '''
+    pass
+
+
+class OutboundConversionError(LycheeError):
+    '''
+    When an error occurs during outbound conversion.
+    '''
+    pass

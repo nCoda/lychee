@@ -5,7 +5,7 @@
 # Program Description:    MEI document manager for formalized document control
 #
 # Filename:               lychee/signals/document.py
-# Purpose:                Signals for the "document step."
+# Purpose:                Signals for operations on Lychee's current Document instance.
 #
 # Copyright (C) 2016 Christopher Antila
 #
@@ -23,42 +23,52 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 '''
-Signals for the "document step."
+Signals for operations on Lychee's current :class:`Document` instance.
 '''
 
+
+from lychee.document import document
 from . import signal
+from . import vcs
 
 
-START = signal.Signal(args=['converted'], name='document.START')
+MOVE_SECTION_TO = signal.Signal(args=['xmlid', 'position'], name='document.MOVE_SECTION_TO')
 '''
-Emitted by the :class:`WorkflowManager` to begin processing during the "document" stage.
+Emit this signal to move a ``<section>`` to a specific position in the currently active score.
 
-:kwargs converted: The MEI document, converted from an arbitrary format.
-:type converted: :class:`lxml.etree._Element`
-'''
+:kwarg string xmlid: The @xml:id attribute of the ``<section>`` to move. The section may or may
+    not already be in the active score, but it must already be part of the document.
+:kwarg int position: The requested new index of the section in the active score.
 
-STARTED = signal.Signal(name='document.STARTED')
-'''
-Emitted by the ``lychee.vcs`` module, once it gains control flow and begins to determine how to
-manage changes proposed to the musical document.
-'''
-
-FINISH = signal.Signal(args=['pathnames'], name='document.FINISH')
-'''
-Emitted by the ``lychee.document`` module, once its actions are complete, to return relevant
-information to the :class:`WorkflowManager`.
-
-:kwarg pathnames: List of pathnames that were modified in the most recent write-to-files event.
-:type pathnames: list of string
+Do note that the ``<section>`` may not end up with the requested index because "position" is used
+to determine the *new order* of the active score. For example, if you specify a "position" of `3`,
+the section will always be placed between the sections currently at indices `2` and `3` (after `2`,
+before `3`). However, if the section is already in the active score and the "position" is higher
+than the current index, the actual new index will be one less than "position." In addition, any
+"position" equal or greater to the current length of the active score will simply put the section
+at the end.
 '''
 
-FINISHED = signal.Signal(name='document.FINISHED')
-'''
-This signal is emitted by the :class:`WorkflowManager` once it gains control flow after the
-"document" step has finished.
-'''
+def _move_section_to(xmlid, position, **kwargs):
+    '''
+    Slot for the "MOVE_SECTION_TO" signal.
 
-ERROR = signal.Signal(name='document.ERROR')
-'''
-Emit this signal when an error occurs during the "document" stage.
-'''
+    The steps:
+    1.) call lychee.document.document._move_section_to()
+    2.) make a commit
+    3.) run the outbound workflow
+    '''
+    # if we import these at module level it doesn't work because IDK
+    import lychee
+    from . import workflow
+
+    with document.Document(lychee.get_repo_dir()) as doc:
+        doc.move_section_to(xmlid, position)
+
+    workm = workflow.WorkflowManager()
+    workm._vcs_driver(pathnames=['score.mei'])  # if it just changes the order, that's just score.mei
+    workm.run()
+    workm.end()
+
+
+MOVE_SECTION_TO.connect(_move_section_to)

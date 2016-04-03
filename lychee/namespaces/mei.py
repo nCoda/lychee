@@ -27,10 +27,14 @@ Constants for the "MEI" XML namespace.
 '''
 
 
+from lxml import etree
+
+
 # NOTE: please keep this list alphabetical!
 
 # namespace
 MEINS = '{http://www.music-encoding.org/ns/mei}'
+etree.register_namespace('mei', MEINS[1:-1])
 
 # tag names
 ACCID = '{}accid'.format(MEINS)

@@ -34,6 +34,7 @@ __all__ = ['mei_to_ly', 'ly_to_mei', 'lmei_to_abjad', 'abjad_to_lmei', 'mei_to_l
 from lychee.converters import *
 
 
+# NOTE: please keep the keys in lowercase
 INBOUND_CONVERTERS = {'lilypond': ly_to_mei.convert,
                       'abjad': abjad_to_lmei.convert,
                       'mei': mei_to_lmei.convert
@@ -43,6 +44,7 @@ Mapping from the lowercase name of an inbound converter format to the :func:`con
 converts from that format to Lychee-MEI.
 '''
 
+# NOTE: please keep the keys in lowercase
 OUTBOUND_CONVERTERS = {'lilypond': mei_to_ly.convert,
                        'abjad': lmei_to_abjad.convert,
                        'mei': lmei_to_mei.convert,

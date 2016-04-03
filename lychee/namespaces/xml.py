@@ -27,9 +27,13 @@ Constants for the "XML" namespace.
 '''
 
 
+from lxml import etree
+
+
 # NOTE: please keep this list alphabetical!
 
 XMLNS = '{http://www.w3.org/XML/1998/namespace}'
+etree.register_namespace('xml', XMLNS[1:-1])
 
 ID = '{}id'.format(XMLNS)
 LANG = '{}lang'.format(XMLNS)

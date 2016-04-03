@@ -44,6 +44,7 @@ from lxml import etree
 
 import lychee
 from lychee.converters import lmei_to_mei
+from lychee import exceptions
 from lychee.namespaces import mei
 from lychee.signals import outbound
 
@@ -60,16 +61,12 @@ def convert(document, **kwargs):
     :type document: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
     :returns: The corresponding Verovio-compliant MEI document.
     :rtype: unicode
+    :raises: :exc:`lychee.exceptions.OutboundConversionError` when there is a forseeable error.
     '''
-    outbound.CONVERSION_STARTED.emit()
-    lychee.log('{}.convert(document={})'.format(__name__, document))
-
-    if not isinstance(document, etree._Element) or mei.SECTION != document.tag:
-        outbound.CONVERSION_ERROR.emit(msg=_ERR_INPUT_NOT_SECTION)
-        return
-
-    outbound.CONVERSION_FINISH.emit(converted=export_for_verovio(document))
-    lychee.log('{}.convert() after finish signal'.format(__name__))
+    if isinstance(document, etree._Element) and mei.SECTION == document.tag:
+        return export_for_verovio(document)
+    else:
+        raise exceptions.OutboundConversionError(_ERR_INPUT_NOT_SECTION)
 
 
 def export_for_verovio(document):

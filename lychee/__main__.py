@@ -26,6 +26,7 @@
 Module that runs Lychee as a program.
 '''
 
+import json
 import subprocess
 
 import lychee
@@ -38,27 +39,49 @@ test_which_format = 'lilypond'
 # test_which_format = 'abjad'
 
 
+session = lychee.InteractiveSession()
+session.set_repo_dir('testrepo')
+
+
 def mei_through_verovio(dtype, placement, document, **kwargs):
     '''
     Outputs a document to a file, then runs Verovio on it. Parameters work as per the
     :const:`outbound.CONVERSION_FINISHED` signal.
     '''
 
+    repodir = session.get_repo_dir()
+
     if 'verovio' != dtype:
         return
 
-    output_filename = 'testrepo/verovio_input'
+    output_filename = '{}/verovio_input'.format(repodir)
 
     with open(output_filename, 'w') as the_file:
         the_file.write(document)
 
-    subprocess.call(['verovio', '-f', 'mei', '-o', 'testrepo/verovio_output', output_filename])
+    subprocess.call(['verovio', '-f', 'mei', '-o', '{}/verovio_output'.format(repodir), output_filename])
+
+
+def print_outbound_json(dtype, placement, document, **kwargs):
+    '''
+    For the outbound data formats that output JSON strings, print them to the console.
+    '''
+    if dtype == 'document':
+        with open('scratch-doc_outbound.json', 'w') as the_file:
+            the_file.write(json.dumps(document, sort_keys=True, indent=4, separators=(',', ': ')))
+    elif dtype == 'vcs':
+        with open('scratch-vcs_outbound.json', 'w') as the_file:
+            the_file.write(json.dumps(document, sort_keys=True, indent=4, separators=(',', ': ')))
 
 
 outbound.REGISTER_FORMAT.emit(dtype='verovio', who='lychee.__main__')
 outbound.REGISTER_FORMAT.emit(dtype='vcs', who='lychee.__main__')
 outbound.REGISTER_FORMAT.emit(dtype='document', who='lychee.__main__')
 outbound.CONVERSION_FINISHED.connect(mei_through_verovio)
+outbound.CONVERSION_FINISHED.connect(print_outbound_json)
+
+
+print('this is the repodir: {}'.format(session.get_repo_dir()))
 
 
 # this is what starts a test "action"
@@ -83,3 +106,7 @@ elif 'outbound only' == test_which_format:
     signals.ACTION_START.emit()
 else:
     raise RuntimeError('you must choose a format in lychee.__main__')
+
+
+# be sure to clean up!
+session.unset_repo_dir()

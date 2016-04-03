@@ -1,8 +1,6 @@
-Abjad==2.17
 alabaster==0.7.7
 astroid==1.4.5
 Babel==2.2.0
-cffi==1.3.1
 colorama==0.3.6
 configobj==5.0.6
 contexter==0.1.3
@@ -13,10 +11,8 @@ greenlet==0.4.9
 Jinja2==2.8
 lazy-object-proxy==1.2.1
 lxml==3.4.4
--e git+git@jameson.adjectivenoun.ca:ncoda/lychee.git@32f626418ba76a966bfc3da7040778013e7e5819#egg=Lychee
 MarkupSafe==0.23
 mercurial<3.5
--e git+ssh://vcs@goldman.ncodamusic.org/diffusion/10/mercurial-hug.git@5166efd2e5c8a2ea694bfdcd8fc668baed280889#egg=mercurial_hug
 mock==1.3.0
 pbr==1.8.1
 ply==3.8
@@ -25,7 +21,6 @@ Pygments==2.1.3
 pylint==1.5.5
 pytest==2.9.1
 pytz==2016.2
-readline==6.2.4.1
 signalslot==0.1.1
 six==1.10.0
 snowballstemmer==1.2.1

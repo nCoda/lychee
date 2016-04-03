@@ -36,7 +36,10 @@ virtualenv.
 1. Change into the Lychee root directory.
 1. Update the default ``pip`` and ``setuptools``, which otherwise may not be capable of installing
    the dependencies: ``pip install -U pip setuptools``.
-1. Run ``pip install -r pip_freeze_pypy40`` to install the dependencies.
+1. Clone the ssh://vcs@goldman.ncodamusic.org/diffusion/10/mercurial-hug.git repository to a sibling
+   directory of the "lychee" directory.
+1. Run ``pip install -e .`` from the "mercurial-hug" directory.
+1. Run ``pip install -r pip_freeze_pypy40`` in the "lychee" directory to install the dependencies.
 1. Then install Lychee by running ``pip install -e .`` in the Lychee directory.
 1. Finally, run ``py.test`` in the Lychee directory to run the automated test suite, and make
    sure that nothing is broken *before* you even start developing!

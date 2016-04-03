@@ -80,7 +80,7 @@ _PITCH_CLASS_ERROR = 'Cannot decode pitch class: {}'
 _SLUR_OPEN_WARNING = 'Slur already open in "{}"'
 
 # register the 'mei' namespace
-etree.register_namespace('mei', _MEINS[1:-1])
+# etree.register_namespace('mei', _MEINS[1:-1])
 
 
 def convert(document, **kwargs):

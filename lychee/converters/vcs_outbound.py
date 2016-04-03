@@ -70,9 +70,6 @@ import lychee
 from lychee.signals import outbound
 
 
-REPODIR = 'testrepo'
-
-
 def prep_files(files):
     '''
     Given the list of files modified, prepare the output for Julius.
@@ -89,32 +86,30 @@ def prep_files(files):
     return post
 
 
-def convert(document, **kwargs):
+def convert(repo_dir, **kwargs):
     '''
     Prepare VCS data in a useful format for clients.
 
-    :param document: Ignored.
+    :param str repo_dir: The absolute pathname to the repository for which to produce data.
+    :raises: :exc:`lychee.exceptions.OutboundConversionError` when there is a forseeable error.
     '''
-    outbound.CONVERSION_STARTED.emit()
-    lychee.log('{}.convert()'.format(__name__))
-
-    post = convert_helper()
-
-    outbound.CONVERSION_FINISH.emit(converted=post)
-    lychee.log('{}.convert() after finish signal'.format(__name__))
+    print('vcs_outbound("{}")'.format(repo_dir))
+    return convert_helper(repo_dir)
 
 
-def convert_helper():
+def convert_helper(repo_dir):
+    # TODO: migrate this functionality to the "mercurial-hug" library
     '''
     Do the actual work for :func:`convert`. This helper function exists so that the
     :mod:`document_outbound` converter can call this converter without having to emit the
     :const:`CONVERSION_FINISH` signal.
 
+    :param str repo_dir: Absolute pathname to the Mercurial repository's directory.
     :returns: Information from the Version Control System in the format described above.
     :rtype: dict
     '''
     myui = ui.ui()
-    repo = hg.repository(myui, REPODIR)
+    repo = hg.repository(myui, repo_dir)
 
     post = {'history': [], 'users': {}, 'changesets': {}}
 

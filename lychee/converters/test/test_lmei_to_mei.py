@@ -35,6 +35,7 @@ except ImportError:
     import mock
 
 from lychee.converters import lmei_to_mei, lmei_to_verovio
+from lychee import exceptions
 from lychee.namespaces import mei
 from lychee.signals import outbound
 
@@ -291,7 +292,7 @@ class TestIntegration:
     Integration tests.
     '''
 
-    def test_integration_to_mei_1(self, signals_fixture):
+    def test_integration_to_mei_1(self):
         '''
         An integration test for the LMEI to MEI converter.
         '''
@@ -307,41 +308,31 @@ class TestIntegration:
                     '<mei:staff n="1"/><mei:staff n="2"/></mei:measure></mei:section></mei:score>'
                     '</mei:mdiv></mei:body></mei:music></mei:mei>'
                    )
-        started_mock, finish_mock, error_mock = signals_fixture
         document = etree.fromstring(initial)
 
-        lmei_to_mei.convert(document)
+        actual = lmei_to_mei.convert(document)
 
-        started_mock.assert_called_once_with()
-        finish_mock.assert_called_once_with(converted=mock.ANY)
-        assert 0 == error_mock.call_count
-        # check the converted document
-        actual = etree.tostring(finish_mock.call_args[1]['converted'])
-        assert expected == actual
+        assert expected == etree.tostring(actual)
 
-    def test_integration_to_mei_2(self, signals_fixture):
+    def test_integration_to_mei_2(self):
         '''
         For the LMEI to MEI converter. Input isn't an _Element at all.
         '''
-        started_mock, finish_mock, error_mock = signals_fixture
         document = 'dddddddddddddd'
-        lmei_to_mei.convert(document)
-        started_mock.assert_called_once_with()
-        assert 0 == finish_mock.call_count
-        error_mock.assert_called_once_with(msg=lmei_to_mei._ERR_INPUT_NOT_SECTION)
+        with pytest.raises(exceptions.OutboundConversionError) as exc:
+            lmei_to_mei.convert(document)
+        assert lmei_to_mei._ERR_INPUT_NOT_SECTION == exc.value.args[0]
 
-    def test_integration_to_mei_3(self, signals_fixture):
+    def test_integration_to_mei_3(self):
         '''
         For the LMEI to MEI converter. Input is an _Element with the wrong tag.
         '''
-        started_mock, finish_mock, error_mock = signals_fixture
         document = etree.Element('dddddddddddddd')
-        lmei_to_mei.convert(document)
-        started_mock.assert_called_once_with()
-        assert 0 == finish_mock.call_count
-        error_mock.assert_called_once_with(msg=lmei_to_mei._ERR_INPUT_NOT_SECTION)
+        with pytest.raises(exceptions.OutboundConversionError) as exc:
+            lmei_to_mei.convert(document)
+        assert lmei_to_mei._ERR_INPUT_NOT_SECTION == exc.value.args[0]
 
-    def test_integration_to_verovio_1(self, signals_fixture):
+    def test_integration_to_verovio_1(self):
         '''
         An integration test for the LMEI to Verovio converer.
         '''
@@ -357,37 +348,26 @@ class TestIntegration:
                     '<measure n="2"><staff n="1"/><staff n="2"/></measure></section></score>'
                     '</mdiv></body></music></mei>'
                    )
-        started_mock, finish_mock, error_mock = signals_fixture
         document = etree.fromstring(initial)
 
-        lmei_to_verovio.convert(document)
+        actual = lmei_to_verovio.convert(document)
 
-        started_mock.assert_called_once_with()
-        finish_mock.assert_called_once_with(converted=mock.ANY)
-        assert 0 == error_mock.call_count
-        # check the converted document
-        actual = finish_mock.call_args[1]['converted']
-        assert isinstance(actual, unicode)
         assert expected == actual
 
-    def test_integration_to_verovio_2(self, signals_fixture):
+    def test_integration_to_verovio_2(self):
         '''
         For the LMEI to Verovio converer. Input isn't an _Element at all.
         '''
-        started_mock, finish_mock, error_mock = signals_fixture
         document = 'dddddddddddddd'
-        lmei_to_verovio.convert(document)
-        started_mock.assert_called_once_with()
-        assert 0 == finish_mock.call_count
-        error_mock.assert_called_once_with(msg=lmei_to_verovio._ERR_INPUT_NOT_SECTION)
+        with pytest.raises(exceptions.OutboundConversionError) as exc:
+            lmei_to_verovio.convert(document)
+        assert lmei_to_verovio._ERR_INPUT_NOT_SECTION == exc.value.args[0]
 
-    def test_integration_to_verovio_3(self, signals_fixture):
+    def test_integration_to_verovio_3(self):
         '''
         For the LMEI to Verovio converer. Input is an _Element with the wrong tag.
         '''
-        started_mock, finish_mock, error_mock = signals_fixture
         document = etree.Element('dddddddddddddd')
-        lmei_to_verovio.convert(document)
-        started_mock.assert_called_once_with()
-        assert 0 == finish_mock.call_count
-        error_mock.assert_called_once_with(msg=lmei_to_verovio._ERR_INPUT_NOT_SECTION)
+        with pytest.raises(exceptions.OutboundConversionError) as exc:
+            lmei_to_verovio.convert(document)
+        assert lmei_to_verovio._ERR_INPUT_NOT_SECTION == exc.value.args[0]

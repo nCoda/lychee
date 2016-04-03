@@ -4,8 +4,8 @@
 # Program Name:           Lychee
 # Program Description:    MEI document manager for formalized document control
 #
-# Filename:               lychee/document/step.py
-# Purpose:                Manage the "document step" in a Lychee workflow.
+# Filename:               lychee/workflow/__init__.py
+# Purpose:                Lychee's workflow management module.
 #
 # Copyright (C) 2016 Christopher Antila
 #
@@ -23,9 +23,8 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 '''
-Manages the "document step" in a Lychee workflow.
+Lychee's workflow management module.
 '''
 
-# lychee.document.step
-
-# It's going to do some stuff to make sure the document is properly processed into files.
+from . import session
+from . import steps

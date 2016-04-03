@@ -27,34 +27,7 @@ Initialize the :mod:`vcs` module.
 '''
 
 import lychee
-from lychee.signals import vcs
 from . import hg
 
 
 hg.connect_signals()
-
-
-def vcs_processor(pathnames, **kwargs):
-    vcs.STARTED.emit()
-    lychee.log('{}.vcs_processor({})'.format(__name__, pathnames))
-
-    repodir = 'testrepo'
-    message = None
-
-    vcs.PREINIT.emit(repodir=repodir)
-    vcs.INIT.emit(repodir=repodir)
-    vcs.POSTINIT.emit(repodir=repodir)
-
-    vcs.PREADD.emit(pathnames=pathnames)
-    vcs.ADD.emit(pathnames=pathnames)
-    vcs.POSTADD.emit(pathnames=pathnames)
-
-    vcs.PRECOMMIT.emit(message=message)
-    vcs.COMMIT.emit(message=message)
-    vcs.POSTCOMMIT.emit(message=message)
-
-    vcs.FINISH.emit()
-    lychee.log('{}.vcs_processor() after finish signal'.format(__name__))
-
-
-vcs.START.connect(vcs_processor)

@@ -31,6 +31,7 @@ from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
 from abjad.tools.scoretools.Skip import Skip
+from abjad.tools.scoretools.Leaf import Leaf
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.scoretools.Tuplet import Tuplet
 from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
@@ -50,7 +51,6 @@ from lychee.namespaces import mei
 
 _XMLNS = '{http://www.w3.org/XML/1998/namespace}id'
 
-
 def convert(document, **kwargs):
     '''
     Convert an Abjad document into an MEI document.
@@ -59,11 +59,14 @@ def convert(document, **kwargs):
     :returns: The corresponding MEI document.
     :rtype: :class:`lxml.etree.ElementTree.Element` or :class:`lxml.etree.ElementTree.ElementTree`
     '''
-    inbound.CONVERSION_STARTED.emit()
-    lychee.log('{}.convert(document="{}")'.format(document))
-
-    inbound.CONVERSION_FINISH.emit(converted='<l-mei stuff>')
-    lychee.log('{}.convert() after finish signal'.format(__name__))
+    conversion_dict = {
+    "<class 'abjad.tools.scoretools.Leaf.Leaf'>": leaf_to_element,
+    "<class 'abjad.tools.scoretools.Tuplet.Tuplet'>": tuplet_to_tupletspan,
+    "<class 'abjad.tools.scoretools.Voice.Voice'>": voice_to_layer,
+    "<class 'abjad.tools.scoretools.Staff.Staff'>": staff_to_staff,
+    "<class 'abjad.tools.scoretools.Score.Score'>": score_to_section,
+    }
+    return conversion_dict[str(type(document))](document)
 
 
 def convert_accidental(abjad_accidental_string):
@@ -78,6 +81,7 @@ def convert_accidental(abjad_accidental_string):
     accidental_dictionary = {'': '', 'f': 'f', 's': 's', 'ff': 'ff', 'ss': 'x',
                             'tqs': 'su', 'qs': 'sd', 'tqf': 'fd', 'qf': 'fu'}
     return accidental_dictionary[abjad_accidental_string]
+
 
 def add_xml_ids(abjad_object, mei_element):
     '''
@@ -159,6 +163,7 @@ def note_to_note(abjad_note):
         add_xml_ids(abjad_note, mei_note)
     return mei_note
 
+
 def rest_to_rest(abjad_rest):
     '''
     Convert an Abjad Rest object to an MEI rest Element.
@@ -181,6 +186,7 @@ def rest_to_rest(abjad_rest):
     mei_rest.set('dur',dur_number_string)
     add_xml_ids(abjad_rest, mei_rest)
     return mei_rest
+
 
 def skip_to_space(abjad_skip):
     '''
@@ -227,6 +233,7 @@ def chord_to_chord(abjad_chord):
     add_xml_ids(abjad_chord, mei_chord)
     return mei_chord
 
+
 def empty_tuplet_to_tupletspan_element(abjad_tuplet):
     '''
     Convert an empty Abjad Tuplet or FixedDurationTuplet container to an MEI tupletspan Element.
@@ -252,6 +259,7 @@ def empty_tuplet_to_tupletspan_element(abjad_tuplet):
         tupletspan.set('dur', six.b(str(dur)))
         add_xml_ids(abjad_tuplet, tupletspan)
         return tupletspan
+
 
 def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
     '''
@@ -331,15 +339,13 @@ def leaf_to_element(abjad_object):
     :returns: the corresponding MEI Element.
     :rtype: List or :class:`lxml.etree.ElementTree.Element`
     '''
-    if isinstance(abjad_object, Rest):
-        return rest_to_rest(abjad_object)
-    elif isinstance(abjad_object, (Note,NoteHead)):
-        return note_to_note(abjad_object)
-    elif isinstance(abjad_object, Chord):
-        return chord_to_chord(abjad_object)
-    elif isinstance(abjad_object, Skip):
-        return skip_to_space(abjad_object)
-
+    element_dict = {
+	"<class 'abjad.tools.scoretools.Chord.Chord'>": chord_to_chord,
+	"<class 'abjad.tools.scoretools.Note.Note'>": note_to_note,
+	"<class 'abjad.tools.scoretools.Rest.Rest'>": rest_to_rest,
+	"<class 'abjad.tools.scoretools.Skip.Skip'>": skip_to_space,
+    }
+    return element_dict[str(type(abjad_object))](abjad_object)
 
 def voice_to_layer(abjad_voice):
     '''
@@ -358,6 +364,7 @@ def voice_to_layer(abjad_voice):
             mei_layer.append(leaf_to_element(child))
     add_xml_ids(abjad_voice, mei_layer)
     return mei_layer
+
 
 def staff_to_staff(abjad_staff):
     '''
@@ -392,6 +399,7 @@ def staff_to_staff(abjad_staff):
         mei_staff.append(mei_layer)
     add_xml_ids(abjad_staff, mei_staff)
     return mei_staff
+
 
 def score_to_section(abjad_score):
     '''
@@ -445,3 +453,5 @@ def score_to_section(abjad_score):
                 mei_staff_group.append(staff_def)
                 staffCounter += 1
     return mei_section
+
+

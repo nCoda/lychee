@@ -50,7 +50,6 @@ etree.register_namespace('mei', _MEINS[1:-1])
 #import lychee
 #from lychee.signals import outbound
 
-
 def convert(document, **kwargs):
     '''
     Convert an MEI document into an Abjad document.
@@ -65,6 +64,18 @@ def convert(document, **kwargs):
 
     outbound.CONVERSION_FINISH.emit(converted='<Abjad stuff>')
     lychee.log('{}.convert() after finish signal'.format(__name__))
+
+    if document.tag == 'tupletspan':
+	return tupletspan_to_tuplet(document)
+    elif document.tag == 'staff':
+	return staff_to_staff(document)
+    elif len(document) > 1:
+	if document[0].tag == 'scoreDef':
+	    return section_to_score(document)
+    elif document.tag == 'layer':
+	return layer_to_voice(document)
+    elif document.tag == 'note' or document.tag == 'rest' or document.tag == 'chord' or document.tag == 'space':
+	return element_to_leaf(document)
 
 
 def convert_accidental(mei_accidental_string):
@@ -125,6 +136,7 @@ def append_accidental(mei_note):
                 return convert_accidental(accid)
     return ''
 
+
 def make_abjad_note_from_string(the_string,mei_note):
     '''
     Append duration informtion from an MEI note to a Lilypond pitch-octave string to create an Abjad Note.
@@ -144,6 +156,7 @@ def make_abjad_note_from_string(the_string,mei_note):
     # and create a note
     return Note(the_string)
 
+
 def set_forced(abjad_note,mei_note):
     '''
     Set an Abjad Note's forced accidental attribute to true if the MEI note has an 'accid' attribute; returns the Note.
@@ -162,6 +175,7 @@ def set_forced(abjad_note,mei_note):
         else:
             abjad_note.note_head.is_forced = True
     return abjad_note
+
 
 def set_cautionary(abjad_note, mei_note):
     '''
@@ -227,6 +241,7 @@ def rest_to_rest(mei_rest):
     abjad_rest = Rest(the_string)
     return abjad_rest
 
+
 def space_to_skip(mei_space):
     '''
     Convert an MEI space Element into an Abjad Skip.
@@ -243,7 +258,6 @@ def space_to_skip(mei_space):
             the_string += '.'
     abjad_skip = Skip(the_string)
     return abjad_skip
-
 
 
 def chord_to_chord(mei_chord):
@@ -268,6 +282,7 @@ def chord_to_chord(mei_chord):
         noteheads.append(note_to_note(child))
     abjad_chord = Chord(noteheads,abjad_duration)
     return abjad_chord
+
 
 def tupletspan_element_to_empty_tuplet(mei_tupletspan):
     '''
@@ -296,6 +311,7 @@ def tupletspan_element_to_empty_tuplet(mei_tupletspan):
         duration = duration.from_lilypond_duration_string(dur_string)
         return_tuplet = FixedDurationTuplet(duration, [])
         return return_tuplet
+
 
 def setup_outermost_tupletspan(mei_tupletspan):
     '''
@@ -369,14 +385,13 @@ def element_to_leaf(mei_element):
     :returns: the corresponding Abjad leaf.
     :rtype: :class:`abjad.tools.scoretools.Leaf.Leaf`
     '''
-    if mei_element.tag == 'rest':
-        return rest_to_rest(mei_element)
-    elif mei_element.tag == 'note':
-        return note_to_note(mei_element)
-    elif mei_element.tag == 'chord':
-        return chord_to_chord(mei_element)
-    elif mei_elemement.tag == 'space':
-        return space_to_skip(mei_elmement)
+    leaf_dictionary = {
+	'chord': chord_to_chord, 
+	'note':note_to_note, 
+    	'rest': rest_to_rest, 
+	'space': space_to_skip
+    }
+    return leaf_dictionary[mei_element.tag](mei_element)
 
 def layer_to_voice(mei_layer):
     '''
@@ -395,6 +410,7 @@ def layer_to_voice(mei_layer):
             abjad_voice.append(element_to_leaf(child))
     return abjad_voice
 
+
 def staff_to_staff(mei_staff):
     '''
     Convert an MEI staff Element into an Abjad Staff container.
@@ -408,6 +424,7 @@ def staff_to_staff(mei_staff):
     for layer in mei_staff:
         abjad_staff.append(layer_to_voice(layer))
     return abjad_staff
+
 
 def section_to_score(mei_section):
     '''
@@ -436,3 +453,5 @@ def section_to_score(mei_section):
                 abjad_staff_group.append(staff_to_staff(staffs[staff_index]))
             abjad_score.append(abjad_staff_group)
     return abjad_score
+
+

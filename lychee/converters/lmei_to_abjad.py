@@ -7,7 +7,7 @@
 # Filename:               lychee/converters/lmei_to_abjad.py
 # Purpose:                Converts an lmei document to an abjad document.
 #
-# Copyright (C) 2016 Jeffrey Treviño
+# Copyright (C) 2016 Jeffrey Treviño, Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -43,12 +43,7 @@ from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.topleveltools.inspect_ import inspect_
 from abjad.tools.topleveltools.attach import attach
 
-_MEINS = '{http://www.music-encoding.org/ns/mei}'
-_XMLNS = '{http://www.w3.org/XML/1998/namespace}id'
-etree.register_namespace('mei', _MEINS[1:-1])
-
-#import lychee
-#from lychee.signals import outbound
+from lychee.namespaces import mei, xml
 
 def convert(document, **kwargs):
     '''
@@ -111,7 +106,7 @@ def octave_integer_to_string(octave_integer):
         return "," * (3 - octave_integer)
 
 
-def append_accidental(mei_note):
+def append_accidental(mei_note):  # TODO: this function is untested
     '''
     Create an MEI note's corresponding Lilypond accidental string.
 
@@ -121,7 +116,7 @@ def append_accidental(mei_note):
     :rtype: string
     '''
     # append accidental string, if one should be appended
-    accid_element = mei_note.findall('./accid')
+    accid_element = mei_note.findall('./{0}'.format(mei.ACCID))
     if len(accid_element):
     # if cautionary accidental
         accid = accid_element[0].get('accid')
@@ -355,7 +350,7 @@ def tupletspan_to_tuplet(mei_tupletspan):
         while index < len(outermost_tuplet_members):
             element = outermost_tuplet_members[index]
             #iterate through the list; if you hit a tuplet, recurse
-            if element.tag == '{}tupletspan'.format(_MEINS):
+            if element.tag == mei.TUPLET_SPAN:
                 plist = element.get('plist').split()
                 end_index = index + len(plist) + 1
                 recursion_list = outermost_tuplet_members[index:end_index]
@@ -385,13 +380,14 @@ def element_to_leaf(mei_element):
     :returns: the corresponding Abjad leaf.
     :rtype: :class:`abjad.tools.scoretools.Leaf.Leaf`
     '''
-    leaf_dictionary = {
-	'chord': chord_to_chord, 
-	'note':note_to_note, 
-    	'rest': rest_to_rest, 
-	'space': space_to_skip
+    tag_to_func = {
+        mei.REST: rest_to_rest,
+        mei.NOTE: note_to_note,
+        mei.CHORD: chord_to_chord,
+        mei.SPACE: space_to_skip,
     }
-    return leaf_dictionary[mei_element.tag](mei_element)
+    return tag_to_func[mei_element.tag](mei_element)
+
 
 def layer_to_voice(mei_layer):
     '''
@@ -442,11 +438,11 @@ def section_to_score(mei_section):
     mei_global_staff_group = score_def[0]
     staffs = mei_section[1:]
     for element in mei_global_staff_group:
-        if element.tag == 'staffDef':
+        if element.tag == mei.STAFF_DEF:
             staff_index = int(element.get('n')) - 1
             abjad_staff = staff_to_staff(staffs[staff_index])
             abjad_score.append(abjad_staff)
-        elif element.tag == 'staffGrp':
+        elif element.tag == mei.STAFF_GRP:
             abjad_staff_group = StaffGroup()
             for staffDef in element:
                 staff_index = int(staffDef.get('n')) - 1

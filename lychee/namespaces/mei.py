@@ -33,7 +33,7 @@ Constants for the "MEI" XML namespace.
 MEINS = '{http://www.music-encoding.org/ns/mei}'
 
 # tag names
-ACCIDENTAL = '{}accid'.format(MEINS)
+ACCID = '{}accid'.format(MEINS)
 ARRANGER = '{}arranger'.format(MEINS)
 AUDIENCE = '{}audience'.format(MEINS)
 AUTHOR = '{}author'.format(MEINS)
@@ -80,7 +80,7 @@ STAFF_DEF = '{}staffDef'.format(MEINS)
 STAFF_GRP = '{}staffGrp'.format(MEINS)
 TITLE = '{}title'.format(MEINS)
 TITLE_STMT = '{}titleStmt'.format(MEINS)
-TUPLETSPAN = '{}tupletspan'.format(MEINS)
+TUPLET_SPAN = '{}tupletSpan'.format(MEINS)
 UNPUB = '{}unpub'.format(MEINS)
 WORK_DESC = '{}workDesc'.format(MEINS)
 WORK = '{}work'.format(MEINS)

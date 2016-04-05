@@ -348,6 +348,31 @@ class TestActionStart(TestInteractiveSession):
             placement=mock_do_out.return_value['placement'],
             document=mock_do_out.return_value['document'])
 
+    @mock.patch('lychee.workflow.steps.do_outbound_steps')
+    @mock.patch('lychee.signals.outbound.CONVERSION_FINISHED')
+    @mock.patch('lychee.signals.outbound.STARTED')
+    def test_when_inbound_fails(self, mock_out_started, mock_out_finished, mock_do_out):
+        '''
+        A unit test (fully mocked) for when the inbound step fails.
+
+        We need to assert that the later steps do not happen. Not only would running the later
+        steps be unnecessary and take extra time, but it may also cause new errors.
+        '''
+        dtype = 'silly format'
+        doc = '<silly/>'
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session._run_inbound_doc_vcs = mock.Mock()
+        self.session._run_inbound_doc_vcs.side_effect = exceptions.InboundConversionError
+        mock_do_out.return_value = {'placement': 'ABC', 'document': 'DEF'}
+
+        self.session._action_start(dtype=dtype, doc=doc)
+
+        self.session._run_inbound_doc_vcs.assert_called_once_with(dtype, doc)
+        assert self.session._cleanup_for_new_action.call_count == 2
+        assert mock_out_started.emit.call_count == 0
+        assert mock_do_out.call_count == 0
+        assert mock_out_finished.emit.call_count == 0
+
     def test_everything_works_unmocked(self):
         '''
         An integration test (no mocks) for when everything works and all code paths are excuted.
@@ -387,7 +412,8 @@ class TestActionStart(TestInteractiveSession):
         dtype = 'meh'
         doc = 'document'
 
-        self.session._run_inbound_doc_vcs(dtype, doc)
+        with pytest.raises(exceptions.InboundConversionError) as exc:
+            self.session._run_inbound_doc_vcs(dtype, doc)
 
         mock_conv.assert_called_once_with(
             session=self.session,
@@ -413,7 +439,8 @@ class TestActionStart(TestInteractiveSession):
         doc = 'document'
         self.session._inbound_converted = 'whatever'
 
-        self.session._run_inbound_doc_vcs(dtype, doc)
+        with pytest.raises(exceptions.InboundConversionError) as exc:
+            self.session._run_inbound_doc_vcs(dtype, doc)
 
         assert 1 == mock_conv.call_count
         mock_views.assert_called_once_with(

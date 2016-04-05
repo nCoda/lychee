@@ -135,7 +135,21 @@ class InvalidDataTypeError(LycheeError):
     pass
 
 
-class OutboundConversionError(LycheeError):
+class ConversionError(LycheeError):
+    '''
+    When an error occurs during conversion.
+    '''
+    pass
+
+
+class InboundConversionError(ConversionError):
+    '''
+    When an error occurs during inbound conversion.
+    '''
+    pass
+
+
+class OutboundConversionError(ConversionError):
     '''
     When an error occurs during outbound conversion.
     '''

@@ -215,7 +215,10 @@ class InteractiveSession(object):
         try:
             if 'dtype' in kwargs and 'doc' in kwargs:
                 # only do the inbound, document, and VCS steps if there's an incoming change
-                self._run_inbound_doc_vcs(kwargs['dtype'], kwargs['doc'])
+                try:
+                    self._run_inbound_doc_vcs(kwargs['dtype'], kwargs['doc'])
+                except exceptions.InboundConversionError:
+                    return
 
             signals.outbound.STARTED.emit()
             for outbound_dtype in self.registrar.get_registered_formats():
@@ -237,6 +240,8 @@ class InteractiveSession(object):
 
         :arg str dtype: From the :const:`~lychee.signals.ACTION_START` signal.
         :arg ??? doc: From the :const:`~lychee.signals.ACTION_START` signal.
+        :raises: :exc:`lychee.exceptions.InboundConversionError` when the conversion or views
+            processing steps fail.
 
         When there is an incoming change, :meth:`_action_start` uses this method to run the inbound
         conversion and views processing, document, and VCS steps. The functionality is held in this
@@ -247,7 +252,7 @@ class InteractiveSession(object):
             dtype=dtype,
             document=doc)
         if self._inbound_converted is None:
-            return
+            raise exceptions.InboundConversionError()
 
         steps.do_inbound_views(
             session=self,
@@ -255,7 +260,7 @@ class InteractiveSession(object):
             document=doc,
             converted=self._inbound_converted)
         if self._inbound_views_info is None:
-            return
+            raise exceptions.InboundConversionError()
 
         document_pathnames = steps.do_document(
             converted=self._inbound_converted,

@@ -51,9 +51,9 @@ def _error_slot(**kwargs):
     Slot for *_ERROR signals in any module.
     '''
     if 'msg' in kwargs:
-        lychee.log('Caught an ERROR signal: {}'.format(kwargs['msg']))
+        lychee.log('Caught an ERROR signal: {}'.format(kwargs['msg']), level='error')
     else:
-        lychee.log('Caught an ERROR signal without a messge.')
+        lychee.log('Caught an ERROR signal without a messge.', level='error')
 
 
 signals.inbound.CONVERSION_ERROR.connect(_error_slot)

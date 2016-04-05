@@ -57,7 +57,10 @@ def convert(document, **kwargs):
     :rtype: :class:`lxml.etree.ElementTree.Element` or :class:`lxml.etree.ElementTree.ElementTree`
     '''
     conversion_dict = {
-    "<class 'abjad.tools.scoretools.Leaf.Leaf'>": leaf_to_element,
+    "<class 'abjad.tools.scoretools.Note.Note'>": note_to_note,
+    "<class 'abjad.tools.scoretools.Rest.Rest'>": rest_to_rest,
+    "<class 'abjad.tools.scoretools.Skip.Skip'>": skip_to_space,
+    "<class 'abjad.tools.scoretools.Chord.Chord'>": chord_to_chord,
     "<class 'abjad.tools.scoretools.Tuplet.Tuplet'>": tuplet_to_tupletspan,
     "<class 'abjad.tools.scoretools.Voice.Voice'>": voice_to_layer,
     "<class 'abjad.tools.scoretools.Staff.Staff'>": staff_to_staff,

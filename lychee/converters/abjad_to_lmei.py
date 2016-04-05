@@ -261,6 +261,20 @@ def empty_tuplet_to_tupletspan_element(abjad_tuplet):
         return tupletspan
 
 
+def calculate_tuplet_duration(tuplet):
+    '''
+    Calculate the duration of a tuplet that potentially contains nested tuplets.
+
+    :param tuplet: the Abjad tuplet to query for duration.
+    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
+    :return 
+    '''
+    if isinstance(tuplet, FixedDurationTuplet):
+	return tuplet.target_duration
+    else:
+	return tuplet.multiplied_duration 
+
+
 def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
     '''
     Set an mei tupletspan's 'dur', 'dots', 'n', 'num', and 'numBase' attributes according to info from an abjad Tuplet.
@@ -269,11 +283,11 @@ def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
     :type mei_tupletspan: :class:`lxml.etree.ElementTree.Element`
     :param abjad_tuplet: the Abjad Tuplet container from which to initialize.
     :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
-    :returns: None
-    :rtype: None
+    :returns: Abjad Duration.
+    :rtype: :class: `abjad.tools.durationtools.Duration.Duration`
     '''
     mei_tupletspan.set('n','1')
-    duration = abjad_tuplet.target_duration
+    duration = calculate_tuplet_duration(abjad_tuplet) 
     dur = duration.lilypond_duration_string
     dots = duration.dot_count
     if dots:

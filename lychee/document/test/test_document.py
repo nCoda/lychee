@@ -347,7 +347,8 @@ class TestSaveAndLoad(unittest.TestCase):
         tree = mock.MagicMock(spec_set=etree._ElementTree)
         to_here = 'whatever.mei'
         document._save_out(tree, to_here)
-        tree.write_c14n.assert_called_once_with(to_here)
+        tree.write.assert_called_once_with(to_here, encoding='UTF-8', pretty_print=True,
+            xml_declaration=True)
 
     @mock.patch('lychee.document.document.etree.ElementTree')
     def test__save_out_2(self, mock_etree):
@@ -360,7 +361,8 @@ class TestSaveAndLoad(unittest.TestCase):
         elem = mock.MagicMock(spec_set=etree._Element)
         document._save_out(elem, to_here)
         mock_etree.assert_called_once_with(elem)
-        tree.write_c14n.assert_called_once_with(to_here)
+        tree.write.assert_called_once_with(to_here, encoding='UTF-8', pretty_print=True,
+            xml_declaration=True)
 
     def test__save_out_3(self):
         '''
@@ -376,7 +378,7 @@ class TestSaveAndLoad(unittest.TestCase):
         Given an ElementTree, it tries to save but gets C14NError, so raises CannotSaveError.
         '''
         tree = mock.MagicMock(spec_set=etree._ElementTree)
-        tree.write_c14n.side_effect = etree.C14NError('lol')
+        tree.write.side_effect = IOError('lol')
         to_here = 'whatever.mei'
         with pytest.raises(exceptions.CannotSaveError) as err:
             document._save_out(tree, to_here)

@@ -24,6 +24,11 @@
 #--------------------------------------------------------------------------------------------------
 '''
 Signals for the "outbound" step.
+
+The structure of the :class:`~lychee.workflow.steps` module, which contains functions that run the
+workflow steps, is such that the outbound steps use many fewer signals than the inbound steps. This
+is a compromise taken to allow the parallel processing in the outbound steps (i.e., more than one
+outbound data format can be processed at once).
 '''
 
 from . import signal
@@ -66,18 +71,19 @@ Refer to the discussion above for :const:`REGISTER_FORMAT`.
 
 STARTED = signal.Signal(name='outbound.STARTED')
 '''
-Emitted when outbound steps begin.
+Emitted when outbound steps begin, before any of the views processing or conversion modules have
+begun processing, and only once for all registered outbound formats.
 '''
 
 
 CONVERSION_FINISHED = signal.Signal(args=['dtype', 'placement', 'document'], name='outbound.CONVERSION_FINISHED')
 '''
-Emitted by the :class:`WorkflowManager` after all data types have been prepared, once per data type.
-Slots should pay attention to the "dtype" value to know whether they are interested in the document
-in the currently-offered format, or they wish to wait for another format.
+Emitted when one of the registered data types has finished outbound processing.
 
-To help ensure all UI components will be updated at approximately the same time, all outbound
-formats are prepared before any :const:`CONVERSION_FINISHED` signal is emitted.
+Depending on the environmental factors, the function that emits this signals
+(:func:`lychee.workflow.steps.do_outbound_steps`) may either wait for all conversions to finish
+before emitting the :const:`CONVERSION_FINISHED` signal, or may emit the signal at different times,
+as the conversions finish.
 
 :param str dtype: The data type of the "document" argument ("abjad", "lilypond", or "mei"). Always
     in lowercase.

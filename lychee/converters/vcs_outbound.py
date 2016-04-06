@@ -25,6 +25,9 @@
 '''
 "Converts" VCS data into an easier format for clients.
 
+.. note:: This is an outbound converter that does not emit signals directly. Refer to the
+    :mod:`lychee.signals.outbound` module for more information.
+
 Here is a sample of the data outputted from this module.
 
 ::

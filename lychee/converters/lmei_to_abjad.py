@@ -22,6 +22,13 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
+'''
+Convert a Lychee-MEI document to an Abjad document.
+
+.. note:: This is an outbound converter that does not emit signals directly. Refer to the
+    :mod:`lychee.signals.outbound` module for more information.
+'''
+
 import six
 from lxml import etree as etree
 

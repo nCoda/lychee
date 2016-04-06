@@ -88,15 +88,6 @@ class InteractiveSession(object):
         self._inbound_converted = None
         self._inbound_views_info = None
 
-    @property
-    def registrar(self):
-        '''
-        Get this session's outbound format registrar.
-
-        :returns: This session's :class:`lychee.converter.registrar.Registrar`
-        '''
-        return self._registrar
-
     def __del__(self):
         '''
         If this session is using a temporary directory, delete it.
@@ -221,7 +212,7 @@ class InteractiveSession(object):
                     return
 
             signals.outbound.STARTED.emit()
-            for outbound_dtype in self.registrar.get_registered_formats():
+            for outbound_dtype in self._registrar.get_registered_formats():
                 post = steps.do_outbound_steps(
                     self.get_repo_dir(),
                     self._inbound_views_info,  # might be None, but that's okay

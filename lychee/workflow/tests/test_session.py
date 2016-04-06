@@ -93,13 +93,6 @@ class TestGeneral(TestInteractiveSession):
         assert actual._inbound_converted is None
         assert actual._inbound_views_info is None
 
-    def test_registrar_property(self):
-        '''
-        The "registrar" property works.
-        '''
-        actual = self.session
-        assert actual._registrar is actual.registrar
-
     @mock.patch('lychee.workflow.session.steps.flush_inbound_converters')
     @mock.patch('lychee.workflow.session.steps.flush_inbound_views')
     def test_cleanup_for_new_action(self, mock_flush_views, mock_flush_conv):
@@ -330,11 +323,11 @@ class TestActionStart(TestInteractiveSession):
         outbound_dtype = 'mei'
         self.session._inbound_views_info = 'IBV'
 
-        self.session.registrar.register(outbound_dtype, 'test_everything_works_unit')
+        signals.outbound.REGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_everything_works_unit')
         try:
             self.session._action_start(dtype=dtype, doc=doc)
         finally:
-            self.session.registrar.unregister(outbound_dtype, 'test_everything_works_unit')
+            signals.outbound.UNREGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_everything_works_unit')
 
         self.session._run_inbound_doc_vcs.assert_called_once_with(dtype, doc)
         assert 2 == self.session._cleanup_for_new_action.call_count
@@ -387,12 +380,12 @@ class TestActionStart(TestInteractiveSession):
             assert isinstance(document, etree._Element)
         finish_mock.side_effect = finish_side_effect
 
-        self.session.registrar.register('mei', 'test_everything_works_unmocked')
+        signals.outbound.REGISTER_FORMAT.emit(dtype='mei', who='test_everything_works_unmocked')
         signals.outbound.CONVERSION_FINISHED.connect(finish_mock)
         try:
             self.session._action_start(dtype='LilyPond', doc=input_ly)
         finally:
-            self.session.registrar.unregister('mei', 'test_everything_works_unmocked')
+            signals.outbound.UNREGISTER_FORMAT.emit(dtype='mei', who='test_everything_works_unmocked')
             signals.outbound.CONVERSION_FINISHED.disconnect(finish_mock)
 
         assert os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))

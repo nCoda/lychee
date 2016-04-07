@@ -950,11 +950,11 @@ class TestGetPutSection(DocumentTestCase):
         In this case, the file is invalid.
         '''
         section_id = '888'
-        mock_load_in.side_effect = exceptions.InvalidFileError
+        mock_load_in.side_effect = exceptions.InvalidFileError('whatever')
 
-        with self.assertRaises(exceptions.SectionNotFoundError) as exc:
+        with self.assertRaises(exceptions.InvalidFileError) as exc:
             self.doc.get_section(section_id)
-        self.assertEqual(document._SECTION_NOT_FOUND.format(xmlid=section_id), exc.exception.args[0])
+        self.assertEqual('whatever', exc.exception.args[0])
         mock_load_in.assert_called_with(os.path.join(self.repo_dir, '888.mei'))
 
     @mock.patch('lychee.document.document._load_in')

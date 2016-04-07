@@ -56,17 +56,22 @@ def convert(document, **kwargs):
     :returns: The corresponding MEI document.
     :rtype: :class:`lxml.etree.ElementTree.Element` or :class:`lxml.etree.ElementTree.ElementTree`
     '''
+    inbound.CONVERSION_STARTED.emit()
+
     conversion_dict = {
-    "<class 'abjad.tools.scoretools.Note.Note'>": note_to_note,
-    "<class 'abjad.tools.scoretools.Rest.Rest'>": rest_to_rest,
-    "<class 'abjad.tools.scoretools.Skip.Skip'>": skip_to_space,
-    "<class 'abjad.tools.scoretools.Chord.Chord'>": chord_to_chord,
-    "<class 'abjad.tools.scoretools.Tuplet.Tuplet'>": tuplet_to_tupletspan,
-    "<class 'abjad.tools.scoretools.Voice.Voice'>": voice_to_layer,
-    "<class 'abjad.tools.scoretools.Staff.Staff'>": staff_to_staff,
-    "<class 'abjad.tools.scoretools.Score.Score'>": score_to_section,
+        "<class 'abjad.tools.scoretools.Note.Note'>": note_to_note,
+        "<class 'abjad.tools.scoretools.Rest.Rest'>": rest_to_rest,
+        "<class 'abjad.tools.scoretools.Skip.Skip'>": skip_to_space,
+        "<class 'abjad.tools.scoretools.Chord.Chord'>": chord_to_chord,
+        "<class 'abjad.tools.scoretools.Tuplet.Tuplet'>": tuplet_to_tupletspan,
+        "<class 'abjad.tools.scoretools.Voice.Voice'>": voice_to_layer,
+        "<class 'abjad.tools.scoretools.Staff.Staff'>": staff_to_staff,
+        "<class 'abjad.tools.scoretools.Score.Score'>": score_to_section,
     }
-    return conversion_dict[str(type(document))](document)
+    converted = conversion_dict[str(type(document))](document)
+
+    inbound.CONVERSION_FINISH.emit(converted=converted)
+    return converted
 
 
 def convert_accidental(abjad_accidental_string):

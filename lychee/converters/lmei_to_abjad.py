@@ -50,7 +50,14 @@ from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.topleveltools.inspect_ import inspect_
 from abjad.tools.topleveltools.attach import attach
 
+from lychee import exceptions
 from lychee.namespaces import mei, xml
+
+
+# translatable strings
+# errors
+_UNSUPPORTED_ELEMENT = 'Cannot convert <{tagname}> elements to Abjad at this time'
+
 
 def convert(document, **kwargs):
     '''
@@ -62,19 +69,23 @@ def convert(document, **kwargs):
     :rtype: object
     :raises: :exc:`lychee.exceptions.OutboundConversionError` when there is a forseeable error.
     '''
-    raise NotImplementedError('pretty straightforward, innit?')
+    tag_to_func = {
+        # alphabetical by MEI tag name
+        mei.CHORD: element_to_leaf,
+        mei.LAYER: layer_to_voice,
+        mei.NOTE: element_to_leaf,
+        mei.REST: element_to_leaf,
+        mei.SECTION: section_to_score,
+        mei.SPACE: element_to_leaf,
+        mei.STAFF: staff_to_staff,
+        mei.TUPLET_SPAN: tupletspan_to_tuplet,
+    }
+    tag = document.tag
 
-    if document.tag == 'tupletspan':
-	return tupletspan_to_tuplet(document)
-    elif document.tag == 'staff':
-	return staff_to_staff(document)
-    elif len(document) > 1:
-	if document[0].tag == 'scoreDef':
-	    return section_to_score(document)
-    elif document.tag == 'layer':
-	return layer_to_voice(document)
-    elif document.tag == 'note' or document.tag == 'rest' or document.tag == 'chord' or document.tag == 'space':
-	return element_to_leaf(document)
+    if tag in tag_to_func:
+        return tag_to_func[tag](document)
+    else:
+        raise exceptions.OutboundConversionError(_UNSUPPORTED_ELEMENT.format(tagname=tag))
 
 
 def convert_accidental(mei_accidental_string):
@@ -453,5 +464,3 @@ def section_to_score(mei_section):
                 abjad_staff_group.append(staff_to_staff(staffs[staff_index]))
             abjad_score.append(abjad_staff_group)
     return abjad_score
-
-

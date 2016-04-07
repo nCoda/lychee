@@ -44,6 +44,7 @@ from lychee.workflow import steps
 
 _CANNOT_SAFELY_HG_INIT = 'Could not safely initialize the repository'
 _CANNOT_MAKE_HG_DIR = 'Could not create repository directory'
+_FAILURE_DURING_INBOUND = 'Action failed during the inbound steps'
 
 
 def _error_slot(**kwargs):
@@ -209,6 +210,7 @@ class InteractiveSession(object):
                 try:
                     self._run_inbound_doc_vcs(kwargs['dtype'], kwargs['doc'])
                 except exceptions.InboundConversionError:
+                    lychee.log(_FAILURE_DURING_INBOUND)
                     return
 
             signals.outbound.STARTED.emit()

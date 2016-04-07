@@ -104,7 +104,7 @@ def add_xml_ids(abjad_object, mei_element):
     id_string = str(abjad_object) + str(parentage.score_index)
     abjad_id = six.b(id_string)
     hasher = hashlib.new('SHA256', abjad_id)
-    the_xmlid = hasher.hexdigest()
+    the_xmlid = 'z' + hasher.hexdigest()
     attach(the_xmlid, abjad_object)
     mei_element.set(xml.ID, the_xmlid)
 

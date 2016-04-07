@@ -272,12 +272,12 @@ def calculate_tuplet_duration(tuplet):
 
     :param tuplet: the Abjad tuplet to query for duration.
     :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
-    :return 
+    :return
     '''
     if isinstance(tuplet, FixedDurationTuplet):
 	return tuplet.target_duration
     else:
-	return tuplet.multiplied_duration 
+	return tuplet.multiplied_duration
 
 
 def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
@@ -292,7 +292,7 @@ def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
     :rtype: :class: `abjad.tools.durationtools.Duration.Duration`
     '''
     mei_tupletspan.set('n','1')
-    duration = calculate_tuplet_duration(abjad_tuplet) 
+    duration = calculate_tuplet_duration(abjad_tuplet)
     dur = duration.lilypond_duration_string
     dots = duration.dot_count
     if dots:
@@ -472,5 +472,3 @@ def score_to_section(abjad_score):
                 mei_staff_group.append(staff_def)
                 staffCounter += 1
     return mei_section
-
-

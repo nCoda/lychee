@@ -25,8 +25,8 @@
 '''
 Export MEI document metadata as JSON objects.
 
-This module is only intended for use in the outbound stages, moving data about the Lychee-MEI score
-into a user interface.
+.. note:: This is an outbound converter that does not emit signals directly. Refer to the
+    :mod:`lychee.signals.outbound` module for more information.
 
 
 Output Sample

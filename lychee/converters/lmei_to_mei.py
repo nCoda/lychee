@@ -23,7 +23,10 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 '''
-Converts a Lychee-MEI document to a more conventional document.
+Convert a Lychee-MEI document to a standard MEI document.
+
+.. note:: This is an outbound converter that does not emit signals directly. Refer to the
+    :mod:`lychee.signals.outbound` module for more information.
 '''
 
 from lxml import etree

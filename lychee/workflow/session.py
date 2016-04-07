@@ -51,9 +51,9 @@ def _error_slot(**kwargs):
     Slot for *_ERROR signals in any module.
     '''
     if 'msg' in kwargs:
-        lychee.log('Caught an ERROR signal: {}'.format(kwargs['msg']))
+        lychee.log('Caught an ERROR signal: {}'.format(kwargs['msg']), level='error')
     else:
-        lychee.log('Caught an ERROR signal without a messge.')
+        lychee.log('Caught an ERROR signal without a messge.', level='error')
 
 
 signals.inbound.CONVERSION_ERROR.connect(_error_slot)
@@ -87,15 +87,6 @@ class InteractiveSession(object):
         # thse should be cleared for each action
         self._inbound_converted = None
         self._inbound_views_info = None
-
-    @property
-    def registrar(self):
-        '''
-        Get this session's outbound format registrar.
-
-        :returns: This session's :class:`lychee.converter.registrar.Registrar`
-        '''
-        return self._registrar
 
     def __del__(self):
         '''
@@ -215,10 +206,13 @@ class InteractiveSession(object):
         try:
             if 'dtype' in kwargs and 'doc' in kwargs:
                 # only do the inbound, document, and VCS steps if there's an incoming change
-                self._run_inbound_doc_vcs(kwargs['dtype'], kwargs['doc'])
+                try:
+                    self._run_inbound_doc_vcs(kwargs['dtype'], kwargs['doc'])
+                except exceptions.InboundConversionError:
+                    return
 
             signals.outbound.STARTED.emit()
-            for outbound_dtype in self.registrar.get_registered_formats():
+            for outbound_dtype in self._registrar.get_registered_formats():
                 post = steps.do_outbound_steps(
                     self.get_repo_dir(),
                     self._inbound_views_info,  # might be None, but that's okay
@@ -237,6 +231,8 @@ class InteractiveSession(object):
 
         :arg str dtype: From the :const:`~lychee.signals.ACTION_START` signal.
         :arg ??? doc: From the :const:`~lychee.signals.ACTION_START` signal.
+        :raises: :exc:`lychee.exceptions.InboundConversionError` when the conversion or views
+            processing steps fail.
 
         When there is an incoming change, :meth:`_action_start` uses this method to run the inbound
         conversion and views processing, document, and VCS steps. The functionality is held in this
@@ -247,7 +243,7 @@ class InteractiveSession(object):
             dtype=dtype,
             document=doc)
         if self._inbound_converted is None:
-            return
+            raise exceptions.InboundConversionError()
 
         steps.do_inbound_views(
             session=self,
@@ -255,7 +251,7 @@ class InteractiveSession(object):
             document=doc,
             converted=self._inbound_converted)
         if self._inbound_views_info is None:
-            return
+            raise exceptions.InboundConversionError()
 
         document_pathnames = steps.do_document(
             converted=self._inbound_converted,

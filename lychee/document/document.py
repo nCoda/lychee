@@ -251,8 +251,8 @@ def _save_out(this, to_here):
     if isinstance(this, etree._Element):  # pylint: disable=protected-access
         this = etree.ElementTree(this)
     try:
-        this.write_c14n(to_here)
-    except etree.C14NError:
+        this.write(to_here, encoding='UTF-8', pretty_print=True, xml_declaration=True)
+    except IOError:
         raise exceptions.CannotSaveError(_SAVE_OUT_ERROR)
 
 

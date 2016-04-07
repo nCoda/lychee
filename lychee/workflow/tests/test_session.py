@@ -93,13 +93,6 @@ class TestGeneral(TestInteractiveSession):
         assert actual._inbound_converted is None
         assert actual._inbound_views_info is None
 
-    def test_registrar_property(self):
-        '''
-        The "registrar" property works.
-        '''
-        actual = self.session
-        assert actual._registrar is actual.registrar
-
     @mock.patch('lychee.workflow.session.steps.flush_inbound_converters')
     @mock.patch('lychee.workflow.session.steps.flush_inbound_views')
     def test_cleanup_for_new_action(self, mock_flush_views, mock_flush_conv):
@@ -330,11 +323,11 @@ class TestActionStart(TestInteractiveSession):
         outbound_dtype = 'mei'
         self.session._inbound_views_info = 'IBV'
 
-        self.session.registrar.register(outbound_dtype, 'test_everything_works_unit')
+        signals.outbound.REGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_everything_works_unit')
         try:
             self.session._action_start(dtype=dtype, doc=doc)
         finally:
-            self.session.registrar.unregister(outbound_dtype, 'test_everything_works_unit')
+            signals.outbound.UNREGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_everything_works_unit')
 
         self.session._run_inbound_doc_vcs.assert_called_once_with(dtype, doc)
         assert 2 == self.session._cleanup_for_new_action.call_count
@@ -347,6 +340,31 @@ class TestActionStart(TestInteractiveSession):
             dtype=outbound_dtype,
             placement=mock_do_out.return_value['placement'],
             document=mock_do_out.return_value['document'])
+
+    @mock.patch('lychee.workflow.steps.do_outbound_steps')
+    @mock.patch('lychee.signals.outbound.CONVERSION_FINISHED')
+    @mock.patch('lychee.signals.outbound.STARTED')
+    def test_when_inbound_fails(self, mock_out_started, mock_out_finished, mock_do_out):
+        '''
+        A unit test (fully mocked) for when the inbound step fails.
+
+        We need to assert that the later steps do not happen. Not only would running the later
+        steps be unnecessary and take extra time, but it may also cause new errors.
+        '''
+        dtype = 'silly format'
+        doc = '<silly/>'
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session._run_inbound_doc_vcs = mock.Mock()
+        self.session._run_inbound_doc_vcs.side_effect = exceptions.InboundConversionError
+        mock_do_out.return_value = {'placement': 'ABC', 'document': 'DEF'}
+
+        self.session._action_start(dtype=dtype, doc=doc)
+
+        self.session._run_inbound_doc_vcs.assert_called_once_with(dtype, doc)
+        assert self.session._cleanup_for_new_action.call_count == 2
+        assert mock_out_started.emit.call_count == 0
+        assert mock_do_out.call_count == 0
+        assert mock_out_finished.emit.call_count == 0
 
     def test_everything_works_unmocked(self):
         '''
@@ -362,12 +380,12 @@ class TestActionStart(TestInteractiveSession):
             assert isinstance(document, etree._Element)
         finish_mock.side_effect = finish_side_effect
 
-        self.session.registrar.register('mei', 'test_everything_works_unmocked')
+        signals.outbound.REGISTER_FORMAT.emit(dtype='mei', who='test_everything_works_unmocked')
         signals.outbound.CONVERSION_FINISHED.connect(finish_mock)
         try:
             self.session._action_start(dtype='LilyPond', doc=input_ly)
         finally:
-            self.session.registrar.unregister('mei', 'test_everything_works_unmocked')
+            signals.outbound.UNREGISTER_FORMAT.emit(dtype='mei', who='test_everything_works_unmocked')
             signals.outbound.CONVERSION_FINISHED.disconnect(finish_mock)
 
         assert os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
@@ -387,7 +405,8 @@ class TestActionStart(TestInteractiveSession):
         dtype = 'meh'
         doc = 'document'
 
-        self.session._run_inbound_doc_vcs(dtype, doc)
+        with pytest.raises(exceptions.InboundConversionError) as exc:
+            self.session._run_inbound_doc_vcs(dtype, doc)
 
         mock_conv.assert_called_once_with(
             session=self.session,
@@ -413,7 +432,8 @@ class TestActionStart(TestInteractiveSession):
         doc = 'document'
         self.session._inbound_converted = 'whatever'
 
-        self.session._run_inbound_doc_vcs(dtype, doc)
+        with pytest.raises(exceptions.InboundConversionError) as exc:
+            self.session._run_inbound_doc_vcs(dtype, doc)
 
         assert 1 == mock_conv.call_count
         mock_views.assert_called_once_with(

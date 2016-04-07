@@ -23,7 +23,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 '''
-Converts a Lychee-MEI document to special MEI that Verovio will accept.
+Convert a Lychee-MEI document to a standard MEI document that Verovio will accept.
 
 This module runs the same conversions as :mod:`lmei_to_mei`, and makes the following two changes:
 
@@ -36,6 +36,9 @@ This module runs the same conversions as :mod:`lmei_to_mei`, and makes the follo
 
 These limitations in Verovio likely arise from the "pugixml" library. They are trivial enough, and
 do not require breaking conformance with XML, so we'll just work with what we have.
+
+.. note:: This is an outbound converter that does not emit signals directly. Refer to the
+    :mod:`lychee.signals.outbound` module for more information.
 '''
 
 # NOTE: tests for this module are held in "test_lmei_to_mei.py"

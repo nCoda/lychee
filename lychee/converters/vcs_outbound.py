@@ -25,6 +25,9 @@
 '''
 "Converts" VCS data into an easier format for clients.
 
+.. note:: This is an outbound converter that does not emit signals directly. Refer to the
+    :mod:`lychee.signals.outbound` module for more information.
+
 Here is a sample of the data outputted from this module.
 
 ::
@@ -93,7 +96,6 @@ def convert(repo_dir, **kwargs):
     :param str repo_dir: The absolute pathname to the repository for which to produce data.
     :raises: :exc:`lychee.exceptions.OutboundConversionError` when there is a forseeable error.
     '''
-    print('vcs_outbound("{}")'.format(repo_dir))
     return convert_helper(repo_dir)
 
 

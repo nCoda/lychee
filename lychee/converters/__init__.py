@@ -23,7 +23,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 '''
-Initialization for :mod:`converters` module.
+Format converters.
 '''
 
 # Jeff: "Well, a universal converter is, by definition, a pretty slutty thing."

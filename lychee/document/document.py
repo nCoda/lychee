@@ -141,7 +141,7 @@ _ERR_CORRUPT_TARGET = '@target does not end with ".mei": {0}'
 _PUBSTMT_DEFAULT_CONTENTS = 'This is an unpublished Lychee-MEI document.'
 _ABJAD_FULL_NAME = 'Abjad API for Formalized Score Control'
 _PLACEHOLDER_TITLE = '(Untitled)'
-_SAVE_OUT_ERROR = 'Could not save an XML file (C14NError).'
+_SAVE_OUT_ERROR = 'Could not save an XML file (IOError).'
 
 
 def _check_xmlid_chars(xmlid):

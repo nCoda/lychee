@@ -22,7 +22,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
-from lxml import etree as etree
+from lxml import etree
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
@@ -47,6 +47,57 @@ try:
     from unittest import mock
 except ImportError:
     import mock
+
+
+class TestAddXmlIds(object):
+    '''
+    Tests for add_xml_ids().
+    '''
+
+    def test_sameness(self):
+        '''
+        When different Python objects are inputted but share the same music data, the generated ID
+        is the same both times.
+        '''
+        note_1 = Note("d,,2")
+        note_2 = Note("d,,2")
+        elem_1 = etree.Element(mei.NOTE)
+        elem_2 = elem_1.makeelement(mei.NOTE)
+
+        abjad_to_lmei.add_xml_ids(note_1, elem_1)
+        abjad_to_lmei.add_xml_ids(note_2, elem_2)
+
+        assert elem_1.get(xml.ID) == elem_2.get(xml.ID)
+
+    def test_difference(self):
+        '''
+        When the same Python objects are inputted but have different music data, the generated ID
+        is different each time.
+        '''
+        note = Note("d,,2")
+        elem = etree.Element(mei.NOTE)
+        abjad_to_lmei.add_xml_ids(note, elem)
+        xmlid_1 = elem.get(xml.ID)
+
+        elem.tag = mei.REST
+        abjad_to_lmei.add_xml_ids(note, elem)
+        xmlid_2 = elem.get(xml.ID)
+
+        assert xmlid_1 != xmlid_2
+
+    def test_n_attr(self):
+        '''
+        A different @n attribute is sufficient to produce different @xml:id values.
+        '''
+        note_1 = Note("d,,2")
+        note_2 = Note("d,,2")
+        elem_1 = etree.Element(mei.NOTE, {'n': '1'})
+        elem_2 = elem_1.makeelement(mei.NOTE, {'n': '2'})
+
+        abjad_to_lmei.add_xml_ids(note_1, elem_1)
+        abjad_to_lmei.add_xml_ids(note_2, elem_2)
+
+        assert elem_1.get(xml.ID) != elem_2.get(xml.ID)
 
 
 class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):

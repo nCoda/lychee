@@ -90,21 +90,18 @@ def convert_accidental(abjad_accidental_string):
 
 def add_xml_ids(abjad_object, mei_element):
     '''
-
     Attach the same SHA256 hash digest as xml ID to both an abjad object and an mei element.
 
     :param abjad_object: The abjad object to attach the ID to.
     :type abjad_object: :class:`abjad.tools.abctools.AbjadObject.AbjadObject`
     :param mei_element: The MEI Element to attach the ID to.
-    :type mei_element: :class:`lxml.etree.ElementTree.Element`.
-    :returns: None.
-    :rtype: None.
+    :type mei_element: :class:`lxml.etree.ElementTree.Element`
     '''
     parentage = inspect_(abjad_object).get_parentage()
-    id_string = str(abjad_object) + str(parentage.score_index)
-    abjad_id = six.b(id_string)
-    hasher = hashlib.new('SHA256', abjad_id)
-    the_xmlid = 'z' + hasher.hexdigest()
+    id_string = '{0}{1}{2}{3}'.format(abjad_object, parentage.score_index, mei_element.tag, mei_element.get('n', ''))
+    hasher = hashlib.new('SHA256', six.b(id_string))
+    the_xmlid = 'z{0}'.format(hasher.hexdigest())
+
     attach(the_xmlid, abjad_object)
     mei_element.set(xml.ID, the_xmlid)
 

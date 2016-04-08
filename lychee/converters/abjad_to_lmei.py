@@ -399,8 +399,8 @@ def staff_to_staff(abjad_staff):
             for x, voice in enumerate(abjad_staff):
                 #convert each voice into a layer and append each to the mei staff
                 mei_layer = voice_to_layer(voice)
+                mei_layer.set('n', str(x + 1))
                 add_xml_ids(abjad_staff, mei_layer)
-                mei_layer.set('n',str(x+1))
                 mei_staff.append(mei_layer)
         else:
         #if the staff contains one or fewer voices, or isn't parallel, flatten everything into one abjad Voice
@@ -435,7 +435,7 @@ def score_to_section(abjad_score):
     mei_section = etree.Element(mei.SECTION, n='1')
     add_xml_ids(abjad_score, mei_section)
     score_def = etree.Element(mei.SCORE_DEF)
-    score_def.set(xml.ID, mei_section.get(xml.ID) + 'scoreDef')
+    add_xml_ids(abjad_score, score_def)
     mei_section.append(score_def)
     mei_main_staff_group = etree.Element(mei.STAFF_GRP,symbol='line')
     score_def.append(mei_main_staff_group)
@@ -449,7 +449,7 @@ def score_to_section(abjad_score):
             mei_section.append(mei_staff)
             add_xml_ids(abjad_staff, mei_staff)
             staff_def = etree.Element(mei.STAFF_DEF,lines='5',n=str(staffCounter))
-            staff_def.set(xml.ID, mei_staff.get(xml.ID) + 'staffDef')
+            add_xml_ids(abjad_staff, staff_def)
             mei_main_staff_group.append(staff_def)
             staffCounter += 1
         elif isinstance(component, StaffGroup):
@@ -461,11 +461,11 @@ def score_to_section(abjad_score):
             for staff in abjad_staff_group:
                 abjad_staff = staff
                 mei_staff = staff_to_staff(abjad_staff)
-                add_xml_ids(abjad_staff, mei_staff)
                 mei_staff.set('n', str(staffCounter))
+                add_xml_ids(abjad_staff, mei_staff)
                 mei_section.append(mei_staff)
                 staff_def = etree.Element(mei.STAFF_DEF,lines='5',n=str(staffCounter))
-                staff_def.set(xml.ID, mei_staff.get(xml.ID) + 'staffDef')
+                add_xml_ids(abjad_staff, staff_def)
                 mei_staff_group.append(staff_def)
                 staffCounter += 1
     return mei_section

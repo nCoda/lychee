@@ -112,7 +112,7 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
         abjad_note = Note("c'4")
         mei_note = abjad_to_lmei.note_to_note(abjad_note)
         self.assertEqual(mei_note.tag, mei.NOTE)
-        self.assertAttribsEqual(mei_note.attrib, {'dur': '4', 'pname': 'c', 'octave': '4'})
+        self.assertAttribsEqual(mei_note.attrib, {'dur': '4', 'pname': 'c', 'oct': '4'})
         self.assertIsNotNone(mei_note.get(xml.ID))
 
     def test_note_dotted(self):
@@ -124,7 +124,7 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
         mei_note = abjad_to_lmei.note_to_note(abjad_note)
         self.assertIsNotNone(mei_note.get(xml.ID))
         self.assertEqual(mei_note.tag, mei.NOTE)
-        self.assertAttribsEqual(mei_note.attrib, {'dots': '1', 'dur': '4', 'pname': 'c', 'octave': '4'})
+        self.assertAttribsEqual(mei_note.attrib, {'dots': '1', 'dur': '4', 'pname': 'c', 'oct': '4'})
 
     def test_note_accid(self):
         '''
@@ -135,7 +135,7 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
         mei_note = abjad_to_lmei.note_to_note(abjad_note)
         self.assertIsNotNone(mei_note.get(xml.ID))
         self.assertEqual(mei_note.tag, mei.NOTE)
-        self.assertAttribsEqual(mei_note.attrib, {'accid.ges': 'f', 'dur': '4', 'pname': 'c', 'octave': '4'})
+        self.assertAttribsEqual(mei_note.attrib, {'accid.ges': 'f', 'dur': '4', 'pname': 'c', 'oct': '4'})
 
     def test_note_accid_and_cautionary(self):
         '''
@@ -144,7 +144,7 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
         '''
         abjad_note = Note("cf'?4")
         mei_note = abjad_to_lmei.note_to_note(abjad_note)
-        self.assertAttribsEqual(mei_note.attrib, {'dur': '4', 'pname': 'c', 'octave': '4'})
+        self.assertAttribsEqual(mei_note.attrib, {'dur': '4', 'pname': 'c', 'oct': '4'})
         accid = mei_note.findall('./'+mei.ACCID)
         accid = accid[0]
         self.assertIsNotNone(mei_note.get(xml.ID))
@@ -161,7 +161,7 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
         mei_note = abjad_to_lmei.note_to_note(abjad_note)
         self.assertIsNotNone(mei_note.get(xml.ID))
         self.assertEqual(mei_note.tag, mei.NOTE)
-        self.assertAttribsEqual(mei_note.attrib, {'accid.ges': 'f', 'accid': 'f', 'dur': '4', 'pname': 'c', 'octave': '4'})
+        self.assertAttribsEqual(mei_note.attrib, {'accid.ges': 'f', 'accid': 'f', 'dur': '4', 'pname': 'c', 'oct': '4'})
 
     def test_note_cautionary(self):
         '''
@@ -170,7 +170,7 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
         '''
         abjad_note = Note("c'?4")
         mei_note = abjad_to_lmei.note_to_note(abjad_note)
-        self.assertAttribsEqual(mei_note.attrib, {'dur': '4', 'pname': 'c', 'octave': '4'})
+        self.assertAttribsEqual(mei_note.attrib, {'dur': '4', 'pname': 'c', 'oct': '4'})
         accid = mei_note.findall('./' + mei.ACCID)
         accid = accid[0]
         self.assertEqual(accid.tag, mei.ACCID)
@@ -186,7 +186,7 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
         abjad_note = Note("c'!4")
         mei_note = abjad_to_lmei.note_to_note(abjad_note)
         self.assertEqual(mei_note.tag, mei.NOTE)
-        self.assertAttribsEqual(mei_note.attrib, {'accid.ges': 'n', 'accid': 'n', 'dur': '4', 'pname': 'c', 'octave': '4'} )
+        self.assertAttribsEqual(mei_note.attrib, {'accid.ges': 'n', 'accid': 'n', 'dur': '4', 'pname': 'c', 'oct': '4'} )
         self.assertIsNotNone(mei_note.get(xml.ID))
 
     def test_notehead(self):
@@ -197,7 +197,7 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
         head = NoteHead("c'")
         mei_note = abjad_to_lmei.note_to_note(head)
         self.assertEqual(mei_note.tag, mei.NOTE)
-        self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'octave': '4'})
+        self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'oct': '4'})
 
     def test_notehead_cautionary(self):
         '''
@@ -207,7 +207,7 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
         head = NoteHead("c'")
         head.is_cautionary = True
         mei_note = abjad_to_lmei.note_to_note(head)
-        self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'octave': '4'})
+        self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'oct': '4'})
         accid = mei_note.findall('./' + mei.ACCID)
         accid = accid[0]
         self.assertEqual(accid.tag, mei.ACCID)
@@ -219,7 +219,7 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
         head.is_forced = True
         mei_note = abjad_to_lmei.note_to_note(head)
         self.assertEqual(mei_note.tag, mei.NOTE)
-        self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'octave': '4', 'accid.ges': 'n', 'accid': 'n'})
+        self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'oct': '4', 'accid.ges': 'n', 'accid': 'n'})
 
     def test_notehead_accid(self):
         '''
@@ -229,7 +229,7 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
         head = NoteHead("cf'")
         mei_note = abjad_to_lmei.note_to_note(head)
         self.assertEqual(mei_note.tag, mei.NOTE)
-        self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'octave': '4', 'accid.ges': 'f'})
+        self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'oct': '4', 'accid.ges': 'f'})
 
     def test_notehead_accid_cautionary(self):
         '''
@@ -239,7 +239,7 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
         head = NoteHead("cf'")
         head.is_cautionary = True
         mei_note = abjad_to_lmei.note_to_note(head)
-        self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'octave': '4'})
+        self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'oct': '4'})
         accid = mei_note.findall('./' + mei.ACCID)
         accid = accid[0]
         self.assertEqual(accid.tag, mei.ACCID)
@@ -251,7 +251,7 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
         head.is_forced = True
         mei_note = abjad_to_lmei.note_to_note(head)
         self.assertEqual(mei_note.tag, mei.NOTE)
-        self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'octave': '4', 'accid.ges': 'f', 'accid': 'f'})
+        self.assertAttribsEqual(mei_note.attrib, {'pname': 'c', 'oct': '4', 'accid.ges': 'f', 'accid': 'f'})
 
     def test_rest(self):
         '''
@@ -338,8 +338,8 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
         mei_chord = abjad_to_lmei.chord_to_chord(abjad_chord)
         self.assertAttribsEqual(mei_chord.attrib, {'dur': '4'})
         self.assertEqual(mei_chord.tag, mei.CHORD)
-        self.assertAttribsEqual(mei_chord[0].attrib, {'pname': 'c', 'octave': '4'})
-        self.assertAttribsEqual(mei_chord[1].attrib, {'pname': 'd', 'octave': '4'})
+        self.assertAttribsEqual(mei_chord[0].attrib, {'pname': 'c', 'oct': '4'})
+        self.assertAttribsEqual(mei_chord[1].attrib, {'pname': 'd', 'oct': '4'})
         self.assertIsNotNone(mei_chord.get(xml.ID))
 
     def test_chord_full_dotted(self):
@@ -351,8 +351,8 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
         mei_chord = abjad_to_lmei.chord_to_chord(abjad_chord)
         self.assertEqual(mei_chord.tag, mei.CHORD)
         self.assertAttribsEqual(mei_chord.attrib, {'dur': '4', 'dots': '1'})
-        self.assertAttribsEqual(mei_chord[0].attrib, {'pname': 'c', 'octave': '4'})
-        self.assertAttribsEqual(mei_chord[1].attrib, {'pname': 'd', 'octave': '4'})
+        self.assertAttribsEqual(mei_chord[0].attrib, {'pname': 'c', 'oct': '4'})
+        self.assertAttribsEqual(mei_chord[1].attrib, {'pname': 'd', 'oct': '4'})
         self.assertIsNotNone(mei_chord.get(xml.ID))
 
     def test_voice_to_layer_empty(self):

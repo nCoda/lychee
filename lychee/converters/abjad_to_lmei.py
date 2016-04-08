@@ -139,8 +139,7 @@ def note_to_note(abjad_note):
         is_forced = abjad_note.is_forced
     else:
         is_forced = abjad_note.note_head.is_forced
-    dictionary = {'octave': str(octave),
-                    'pname': pitchname}
+    dictionary = {'oct': str(octave), 'pname': pitchname}
     #make the MEI note according to the information collected above
     mei_note = etree.Element(mei.NOTE, dictionary)
     if duration:

@@ -45,8 +45,15 @@ from abjad.tools.topleveltools.inspect_ import inspect_
 from abjad.tools.topleveltools.attach import attach
 
 import lychee
+from lychee import exceptions
 from lychee.signals import inbound
 from lychee.namespaces import mei, xml
+
+
+# translatable strings
+# error messages
+_NOT_A_LEAF_NODE = 'Object of type {0} is not a leaf node'
+
 
 def convert(document, **kwargs):
     '''
@@ -346,21 +353,25 @@ def tuplet_to_tupletspan(abjad_tuplet):
 
 def leaf_to_element(abjad_object):
     '''
-
-    Convert an arbitrary abjad leaf (Rest, Note, Chord) container into the corresponding mei Element.
+    Convert an Abjad leaf (Rest, Note, Chord) container to the corresponding MEI element.
 
     :param abjad_object: the Abjad leaf to convert.
     :type abjad_object: :class:`abjad.tools.scoretools.Leaf.Leaf`
     :returns: the corresponding MEI Element.
     :rtype: List or :class:`lxml.etree.ElementTree.Element`
+    :raises: :exc:`lychee.exceptions.InboundConversionError` when ``abjad_object`` is not a leaf.
     '''
     element_dict = {
-	"<class 'abjad.tools.scoretools.Chord.Chord'>": chord_to_chord,
-	"<class 'abjad.tools.scoretools.Note.Note'>": note_to_note,
-	"<class 'abjad.tools.scoretools.Rest.Rest'>": rest_to_rest,
-	"<class 'abjad.tools.scoretools.Skip.Skip'>": skip_to_space,
+        "<class 'abjad.tools.scoretools.Chord.Chord'>": chord_to_chord,
+        "<class 'abjad.tools.scoretools.Note.Note'>": note_to_note,
+        "<class 'abjad.tools.scoretools.Rest.Rest'>": rest_to_rest,
+        "<class 'abjad.tools.scoretools.Skip.Skip'>": skip_to_space,
     }
-    return element_dict[str(type(abjad_object))](abjad_object)
+    try:
+        return element_dict[str(type(abjad_object))](abjad_object)
+    except KeyError:
+        raise exceptions.InboundConversionError(_NOT_A_LEAF_NODE.format(str(type(abjad_object))))
+
 
 def voice_to_layer(abjad_voice):
     '''

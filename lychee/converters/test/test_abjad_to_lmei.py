@@ -23,6 +23,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 from lxml import etree
+import pytest
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
@@ -39,6 +40,7 @@ from abjad.tools.scoretools.Score import Score
 from abjad.tools.topleveltools.inspect_ import inspect_
 from abjad.tools.topleveltools.attach import attach
 from lychee.converters import abjad_to_lmei
+from lychee import exceptions
 from lychee.namespaces import mei, xml
 import unittest
 import abjad_test_case
@@ -98,6 +100,29 @@ class TestAddXmlIds(object):
         abjad_to_lmei.add_xml_ids(note_2, elem_2)
 
         assert elem_1.get(xml.ID) != elem_2.get(xml.ID)
+
+
+class TestLeafToElement(abjad_test_case.AbjadTestCase):
+    '''
+    Tests for leaf_to_element().
+    '''
+
+    def test_is_a_leaf(self):
+        '''
+        When the Abjad object is indeed a "leaf" object, it is converted.
+        '''
+        a_note = Note("es'8")
+        m_note = abjad_to_lmei.leaf_to_element(a_note)
+        assert m_note.tag == mei.NOTE
+
+    def test_not_a_lef(self):
+        '''
+        When the Abjad object is not a "leaf" object, InboundConversionError is raised.
+        '''
+        a_staff = Staff()
+        with pytest.raises(exceptions.InboundConversionError) as exc:
+            abjad_to_lmei.leaf_to_element(a_staff)
+        assert exc.value.args[0] == abjad_to_lmei._NOT_A_LEAF_NODE.format(str(type(a_staff)))
 
 
 class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):

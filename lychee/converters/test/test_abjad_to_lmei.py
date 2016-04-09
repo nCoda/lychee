@@ -28,6 +28,7 @@ from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
 from abjad.tools.scoretools.Skip import Skip
+from abjad.tools.scoretools.Measure import Measure
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
 from abjad.tools.scoretools.Tuplet import Tuplet
@@ -100,6 +101,17 @@ class TestAddXmlIds(object):
         abjad_to_lmei.add_xml_ids(note_2, elem_2)
 
         assert elem_1.get(xml.ID) != elem_2.get(xml.ID)
+
+    def test_underfull_container(self):
+        '''
+        When given an underfull container, we should still be able to produce an @xml:id for it.
+        '''
+        a_meas = Measure((4, 4), "{}")
+        m_meas = etree.Element(mei.MEASURE)
+
+        abjad_to_lmei.add_xml_ids(a_meas, m_meas)
+
+        assert m_meas.get(xml.ID) is not None
 
 
 class TestLeafToElement(abjad_test_case.AbjadTestCase):

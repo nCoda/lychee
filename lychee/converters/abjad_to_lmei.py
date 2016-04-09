@@ -104,8 +104,13 @@ def add_xml_ids(abjad_object, mei_element):
     :param mei_element: The MEI Element to attach the ID to.
     :type mei_element: :class:`lxml.etree.ElementTree.Element`
     '''
+    try:
+        abjad_str = str(abjad_object)
+    except UnderfullContainerError:
+        abjad_str = 'underfull'
+
     parentage = inspect_(abjad_object).get_parentage()
-    id_string = '{0}{1}{2}{3}'.format(abjad_object, parentage.score_index, mei_element.tag, mei_element.get('n', ''))
+    id_string = '{0}{1}{2}{3}'.format(abjad_str, parentage.score_index, mei_element.tag, mei_element.get('n', ''))
     hasher = hashlib.new('SHA256', six.b(id_string))
     the_xmlid = 'z{0}'.format(hasher.hexdigest())
 

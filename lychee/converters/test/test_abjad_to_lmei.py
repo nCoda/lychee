@@ -137,6 +137,62 @@ class TestLeafToElement(abjad_test_case.AbjadTestCase):
         assert exc.value.args[0] == abjad_to_lmei._NOT_A_LEAF_NODE.format(str(type(a_staff)))
 
 
+class TestMeasureToMeasure(abjad_test_case.AbjadTestCase):
+    '''
+    Tests for measure_to_measure().
+    '''
+
+    def test_meticulous_basic_stuff(self):
+        '''
+        Abjad Measure with four Notes, make sure it's perfectly correct.
+
+        Assert the outputted element:
+        - has the right tag
+        - has @n of 1
+        - has an @xml:id set
+        - has a single <layer> child element...
+        - ... with @n of 1...
+        - ... and four <note> child elements
+        '''
+        a_meas = Measure((4, 4), "c'4 d'4 e'4 f'4")
+        m_meas = abjad_to_lmei.measure_to_measure(a_meas)
+
+        assert m_meas.tag == mei.MEASURE
+        assert m_meas.get('n') == '1'
+        assert m_meas.get(xml.ID) is not None
+        assert len(m_meas) == 1
+        m_layer = m_meas[0]
+        assert m_layer.tag == mei.LAYER
+        assert m_layer.get('n') == '1'
+        assert len(m_layer) == 4
+        for m_note in m_layer:
+            assert m_note.tag == mei.NOTE
+
+    def test_meticulous_empty(self):
+        '''
+        Emtpy Abjad Measure.
+
+        Assert the outputted element:
+        - has the right tag
+        - has @n of 1
+        - has an @xml:id set
+        - has a single <layer> child element...
+        - ... with @n of 1...
+        - ... and nothing inside
+        '''
+        a_meas = Measure((4, 4))
+        m_meas = abjad_to_lmei.measure_to_measure(a_meas)
+
+        assert m_meas.tag == mei.MEASURE
+        assert m_meas.get('n') == '1'
+        assert m_meas.get(xml.ID) is not None
+        assert len(m_meas) == 1
+        m_layer = m_meas[0]
+        assert m_layer.tag == mei.LAYER
+        assert m_layer.get('n') == '1'
+        assert len(m_layer) == 0
+
+
 class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
 
     # note conversion

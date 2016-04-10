@@ -32,6 +32,7 @@ from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
 from abjad.tools.scoretools.Skip import Skip
 from abjad.tools.scoretools.Leaf import Leaf
+from abjad.tools.scoretools.Measure import Measure
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.scoretools.Tuplet import Tuplet
 from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
@@ -395,6 +396,29 @@ def voice_to_layer(abjad_voice):
             mei_layer.append(leaf_to_element(child))
     add_xml_ids(abjad_voice, mei_layer)
     return mei_layer
+
+
+def measure_to_measure(a_measure):
+    '''
+    Convert an Abjad Measure to an MEI <measure>.
+
+    :param a_measure: The Measure to convert.
+    :type a_measure: :class:`abjad.tools.scoretools.Measure`
+    :returns: The MEI <measure> element.
+    :rtype: :class:`~lxml.etree.ElementTree._Element`
+    '''
+    m_measure = etree.Element(mei.MEASURE, n=str(a_measure.measure_number))
+    add_xml_ids(a_measure, m_measure)
+
+    # the <measure> needs a <layer> so we'll invent one
+    m_layer = m_measure.makeelement(mei.LAYER, {'n': '1'})  # no Abjad Voice means no @xml:id
+    m_measure.append(m_layer)
+
+    # the the Abjad measure's content in the <layer>
+    for a_leaf in a_measure:
+        m_layer.append(leaf_to_element(a_leaf))
+
+    return m_measure
 
 
 def staff_to_staff(abjad_staff):

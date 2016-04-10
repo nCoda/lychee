@@ -193,6 +193,223 @@ class TestMeasureToMeasure(abjad_test_case.AbjadTestCase):
         assert len(m_layer) == 0
 
 
+class TestStaffToStaff(abjad_test_case.AbjadTestCase):
+    '''
+    Tests for staff_to_staff().
+    '''
+
+    def test_empty(self):
+        '''
+        precondition: empty abjad Staff
+        postcondition: empty mei layer Element
+        '''
+        abjad_staff = Staff()
+
+        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
+
+        assert mei_staff.tag == mei.STAFF
+        assert mei_staff.get(xml.ID) is None
+        assert mei_staff.get('n') is None
+        assert len(mei_staff) == 0
+
+    # staff with one voice
+    def test_one_voice(self):
+        '''
+        precondition: abjad Staff containing only one Voice
+        postcondition: mei staff Element containing one layer Element
+        '''
+        voice = Voice("r4 c'4 <c' d'>4")
+        abjad_staff = Staff([voice])
+
+        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
+
+        assert mei_staff.tag == mei.STAFF
+        assert mei_staff.get(xml.ID) is None
+        assert mei_staff.get('n') is None
+        assert len(mei_staff) == 1
+        assert mei_staff[0].tag == mei.LAYER
+
+    @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
+    def test_one_voice_mock(self,mock_layer):
+        '''
+        precondition: abjad Staff containing only one Voice
+        postcondition: mei staff Element containing one layer Element
+        '''
+        voice = Voice("r4 c'4 <c' d'>4")
+        abjad_staff = Staff([voice])
+        mock_layer.return_value = etree.Element(mei.LAYER)
+
+        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
+
+        assert mei_staff.tag == mei.STAFF
+        assert mei_staff.get(xml.ID) is None
+        assert mei_staff.get('n') is None
+        assert len(mei_staff) == 1
+        assert mei_staff[0].tag == mei.LAYER
+
+    # staff with parallel voices (enumerate n based on staff n)
+    def test_parallel(self):
+        '''
+        precondition: abjad Staff containing two or more parallel voices
+        postcondition: mei staff Element containing two or more layer Elements
+        '''
+        voice_one = Voice("r4 c'4 <c' d'>4")
+        voice_two = Voice("r4 d'4 <d' e'>4")
+        abjad_staff = Staff([voice_one, voice_two])
+        abjad_staff.is_simultaneous = True
+
+        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
+
+        assert len(mei_staff) == 2
+        assert mei_staff[0].tag == mei.LAYER
+        assert mei_staff[0].get('n') == '1'
+        assert mei_staff[1].tag == mei.LAYER
+        assert mei_staff[1].get('n') == '2'
+
+    @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
+    def test_parallel_mock(self,mock_layer):
+        '''
+        precondition: abjad Staff containing two or more parallel voices
+        postcondition: mei staff Element containing two or more layer Elements
+        '''
+        voice_one = Voice("r4 c'4 <c' d'>4")
+        voice_two = Voice("r4 d'4 <d' e'>4")
+        abjad_staff = Staff([voice_one, voice_two])
+        abjad_staff.is_simultaneous = True
+        mock_layer.side_effect = lambda x: etree.Element(mei.LAYER)
+
+        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
+
+        assert len(mei_staff) == 2
+        assert mei_staff[0].tag == mei.LAYER
+        assert mei_staff[0].get('n') == '1'
+        assert mei_staff[1].tag == mei.LAYER
+        assert mei_staff[1].get('n') == '2'
+
+    # staff with consecutive voices
+    def test_consecutive(self):
+        '''
+        precondition: abjad Staff containing two or more consecutive Voices
+        postcondition: mei staff Element containing one layer Element
+        '''
+        voice_one = Voice("r4 c'4 <c' d'>4")
+        voice_two = Voice("r4 d'4 <d' e'>4")
+        abjad_staff = Staff([voice_one, voice_two])
+
+        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
+
+        assert len(mei_staff) == 1
+        assert mei_staff[0].tag == mei.LAYER
+        assert mei_staff[0].get('n') == '1'
+
+    @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
+    def test_consecutive_mock(self,mock_layer):
+        '''
+        precondition: abjad Staff containing two or more consecutive Voices
+        postcondition: mei staff Element containing one layer Element
+        '''
+        voice_one = Voice("r4 c'4 <c' d'>4")
+        voice_two = Voice("r4 d'4 <d' e'>4")
+        abjad_staff = Staff([voice_one, voice_two])
+        mock_layer.return_value = etree.Element(mei.LAYER, n='1')
+
+        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
+
+        assert len(mei_staff) == 1
+        assert mei_staff[0].tag == mei.LAYER
+        assert mei_staff[0].get('n') == '1'
+
+    # staff with leaves and no voice(s)
+    def test_leaves(self):
+        '''
+        precondition: abjad Staff containing leaves and no Voices
+        postcondition: mei layer Element containing children leaf Elements
+        '''
+        abjad_staff = Staff("r4 c'4 <c' d'>4")
+
+        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
+
+        assert len(mei_staff) == 1
+        assert mei_staff[0].tag == mei.LAYER
+        assert mei_staff[0].get('n') == '1'
+
+    @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
+    def test_leaves_mock(self, mock_layer):
+        '''
+        precondition: abjad Staff containing leaves and no Voices
+        postcondition: mei layer Element containing children leaf Elements
+        '''
+        abjad_staff = Staff("r4 c'4 <c' d'>4")
+        mock_layer.return_value = etree.Element(mei.LAYER, n='1')
+
+        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
+
+        assert len(mei_staff) == 1
+        assert mei_staff[0].tag == mei.LAYER
+        assert mei_staff[0].get('n') == '1'
+
+    # staff with some combination of leaves and voices
+    def test_leaves_and_voices(self):
+        '''
+        precondition: abjad Staff containing both leaves and Voices as siblings
+        postcondition: mei staff Element containing one layer Element
+        '''
+        abjad_staff = Staff("r4 c'4")
+        voice = Voice("r4 c'4")
+        abjad_staff.append(voice)
+        abjad_staff.append("<c' d'>4")
+        voice_two = Voice("r4 d'4")
+        abjad_staff.append(voice_two)
+        abjad_staff.append(Note("c''4"))
+
+        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
+
+        assert len(mei_staff) == 1
+        assert mei_staff[0].tag == mei.LAYER
+        assert mei_staff[0].get('n') == '1'
+        assert len(mei_staff[0]) == 8
+
+    @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
+    def test_leaves_and_voices_mock(self, mock_layer):
+        '''
+        precondition: abjad Staff containing both leaves and Voices as siblings
+        postcondition: mei staff Element containing one layer Element with eight siblings
+        '''
+        abjad_staff = Staff("r4 c'4")
+        voice_one = Voice("r4 c'4")
+        abjad_staff.append(voice_one)
+        abjad_staff.append("<c' d'>4")
+        voice_two = Voice("r4 d'4")
+        abjad_staff.append(voice_two)
+        abjad_staff.append(Note("c''4"))
+        dummy = etree.Element(mei.LAYER,n='1')
+        for _ in range(8):
+            etree.SubElement(dummy, mei.NOTE)
+        mock_layer.return_value = dummy
+
+        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
+
+        assert mock_layer.call_count == 1
+        assert len(mei_staff) == 1
+        assert mei_staff[0].tag == mei.LAYER
+        assert mei_staff[0].get('n') == '1'
+        assert len(mei_staff[0]) == 8
+
+    def test_measures(self):
+        '''
+        precondition: abjad Staff that contains a series of Measure objects
+        postcondition: MEI <staff> element contains a series of <measure> elements
+        '''
+        a_staff = Staff([
+            Measure((4, 4), "c'4 d'4 e'4 f'4"),
+            Measure((4, 4), "e'4 f'4 e'4 f'4"),
+        ])
+
+        m_staff = abjad_to_lmei.staff_to_staff(a_staff)
+
+        etree.dump(m_staff)
+
+
 class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
 
     # note conversion
@@ -503,227 +720,6 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
     # layer added en route to mei; shouldn't be there when translated back to abjad
     # sequential layers flattened into one layer; can't be recuperated
     # measures don't yet exist
-
-    def test_staff_empty(self):
-        '''
-        precondition: empty abjad Staff
-        postcondition: empty mei layer Element
-        '''
-        abjad_staff = Staff()
-
-        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
-        self.assertEqual(mei_staff.tag, mei.STAFF)
-        self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
-        self.assertEqual(len(mei_staff), 0)
-        self.assertIsNotNone(mei_staff.get(xml.ID))
-
-    # staff with one voice
-    def test_staff_one_voice(self):
-        '''
-        precondition: abjad Staff containing only one Voice
-        postcondition: mei staff Element containing one layer Element
-        '''
-        voice = Voice("r4 c'4 <c' d'>4")
-        abjad_staff = Staff([voice])
-
-        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
-
-        self.assertEqual(mei_staff.tag, mei.STAFF)
-        self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
-        self.assertEqual(len(mei_staff), 1)
-        self.assertEqual(mei_staff[0].tag, mei.LAYER)
-        self.assertIsNotNone(mei_staff.get(xml.ID))
-
-    @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
-    def test_staff_one_voice_mock(self,mock_layer):
-        '''
-        precondition: abjad Staff containing only one Voice
-        postcondition: mei staff Element containing one layer Element
-        '''
-        voice = Voice("r4 c'4 <c' d'>4")
-        abjad_staff = Staff([voice])
-        mock_layer.return_value = etree.Element(mei.LAYER)
-
-        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
-
-        self.assertEqual(mei_staff.tag, mei.STAFF)
-        self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
-        self.assertEqual(len(mei_staff), 1)
-        self.assertEqual(mei_staff[0].tag, mei.LAYER)
-        self.assertIsNotNone(mei_staff.get(xml.ID))
-
-
-    # staff with parallel voices (enumerate n based on staff n)
-    def test_staff_parallel(self):
-        '''
-        precondition: abjad Staff containing two or more parallel voices
-        postcondition: mei staff Element containing two or more layer Elements
-        '''
-        voice_one = Voice("r4 c'4 <c' d'>4")
-        voice_two = Voice("r4 d'4 <d' e'>4")
-        abjad_staff = Staff([voice_one, voice_two])
-        abjad_staff.is_simultaneous = True
-
-        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
-
-        self.assertEqual(mei_staff.tag, mei.STAFF)
-        self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
-        self.assertEqual(len(mei_staff), 2)
-        self.assertEqual(mei_staff[0].tag, mei.LAYER)
-        self.assertEqual(mei_staff[0].get('n'),'1')
-        self.assertEqual(mei_staff[1].tag, mei.LAYER)
-        self.assertEqual(mei_staff[1].get('n'),'2')
-        self.assertIsNotNone(mei_staff.get(xml.ID))
-
-    @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
-    def test_staff_parallel_mock(self,mock_layer):
-        '''
-        precondition: abjad Staff containing two or more parallel voices
-        postcondition: mei staff Element containing two or more layer Elements
-        '''
-        voice_one = Voice("r4 c'4 <c' d'>4")
-        voice_two = Voice("r4 d'4 <d' e'>4")
-        abjad_staff = Staff([voice_one, voice_two])
-        abjad_staff.is_simultaneous = True
-        mock_layer.side_effect = lambda x: etree.Element(mei.LAYER)
-
-        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
-
-        self.assertEqual(mei_staff.tag, mei.STAFF)
-        self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
-        self.assertEqual(len(mei_staff), 2)
-        self.assertEqual(mei_staff[0].tag, mei.LAYER)
-        self.assertEqual(mei_staff[0].get('n'),'1')
-        self.assertEqual(mei_staff[1].tag, mei.LAYER)
-        self.assertEqual(mei_staff[1].get('n'),'2')
-        self.assertIsNotNone(mei_staff.get(xml.ID))
-
-    # staff with consecutive voices
-    def test_staff_consecutive(self):
-        '''
-        precondition: abjad Staff containing two or more consecutive Voices
-        postcondition: mei staff Element containing one layer Element
-        '''
-        voice_one = Voice("r4 c'4 <c' d'>4")
-        voice_two = Voice("r4 d'4 <d' e'>4")
-        abjad_staff = Staff([voice_one, voice_two])
-
-        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
-
-        self.assertEqual(mei_staff.tag, mei.STAFF)
-        self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
-        self.assertEqual(len(mei_staff), 1)
-        self.assertEqual(mei_staff[0].tag, mei.LAYER)
-        self.assertEqual(mei_staff[0].get('n'),'1')
-        self.assertIsNotNone(mei_staff.get(xml.ID))
-
-    @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
-    def test_staff_consecutive_mock(self,mock_layer):
-        '''
-        precondition: abjad Staff containing two or more consecutive Voices
-        postcondition: mei staff Element containing one layer Element
-        '''
-        voice_one = Voice("r4 c'4 <c' d'>4")
-        voice_two = Voice("r4 d'4 <d' e'>4")
-        abjad_staff = Staff([voice_one, voice_two])
-        mock_layer.return_value = etree.Element(mei.LAYER, n='1')
-
-        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
-
-        self.assertEqual(mei_staff.tag, mei.STAFF)
-        self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
-        self.assertEqual(len(mei_staff), 1)
-        self.assertEqual(mei_staff[0].tag, mei.LAYER)
-        self.assertEqual(mei_staff[0].get('n'),'1')
-        self.assertIsNotNone(mei_staff.get(xml.ID))
-
-    # staff with leaves and no voice(s)
-    def test_staff_leaves(self):
-        '''
-        precondition: abjad Staff containing leaves and no Voices
-        postcondition: mei layer Element containing children leaf Elements
-        '''
-        abjad_staff = Staff("r4 c'4 <c' d'>4")
-
-        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
-
-        self.assertEqual(mei_staff.tag, mei.STAFF)
-        self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
-        self.assertEqual(len(mei_staff), 1)
-        self.assertEqual(mei_staff[0].tag, mei.LAYER)
-        self.assertEqual(mei_staff[0].get('n'),'1')
-        self.assertIsNotNone(mei_staff.get(xml.ID))
-
-    @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
-    def test_staff_leaves_mock(self, mock_layer):
-        '''
-        precondition: abjad Staff containing leaves and no Voices
-        postcondition: mei layer Element containing children leaf Elements
-        '''
-        abjad_staff = Staff("r4 c'4 <c' d'>4")
-        mock_layer.return_value = etree.Element(mei.LAYER, n='1')
-
-        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
-
-        self.assertEqual(mei_staff.tag, mei.STAFF)
-        self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
-        self.assertEqual(len(mei_staff), 1)
-        self.assertEqual(mei_staff[0].tag, mei.LAYER)
-        self.assertEqual(mei_staff[0].get('n'),'1')
-        self.assertIsNotNone(mei_staff.get(xml.ID))
-
-    # staff with some combination of leaves and voices
-    def test_staff_leaves_and_voices(self):
-        '''
-        precondition: abjad Staff containing both leaves and Voices as siblings
-        postcondition: mei staff Element containing one layer Element
-        '''
-        abjad_staff = Staff("r4 c'4")
-        voice = Voice("r4 c'4")
-        abjad_staff.append(voice)
-        abjad_staff.append("<c' d'>4")
-        voice_two = Voice("r4 d'4")
-        abjad_staff.append(voice_two)
-        abjad_staff.append(Note("c''4"))
-
-        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
-
-        self.assertEqual(mei_staff.tag, mei.STAFF)
-        self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
-        self.assertEqual(len(mei_staff), 1)
-        self.assertEqual(mei_staff[0].tag, mei.LAYER)
-        self.assertEqual(mei_staff[0].get('n'),'1')
-        self.assertEqual(len(mei_staff[0]), 8)
-        self.assertIsNotNone(mei_staff.get(xml.ID))
-
-    @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
-    def test_staff_leaves_and_voices_mock(self, mock_layer):
-        '''
-        precondition: abjad Staff containing both leaves and Voices as siblings
-        postcondition: mei staff Element containing one layer Element with eight siblings
-        '''
-        abjad_staff = Staff("r4 c'4")
-        voice_one = Voice("r4 c'4")
-        abjad_staff.append(voice_one)
-        abjad_staff.append("<c' d'>4")
-        voice_two = Voice("r4 d'4")
-        abjad_staff.append(voice_two)
-        abjad_staff.append(Note("c''4"))
-        dummy = etree.Element(mei.LAYER,n='1')
-        for _ in range(8):
-            etree.SubElement(dummy, mei.NOTE)
-        mock_layer.return_value = dummy
-
-        mei_staff = abjad_to_lmei.staff_to_staff(abjad_staff)
-
-        self.assertEqual(1, mock_layer.call_count)
-        self.assertEqual(mei_staff.tag, mei.STAFF)
-        self.assertAttribsEqual(mei_staff.attrib, {'n': '1'})
-        self.assertEqual(len(mei_staff), 1)
-        self.assertEqual(mei_staff[0].tag, mei.LAYER)
-        self.assertEqual(mei_staff[0].get('n'),'1')
-        self.assertEqual(len(mei_staff[0]), 8)
-        self.assertIsNotNone(mei_staff.get(xml.ID))
 
     def test_section_empty(self):
         '''

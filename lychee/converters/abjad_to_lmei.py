@@ -430,29 +430,40 @@ def staff_to_staff(abjad_staff):
     :type abjad_staff: :class:`abjad.tools.scoretools.Staff.Staff`
     :returns: the corresponding MEI Element or list of Elements.
     :rtype: :class:`lxml.etree.ElementTree.Element`
+
+    .. note:: Because this function cannot determine the correct @n attribute of the ``abjad_staff``,
+        *both* the @n and @xml:id attributes are unset for the returned ``<staff>`` element. It is
+        the caller's responsibilty to provide the @n attribute, then @xml:id, which depends on the
+        former.
     '''
-    mei_staff = etree.Element(mei.STAFF,n='1')
-    if len(abjad_staff) != 0:
-        #if the staff contains two or more parallel voices,
-        if abjad_staff.is_simultaneous and 1 < len(abjad_staff) and isinstance(abjad_staff[0], Voice):
-            for x, voice in enumerate(abjad_staff):
-                #convert each voice into a layer and append each to the mei staff
+    mei_staff = etree.Element(mei.STAFF)
+
+    if len(abjad_staff) > 0:
+        if isinstance(abjad_staff[0], Voice) and abjad_staff.is_simultaneous:
+            # simultaneous Voices become <layer> in <staff>
+            # raise NotImplementedError('a')
+            for i, voice in enumerate(abjad_staff):
                 mei_layer = voice_to_layer(voice)
-                mei_layer.set('n', str(x + 1))
+                mei_layer.set('n', str(i + 1))
                 add_xml_ids(abjad_staff, mei_layer)
                 mei_staff.append(mei_layer)
+
+        elif isinstance(abjad_staff[0], Measure):
+            for a_measure in abjad_staff:
+                mei_staff.append(measure_to_measure(a_measure))
+
         else:
-        #if the staff contains one or fewer voices, or isn't parallel, flatten everything into one abjad Voice
+            # sequential Voices and/or mixture of Voices and leaf nodes are flattened to one <layer>
+            # raise NotImplementedError('b')
             out_voice = Voice()
             for component in abjad_staff:
                 if isinstance(component, Voice):
                     out_voice.extend([mutate(x).copy() for x in component])
                 else:
                     out_voice.append(mutate(component).copy())
-            #and convert the abjad Voice into an mei layer Element, to be added to the staff
-            mei_layer = voice_to_layer(out_voice)
-        mei_staff.append(mei_layer)
-    add_xml_ids(abjad_staff, mei_staff)
+
+            mei_staff.append(voice_to_layer(out_voice))
+
     return mei_staff
 
 

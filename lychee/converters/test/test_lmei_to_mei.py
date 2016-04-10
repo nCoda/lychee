@@ -297,20 +297,20 @@ class TestIntegration:
         An integration test for the LMEI to MEI converter.
         '''
         # NOTE: this is the same input document as for test_change_measure_hierarchy_1
-        initial = ('<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei"><mei:scoreDef/>'
+        initial = ('<mei:section xml:id="lol" xmlns:mei="http://www.music-encoding.org/ns/mei"><mei:scoreDef/>'
                    '<mei:staff n="1"><mei:measure n="1"/><mei:measure n="2"/></mei:staff>'
                    '<mei:staff n="2"><mei:measure n="1"/><mei:measure n="2"/></mei:staff>'
                    '</mei:section>'
                   )
         expected = ('<mei:mei xmlns:mei="http://www.music-encoding.org/ns/mei"><mei:music><mei:body>'
-                    '<mei:mdiv><mei:score><mei:section><mei:scoreDef/><mei:measure n="1">'
+                    '<mei:mdiv><mei:score><mei:section xml:id="lol"><mei:scoreDef/><mei:measure n="1">'
                     '<mei:staff n="1"/><mei:staff n="2"/></mei:measure><mei:measure n="2">'
                     '<mei:staff n="1"/><mei:staff n="2"/></mei:measure></mei:section></mei:score>'
                     '</mei:mdiv></mei:body></mei:music></mei:mei>'
                    )
         document = etree.fromstring(initial)
 
-        actual = lmei_to_mei.convert(document)
+        actual = lmei_to_mei.convert(document, method='c14n')
 
         assert expected == etree.tostring(actual)
 

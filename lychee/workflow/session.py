@@ -213,6 +213,10 @@ class InteractiveSession(object):
                     lychee.log(_FAILURE_DURING_INBOUND)
                     return
 
+            elif 'views_info' in kwargs:
+                # TODO: this branch is untested until T33
+                self._inbound_views_info = kwargs['views_info']
+
             signals.outbound.STARTED.emit()
             for outbound_dtype in self._registrar.get_registered_formats():
                 post = steps.do_outbound_steps(

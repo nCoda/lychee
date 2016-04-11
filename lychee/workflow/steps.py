@@ -54,6 +54,7 @@ from lychee import document
 from lychee import exceptions
 from lychee.namespaces import mei
 from lychee import signals
+from lychee.views import outbound as views_out
 
 
 # translatable strings
@@ -178,8 +179,9 @@ def do_outbound_steps(repo_dir, views_info, dtype):
     Run the outbound veiws and conversion steps for a single outbound "dtype."
 
     :param str repo_dir: Absolute pathname to the repository directory.
-    :param views_info: unknown
-    :type views_info: unknown
+    :param views_info: The @xml:id attribute of the smallest possible Lychee-MEI document portion
+        that contains all the information required to be exported.
+    :type views_info: str
     :param str dtype: The data type to use for outbound conversion, as specified in
         :const:`lychee.converters.OUTBOUND_CONVERTERS`.
     :returns: Post-conversion data as described below.
@@ -292,9 +294,10 @@ def _do_outbound_views(repo_dir, views_info, dtype):  # TODO: untested until T33
         signal; and ``'convert'`` which is the LMEI document portion to be converted.
     :rtype: dict
     '''
-    convert = None
-    doc = document.Document(repo_dir)
-    if len(doc.get_section_ids()) > 0:
-        convert = doc.get_section(doc.get_section_ids()[0])
 
-    return {'placement': '<filler placement info>', 'convert': convert}
+    if dtype == 'mei' or dtype == 'verovio':
+        placement, convert = views_out.mei.get_view(repo_dir, views_info, dtype)
+    else:
+        raise NotImplementedError('There is no outbound views processor for {0}'.format(dtype))
+
+    return {'placement': placement, 'convert': convert}

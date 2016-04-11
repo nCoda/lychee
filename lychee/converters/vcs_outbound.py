@@ -52,6 +52,7 @@ Here is a sample of the data outputted from this module.
                 # list of "score" and/or @xml:id of affected <section> elements
                 'files': ['score'],
                 'description': 'Add "section_B.mei" to all_files and score',
+                'number': '0',
             },
             '41962ee9069382d1fbbba5251ee0b5de99b18df6': {
                 'hash': '41962ee9069382d1fbbba5251ee0b5de99b18df6',
@@ -59,6 +60,7 @@ Here is a sample of the data outputted from this module.
                 'date': 1424894400.0,
                 'files': ['270842928'],
                 'description': 'Add section C1',
+                'number': '1',
             },
         }
     }
@@ -138,6 +140,7 @@ def convert_helper(repo_dir):
             'date': cset.date()[0],
             'files': prep_files(cset.files()),
             'description': cset.description(),
+            'number': cset.rev(),
         }
 
     return post

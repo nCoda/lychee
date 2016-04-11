@@ -27,6 +27,8 @@ Tests for the :mod:`lychee.workflow.steps` module.
 '''
 
 import os.path
+import shutil
+import tempfile
 
 try:
     from unittest import mock
@@ -38,6 +40,7 @@ import pytest
 import signalslot
 
 from lychee import converters
+from lychee import document
 from lychee import exceptions
 from lychee.namespaces import mei, xml
 from lychee import signals
@@ -51,6 +54,33 @@ def make_slot_mock():
     slot = mock.MagicMock(spec=signalslot.slot.BaseSlot)
     slot.is_alive = True
     return slot
+
+
+@pytest.fixture()
+def temp_doc(request):
+    '''
+    This PyTest fixture provides and cleans up an empty LMEI document in a temporary directory.
+
+    :returns: Pathname to the LMEI document directory.
+    '''
+    temp_dir = tempfile.mkdtemp()
+    document.Document(temp_dir).save_everything()
+    def clean_up_temp_dir():
+        "Delete the temporary directory."
+        shutil.rmtree(temp_dir)
+    request.addfinalizer(clean_up_temp_dir)
+    return temp_dir
+
+
+@pytest.fixture()
+def temp_doc_sec(request, temp_doc):
+    "Same as 'temp_doc' fixture, plus an empty <section> in the active score."
+    score = etree.Element(mei.SCORE)
+    etree.SubElement(score, mei.SECTION)
+    doc = document.Document(temp_doc)
+    doc.put_score(score)
+    doc.save_everything()
+    return temp_doc
 
 
 class TestDocumentStep(TestInteractiveSession):
@@ -340,13 +370,13 @@ class TestOutboundSteps(object):  # TestInteractiveSession):
         assert expected == actual
 
     @mock.patch('lychee.workflow.steps._do_outbound_views')
-    def test_views_converters(self, mock_views):
+    def test_views_converters(self, mock_views, temp_doc_sec):
         '''
         Most outbound converters do need "views" information.
         '''
         dtype = 'mei'
         views_info = 'views'
-        repo_dir = 'dirrrrr!'
+        repo_dir = temp_doc_sec
         mei_mock = mock.MagicMock()
         mei_mock.return_value = 'mei4u.net'
         mock_views.return_value = {'convert': 'vc', 'placement': 'vp'}
@@ -361,6 +391,20 @@ class TestOutboundSteps(object):  # TestInteractiveSession):
 
         mei_mock.assert_called_once_with(mock_views.return_value['convert'])
         assert expected == actual
+
+    def test_empty_document(self, temp_doc):
+        '''
+        With an outbound dtype that does require views processing, but there are no sections in the
+        score. Expect a SectionNotFoundError.
+        '''
+        dtype = 'mei'
+        views_info = 'views'
+        repo_dir = temp_doc
+
+        with pytest.raises(exceptions.SectionNotFoundError) as exc:
+            actual = steps.do_outbound_steps(repo_dir, views_info, dtype)
+
+        assert exc.value.args[0] == steps._SCORE_IS_EMPTY
 
     def test_invalid_dtype(self):
         '''

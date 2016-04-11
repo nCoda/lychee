@@ -61,6 +61,7 @@ _INVALID_INBOUND_DTYPE = 'Invalid "dtype" for inbound conversion: "{0}"'
 _UNEXP_ERR_INBOUND_CONVERSION = 'Unexpected error during inbound conversion'
 _UNEXP_ERR_INBOUND_VIEWS = 'Unexpected error during inbound views processing'
 _INVALID_OUTBOUND_DTYPE = 'Invalid "dtype" for outbound conversion: "{0}"'
+_SCORE_IS_EMPTY = 'The score is empty; cannot continue outbound processing'
 
 
 def do_inbound_conversion(session, dtype, document):
@@ -185,6 +186,10 @@ def do_outbound_steps(repo_dir, views_info, dtype):
     :rtype: dict
     :raises: :exc:`lychee.exceptions.InvalidDataTypeError` when there is no module available for
         outbound conversion to ``dtype``.
+    :raises: :exc:`lychee.exceptions.SectionNotFoundError` when the ``<section>`` to send out is
+        unavailable. For example, if the ``<score>`` has no ``<section>`` elements yet, no
+        ``<section>`` element is currently selected, or rarely if the selected ``<section>`` has
+        gone missing between the VCS step and this step.
 
     The outbound steps are designed to be run in parallel---whether or not they are. That's why all
     the parameter types are easily serializable, control is not given up between the views and
@@ -203,14 +208,17 @@ def do_outbound_steps(repo_dir, views_info, dtype):
         converted = converters.OUTBOUND_CONVERTERS[dtype](repo_dir)
         return {'dtype': dtype, 'document': converted, 'placement': None}
 
-    else:
-        if dtype in converters.OUTBOUND_CONVERTERS:
-            from_views = _do_outbound_views(repo_dir, views_info, dtype)
-            converted = converters.OUTBOUND_CONVERTERS[dtype](from_views['convert'])
-            return {'dtype': dtype, 'document': converted, 'placement': from_views['placement']}
+    elif dtype in converters.OUTBOUND_CONVERTERS:
+        doc = document.Document(repo_dir)
+        if len(doc.get_section_ids()) == 0:
+            raise exceptions.SectionNotFoundError(_SCORE_IS_EMPTY)
 
-        else:
-            raise exceptions.InvalidDataTypeError(_INVALID_OUTBOUND_DTYPE.format(dtype))
+        from_views = _do_outbound_views(repo_dir, views_info, dtype)
+        converted = converters.OUTBOUND_CONVERTERS[dtype](from_views['convert'])
+        return {'dtype': dtype, 'document': converted, 'placement': from_views['placement']}
+
+    else:
+        raise exceptions.InvalidDataTypeError(_INVALID_OUTBOUND_DTYPE.format(dtype))
 
 
 def _vcs_driver(repo_dir, pathnames, **kwargs):

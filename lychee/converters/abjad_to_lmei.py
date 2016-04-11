@@ -31,6 +31,8 @@ from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
 from abjad.tools.scoretools.Skip import Skip
+from abjad.tools.scoretools.Leaf import Leaf
+from abjad.tools.scoretools.Measure import Measure
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.scoretools.Tuplet import Tuplet
 from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
@@ -44,8 +46,14 @@ from abjad.tools.topleveltools.inspect_ import inspect_
 from abjad.tools.topleveltools.attach import attach
 
 import lychee
+from lychee import exceptions
 from lychee.signals import inbound
 from lychee.namespaces import mei, xml
+
+
+# translatable strings
+# error messages
+_NOT_A_LEAF_NODE = 'Object of type {0} is not a leaf node'
 
 
 def convert(document, **kwargs):
@@ -57,10 +65,21 @@ def convert(document, **kwargs):
     :rtype: :class:`lxml.etree.ElementTree.Element` or :class:`lxml.etree.ElementTree.ElementTree`
     '''
     inbound.CONVERSION_STARTED.emit()
-    lychee.log('{}.convert(document="{}")'.format(document))
 
-    inbound.CONVERSION_FINISH.emit(converted='<l-mei stuff>')
-    lychee.log('{}.convert() after finish signal'.format(__name__))
+    conversion_dict = {
+        "<class 'abjad.tools.scoretools.Note.Note'>": note_to_note,
+        "<class 'abjad.tools.scoretools.Rest.Rest'>": rest_to_rest,
+        "<class 'abjad.tools.scoretools.Skip.Skip'>": skip_to_space,
+        "<class 'abjad.tools.scoretools.Chord.Chord'>": chord_to_chord,
+        "<class 'abjad.tools.scoretools.Tuplet.Tuplet'>": tuplet_to_tupletspan,
+        "<class 'abjad.tools.scoretools.Voice.Voice'>": voice_to_layer,
+        "<class 'abjad.tools.scoretools.Staff.Staff'>": staff_to_staff,
+        "<class 'abjad.tools.scoretools.Score.Score'>": score_to_section,
+    }
+    converted = conversion_dict[str(type(document))](document)
+
+    inbound.CONVERSION_FINISH.emit(converted=converted)
+    return converted
 
 
 def convert_accidental(abjad_accidental_string):
@@ -76,23 +95,26 @@ def convert_accidental(abjad_accidental_string):
                             'tqs': 'su', 'qs': 'sd', 'tqf': 'fd', 'qf': 'fu'}
     return accidental_dictionary[abjad_accidental_string]
 
+
 def add_xml_ids(abjad_object, mei_element):
     '''
-
     Attach the same SHA256 hash digest as xml ID to both an abjad object and an mei element.
 
     :param abjad_object: The abjad object to attach the ID to.
     :type abjad_object: :class:`abjad.tools.abctools.AbjadObject.AbjadObject`
     :param mei_element: The MEI Element to attach the ID to.
-    :type mei_element: :class:`lxml.etree.ElementTree.Element`.
-    :returns: None.
-    :rtype: None.
+    :type mei_element: :class:`lxml.etree.ElementTree.Element`
     '''
+    try:
+        abjad_str = str(abjad_object)
+    except UnderfullContainerError:
+        abjad_str = 'underfull'
+
     parentage = inspect_(abjad_object).get_parentage()
-    id_string = str(abjad_object) + str(parentage.score_index)
-    abjad_id = six.b(id_string)
-    hasher = hashlib.new('SHA256', abjad_id)
-    the_xmlid = hasher.hexdigest()
+    id_string = '{0}{1}{2}{3}'.format(abjad_str, parentage.score_index, mei_element.tag, mei_element.get('n', ''))
+    hasher = hashlib.new('SHA256', six.b(id_string))
+    the_xmlid = 'z{0}'.format(hasher.hexdigest())
+
     attach(the_xmlid, abjad_object)
     mei_element.set(xml.ID, the_xmlid)
 
@@ -130,8 +152,7 @@ def note_to_note(abjad_note):
         is_forced = abjad_note.is_forced
     else:
         is_forced = abjad_note.note_head.is_forced
-    dictionary = {'octave': str(octave),
-                    'pname': pitchname}
+    dictionary = {'oct': str(octave), 'pname': pitchname}
     #make the MEI note according to the information collected above
     mei_note = etree.Element(mei.NOTE, dictionary)
     if duration:
@@ -156,6 +177,7 @@ def note_to_note(abjad_note):
         add_xml_ids(abjad_note, mei_note)
     return mei_note
 
+
 def rest_to_rest(abjad_rest):
     '''
     Convert an Abjad Rest object to an MEI rest Element.
@@ -178,6 +200,7 @@ def rest_to_rest(abjad_rest):
     mei_rest.set('dur',dur_number_string)
     add_xml_ids(abjad_rest, mei_rest)
     return mei_rest
+
 
 def skip_to_space(abjad_skip):
     '''
@@ -224,6 +247,7 @@ def chord_to_chord(abjad_chord):
     add_xml_ids(abjad_chord, mei_chord)
     return mei_chord
 
+
 def empty_tuplet_to_tupletspan_element(abjad_tuplet):
     '''
     Convert an empty Abjad Tuplet or FixedDurationTuplet container to an MEI tupletspan Element.
@@ -250,6 +274,21 @@ def empty_tuplet_to_tupletspan_element(abjad_tuplet):
         add_xml_ids(abjad_tuplet, tupletspan)
         return tupletspan
 
+
+def calculate_tuplet_duration(tuplet):
+    '''
+    Calculate the duration of a tuplet that potentially contains nested tuplets.
+
+    :param tuplet: the Abjad tuplet to query for duration.
+    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
+    :return
+    '''
+    if isinstance(tuplet, FixedDurationTuplet):
+	return tuplet.target_duration
+    else:
+	return tuplet.multiplied_duration
+
+
 def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
     '''
     Set an mei tupletspan's 'dur', 'dots', 'n', 'num', and 'numBase' attributes according to info from an abjad Tuplet.
@@ -258,11 +297,11 @@ def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
     :type mei_tupletspan: :class:`lxml.etree.ElementTree.Element`
     :param abjad_tuplet: the Abjad Tuplet container from which to initialize.
     :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
-    :returns: None
-    :rtype: None
+    :returns: Abjad Duration.
+    :rtype: :class: `abjad.tools.durationtools.Duration.Duration`
     '''
     mei_tupletspan.set('n','1')
-    duration = abjad_tuplet.target_duration
+    duration = calculate_tuplet_duration(abjad_tuplet)
     dur = duration.lilypond_duration_string
     dots = duration.dot_count
     if dots:
@@ -320,22 +359,24 @@ def tuplet_to_tupletspan(abjad_tuplet):
 
 def leaf_to_element(abjad_object):
     '''
-
-    Convert an arbitrary abjad leaf (Rest, Note, Chord) container into the corresponding mei Element.
+    Convert an Abjad leaf (Rest, Note, Chord) container to the corresponding MEI element.
 
     :param abjad_object: the Abjad leaf to convert.
     :type abjad_object: :class:`abjad.tools.scoretools.Leaf.Leaf`
     :returns: the corresponding MEI Element.
     :rtype: List or :class:`lxml.etree.ElementTree.Element`
+    :raises: :exc:`lychee.exceptions.InboundConversionError` when ``abjad_object`` is not a leaf.
     '''
-    if isinstance(abjad_object, Rest):
-        return rest_to_rest(abjad_object)
-    elif isinstance(abjad_object, (Note,NoteHead)):
-        return note_to_note(abjad_object)
-    elif isinstance(abjad_object, Chord):
-        return chord_to_chord(abjad_object)
-    elif isinstance(abjad_object, Skip):
-        return skip_to_space(abjad_object)
+    element_dict = {
+        "<class 'abjad.tools.scoretools.Chord.Chord'>": chord_to_chord,
+        "<class 'abjad.tools.scoretools.Note.Note'>": note_to_note,
+        "<class 'abjad.tools.scoretools.Rest.Rest'>": rest_to_rest,
+        "<class 'abjad.tools.scoretools.Skip.Skip'>": skip_to_space,
+    }
+    try:
+        return element_dict[str(type(abjad_object))](abjad_object)
+    except KeyError:
+        raise exceptions.InboundConversionError(_NOT_A_LEAF_NODE.format(str(type(abjad_object))))
 
 
 def voice_to_layer(abjad_voice):
@@ -356,6 +397,30 @@ def voice_to_layer(abjad_voice):
     add_xml_ids(abjad_voice, mei_layer)
     return mei_layer
 
+
+def measure_to_measure(a_measure):
+    '''
+    Convert an Abjad Measure to an MEI <measure>.
+
+    :param a_measure: The Measure to convert.
+    :type a_measure: :class:`abjad.tools.scoretools.Measure`
+    :returns: The MEI <measure> element.
+    :rtype: :class:`~lxml.etree.ElementTree._Element`
+    '''
+    m_measure = etree.Element(mei.MEASURE, n=str(a_measure.measure_number))
+    add_xml_ids(a_measure, m_measure)
+
+    # the <measure> needs a <layer> so we'll invent one
+    m_layer = m_measure.makeelement(mei.LAYER, {'n': '1'})  # no Abjad Voice means no @xml:id
+    m_measure.append(m_layer)
+
+    # the the Abjad measure's content in the <layer>
+    for a_leaf in a_measure:
+        m_layer.append(leaf_to_element(a_leaf))
+
+    return m_measure
+
+
 def staff_to_staff(abjad_staff):
     '''
     Convert an abjad Staff to an mei staff Element.
@@ -365,30 +430,42 @@ def staff_to_staff(abjad_staff):
     :type abjad_staff: :class:`abjad.tools.scoretools.Staff.Staff`
     :returns: the corresponding MEI Element or list of Elements.
     :rtype: :class:`lxml.etree.ElementTree.Element`
+
+    .. note:: Because this function cannot determine the correct @n attribute of the ``abjad_staff``,
+        *both* the @n and @xml:id attributes are unset for the returned ``<staff>`` element. It is
+        the caller's responsibilty to provide the @n attribute, then @xml:id, which depends on the
+        former.
     '''
-    mei_staff = etree.Element(mei.STAFF,n='1')
-    if len(abjad_staff) != 0:
-        #if the staff contains two or more parallel voices,
-        if abjad_staff.is_simultaneous and 1 < len(abjad_staff) and isinstance(abjad_staff[0], Voice):
-            for x, voice in enumerate(abjad_staff):
-                #convert each voice into a layer and append each to the mei staff
+    mei_staff = etree.Element(mei.STAFF)
+
+    if len(abjad_staff) > 0:
+        if isinstance(abjad_staff[0], Voice) and abjad_staff.is_simultaneous:
+            # simultaneous Voices become <layer> in <staff>
+            # raise NotImplementedError('a')
+            for i, voice in enumerate(abjad_staff):
                 mei_layer = voice_to_layer(voice)
+                mei_layer.set('n', str(i + 1))
                 add_xml_ids(abjad_staff, mei_layer)
-                mei_layer.set('n',str(x+1))
                 mei_staff.append(mei_layer)
+
+        elif isinstance(abjad_staff[0], Measure):
+            for a_measure in abjad_staff:
+                mei_staff.append(measure_to_measure(a_measure))
+
         else:
-        #if the staff contains one or fewer voices, or isn't parallel, flatten everything into one abjad Voice
+            # sequential Voices and/or mixture of Voices and leaf nodes are flattened to one <layer>
+            # raise NotImplementedError('b')
             out_voice = Voice()
             for component in abjad_staff:
                 if isinstance(component, Voice):
                     out_voice.extend([mutate(x).copy() for x in component])
                 else:
                     out_voice.append(mutate(component).copy())
-            #and convert the abjad Voice into an mei layer Element, to be added to the staff
-            mei_layer = voice_to_layer(out_voice)
-        mei_staff.append(mei_layer)
-    add_xml_ids(abjad_staff, mei_staff)
+
+            mei_staff.append(voice_to_layer(out_voice))
+
     return mei_staff
+
 
 def score_to_section(abjad_score):
     '''
@@ -408,7 +485,7 @@ def score_to_section(abjad_score):
     mei_section = etree.Element(mei.SECTION, n='1')
     add_xml_ids(abjad_score, mei_section)
     score_def = etree.Element(mei.SCORE_DEF)
-    score_def.set(xml.ID, mei_section.get(xml.ID) + 'scoreDef')
+    add_xml_ids(abjad_score, score_def)
     mei_section.append(score_def)
     mei_main_staff_group = etree.Element(mei.STAFF_GRP,symbol='line')
     score_def.append(mei_main_staff_group)
@@ -422,7 +499,7 @@ def score_to_section(abjad_score):
             mei_section.append(mei_staff)
             add_xml_ids(abjad_staff, mei_staff)
             staff_def = etree.Element(mei.STAFF_DEF,lines='5',n=str(staffCounter))
-            staff_def.set(xml.ID, mei_staff.get(xml.ID) + 'staffDef')
+            add_xml_ids(abjad_staff, staff_def)
             mei_main_staff_group.append(staff_def)
             staffCounter += 1
         elif isinstance(component, StaffGroup):
@@ -434,11 +511,11 @@ def score_to_section(abjad_score):
             for staff in abjad_staff_group:
                 abjad_staff = staff
                 mei_staff = staff_to_staff(abjad_staff)
-                add_xml_ids(abjad_staff, mei_staff)
                 mei_staff.set('n', str(staffCounter))
+                add_xml_ids(abjad_staff, mei_staff)
                 mei_section.append(mei_staff)
                 staff_def = etree.Element(mei.STAFF_DEF,lines='5',n=str(staffCounter))
-                staff_def.set(xml.ID, mei_staff.get(xml.ID) + 'staffDef')
+                add_xml_ids(abjad_staff, staff_def)
                 mei_staff_group.append(staff_def)
                 staffCounter += 1
     return mei_section

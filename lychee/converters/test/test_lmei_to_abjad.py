@@ -39,8 +39,10 @@ from abjad.tools.durationtools.Multiplier import Multiplier
 from abjad.tools.topleveltools.inspect_ import inspect_
 from abjad.tools.topleveltools.attach import attach
 from lychee.converters import lmei_to_abjad
+from lychee import exceptions
 from lychee.namespaces import mei, xml
 import abjad_test_case
+import pytest
 import unittest
 import six
 
@@ -48,6 +50,33 @@ try:
     from unittest import mock
 except ImportError:
     import mock
+
+
+class TestConvertFunction(object):
+    '''
+    Tests for lmei_to_abjad.convert().
+    '''
+
+    def test_supported_element(self):
+        '''
+        Convert an MEI <note>.
+
+        Expect an Abjad Note.
+        '''
+        note = ETree.Element(mei.NOTE, {'dur': '4', 'pname': 'c', 'octave': '4'})
+        actual = lmei_to_abjad.convert(note)
+        assert isinstance(actual, Note)
+
+    def test_unsupported_element(self):
+        '''
+        Convert an MEI <boat>.
+
+        Expect an OutboundConversionError.
+        '''
+        boat = ETree.Element('boat', {'size': 'panamax', 'owner': "Cap'n Crunch"})
+        with pytest.raises(exceptions.OutboundConversionError) as exc:
+            lmei_to_abjad.convert(boat)
+        assert exc.value.args[0] == lmei_to_abjad._UNSUPPORTED_ELEMENT.format(tagname='boat')
 
 
 class TestLmeiToAbjadConversions(abjad_test_case.AbjadTestCase):

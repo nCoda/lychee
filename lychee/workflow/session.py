@@ -198,6 +198,7 @@ class InteractiveSession(object):
 
         :kwarg dtype: As the :const:`lychee.signals.ACTION_START` signal.
         :kwarg doc: As the :const:`lychee.signals.ACTION_START` signal.
+        :kwarg views_info: As the :const:`lychee.signals.ACTION_START` signal.
 
         Emits the :const:`lychee.signals.outbound.CONVERSION_FINISHED` signal on completion. May
         also cause a bunch of different error signals if there's a problem.
@@ -214,7 +215,6 @@ class InteractiveSession(object):
                     return
 
             elif 'views_info' in kwargs:
-                # TODO: this branch is untested until T33
                 self._inbound_views_info = kwargs['views_info']
 
             signals.outbound.STARTED.emit()

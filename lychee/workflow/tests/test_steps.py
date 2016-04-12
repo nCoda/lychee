@@ -343,7 +343,7 @@ class TestInboundViewsStep(TestInteractiveSession):
             signals.inbound.VIEWS_ERROR.disconnect(error_slot)
 
 
-class TestOutboundSteps(object):  # TestInteractiveSession):
+class TestOutboundSteps(object):
     '''
     Tests for the outbound steps.
     '''
@@ -418,3 +418,32 @@ class TestOutboundSteps(object):  # TestInteractiveSession):
             steps.do_outbound_steps(repo_dir, views_info, dtype)
 
         assert steps._INVALID_OUTBOUND_DTYPE.format(dtype) == exc.value.args[0]
+
+    @mock.patch('lychee.workflow.steps.views_out.mei.get_view')
+    def test_views_works(self, mock_get_view):
+        '''
+        For steps._do_outbound_views() when it finds a views processor for the "dtype."
+        '''
+        repo_dir = 'here'
+        views_info = 'shmiews shminfo'
+        dtype = 'mei'
+        mock_get_view.return_value = ('p', 'c')
+        expected = {'placement': 'p', 'convert': 'c'}
+
+        actual = steps._do_outbound_views(repo_dir, views_info, dtype)
+
+        assert expected == actual
+        mock_get_view.assert_called_with(repo_dir, views_info, dtype)
+
+    def test_views_doesnt_work(self):
+        '''
+        For steps._do_outbound_views() when it doesn't find a views processor for the "dtype."
+        '''
+        repo_dir = 'here'
+        views_info = 'shmiews shminfo'
+        dtype = 'ffffffffffffff, just like fifty Fs, ffffffffffffffffffffffff-'
+
+        with pytest.raises(exceptions.ViewsError) as exc:
+            steps._do_outbound_views(repo_dir, views_info, dtype)
+
+        assert exc.value.args[0] == steps._NO_OUTBOUND_VIEWS.format(dtype)

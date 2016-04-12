@@ -63,6 +63,7 @@ _UNEXP_ERR_INBOUND_CONVERSION = 'Unexpected error during inbound conversion'
 _UNEXP_ERR_INBOUND_VIEWS = 'Unexpected error during inbound views processing'
 _INVALID_OUTBOUND_DTYPE = 'Invalid "dtype" for outbound conversion: "{0}"'
 _SCORE_IS_EMPTY = 'The score is empty; cannot continue outbound processing'
+_NO_OUTBOUND_VIEWS = 'There is no outbound views processor for {0}'
 
 
 def do_inbound_conversion(session, dtype, document):
@@ -192,6 +193,8 @@ def do_outbound_steps(repo_dir, views_info, dtype):
         unavailable. For example, if the ``<score>`` has no ``<section>`` elements yet, no
         ``<section>`` element is currently selected, or rarely if the selected ``<section>`` has
         gone missing between the VCS step and this step.
+    :raises: :exc:`~lychee.exceptions.ViewsError` from :func:`_do_outbound_views` if there is a
+        problem while processing the view.
 
     The outbound steps are designed to be run in parallel---whether or not they are. That's why all
     the parameter types are easily serializable, control is not given up between the views and
@@ -284,7 +287,7 @@ def flush_inbound_views():  # TODO: untested until T33
     signals.inbound.VIEWS_START.disconnect(_dummy_inbound_views_slot)
 
 
-def _do_outbound_views(repo_dir, views_info, dtype):  # TODO: untested until T33
+def _do_outbound_views(repo_dir, views_info, dtype):
     '''
     Private helper function for :func:`do_outbound_steps`.
 
@@ -293,11 +296,16 @@ def _do_outbound_views(repo_dir, views_info, dtype):  # TODO: untested until T33
     :returns: A dictionary with two keys: ``'placement'`` as required for the ``CONVERSION_FINISHED``
         signal; and ``'convert'`` which is the LMEI document portion to be converted.
     :rtype: dict
+    :raises: :exc:`~lychee.exceptions.ViewsError`
     '''
+    views_dict = {
+        'mei': views_out.mei.get_view,
+        'verovio': views_out.mei.get_view,
+    }
 
-    if dtype == 'mei' or dtype == 'verovio':
-        placement, convert = views_out.mei.get_view(repo_dir, views_info, dtype)
+    if dtype in views_dict:
+        placement, convert = views_dict[dtype](repo_dir, views_info, dtype)
     else:
-        raise NotImplementedError('There is no outbound views processor for {0}'.format(dtype))
+        raise exceptions.ViewsError(_NO_OUTBOUND_VIEWS.format(dtype))
 
     return {'placement': placement, 'convert': convert}

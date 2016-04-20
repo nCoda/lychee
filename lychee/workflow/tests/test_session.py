@@ -28,6 +28,7 @@ Tests for the :mod:`lychee.workflow.session` module.
 
 import os.path
 import shutil
+import sys
 import tempfile
 import unittest
 
@@ -188,7 +189,12 @@ class TestRepository(TestInteractiveSession):
         '''
         sess = self.session
         actual = sess.set_repo_dir('')
-        assert actual.startswith('/tmp/')
+        if sys.platform == 'linux2':
+            assert actual.startswith('/tmp/')
+        elif sys.platform == 'darwin':
+            assert actual.startswith('/var/')
+        else:
+            raise NotImplementedError("This test isn't yet implemented on this platform.")
         assert os.path.exists(os.path.join(actual, '.hg'))
 
     @mock.patch('lychee.workflow.session.hug')

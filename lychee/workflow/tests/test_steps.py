@@ -289,8 +289,8 @@ class TestInboundViewsStep(TestInteractiveSession):
         try:
             steps.do_inbound_views(self.session, dtype, document, converted=converted)
             mock_choose.assert_called_once_with(dtype)
-            start_slot.assert_called_once_with(document=document, converted=converted)
-            mock_flush.assert_called_once_with()
+            start_slot.assert_called_with(document=document, converted=converted, session=self.session)
+            mock_flush.assert_called_with()
         finally:
             signals.inbound.VIEWS_START.disconnect(start_slot)
 

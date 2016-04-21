@@ -136,3 +136,18 @@ class TestPlaceView(object):
         mock_signals['started'].assert_called_with()
         mock_signals['error'].assert_called_with(msg=abjad._GENERIC_ERROR.format('RuntimeError()'))
         assert mock_signals['finish'].call_count == 0
+
+def test__seven_digits(self):
+    '''
+    _seven_digits()
+
+    Copied from lychee.document.
+    '''
+    # Statistically, ten percent of the initial strings should begin with a zero. Given that,
+    # calling _seven_digits() 100 times gives us a pretty good chance of hitting that case at
+    # least once.
+    for _ in range(100):
+        actual = abjad._seven_digits()
+        assert 7 == len(actual)
+        assert not actual.startswith('0')
+        assert int(actual)

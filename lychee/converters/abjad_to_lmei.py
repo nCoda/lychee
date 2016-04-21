@@ -27,6 +27,7 @@ import uuid
 from lxml import etree as etree
 import six
 import hashlib
+from abjad.tools.indicatortools import Clef
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
@@ -468,6 +469,41 @@ def staff_to_staff(abjad_staff):
     return mei_staff
 
 
+def set_initial_clef(a_staff, m_staffdef):
+    '''
+    Set the initial clef for a <staffDef> according to the Abjad Staff.
+
+    :param a_staff: The Abjad Staff in which to find the initial clef.
+    :type a_staff: :class:`abjad.tools.scoretools.Staff`
+    :param m_staffdef: The MEI <staffDef> element in which to set the initial clef.
+    :type m_staffdef: :class:`lxml.etree.ElementTree.Element`
+    :returns: `None`
+
+    If the clef is unset, or a currently-unsupported type, nothing happens.
+    '''
+    a_clef = inspect_(a_staff).get_effective(Clef)
+
+    if a_clef:
+        clef_name = a_clef.name.lower()
+        if clef_name == 'treble':
+            shape = 'G'
+            line = '2'
+        elif clef_name == 'bass':
+            shape = 'F'
+            line = '4'
+        elif clef_name == 'tenor':
+            shape = 'C'
+            line = '4'
+        elif clef_name == 'alto':
+            shape = 'C'
+            line = '3'
+        else:
+            return
+
+        m_staffdef.set('clef.shape', shape)
+        m_staffdef.set('clef.line', line)
+
+
 def score_to_section(abjad_score):
     '''
     Convert an abjad Score into an mei section Element.
@@ -500,6 +536,7 @@ def score_to_section(abjad_score):
             mei_section.append(mei_staff)
             add_xml_ids(abjad_staff, mei_staff)
             staff_def = etree.Element(mei.STAFF_DEF,lines='5',n=str(staffCounter))
+            set_initial_clef(abjad_staff, staff_def)
             add_xml_ids(abjad_staff, staff_def)
             mei_main_staff_group.append(staff_def)
             staffCounter += 1
@@ -516,6 +553,7 @@ def score_to_section(abjad_score):
                 add_xml_ids(abjad_staff, mei_staff)
                 mei_section.append(mei_staff)
                 staff_def = etree.Element(mei.STAFF_DEF,lines='5',n=str(staffCounter))
+                set_initial_clef(abjad_staff, staff_def)
                 add_xml_ids(abjad_staff, staff_def)
                 mei_staff_group.append(staff_def)
                 staffCounter += 1

@@ -24,6 +24,7 @@
 #--------------------------------------------------------------------------------------------------
 from lxml import etree
 import pytest
+from abjad.tools.indicatortools import Clef
 from abjad.tools.scoretools.Note import Note
 from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
@@ -410,6 +411,77 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         m_staff = abjad_to_lmei.staff_to_staff(a_staff)
 
         etree.dump(m_staff)
+
+
+class TestSetInitialClef(abjad_test_case.AbjadTestCase):
+    '''
+    Tests for set_initial_clef().
+    '''
+
+    def test_no_clef(self):
+        '''
+        When there is no clef, expect do nothing.
+        '''
+        staff = Staff([Measure((2, 2), "f1")])
+        scoredef = etree.Element(mei.SCORE_DEF)
+        abjad_to_lmei.set_initial_clef(staff, scoredef)
+        assert scoredef.get('clef.shape') is None
+        assert scoredef.get('clef.line') is None
+
+    def test_unknown_clef(self):
+        '''
+        When there is a currently-unknown clef, expect do nothing.
+        '''
+        staff = Staff([Measure((2, 2), "f1")])
+        attach(Clef('soprano'), staff)
+        scoredef = etree.Element(mei.SCORE_DEF)
+        abjad_to_lmei.set_initial_clef(staff, scoredef)
+        assert scoredef.get('clef.shape') is None
+        assert scoredef.get('clef.line') is None
+
+    def test_treble_clef(self):
+        '''
+        When there is a treble clef, put it in.
+        '''
+        staff = Staff([Measure((2, 2), "f1")])
+        attach(Clef('treble'), staff)
+        scoredef = etree.Element(mei.SCORE_DEF)
+        abjad_to_lmei.set_initial_clef(staff, scoredef)
+        assert scoredef.get('clef.shape') == 'G'
+        assert scoredef.get('clef.line') == '2'
+
+    def test_alto_clef(self):
+        '''
+        When there is an alto clef, put it in.
+        '''
+        staff = Staff([Measure((2, 2), "f1")])
+        attach(Clef('alto'), staff)
+        scoredef = etree.Element(mei.SCORE_DEF)
+        abjad_to_lmei.set_initial_clef(staff, scoredef)
+        assert scoredef.get('clef.shape') == 'C'
+        assert scoredef.get('clef.line') == '3'
+
+    def test_tenor_clef(self):
+        '''
+        When there is a tenor clef, put it in.
+        '''
+        staff = Staff([Measure((2, 2), "f1")])
+        attach(Clef('tenor'), staff)
+        scoredef = etree.Element(mei.SCORE_DEF)
+        abjad_to_lmei.set_initial_clef(staff, scoredef)
+        assert scoredef.get('clef.shape') == 'C'
+        assert scoredef.get('clef.line') == '4'
+
+    def test_bass_clef(self):
+        '''
+        When there is a bass clef, put it in.
+        '''
+        staff = Staff([Measure((2, 2), "f1")])
+        attach(Clef('bass'), staff)
+        scoredef = etree.Element(mei.SCORE_DEF)
+        abjad_to_lmei.set_initial_clef(staff, scoredef)
+        assert scoredef.get('clef.shape') == 'F'
+        assert scoredef.get('clef.line') == '4'
 
 
 class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):

@@ -164,6 +164,7 @@ class TestMeasureToMeasure(abjad_test_case.AbjadTestCase):
         m_layer = m_meas[0]
         assert m_layer.tag == mei.LAYER
         assert m_layer.get('n') == '1'
+        assert m_layer.get(xml.ID) is not None
         assert len(m_layer) == 4
         for m_note in m_layer:
             assert m_note.tag == mei.NOTE
@@ -190,6 +191,7 @@ class TestMeasureToMeasure(abjad_test_case.AbjadTestCase):
         m_layer = m_meas[0]
         assert m_layer.tag == mei.LAYER
         assert m_layer.get('n') == '1'
+        assert m_layer.get(xml.ID) is not None
         assert len(m_layer) == 0
 
 

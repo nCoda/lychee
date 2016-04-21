@@ -412,6 +412,7 @@ def measure_to_measure(a_measure):
 
     # the <measure> needs a <layer> so we'll invent one
     m_layer = m_measure.makeelement(mei.LAYER, {'n': '1'})  # no Abjad Voice means no @xml:id
+    add_xml_ids(a_measure, m_layer)
     m_measure.append(m_layer)
 
     # the the Abjad measure's content in the <layer>

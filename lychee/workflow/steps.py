@@ -54,6 +54,7 @@ from lychee import document
 from lychee import exceptions
 from lychee.namespaces import mei
 from lychee import signals
+from lychee.views import inbound as views_in
 from lychee.views import outbound as views_out
 
 
@@ -119,7 +120,7 @@ def do_inbound_views(session, dtype, document, converted):
     '''
     try:
         _choose_inbound_views(dtype)
-        signals.inbound.VIEWS_START.emit(document=document, converted=converted)
+        signals.inbound.VIEWS_START.emit(document=document, converted=converted, session=session)
     except Exception as exc:
         if isinstance(exc, exceptions.InvalidDataTypeError):
             msg = exc.args[0]
@@ -275,7 +276,10 @@ def _choose_inbound_views(dtype):  # TODO: untested until T33
 
     .. warning:: This function is not implemented. Refer to T33.
     '''
-    signals.inbound.VIEWS_START.connect(_dummy_inbound_views_slot)
+    if dtype.lower() == 'abjad':
+        signals.inbound.VIEWS_START.connect(views_in.abjad.place_view)
+    else:
+        signals.inbound.VIEWS_START.connect(_dummy_inbound_views_slot)
 
 
 def flush_inbound_views():  # TODO: untested until T33

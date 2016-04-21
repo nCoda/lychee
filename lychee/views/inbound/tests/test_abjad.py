@@ -34,6 +34,7 @@ try:
 except ImportError:
     import mock
 
+import lychee
 from lychee import exceptions
 from lychee import signals
 from lychee.views.inbound import abjad
@@ -103,13 +104,13 @@ class TestPlaceView(object):
         document = 'eee'
         session = 'fff'
 
-        orig_DEBUG = abjad.DEBUG
+        orig_DEBUG = lychee.DEBUG
         try:
-            abjad.DEBUG = True
+            lychee.DEBUG = True
             with pytest.raises(RuntimeError):
                 abjad.place_view(converted, document, session)
         finally:
-            abjad.DEBUG = orig_DEBUG
+            lychee.DEBUG = orig_DEBUG
 
         mock_signals['started'].assert_called_with()
         assert mock_signals['error'].call_count == 0
@@ -125,19 +126,19 @@ class TestPlaceView(object):
         document = 'eee'
         session = 'fff'
 
-        orig_DEBUG = abjad.DEBUG
+        orig_DEBUG = lychee.DEBUG
         try:
-            abjad.DEBUG = False
+            lychee.DEBUG = False
             assert abjad.place_view(converted, document, session) is None
         finally:
-            abjad.DEBUG = orig_DEBUG
+            lychee.DEBUG = orig_DEBUG
 
         mock__place.assert_called_with(converted, document, session)
         mock_signals['started'].assert_called_with()
         mock_signals['error'].assert_called_with(msg=abjad._GENERIC_ERROR.format('RuntimeError()'))
         assert mock_signals['finish'].call_count == 0
 
-def test__seven_digits(self):
+def test__seven_digits():
     '''
     _seven_digits()
 

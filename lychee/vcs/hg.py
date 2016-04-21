@@ -39,6 +39,7 @@ import time
 
 import hug
 
+import lychee
 from lychee.signals import vcs
 
 
@@ -92,7 +93,10 @@ def commit(message=None, **kwargs):
     if message is None:
         message = 'Lychee autocommit {}'.format(time.time())
 
-    _HUG.commit(message)
+    try:
+        _HUG.commit(message)
+    except RuntimeError:
+        lychee.log('No files changed; commit aborted.', level='info')
 
 
 _SIGNALS = [

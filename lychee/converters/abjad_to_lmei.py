@@ -443,7 +443,7 @@ def staff_to_staff(abjad_staff):
     if len(abjad_staff) > 0:
         if isinstance(abjad_staff[0], Voice) and abjad_staff.is_simultaneous:
             # simultaneous Voices become <layer> in <staff>
-            # raise NotImplementedError('a')
+            raise NotImplementedError('Staff must have Measures through 1605')
             for i, voice in enumerate(abjad_staff):
                 mei_layer = voice_to_layer(voice)
                 mei_layer.set('n', str(i + 1))
@@ -456,7 +456,7 @@ def staff_to_staff(abjad_staff):
 
         else:
             # sequential Voices and/or mixture of Voices and leaf nodes are flattened to one <layer>
-            # raise NotImplementedError('b')
+            raise NotImplementedError('Staff must have Measures through 1605')
             out_voice = Voice()
             for component in abjad_staff:
                 if isinstance(component, Voice):

@@ -215,9 +215,11 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert mei_staff.get('n') is None
         assert len(mei_staff) == 0
 
-    # staff with one voice
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     def test_one_voice(self):
         '''
+        staff with one voice
+
         precondition: abjad Staff containing only one Voice
         postcondition: mei staff Element containing one layer Element
         '''
@@ -232,6 +234,7 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert len(mei_staff) == 1
         assert mei_staff[0].tag == mei.LAYER
 
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
     def test_one_voice_mock(self,mock_layer):
         '''
@@ -250,9 +253,11 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert len(mei_staff) == 1
         assert mei_staff[0].tag == mei.LAYER
 
-    # staff with parallel voices (enumerate n based on staff n)
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     def test_parallel(self):
         '''
+        staff with parallel voices (enumerate n based on staff n)
+
         precondition: abjad Staff containing two or more parallel voices
         postcondition: mei staff Element containing two or more layer Elements
         '''
@@ -269,6 +274,7 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert mei_staff[1].tag == mei.LAYER
         assert mei_staff[1].get('n') == '2'
 
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
     def test_parallel_mock(self,mock_layer):
         '''
@@ -289,9 +295,11 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert mei_staff[1].tag == mei.LAYER
         assert mei_staff[1].get('n') == '2'
 
-    # staff with consecutive voices
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     def test_consecutive(self):
         '''
+        staff with consecutive voices
+
         precondition: abjad Staff containing two or more consecutive Voices
         postcondition: mei staff Element containing one layer Element
         '''
@@ -305,6 +313,7 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert mei_staff[0].tag == mei.LAYER
         assert mei_staff[0].get('n') == '1'
 
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
     def test_consecutive_mock(self,mock_layer):
         '''
@@ -322,9 +331,11 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert mei_staff[0].tag == mei.LAYER
         assert mei_staff[0].get('n') == '1'
 
-    # staff with leaves and no voice(s)
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     def test_leaves(self):
         '''
+        staff with leaves and no voice(s)
+
         precondition: abjad Staff containing leaves and no Voices
         postcondition: mei layer Element containing children leaf Elements
         '''
@@ -336,6 +347,7 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert mei_staff[0].tag == mei.LAYER
         assert mei_staff[0].get('n') == '1'
 
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
     def test_leaves_mock(self, mock_layer):
         '''
@@ -351,9 +363,11 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert mei_staff[0].tag == mei.LAYER
         assert mei_staff[0].get('n') == '1'
 
-    # staff with some combination of leaves and voices
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     def test_leaves_and_voices(self):
         '''
+        staff with some combination of leaves and voices
+
         precondition: abjad Staff containing both leaves and Voices as siblings
         postcondition: mei staff Element containing one layer Element
         '''
@@ -372,6 +386,7 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert mei_staff[0].get('n') == '1'
         assert len(mei_staff[0]) == 8
 
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
     def test_leaves_and_voices_mock(self, mock_layer):
         '''

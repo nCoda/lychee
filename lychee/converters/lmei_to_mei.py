@@ -33,7 +33,7 @@ from lxml import etree
 
 import lychee
 from lychee import exceptions
-from lychee.namespaces import mei
+from lychee.namespaces import mei, xml
 from lychee.signals import outbound
 
 _ERR_INPUT_NOT_SECTION = 'LMEI-to-MEI did not receive a <section>'
@@ -91,6 +91,9 @@ def change_measure_hierarchy(lmei_section):
     '''
 
     section = etree.Element(mei.SECTION)
+    sect_id = lmei_section.get(xml.ID)
+    if sect_id:
+        section.set(xml.ID, sect_id)
     scoreDef = lmei_section.find('.//{}'.format(mei.SCORE_DEF))
     if scoreDef is not None:
         section.append(scoreDef)

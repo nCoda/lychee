@@ -28,6 +28,7 @@ Tests for the :mod:`lychee.workflow.session` module.
 
 import os.path
 import shutil
+import sys
 import tempfile
 import unittest
 
@@ -188,7 +189,12 @@ class TestRepository(TestInteractiveSession):
         '''
         sess = self.session
         actual = sess.set_repo_dir('')
-        assert actual.startswith('/tmp/')
+        if sys.platform == 'linux2':
+            assert actual.startswith('/tmp/')
+        elif sys.platform == 'darwin':
+            assert actual.startswith('/var/')
+        else:
+            raise NotImplementedError("This test isn't yet implemented on this platform.")
         assert os.path.exists(os.path.join(actual, '.hg'))
 
     @mock.patch('lychee.workflow.session.hug')
@@ -340,6 +346,35 @@ class TestActionStart(TestInteractiveSession):
             dtype=outbound_dtype,
             placement=mock_do_out.return_value['placement'],
             document=mock_do_out.return_value['document'])
+
+    @mock.patch('lychee.workflow.steps.do_outbound_steps')
+    @mock.patch('lychee.signals.outbound.CONVERSION_FINISHED')
+    @mock.patch('lychee.signals.outbound.STARTED')
+    def test_set_views_unit(self, mock_out_started, mock_out_finished, mock_do_out):
+        '''
+        A unit test (fully mocked) for when ACTION_START receives views_info and not dtype or doc.
+        '''
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session._run_inbound_doc_vcs = mock.Mock()
+        mock_do_out.return_value = {'placement': None, 'document': None}
+        outbound_dtype = 'mei'
+        views_info = 'IBV'
+
+        signals.outbound.REGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_everything_works_unit')
+        try:
+            self.session._action_start(views_info=views_info)
+        finally:
+            signals.outbound.UNREGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_everything_works_unit')
+
+        assert self.session._inbound_views_info == 'IBV'
+        assert not self.session._run_inbound_doc_vcs.called
+        assert self.session._cleanup_for_new_action.callled
+        assert mock_out_started.emit.called
+        mock_do_out.assert_called_once_with(
+            self.session.get_repo_dir(),
+            views_info,
+            outbound_dtype)
+        assert mock_out_finished.emit.called
 
     @mock.patch('lychee.workflow.steps.do_outbound_steps')
     @mock.patch('lychee.signals.outbound.CONVERSION_FINISHED')

@@ -154,3 +154,10 @@ class OutboundConversionError(ConversionError):
     When an error occurs during outbound conversion.
     '''
     pass
+
+
+class ViewsError(LycheeError):
+    '''
+    When an error occurs while processing "view" information.
+    '''
+    pass

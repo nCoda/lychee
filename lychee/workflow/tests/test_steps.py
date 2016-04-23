@@ -27,6 +27,8 @@ Tests for the :mod:`lychee.workflow.steps` module.
 '''
 
 import os.path
+import shutil
+import tempfile
 
 try:
     from unittest import mock
@@ -38,6 +40,7 @@ import pytest
 import signalslot
 
 from lychee import converters
+from lychee import document
 from lychee import exceptions
 from lychee.namespaces import mei, xml
 from lychee import signals
@@ -51,6 +54,33 @@ def make_slot_mock():
     slot = mock.MagicMock(spec=signalslot.slot.BaseSlot)
     slot.is_alive = True
     return slot
+
+
+@pytest.fixture()
+def temp_doc(request):
+    '''
+    This PyTest fixture provides and cleans up an empty LMEI document in a temporary directory.
+
+    :returns: Pathname to the LMEI document directory.
+    '''
+    temp_dir = tempfile.mkdtemp()
+    document.Document(temp_dir).save_everything()
+    def clean_up_temp_dir():
+        "Delete the temporary directory."
+        shutil.rmtree(temp_dir)
+    request.addfinalizer(clean_up_temp_dir)
+    return temp_dir
+
+
+@pytest.fixture()
+def temp_doc_sec(request, temp_doc):
+    "Same as 'temp_doc' fixture, plus an empty <section> in the active score."
+    score = etree.Element(mei.SCORE)
+    etree.SubElement(score, mei.SECTION)
+    doc = document.Document(temp_doc)
+    doc.put_score(score)
+    doc.save_everything()
+    return temp_doc
 
 
 class TestDocumentStep(TestInteractiveSession):
@@ -313,7 +343,7 @@ class TestInboundViewsStep(TestInteractiveSession):
             signals.inbound.VIEWS_ERROR.disconnect(error_slot)
 
 
-class TestOutboundSteps(object):  # TestInteractiveSession):
+class TestOutboundSteps(object):
     '''
     Tests for the outbound steps.
     '''
@@ -340,13 +370,13 @@ class TestOutboundSteps(object):  # TestInteractiveSession):
         assert expected == actual
 
     @mock.patch('lychee.workflow.steps._do_outbound_views')
-    def test_views_converters(self, mock_views):
+    def test_views_converters(self, mock_views, temp_doc_sec):
         '''
         Most outbound converters do need "views" information.
         '''
         dtype = 'mei'
         views_info = 'views'
-        repo_dir = 'dirrrrr!'
+        repo_dir = temp_doc_sec
         mei_mock = mock.MagicMock()
         mei_mock.return_value = 'mei4u.net'
         mock_views.return_value = {'convert': 'vc', 'placement': 'vp'}
@@ -362,6 +392,20 @@ class TestOutboundSteps(object):  # TestInteractiveSession):
         mei_mock.assert_called_once_with(mock_views.return_value['convert'])
         assert expected == actual
 
+    def test_empty_document(self, temp_doc):
+        '''
+        With an outbound dtype that does require views processing, but there are no sections in the
+        score. Expect a SectionNotFoundError.
+        '''
+        dtype = 'mei'
+        views_info = 'views'
+        repo_dir = temp_doc
+
+        with pytest.raises(exceptions.SectionNotFoundError) as exc:
+            actual = steps.do_outbound_steps(repo_dir, views_info, dtype)
+
+        assert exc.value.args[0] == steps._SCORE_IS_EMPTY
+
     def test_invalid_dtype(self):
         '''
         When the "dtype" is invalid, we expect an InvalidDataTypeError.
@@ -374,3 +418,32 @@ class TestOutboundSteps(object):  # TestInteractiveSession):
             steps.do_outbound_steps(repo_dir, views_info, dtype)
 
         assert steps._INVALID_OUTBOUND_DTYPE.format(dtype) == exc.value.args[0]
+
+    @mock.patch('lychee.workflow.steps.views_out.mei.get_view')
+    def test_views_works(self, mock_get_view):
+        '''
+        For steps._do_outbound_views() when it finds a views processor for the "dtype."
+        '''
+        repo_dir = 'here'
+        views_info = 'shmiews shminfo'
+        dtype = 'mei'
+        mock_get_view.return_value = ('p', 'c')
+        expected = {'placement': 'p', 'convert': 'c'}
+
+        actual = steps._do_outbound_views(repo_dir, views_info, dtype)
+
+        assert expected == actual
+        mock_get_view.assert_called_with(repo_dir, views_info, dtype)
+
+    def test_views_doesnt_work(self):
+        '''
+        For steps._do_outbound_views() when it doesn't find a views processor for the "dtype."
+        '''
+        repo_dir = 'here'
+        views_info = 'shmiews shminfo'
+        dtype = 'ffffffffffffff, just like fifty Fs, ffffffffffffffffffffffff-'
+
+        with pytest.raises(exceptions.ViewsError) as exc:
+            steps._do_outbound_views(repo_dir, views_info, dtype)
+
+        assert exc.value.args[0] == steps._NO_OUTBOUND_VIEWS.format(dtype)

@@ -44,11 +44,33 @@ def set_fujian(to_this):
     signal.set_fujian(to_this)
 
 
-ACTION_START = signal.Signal(args=['dtype', 'doc'], name='ACTION_START')
+ACTION_START = signal.Signal(args=['dtype', 'doc', 'views_info'], name='ACTION_START')
 '''
 Emit this signal to start an "action" through Lychee.
 
 :kwarg str dtype: The format (data type) of the inbound musical document. LilyPond, Abjad, etc.
 :kwarg object doc: The inbound musical document. The required type is determined by each converter
     module individually.
+:kwarg str views_info: Substitue information from the inbound "views processing" step if the ``doc``
+    is omitted. See below.
+
+**Outbound-only Workflow**
+
+You can trigger the outbound steps for all registered outbound formats by emitting this signal
+without the ``dtype`` or ``doc`` arguments. You may also specify that only a ``<section>`` or portion
+of a ``<section>`` should be sent for outbound conversion by providing the @xml:id attribute of the
+element you wish to convert.
+
+For example:
+
+>>> signals.ACTION_START.emit()
+
+This causes the full score to be converted for all registered outbound data types. On the other hand:
+
+>>> signals.ACTION_START.emit(views_info='Sme-s-m-l-e1182873')
+
+This causes only the ``<section>`` with ``@xml:id="Sme-s-m-l-e1182873"`` to be sent for outbound
+conversion.
+
+.. note:: You should provide ``dtype`` and ``doc``, or ``views_info`` by itself.
 '''

@@ -44,6 +44,7 @@ from lychee.workflow import steps
 
 _CANNOT_SAFELY_HG_INIT = 'Could not safely initialize the repository'
 _CANNOT_MAKE_HG_DIR = 'Could not create repository directory'
+_FAILURE_DURING_INBOUND = 'Action failed during the inbound steps'
 
 
 def _error_slot(**kwargs):
@@ -197,6 +198,7 @@ class InteractiveSession(object):
 
         :kwarg dtype: As the :const:`lychee.signals.ACTION_START` signal.
         :kwarg doc: As the :const:`lychee.signals.ACTION_START` signal.
+        :kwarg views_info: As the :const:`lychee.signals.ACTION_START` signal.
 
         Emits the :const:`lychee.signals.outbound.CONVERSION_FINISHED` signal on completion. May
         also cause a bunch of different error signals if there's a problem.
@@ -209,7 +211,11 @@ class InteractiveSession(object):
                 try:
                     self._run_inbound_doc_vcs(kwargs['dtype'], kwargs['doc'])
                 except exceptions.InboundConversionError:
+                    lychee.log(_FAILURE_DURING_INBOUND)
                     return
+
+            elif 'views_info' in kwargs:
+                self._inbound_views_info = kwargs['views_info']
 
             signals.outbound.STARTED.emit()
             for outbound_dtype in self._registrar.get_registered_formats():

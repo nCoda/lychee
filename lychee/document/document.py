@@ -141,7 +141,7 @@ _ERR_CORRUPT_TARGET = '@target does not end with ".mei": {0}'
 _PUBSTMT_DEFAULT_CONTENTS = 'This is an unpublished Lychee-MEI document.'
 _ABJAD_FULL_NAME = 'Abjad API for Formalized Score Control'
 _PLACEHOLDER_TITLE = '(Untitled)'
-_SAVE_OUT_ERROR = 'Could not save an XML file (C14NError).'
+_SAVE_OUT_ERROR = 'Could not save an XML file (IOError).'
 
 
 def _check_xmlid_chars(xmlid):
@@ -846,6 +846,8 @@ class Document(object):
         :rtype: :class:`lxml.etree.Element`
         :raises: :exc:`lychee.exceptions.SectionNotFoundError` if no ``<section>`` with the
             specified @xml:id can be found.
+        :raises: :exc:`lychee.exceptions.InvalidFileError` if the ``<section>`` is found but cannot
+            be loaded because it is invalid.
 
         **Side Effects**
 
@@ -863,8 +865,10 @@ class Document(object):
         else:
             try:
                 return _load_in(os.path.join(self._repo_path, section_id + '.mei')).getroot()
-            except (exceptions.FileNotFoundError, exceptions.InvalidFileError):
+            except exceptions.FileNotFoundError:
                 raise exceptions.SectionNotFoundError(_SECTION_NOT_FOUND.format(xmlid=section_id))
+            except exceptions.InvalidFileError:
+                raise
 
     def put_section(self, new_section):
         '''

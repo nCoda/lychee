@@ -4,8 +4,8 @@
 # Program Name:           Lychee
 # Program Description:    MEI document manager for formalized document control
 #
-# Filename:               lychee/views/__init__.py
-# Purpose:                Initialize the "views" module.
+# Filename:               lychee/views/outbound/mei.py
+# Purpose:                Outbound views processing for MEI.
 #
 # Copyright (C) 2016 Christopher Antila
 #
@@ -23,9 +23,25 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 '''
-Initialize the :mod:`views` module.
-
-The :mod:`views` module does all kinds of glorious things. Check it out!
+Outbound views processing for MEI.
 '''
 
-from . import outbound
+from lychee import document
+
+
+def get_view(repo_dir, views_info, dtype):  # TODO: untested until T33
+    '''
+    Do the outbound views processing for the provided document. In other words, this function lets
+    you get a "view" on Lychee's document.
+
+    Parameters are the same as :func:`lychee.workflow.steps.do_outbound_steps`.
+
+    :returns: A two-tuple of views information for the ``CONVERSION_FINISHED`` signal, and the
+        Lychee-MEI document portion corresponding to ``views_info``.
+    :rtype: 2-tuple of string and :class:`~lxml.etree.Element`
+    '''
+    if not views_info.startswith('Sme-'):
+        raise NotImplementedError('MEI outbound views can only process <section> elements so far.')
+    else:
+        doc = document.Document(repo_dir)
+        return views_info, doc.get_section(views_info)

@@ -23,6 +23,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 from lxml import etree
+import signalslot
 import pytest
 from abjad.tools.indicatortools import Clef
 from abjad.tools.scoretools.Note import Note
@@ -44,6 +45,7 @@ from abjad.tools.topleveltools.attach import attach
 from lychee.converters import abjad_to_lmei
 from lychee import exceptions
 from lychee.namespaces import mei, xml
+from lychee import signals
 import unittest
 import abjad_test_case
 
@@ -51,6 +53,61 @@ try:
     from unittest import mock
 except ImportError:
     import mock
+
+
+def make_slot_mock():
+    slot = mock.MagicMock(spec=signalslot.slot.BaseSlot)
+    slot.is_alive = True
+    return slot
+
+
+class TestConvert(object):
+    '''
+    Tests for convert().
+    '''
+
+    def test_works(self):
+        '''
+        Given an object that convert() can convert, expect the result emitted via CONVERSION_FINISH.
+        '''
+        document = Note("d,,2")
+        conversion_started = make_slot_mock()
+        conversion_finish = make_slot_mock()
+        signals.inbound.CONVERSION_STARTED.connect(conversion_started)
+        signals.inbound.CONVERSION_FINISH.connect(conversion_finish)
+
+        try:
+            assert abjad_to_lmei.convert(document=document) is None
+        finally:
+            signals.inbound.CONVERSION_STARTED.disconnect(conversion_started)
+            signals.inbound.CONVERSION_FINISH.disconnect(conversion_finish)
+
+        assert conversion_started.call_count == 1
+        assert conversion_finish.call_count == 1
+        converted = conversion_finish.call_args[1]['converted']
+        assert isinstance(converted, etree._Element)
+        assert converted.tag == mei.NOTE
+
+    def test_unknown_type(self):
+        '''
+        Given an object that convert() can't convert, expect an InboundConversionError.
+        '''
+        document = etree.Element(mei.NOTE)
+        conversion_started = make_slot_mock()
+        conversion_finish = make_slot_mock()
+        signals.inbound.CONVERSION_STARTED.connect(conversion_started)
+        signals.inbound.CONVERSION_FINISH.connect(conversion_finish)
+
+        try:
+            with pytest.raises(exceptions.InboundConversionError) as exc:
+                abjad_to_lmei.convert(document=document)
+        finally:
+            signals.inbound.CONVERSION_STARTED.disconnect(conversion_started)
+            signals.inbound.CONVERSION_FINISH.disconnect(conversion_finish)
+
+        assert conversion_started.call_count == 1
+        assert conversion_finish.call_count == 0
+        assert exc.value.args[0] == abjad_to_lmei._UNKNOWN_OBJ_TO_CONVERT.format(type(document))
 
 
 class TestAddXmlIds(object):

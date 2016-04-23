@@ -6,8 +6,8 @@
 Documentation for Lychee
 ========================
 
-Workflow and Action Management
-------------------------------
+Table of Contents
+-----------------
 
 .. toctree::
     :maxdepth: 3
@@ -52,14 +52,6 @@ Document
     :maxdepth: 1
 
     document
-
-Signals
--------
-
-.. toctree::
-    :maxdepth: 2
-
-    signals
 
 Views
 -----

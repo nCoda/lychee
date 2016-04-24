@@ -13,6 +13,7 @@ Table of Contents
     :maxdepth: 3
 
     workflow
+    lychee_mei
 
 Converters
 ----------

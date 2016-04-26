@@ -219,6 +219,12 @@ class InteractiveSession(object):
             elif 'views_info' in kwargs:
                 self._inbound_views_info = kwargs['views_info']
 
+            summary = self._hug.summary()
+            if 'tag' in summary:
+                changeset = summary['tag']
+            else:
+                changeset = summary['parent']
+
             signals.outbound.STARTED.emit()
             for outbound_dtype in self._registrar.get_registered_formats():
                 post = steps.do_outbound_steps(
@@ -228,7 +234,8 @@ class InteractiveSession(object):
                 signals.outbound.CONVERSION_FINISHED.emit(
                     dtype=outbound_dtype,
                     placement=post['placement'],
-                    document=post['document'])
+                    document=post['document'],
+                    changeset=changeset)
 
         finally:
             self._cleanup_for_new_action()

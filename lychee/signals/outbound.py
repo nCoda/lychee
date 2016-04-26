@@ -76,7 +76,8 @@ begun processing, and only once for all registered outbound formats.
 '''
 
 
-CONVERSION_FINISHED = signal.Signal(args=['dtype', 'placement', 'document'], name='outbound.CONVERSION_FINISHED')
+CONVERSION_FINISHED = signal.Signal(args=['dtype', 'placement', 'document', 'parent'],
+                                    name='outbound.CONVERSION_FINISHED')
 '''
 Emitted when one of the registered data types has finished outbound processing.
 
@@ -90,6 +91,10 @@ as the conversions finish.
 :param object placement: Information for the slot about which part of the document is being updated.
     Offered in a different format depending on the "dtype" of this call.
 :param object document: The update (partial) document. The type depends on the value of "dtype."
+:param str changeset: Either the tag or the revision number and hash of the most recent changeset.
+    If :const:`ACTION_START` was emitted with an inbound change, this will always be ``'tip'``
+    because this tag always points to the most recent changeset. Otherwise it will be the same as
+    "parent" field in ``hg summary`` (like ``'8:713cbfbaffcc'`` for example).
 
 **Type of "Document" Parameter**
 

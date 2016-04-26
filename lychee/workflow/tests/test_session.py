@@ -310,8 +310,7 @@ class TestInbound(TestInteractiveSession):
 
 class TestActionStart(TestInteractiveSession):
     '''
-    Tests for InteractiveSession._action_start(), the slot for the ACTION_START signal, and its
-    helper methods.
+    Tests for InteractiveSession._action_start(), the slot for the ACTION_START signal.
     '''
 
     @mock.patch('lychee.workflow.steps.do_outbound_steps')
@@ -328,6 +327,8 @@ class TestActionStart(TestInteractiveSession):
         mock_do_out.return_value = {'placement': 'ABC', 'document': 'DEF'}
         outbound_dtype = 'mei'
         self.session._inbound_views_info = 'IBV'
+        self.session._hug = mock.Mock()
+        self.session._hug.summary = mock.Mock(return_value={'tag': 'tip'})
 
         signals.outbound.REGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_everything_works_unit')
         try:
@@ -345,7 +346,8 @@ class TestActionStart(TestInteractiveSession):
         mock_out_finished.emit.assert_called_once_with(
             dtype=outbound_dtype,
             placement=mock_do_out.return_value['placement'],
-            document=mock_do_out.return_value['document'])
+            document=mock_do_out.return_value['document'],
+            changeset='tip')
 
     @mock.patch('lychee.workflow.steps.do_outbound_steps')
     @mock.patch('lychee.signals.outbound.CONVERSION_FINISHED')
@@ -359,6 +361,8 @@ class TestActionStart(TestInteractiveSession):
         mock_do_out.return_value = {'placement': None, 'document': None}
         outbound_dtype = 'mei'
         views_info = 'IBV'
+        self.session._hug = mock.Mock()
+        self.session._hug.summary = mock.Mock(return_value={'parent': '16:96eb6fba2374'})
 
         signals.outbound.REGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_everything_works_unit')
         try:
@@ -374,7 +378,11 @@ class TestActionStart(TestInteractiveSession):
             self.session.get_repo_dir(),
             views_info,
             outbound_dtype)
-        assert mock_out_finished.emit.called
+        mock_out_finished.emit.assert_called_once_with(
+            dtype=outbound_dtype,
+            placement=mock_do_out.return_value['placement'],
+            document=mock_do_out.return_value['document'],
+            changeset='16:96eb6fba2374')
 
     @mock.patch('lychee.workflow.steps.do_outbound_steps')
     @mock.patch('lychee.signals.outbound.CONVERSION_FINISHED')

@@ -425,6 +425,12 @@ class TestActionStart(TestInteractiveSession):
 
         assert os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
 
+
+class TestRunInboundDocVcs(TestInteractiveSession):
+    '''
+    Tests for _run_inbound_doc_vcs(), a helper method for _action_start().
+    '''
+
     @mock.patch('lychee.workflow.steps.do_inbound_conversion')
     @mock.patch('lychee.workflow.steps.do_inbound_views')
     @mock.patch('lychee.workflow.steps.do_document')

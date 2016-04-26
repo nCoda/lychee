@@ -31,6 +31,8 @@ import os.path
 import shutil
 import tempfile
 
+from lxml import etree
+
 from mercurial import error as hg_error
 import hug
 
@@ -248,7 +250,7 @@ class InteractiveSession(object):
             session=self,
             dtype=dtype,
             document=doc)
-        if self._inbound_converted is None:
+        if not isinstance(self._inbound_converted, (etree._Element, etree._ElementTree)):
             raise exceptions.InboundConversionError()
 
         steps.do_inbound_views(
@@ -256,7 +258,7 @@ class InteractiveSession(object):
             dtype=dtype,
             document=doc,
             converted=self._inbound_converted)
-        if self._inbound_views_info is None:
+        if not isinstance(self._inbound_views_info, str):
             raise exceptions.InboundConversionError()
 
         document_pathnames = steps.do_document(

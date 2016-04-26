@@ -28,6 +28,7 @@ Tests for the :mod:`lychee.workflow.session` module.
 
 import os.path
 import shutil
+import sys
 import tempfile
 import unittest
 
@@ -188,7 +189,12 @@ class TestRepository(TestInteractiveSession):
         '''
         sess = self.session
         actual = sess.set_repo_dir('')
-        assert actual.startswith('/tmp/')
+        if sys.platform == 'linux2':
+            assert actual.startswith('/tmp/')
+        elif sys.platform == 'darwin':
+            assert actual.startswith('/var/')
+        else:
+            raise NotImplementedError("This test isn't yet implemented on this platform.")
         assert os.path.exists(os.path.join(actual, '.hg'))
 
     @mock.patch('lychee.workflow.session.hug')
@@ -423,7 +429,7 @@ class TestActionStart(TestInteractiveSession):
     @mock.patch('lychee.workflow.steps.do_inbound_views')
     @mock.patch('lychee.workflow.steps.do_document')
     @mock.patch('lychee.workflow.steps.do_vcs')
-    def test_run_inbound_unit_1(self, mock_vcs, mock_doc, mock_views, mock_conv):
+    def test_run_inbound_unit_1a(self, mock_vcs, mock_doc, mock_views, mock_conv):
         '''
         Unit test for _run_inbound_doc_vcs().
 
@@ -446,10 +452,30 @@ class TestActionStart(TestInteractiveSession):
         assert 0 == mock_vcs.call_count
 
     @mock.patch('lychee.workflow.steps.do_inbound_conversion')
+    def test_run_inbound_unit_1b(self, mock_conv):
+        '''
+        Unit test for _run_inbound_doc_vcs().
+
+        - do_inbound_conversion() is called correctly
+        - do_inbound_conversion() returns an incorrect value so there's an early return
+        '''
+        dtype = 'meh'
+        doc = 'document'
+        self.session._inbound_converted = 'this is not an LMEI document'
+
+        with pytest.raises(exceptions.InboundConversionError) as exc:
+            self.session._run_inbound_doc_vcs(dtype, doc)
+
+        mock_conv.assert_called_once_with(
+            session=self.session,
+            dtype=dtype,
+            document=doc)
+
+    @mock.patch('lychee.workflow.steps.do_inbound_conversion')
     @mock.patch('lychee.workflow.steps.do_inbound_views')
     @mock.patch('lychee.workflow.steps.do_document')
     @mock.patch('lychee.workflow.steps.do_vcs')
-    def test_run_inbound_unit_2(self, mock_vcs, mock_doc, mock_views, mock_conv):
+    def test_run_inbound_unit_2a(self, mock_vcs, mock_doc, mock_views, mock_conv):
         '''
         Unit test for _run_inbound_doc_vcs().
 
@@ -459,7 +485,7 @@ class TestActionStart(TestInteractiveSession):
         '''
         dtype = 'meh'
         doc = 'document'
-        self.session._inbound_converted = 'whatever'
+        self.session._inbound_converted = etree.Element('whatever')
 
         with pytest.raises(exceptions.InboundConversionError) as exc:
             self.session._run_inbound_doc_vcs(dtype, doc)
@@ -475,6 +501,30 @@ class TestActionStart(TestInteractiveSession):
 
     @mock.patch('lychee.workflow.steps.do_inbound_conversion')
     @mock.patch('lychee.workflow.steps.do_inbound_views')
+    def test_run_inbound_unit_2b(self, mock_views, mock_conv):
+        '''
+        Unit test for _run_inbound_doc_vcs().
+
+        - do_inbound_views() is called correctly
+        - do_inbound_views() returns an incorrect value so there's an early return
+        '''
+        dtype = 'meh'
+        doc = 'document'
+        self.session._inbound_converted = etree.Element('whatever')
+        self.session._inbound_views_info = 4  # expecting str
+
+        with pytest.raises(exceptions.InboundConversionError) as exc:
+            self.session._run_inbound_doc_vcs(dtype, doc)
+
+        assert 1 == mock_conv.call_count
+        mock_views.assert_called_once_with(
+            session=self.session,
+            dtype=dtype,
+            document=doc,
+            converted=self.session._inbound_converted)
+
+    @mock.patch('lychee.workflow.steps.do_inbound_conversion')
+    @mock.patch('lychee.workflow.steps.do_inbound_views')
     @mock.patch('lychee.workflow.steps.do_document')
     @mock.patch('lychee.workflow.steps.do_vcs')
     def test_run_inbound_unit_3(self, mock_vcs, mock_doc, mock_views, mock_conv):
@@ -486,7 +536,7 @@ class TestActionStart(TestInteractiveSession):
         '''
         dtype = 'meh'
         doc = 'document'
-        self.session._inbound_converted = 'whatever'
+        self.session._inbound_converted = etree.Element('whatever')
         self.session._inbound_views_info = 'something'
         mock_doc.return_value = ['pathnames!']
 

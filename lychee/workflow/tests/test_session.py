@@ -313,10 +313,7 @@ class TestActionStart(TestInteractiveSession):
     Tests for InteractiveSession._action_start(), the slot for the ACTION_START signal.
     '''
 
-    @mock.patch('lychee.workflow.steps.do_outbound_steps')
-    @mock.patch('lychee.signals.outbound.CONVERSION_FINISHED')
-    @mock.patch('lychee.signals.outbound.STARTED')
-    def test_everything_works_unit(self, mock_out_started, mock_out_finished, mock_do_out):
+    def test_everything_works_unit(self):
         '''
         A unit test (fully mocked) for when everything works and all code paths are executed.
         '''
@@ -324,70 +321,31 @@ class TestActionStart(TestInteractiveSession):
         doc = '<silly/>'
         self.session._cleanup_for_new_action = mock.Mock()
         self.session._run_inbound_doc_vcs = mock.Mock()
-        mock_do_out.return_value = {'placement': 'ABC', 'document': 'DEF'}
-        outbound_dtype = 'mei'
-        self.session._inbound_views_info = 'IBV'
-        self.session._hug = mock.Mock()
-        self.session._hug.summary = mock.Mock(return_value={'tag': 'tip'})
+        self.session._run_outbound = mock.Mock()
 
-        signals.outbound.REGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_everything_works_unit')
-        try:
-            self.session._action_start(dtype=dtype, doc=doc)
-        finally:
-            signals.outbound.UNREGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_everything_works_unit')
+        self.session._action_start(dtype=dtype, doc=doc)
 
         self.session._run_inbound_doc_vcs.assert_called_once_with(dtype, doc)
+        self.session._run_outbound.assert_called_once_with()
         assert 2 == self.session._cleanup_for_new_action.call_count
-        mock_out_started.emit.assert_called_once_with()
-        mock_do_out.assert_called_once_with(
-            self.session.get_repo_dir(),
-            self.session._inbound_views_info,
-            outbound_dtype)
-        mock_out_finished.emit.assert_called_once_with(
-            dtype=outbound_dtype,
-            placement=mock_do_out.return_value['placement'],
-            document=mock_do_out.return_value['document'],
-            changeset='tip')
 
-    @mock.patch('lychee.workflow.steps.do_outbound_steps')
-    @mock.patch('lychee.signals.outbound.CONVERSION_FINISHED')
-    @mock.patch('lychee.signals.outbound.STARTED')
-    def test_set_views_unit(self, mock_out_started, mock_out_finished, mock_do_out):
+    def test_set_views_unit(self):
         '''
         A unit test (fully mocked) for when ACTION_START receives views_info and not dtype or doc.
         '''
         self.session._cleanup_for_new_action = mock.Mock()
         self.session._run_inbound_doc_vcs = mock.Mock()
-        mock_do_out.return_value = {'placement': None, 'document': None}
-        outbound_dtype = 'mei'
         views_info = 'IBV'
-        self.session._hug = mock.Mock()
-        self.session._hug.summary = mock.Mock(return_value={'parent': '16:96eb6fba2374'})
+        self.session._run_outbound = mock.Mock()
 
-        signals.outbound.REGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_everything_works_unit')
-        try:
-            self.session._action_start(views_info=views_info)
-        finally:
-            signals.outbound.UNREGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_everything_works_unit')
+        self.session._action_start(views_info=views_info)
 
         assert self.session._inbound_views_info == 'IBV'
         assert not self.session._run_inbound_doc_vcs.called
+        self.session._run_outbound.assert_called_once_with()
         assert self.session._cleanup_for_new_action.callled
-        assert mock_out_started.emit.called
-        mock_do_out.assert_called_once_with(
-            self.session.get_repo_dir(),
-            views_info,
-            outbound_dtype)
-        mock_out_finished.emit.assert_called_once_with(
-            dtype=outbound_dtype,
-            placement=mock_do_out.return_value['placement'],
-            document=mock_do_out.return_value['document'],
-            changeset='16:96eb6fba2374')
 
-    @mock.patch('lychee.workflow.steps.do_outbound_steps')
-    @mock.patch('lychee.signals.outbound.CONVERSION_FINISHED')
-    @mock.patch('lychee.signals.outbound.STARTED')
-    def test_when_inbound_fails(self, mock_out_started, mock_out_finished, mock_do_out):
+    def test_when_inbound_fails(self):
         '''
         A unit test (fully mocked) for when the inbound step fails.
 
@@ -399,15 +357,13 @@ class TestActionStart(TestInteractiveSession):
         self.session._cleanup_for_new_action = mock.Mock()
         self.session._run_inbound_doc_vcs = mock.Mock()
         self.session._run_inbound_doc_vcs.side_effect = exceptions.InboundConversionError
-        mock_do_out.return_value = {'placement': 'ABC', 'document': 'DEF'}
+        self.session._run_outbound = mock.Mock()
 
         self.session._action_start(dtype=dtype, doc=doc)
 
         self.session._run_inbound_doc_vcs.assert_called_once_with(dtype, doc)
         assert self.session._cleanup_for_new_action.call_count == 2
-        assert mock_out_started.emit.call_count == 0
-        assert mock_do_out.call_count == 0
-        assert mock_out_finished.emit.call_count == 0
+        assert self.session._run_outbound.call_count == 0
 
     # TODO: fails until views completed in T33
     # def test_everything_works_unmocked(self):
@@ -433,6 +389,85 @@ class TestActionStart(TestInteractiveSession):
     #         signals.outbound.CONVERSION_FINISHED.disconnect(finish_mock)
     #
     #     assert os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
+
+
+class TestRunOutbound(TestInteractiveSession):
+    '''
+    Tests for InteractiveSession._run_outbound().
+    '''
+
+    @mock.patch('lychee.signals.outbound.CONVERSION_FINISHED')
+    @mock.patch('lychee.signals.outbound.STARTED')
+    def test_no_formats(self, mock_out_started, mock_out_finished):
+        '''
+        No formats are registered for outbound conversion.
+        '''
+        self.session.set_repo_dir('')  # tempdir
+        self.session._run_outbound()
+        mock_out_started.emit.assert_called_once_with()
+        assert mock_out_finished.emit.call_count == 0
+
+    @mock.patch('lychee.workflow.steps.do_outbound_steps')
+    @mock.patch('lychee.signals.outbound.CONVERSION_FINISHED')
+    @mock.patch('lychee.signals.outbound.STARTED')
+    def test_single_format(self, mock_out_started, mock_out_finished, mock_do_out):
+        '''
+        A single format is registered for outbound conversion. Repo is at a tag.
+        '''
+        outbound_dtype = 'mei'
+        views_info = 'IBV'
+        self.session._inbound_views_info = views_info
+        self.session._hug = mock.Mock()
+        self.session._hug.summary = mock.Mock(return_value={'tag': 'tip'})
+        mock_do_out.return_value = {'placement': None, 'document': None}
+
+        signals.outbound.REGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_single_format')
+        try:
+            self.session._run_outbound()
+        finally:
+            signals.outbound.UNREGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_single_format')
+
+        mock_out_started.emit.assert_called_once_with()
+        mock_do_out.assert_called_once_with(
+            self.session.get_repo_dir(),
+            views_info,
+            outbound_dtype)
+        mock_out_finished.emit.assert_called_once_with(
+            dtype=outbound_dtype,
+            placement=mock_do_out.return_value['placement'],
+            document=mock_do_out.return_value['document'],
+            changeset='tip')
+
+    @mock.patch('lychee.workflow.steps.do_outbound_steps')
+    @mock.patch('lychee.signals.outbound.CONVERSION_FINISHED')
+    @mock.patch('lychee.signals.outbound.STARTED')
+    def test_three_formats(self, mock_out_started, mock_out_finished, mock_do_out):
+        '''
+        Three formats are registered for outbound conversion. Repo is not at a tag.
+        '''
+        outbound_dtypes = ['document', 'mei', 'vcs']
+        views_info = 'IBV'
+        self.session._inbound_views_info = views_info
+        self.session._hug = mock.Mock()
+        self.session._hug.summary = mock.Mock(return_value={'parent': '16:96eb6fba2374'})
+        mock_do_out.return_value = {'placement': None, 'document': None}
+
+        for dtype in outbound_dtypes:
+            signals.outbound.REGISTER_FORMAT.emit(dtype=dtype, who='test_single_format')
+        try:
+            self.session._run_outbound()
+        finally:
+            for dtype in outbound_dtypes:
+                signals.outbound.UNREGISTER_FORMAT.emit(dtype=dtype, who='test_single_format')
+
+        mock_out_started.emit.assert_called_once_with()
+        assert mock_do_out.call_count == 3
+        assert mock_out_finished.emit.call_count == 3
+        mock_out_finished.emit.assert_any_call(
+            dtype=outbound_dtypes[0],
+            placement=mock_do_out.return_value['placement'],
+            document=mock_do_out.return_value['document'],
+            changeset='16:96eb6fba2374')
 
 
 class TestRunInboundDocVcs(TestInteractiveSession):

@@ -219,23 +219,7 @@ class InteractiveSession(object):
             elif 'views_info' in kwargs:
                 self._inbound_views_info = kwargs['views_info']
 
-            summary = self._hug.summary()
-            if 'tag' in summary:
-                changeset = summary['tag']
-            else:
-                changeset = summary['parent']
-
-            signals.outbound.STARTED.emit()
-            for outbound_dtype in self._registrar.get_registered_formats():
-                post = steps.do_outbound_steps(
-                    self.get_repo_dir(),
-                    self._inbound_views_info,  # might be None, but that's okay
-                    outbound_dtype)
-                signals.outbound.CONVERSION_FINISHED.emit(
-                    dtype=outbound_dtype,
-                    placement=post['placement'],
-                    document=post['document'],
-                    changeset=changeset)
+            self._run_outbound()
 
         finally:
             self._cleanup_for_new_action()
@@ -274,6 +258,28 @@ class InteractiveSession(object):
             views_info=self._inbound_views_info)
 
         steps.do_vcs(session=self, pathnames=document_pathnames)
+
+    def _run_outbound(self):
+        '''
+        Run the outbound conversions.
+        '''
+        summary = self._hug.summary()
+        if 'tag' in summary:
+            changeset = summary['tag']
+        else:
+            changeset = summary['parent']
+
+        signals.outbound.STARTED.emit()
+        for outbound_dtype in self._registrar.get_registered_formats():
+            post = steps.do_outbound_steps(
+                self.get_repo_dir(),
+                self._inbound_views_info,  # might be None, but that's okay
+                outbound_dtype)
+            signals.outbound.CONVERSION_FINISHED.emit(
+                dtype=outbound_dtype,
+                placement=post['placement'],
+                document=post['document'],
+                changeset=changeset)
 
     def _cleanup_for_new_action(self):
         '''

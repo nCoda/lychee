@@ -365,6 +365,52 @@ class TestActionStart(TestInteractiveSession):
         assert self.session._cleanup_for_new_action.call_count == 2
         assert self.session._run_outbound.call_count == 0
 
+    def test_when_hg_update_works(self):
+        '''
+        A unit test (fully mocked) for when running Hug.update() works.
+        '''
+        parent_revision = 'tip'
+        target_revision = '40:964b28acc4ee'
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session._run_outbound = mock.Mock()
+        self.session._hug = mock.Mock()
+        self.session._hug.summary = mock.Mock(return_value={'parent': parent_revision})
+        self.session._hug.update = mock.Mock()
+
+        self.session._action_start(revision=target_revision)
+
+        self.session._run_outbound.assert_called_with()
+        assert self.session._cleanup_for_new_action.call_count == 2
+        assert self.session._hug.update.call_count == 2
+        self.session._hug.update.assert_any_call(target_revision)
+        self.session._hug.update.assert_called_with(parent_revision)  # final call
+
+    def test_when_hg_update_fails(self):
+        '''
+        A unit test (fully mocked) for when running Hug.update() fails.
+        '''
+        parent_revision = 'tip'
+        target_revision = '44444444444444444'
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session._run_outbound = mock.Mock()
+        self.session._hug = mock.Mock()
+        self.session._hug.summary = mock.Mock(return_value={'parent': parent_revision})
+        # we need a complicated mock here so one call to update() fails, but the 2nd, in the finally
+        # suite, won't fail
+        def update_effect(revision):
+            "side-effect for Hug.update()"
+            if revision != parent_revision:
+                    raise RuntimeError('=^.^=  meow')
+        self.session._hug.update = mock.Mock(side_effect=update_effect)
+
+        self.session._action_start(revision=target_revision)
+
+        assert self.session._run_outbound.call_count == 0
+        assert self.session._cleanup_for_new_action.call_count == 2
+        assert self.session._hug.update.call_count == 2
+        self.session._hug.update.assert_any_call(target_revision)
+        self.session._hug.update.assert_called_with(parent_revision)  # final call
+
     # TODO: fails until views completed in T33
     # def test_everything_works_unmocked(self):
     #     '''

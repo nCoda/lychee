@@ -47,6 +47,7 @@ from lychee.workflow import steps
 _CANNOT_SAFELY_HG_INIT = 'Could not safely initialize the repository'
 _CANNOT_MAKE_HG_DIR = 'Could not create repository directory'
 _FAILURE_DURING_INBOUND = 'Action failed during the inbound steps'
+_UNKNOWN_REVISION = "ACTION_START requested a revision that doesn't exist"
 
 
 def _error_slot(**kwargs):
@@ -201,11 +202,15 @@ class InteractiveSession(object):
         :kwarg dtype: As the :const:`lychee.signals.ACTION_START` signal.
         :kwarg doc: As the :const:`lychee.signals.ACTION_START` signal.
         :kwarg views_info: As the :const:`lychee.signals.ACTION_START` signal.
+        :kwarg revision: As the :const:`lychee.signals.ACTION_START` signal.
 
         Emits the :const:`lychee.signals.outbound.CONVERSION_FINISHED` signal on completion. May
         also cause a bunch of different error signals if there's a problem.
         '''
         self._cleanup_for_new_action()
+        initial_revision = None
+        if 'revision' in kwargs:
+            initial_revision = self._hug.summary()['parent']
 
         try:
             if 'dtype' in kwargs and 'doc' in kwargs:
@@ -216,13 +221,23 @@ class InteractiveSession(object):
                     lychee.log(_FAILURE_DURING_INBOUND)
                     return
 
-            elif 'views_info' in kwargs:
-                self._inbound_views_info = kwargs['views_info']
+            else:
+                if 'views_info' in kwargs:
+                    self._inbound_views_info = kwargs['views_info']
+                if 'revision' in kwargs:
+                    try:
+                        self._hug.update(kwargs['revision'])
+                    except RuntimeError:
+                        # raised when the revision is invalid
+                        lychee.log(_UNKNOWN_REVISION)
+                        return
 
             self._run_outbound()
 
         finally:
             self._cleanup_for_new_action()
+            if initial_revision:
+                self._hug.update(initial_revision)
 
     def _run_inbound_doc_vcs(self, dtype, doc):
         '''

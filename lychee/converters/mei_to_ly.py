@@ -26,10 +26,11 @@
 Converts an MEI document to a LilyPond document.
 '''
 
-import lychee
-from lychee.signals import outbound
+from lychee import exceptions
+from lychee.namespaces import mei
 
-def convert(**kwargs):
+
+def convert(document, **kwargs):
     '''
     Convert an MEI document into a LilyPond document.
 
@@ -39,4 +40,209 @@ def convert(**kwargs):
     :rtype: str
     :raises: :exc:`lychee.exceptions.OutboundConversionError` when there is a forseeable error.
     '''
-    raise NotImplementedError('sorry!')
+    CONV_FUNCS = {
+        mei.NOTE: note,
+        mei.REST: rest,
+        mei.LAYER: layer,
+        mei.MEASURE: measure,
+        mei.STAFF: staff,
+        mei.SECTION: section,
+    }
+    if document.tag in CONV_FUNCS:
+        return CONV_FUNCS[document.tag](document)
+    else:
+        raise exceptions.OutboundConversionError('LMEI-to-LilyPond cannot do {0} elements'.format(document.tag))
+
+
+_OCTAVE_TO_MARK = {
+    '8': "'''''",
+    '7': "''''",
+    '6': "'''",
+    '5': "''",
+    '4': "'",
+    '3': "",
+    '2': ",",
+    '1': ",,",
+}
+
+_VALID_ACCIDENTALS = {
+    's': 'is',
+    'f': 'es',
+    'ss': 'isis',
+    'ff': 'eses',
+}
+
+
+def note(m_note):
+    '''
+    '''
+    assert m_note.tag == mei.NOTE
+    post = m_note.get('pname')
+    if m_note.get('accid.ges'):
+        post += _VALID_ACCIDENTALS[m_note.get('accid.ges')]
+    if m_note.get('accid'):
+        post += '!'
+    post += _OCTAVE_TO_MARK[m_note.get('oct')]
+    post += m_note.get('dur', '')
+    return post
+
+
+def rest(m_rest):
+    '''
+    '''
+    assert m_rest.tag == mei.REST
+    post = 'r'
+    post += m_rest.get('dur', '')
+    return post
+
+
+def layer(m_layer):
+    '''
+    '''
+    assert m_layer.tag == mei.LAYER
+    post = ['%{{ l.{} %}}'.format(m_layer.get('n'))]
+    for elem in m_layer.iterchildren('*'):
+        if elem.tag == mei.NOTE:
+            post.append(note(elem))
+        elif elem.tag == mei.REST:
+            post.append(rest(elem))
+        else:
+            print('missed a {} in a <layer>'.format(elem.tag))
+
+    return ' '.join(post)
+
+
+def measure(m_meas):
+    '''
+    '''
+    assert m_meas.tag == mei.MEASURE
+    before_layers = ['%{{ m.{} %}}'.format(m_meas.get('n'))]
+    after_layers = ['|\n']
+    layers = []
+    for elem in m_meas.iterchildren(tag=mei.LAYER):
+        layers.append(layer(elem))
+
+    if len(layers) > 1:
+        before_layers.append('<< {')
+        after_layers.insert(0, '} >>')
+        layers = [' } // { '.join(layers)]
+
+    post = before_layers + layers + after_layers
+
+    return ' '.join(post)
+
+
+def clef(m_staffdef):
+    '''
+    '''
+    assert m_staffdef.tag == mei.STAFF_DEF
+    if m_staffdef.get('clef.shape') and m_staffdef.get('clef.line'):
+        shape = m_staffdef.get('clef.shape')
+        line = m_staffdef.get('clef.line')
+        if shape == 'F' and line == '4':
+            post = 'bass'
+        elif shape == 'C' and line == '4':
+            post = 'tenor'
+        elif shape == 'C' and line == '3':
+            post = 'alto'
+        elif shape == 'G' and line == '2':
+            post = 'treble'
+        else:
+            return '\n'
+
+        return '\\clef "{0}"\n'.format(post)
+
+    else:
+        return '\n'
+
+
+def key(m_staffdef):
+    '''
+    '''
+    assert m_staffdef.tag == mei.STAFF_DEF
+    CONV = {
+        '7f': 'ces',
+        '6f': 'ges',
+        '5f': 'des',
+        '4f': 'aes',
+        '3f': 'ees',
+        '2f': 'bes',
+        '1f': 'f',
+        '0': 'c',
+        '1s': 'g',
+        '2s': 'd',
+        '3s': 'a',
+        '4s': 'e',
+        '5s': 'b',
+        '6s': 'fis',
+        '7s': 'cis',
+    }
+    if m_staffdef.get('key.sig'):
+        if m_staffdef.get('key.sig') in CONV:
+            post = CONV[m_staffdef.get('key.sig')]
+            post = '\\key {0} \\major\n'.format(post)
+            return post
+
+        else:
+            return '\n'
+
+    else:
+        return '\n'
+
+
+def meter(m_staffdef):
+    '''
+    '''
+    assert m_staffdef.tag == mei.STAFF_DEF
+    if m_staffdef.get('meter.count') and m_staffdef.get('meter.unit'):
+        return '\\time {0}/{1}\n'.format(m_staffdef.get('meter.count'), m_staffdef.get('meter.unit'))
+    else:
+        print('ballz')
+        print(str(m_staffdef.get('meter.count')))
+        print(str(m_staffdef.get('meter.unit')))
+        return '\n'
+
+
+def staff(m_staff, m_staffdef):
+    '''
+    '''
+    assert m_staff.tag == mei.STAFF
+    assert m_staffdef.tag == mei.STAFF_DEF
+
+    post = [
+        '\\new Staff {\n',
+        '%{{ staff {0} %}}\n'.format(m_staff.get('n')),
+        '\\set Staff.instrumentName = "{0}"\n'.format(m_staffdef.get('label', '')),
+        clef(m_staffdef),
+        key(m_staffdef),
+        meter(m_staffdef),
+    ]
+
+    for elem in m_staff.iterchildren(tag=mei.MEASURE):
+        post.append(measure(elem))
+
+    post.append('}\n')
+
+    return ''.join(post)
+
+
+def section(m_section):
+    '''
+    '''
+    assert m_section.tag == mei.SECTION
+
+    post = [
+        '\\version "2.18.2"\n',
+        '\\score {\n',
+        '<<\n',
+    ]
+
+    for m_staffdef in m_section.iterfind('.//{0}'.format(mei.STAFF_DEF)):
+        query = './/{tag}[@n="{n}"]'.format(tag=mei.STAFF, n=m_staffdef.get('n'))
+        post.append(staff(m_section.find(query), m_staffdef))
+
+    post.append('>>\n')
+    post.append('\\layout { }\n')
+    post.append('}\n')
+
+    return ''.join(post)

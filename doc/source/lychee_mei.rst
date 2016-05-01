@@ -1,3 +1,5 @@
+.. _lychee_mei:
+
 Lychee-MEI (LMEI)
 =================
 
@@ -122,6 +124,8 @@ ScoreDef and StaffDef
   ``<staff>`` element(s).
 
 
+.. _mei_headers:
+
 MEI Headers
 -----------
 
@@ -147,6 +151,97 @@ These limitations apply to child elements of ``<meiHead>``.
   identify someone who is also represented in the ``<respStmt>``, then the ``<persName>`` in
   the specific identifier should use a @nymref attribute with the @xml:id value of the
   ``<persName>`` in the ``<respStmt>``.
+
+Metadata Currently Supported by Lychee
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following document excerpt shows all the metadata fields that Lychee will support. Only the
+fields with a ``<!-- required -->`` comment must be in the ``<meiHead>`` of every Lychee-MEI
+document. They are therefore produced by the :func:`~lychee.document._empty_head` with placeholder
+values.
+
+Additional metadata will very likely be added in the future.
+
+.. sourcecode:: xml
+
+    <meiHead>
+        <fileDesc>  <!-- required -->
+            <titleStmt>  <!-- required -->
+                <!-- NB: having all title parts in a containing <title>, and using the @type attribute,
+                    are required for Lychee-MEI, and optional in standard MEI
+                    NB: the @xml:lang and @translit are optional; their use will be specified later
+                -->
+                <title xml:lang="??" translit="?"> <!-- required -->
+                    <title type="main"/>  <!-- required -->
+                    <title type="subordinate"/>
+                    <title type="abbreviated"/>
+                    <title type="alternative"/>
+                    <title type="translated"/>
+                    <title type="uniform"/>
+                </title>
+                <!-- NB: the following <titleStmt> child elements are not required -->
+                <respStmt>
+                    <!-- this is for users who worked on the document -->
+                    <!-- users may wish to credit Abjad; translatable string -->
+                    <name type="process">Abjad API for Formalized Score Control</name>
+                    <persName xml:id="p8109850029">
+                        <!-- NB: use as many of the @type="full", @type="given", @type="other", and
+                            @type="family" child elements as possible, according to what the person
+                            responsible wishes
+                            NB: the @xml:lang and @translit are optional, and will be specified later
+                        -->
+                        <persName type=""/>
+                    </persName>
+                </respStmt>
+                <!-- NB: the following are what is written on the engraved score; if they correspond
+                    to a person in the <respStmt>, this should be done with a @nymref on the <persName>
+                -->
+                <arranger>
+                    <!-- for an arranger who isn't a Lychee user -->
+                    <persName xml:id="p12341234">
+                        <persName type="full">Robert W. Smith</persName>
+                    </persName>
+                </arranger>
+                <author>
+                    <!-- for an author who is a Lychee user -->
+                    <persName nymref="#p8109850029"/>
+                </author>
+                <composer><persName/></composer>
+                <editor><persName/></editor>
+                <funder><persName/></funder>
+                <librettist><persName/></librettist>
+                <lyricist><persName/></lyricist>
+                <sponsor><persName/></sponsor>
+            </titleStmt>
+
+            <pubStmt>  <!-- required -->
+                <!-- NB: all Lychee scores are considered unpublished for now -->
+                <unpub>  <!-- required; text content is translatable -->
+                    This is an unpublished Lychee-MEI document.
+                </unpub>
+            </pubStmt>
+        </fileDesc>
+
+        <workDesc>  <!-- (NB: not yet implemented) -->
+            <work>
+                <audience/>  <!-- e.g., "beginner bands" (NB: not yet implemented) -->
+                <classification/>  <!-- like "keywords" (NB: not yet implemented) -->
+                <contents/>  <!-- a description of doc contents (NB: not yet implemented) -->
+                <context/>  <!-- socio-historical context (NB: not yet implemented) -->
+                <history/>  <!-- (NB: not yet implemented) -->
+                <key pname="" accid="" mode=""/>  <!-- (NB: not yet implemented) -->
+                <langUsage/>  <!-- related to @xml:lang elsewhere (NB: not yet implemented) -->
+                <mensuration/>  <!-- (NB: not yet implemented) -->
+                <meter count="" sym="" unit=""/>  <!--  (NB: not yet implemented) -->
+                <notesStmt/>  <!-- for score-wide notes left by users (NB: not yet implemented) -->
+                <perfMedium/>  <!-- intened performers of this version (NB: not yet implemented) -->
+            </work>
+        </workDesc>
+
+        <revisionDesc>
+            <!-- NB: not implemented; will contain data from the Mercurial revlog -->
+        </revisionDesc>
+    </meiHead>
 
 
 Semantic XML IDs

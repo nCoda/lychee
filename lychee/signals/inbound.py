@@ -65,39 +65,47 @@ Emitted when there's an error during the in bound conversion step.
 :kwarg str msg: A descriptive error message for the log file.
 '''
 
-VIEWS_START = signal.Signal(args=['document', 'converted'], name='inbound.VIEWS_START')
+VIEWS_START = signal.Signal(args=['converted', 'document', 'session'], name='inbound.VIEWS_START')
 '''
-Emitted when the inbound view processing will start (i.e., this signal is emitted to cause the views
-module to start its bit).
+Emit this signal to start the inbound views processing step.
 
-:kwarg object document: The inbound musical document. The required type is determined by each
-    converter module individually.
-:kwarg converted: The inbound musical document, converted to Lychee-MEI format.
-:type converted: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
+:param converted: The incoming (partial) document, already converted.
+:type converted: :class:`lxml.etree.Element` or :class:`lxml.etree.ElementTree`
+:param document: The incoming (partial) document for conversion, as supplied to
+    :func:`do_inbound_conversion`.
+:type document: As required by the converter.
+:param session: A session instance for the ongoing notation session.
+:type session: :class:`lychee.workflow.session.InteractiveSession`
+
+By default, this signal is not connected to a views-processing module so you must connect it to the
+proper function before you emit this signal. This is provided as a signal so that additional modules
+can be notified of the workflow progress.
+
+For information on writing a views processing module, refer to the :mod:`lychee.views` module
+documentation.
 '''
 
 VIEWS_STARTED = signal.Signal(name='inbound.VIEWS_STARTED')
 '''
-Emitted as soon as the views module begins its inbound processing (i.e., as soon as the views module
-has begun to process data).
+Emitted by the inbound views processing module as soon as it gains control, thereby confirming that
+an inbound views processor was correctly chosen.
 '''
 
 VIEWS_FINISH = signal.Signal(args=['views_info'], name='inbound.VIEWS_FINISH')
 '''
-Emitted just before the views module finishes its inbound processing (i.e., just before the views
-module returns).
-
-:kwarg views_info: Information about the inbound "view."
+Emitted by the inbound views processing module to return views information to its caller.
 '''
 
 VIEWS_FINISHED = signal.Signal(name='inbound.VIEWS_FINISHED')
 '''
-Emitted when the inbound views processing is finished.
+Emitted after inbound views processing by the module running the workflow.
 '''
 
 VIEWS_ERROR = signal.Signal(args=['msg'], name='inbound.VIEWS_ERROR')
 '''
-Emitted when there's an error while processing the inbound view.
+Emitted by the inbound views processing module, or the module running the workflow, to indicate that
+an error has occurred while generating views information. The error may be recoverable, or may cause
+the entire views step to fail, but *Lychee* may be able to continue the workflow.
 
 :kwarg str msg: A descriptive error message for the log file.
 '''

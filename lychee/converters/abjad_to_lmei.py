@@ -280,8 +280,7 @@ def calculate_tuplet_duration(tuplet):
     Calculate the duration of a tuplet that potentially contains nested tuplets.
 
     :param tuplet: the Abjad tuplet to query for duration.
-    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
-    :return
+    :type tuplet: :class:`~abjad.tools.scoretools.Tuplet` or :class:`~abjad.tools.scoretools.FixedDurationTuplet`
     '''
     if isinstance(tuplet, FixedDurationTuplet):
 	return tuplet.target_duration

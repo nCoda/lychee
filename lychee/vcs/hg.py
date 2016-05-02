@@ -23,16 +23,9 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 '''
-Mercurial integration module for Lychee.
+Mercurial integration module for *Lychee*.
 '''
 
-'''
-from mercurial import ui, hg, commands as cmds
-myui = ui.ui()
-repo = hg.repository(myui, '.')
-
-cmds.commit(myui, repo, message='')
-'''
 
 from os import path
 import time

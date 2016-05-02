@@ -38,7 +38,7 @@ __metadata__ = {
     'license': 'GPLv3+',
     'name': 'Lychee',
     'url': 'https://ncodamusic.org/lychee/',
-    'version': '0.1.0',
+    'version': '0.2.0',
 }
 
 __version__ = __metadata__['version']

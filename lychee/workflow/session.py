@@ -295,7 +295,6 @@ class InteractiveSession(object):
         Accept the views data from an inbound views processor. Slot for :const:`inbound.VIEWS_FINISH`.
 
         :param views_info: Views data for an incoming change.
-        :type views_info: ????????????????
         '''
         self._inbound_views_info = views_info
         signals.inbound.VIEWS_FINISHED.emit()

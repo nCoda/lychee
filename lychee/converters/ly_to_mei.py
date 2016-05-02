@@ -47,13 +47,14 @@ least once.
 
     - [a..g] letter names for pitch (i.e., do not use rests, measure rests, or spaces)
     - explicit accidental display (i.e., the ``!`` and ``?`` characters after a pitch)
-    - absolute octave entry (i.e., do not use ``\relative``)
-    - durations specified on every note including 1, 2, 4, 8, 16, 32, 64, ... (not ``\longa`` etc.
-        or dotted durations)
+    - absolute octave entry (i.e., do not use ``\\relative``)
+    - durations specified on every note including 1, 2, 4, 8, 16, 32, 64, ... (not ``\\longa`` etc.
+      or dotted durations)
     - slurs *within a single measure*
     - multiple measures separated by ``|`` (including trailing bar-check)
     - clefs, except with octavation numbers, specifically the following varieties: treble, bass,
-        alto, tenor, french, soprano, mezzosoprano, baritone, varbaritone, subbass, and percussion
+      alto, tenor, french, soprano, mezzosoprano, baritone, varbaritone, subbass, and percussion
+
 '''
 
 import random

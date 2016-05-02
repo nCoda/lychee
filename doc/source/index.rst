@@ -12,6 +12,7 @@ Table of Contents
 .. toctree::
     :maxdepth: 3
 
+    basic_concepts
     workflow
     lychee_mei
 

@@ -17,15 +17,8 @@ Table of Contents
     lychee_mei
     converters
     converters-registrar
-
-
-Document
---------
-
-.. toctree::
-    :maxdepth: 1
-
     document
+
 
 Views
 -----

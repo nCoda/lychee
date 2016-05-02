@@ -2,41 +2,6 @@ Lychee: The MEI Arbiter
 =======================
 
 
-The Document Module
-===================
-
-The ``document`` module is responsible for managing and coordinating the in-memory ``Element``
-representation of the MEI document with the in-files representation, and also negotiating updates
-to portions of those document representations.
-
-There are three "touch points" for where such document management is required:
-    1. incorporating the inbound change to the document,
-    1. "sectionalizing" that change into files, and
-    1. sending updated portions of the document for outbound listeners.
-
-Document manipulation will always take place in ``<section>`` elements. At first, this will be
-restriected to top-level section---the ``<section>`` that is "highest" in the element hierarchy.
-We will build the functionality to update subsections, but doing it initially seems too complicated.
-
-The ``document`` module will handle requests for portions of the document in memory as ``Element``
-objects, to be used by the inbound and outbound converters. The module will also save the
-``Element`` structure into, and load it from, per-``<section>`` files. This sounds completely
-straight-forward, but I expect that managing the cross-references between Lychee-MEI documents is
-going to be complicated enough to warrant a separate module.
-
-Initially, other modules will only be able to request (for modification or outbound converstion)
-and submit (the modified) document as a whole. The VCS can determine for itself whether particular
-per-``<section>`` files have been modified and should be committed. New elements submitted from the
-inbound conversion will be assigned @xml:id values, and the ``views`` module will learn what they
-are during outbound conversion.
-
-In the medium term, hopefully before we release the prototype, modules will be able to request and
-submit specific ``<section>`` elements. In the long term, Lychee should be able to take a "smallest
-viable container" approach, working down to the ``<layer>``. We should limit the level of
-optimization though, because the goal of requesting/using smaller document sections to begin with
-is to reduce processing time spent with portions of the document that aren't being chaged. If the
-partial-updates algorithm ends up costing just as much time, we're not really solving the problem.
-
 VCS: Mercurial Integration
 ==========================
 

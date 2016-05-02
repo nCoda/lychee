@@ -19,6 +19,7 @@ Table of Contents
     converters-registrar
     document
     views
+    vcs
 
 
 Others

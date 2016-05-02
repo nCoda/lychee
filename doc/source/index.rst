@@ -15,37 +15,9 @@ Table of Contents
     basic_concepts
     workflow
     lychee_mei
-
-Converters
-----------
-
-.. toctree::
-    :maxdepth: 1
-
     converters
     converters-registrar
 
-Into Lychee-MEI
-^^^^^^^^^^^^^^^
-
-.. toctree::
-    :maxdepth: 1
-
-    converters-abjad_to_lmei
-    converters-ly_to_mei
-    converters-mei_to_lmei
-
-From Lychee-MEI
-^^^^^^^^^^^^^^^
-
-.. toctree::
-    :maxdepth: 1
-
-    converters-document_outbound
-    converters-lmei_to_abjad
-    converters-mei_to_ly
-    converters-lmei_to_mei
-    converters-vcs_outbound
 
 Document
 --------

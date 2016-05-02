@@ -18,15 +18,8 @@ Table of Contents
     converters
     converters-registrar
     document
-
-
-Views
------
-
-.. toctree::
-    :maxdepth: 1
-
     views
+
 
 Others
 ------

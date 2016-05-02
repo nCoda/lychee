@@ -4,6 +4,7 @@ Workflow and Action Management
 .. automodule:: lychee.workflow
     :members:
 
+
 Program Modules
 ---------------
 
@@ -115,7 +116,8 @@ Signal Definitions
 ------------------
 
 .. automodule:: lychee.signals
-    :members:
+    :members: ACTION_START
+
 
 Inbound Step
 ^^^^^^^^^^^^
@@ -123,11 +125,13 @@ Inbound Step
 .. automodule:: lychee.signals.inbound
     :members:
 
+
 VCS Step
 ^^^^^^^^
 
 .. automodule:: lychee.signals.vcs
     :members:
+
 
 Outbound Step
 ^^^^^^^^^^^^^

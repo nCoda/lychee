@@ -91,6 +91,13 @@ class InteractiveSession(object):
         self._inbound_converted = None
         self._inbound_views_info = None
 
+    @property
+    def hug(self):
+        '''
+        Return the active :class:`mercurial-hug.Hug` instance.
+        '''
+        return self._hug
+
     def __del__(self):
         '''
         If this session is using a temporary directory, delete it.

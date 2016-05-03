@@ -243,6 +243,13 @@ class TestRepository(TestInteractiveSession):
             sess.set_repo_dir('/bin/delete_me')
         assert session._CANNOT_MAKE_HG_DIR == exc.value.args[0]
 
+    def test_hug_property(self):
+        '''
+        Make sure InteractiveSession.hug returns InteractiveSession._hug.
+        '''
+        self.session._hug = 'comfy'
+        assert self.session.hug == self.session._hug
+
 
 class TestDocument(TestInteractiveSession):
     '''

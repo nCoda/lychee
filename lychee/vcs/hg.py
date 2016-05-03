@@ -27,16 +27,12 @@ Mercurial integration module for *Lychee*.
 '''
 
 
-from os import path
 import time
-
-import hug
 
 import lychee
 from lychee.signals import vcs
 
 
-_HUG = None  # created by init_repo()
 _SIGNALS = None  # NOTE: this is defined at the end of this module
 
 
@@ -56,23 +52,23 @@ def disconnect_signals():
         signal.disconnect(slot)
 
 
-def init_repo(repodir, **kwargs):
+def init_repo(session, **kwargs):
     '''
     Initialize a repository in the "repodir" directory.
+
+    This function currently does nothing.
     '''
-    global _HUG
-    _HUG = hug.Hug(repodir, safe=True)
+    pass
 
 
-def add(pathnames, **kwargs):
+def add(pathnames, session, **kwargs):
     '''
     Given a list of pathnames, ensure they are all tracked in the repository.
     '''
-    global _HUG
-    _HUG.add(pathnames)
+    session.hug.add(pathnames)
 
 
-def commit(message=None, **kwargs):
+def commit(session, message=None, **kwargs):
     '''
     Make a new commit, optionally with the supplied commit message.
 
@@ -81,13 +77,11 @@ def commit(message=None, **kwargs):
 
     If no commit message is supplied, a default is used.
     '''
-    global _HUG
-
     if message is None:
         message = 'Lychee autocommit {}'.format(time.time())
 
     try:
-        _HUG.commit(message)
+        session.hug.commit(message)
     except RuntimeError:
         lychee.log('No files changed; commit aborted.', level='info')
 

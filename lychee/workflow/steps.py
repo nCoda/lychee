@@ -171,7 +171,7 @@ def do_vcs(session, pathnames):
     '''
     # NOTE: why bother with the signal at all? Why not just call self._vcs_driver() ? Because
     # this way we can enable/disable the VCS step by changing who's listening to vcs.START.
-    signals.vcs.START.emit(repo_dir=session.get_repo_dir(), pathnames=pathnames)
+    signals.vcs.START.emit(session=session, pathnames=pathnames)
     signals.vcs.FINISHED.emit()
 
 
@@ -226,14 +226,14 @@ def do_outbound_steps(repo_dir, views_info, dtype):
         raise exceptions.InvalidDataTypeError(_INVALID_OUTBOUND_DTYPE.format(dtype))
 
 
-def _vcs_driver(repo_dir, pathnames, **kwargs):
+def _vcs_driver(session, pathnames, **kwargs):
     '''
     Slot for vcs.START that actually runs the "VCS step," and will only be called when the VCS
     system is enabled.
     '''
-    signals.vcs.INIT.emit(repodir=repo_dir)
-    signals.vcs.ADD.emit(pathnames=pathnames)
-    signals.vcs.COMMIT.emit(message=None)
+    signals.vcs.INIT.emit(session=session)
+    signals.vcs.ADD.emit(pathnames=pathnames, session=session)
+    signals.vcs.COMMIT.emit(message=None, session=session)
 
 
 def _choose_inbound_converter(dtype):

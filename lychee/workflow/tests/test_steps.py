@@ -124,7 +124,7 @@ class TestVCSStep(TestInteractiveSession):
 
         steps.do_vcs(self.session, ['pathnames'])
 
-        start_slot.assert_called_with(repo_dir=self.session.get_repo_dir(), pathnames=['pathnames'])
+        start_slot.assert_called_with(session=self.session, pathnames=['pathnames'])
         finished_slot.assert_called_with()
         signals.vcs.START.disconnect(start_slot)
         signals.vcs.FINISHED.disconnect(finished_slot)
@@ -146,11 +146,11 @@ class TestVCSStep(TestInteractiveSession):
         signals.vcs.ADD.connect(add_slot)
         signals.vcs.COMMIT.connect(commit_slot)
 
-        steps._vcs_driver('dir', 'names')
+        steps._vcs_driver(session='sess', pathnames='names')
 
-        init_slot.assert_called_with(repodir='dir')
-        add_slot.assert_called_with(pathnames='names')
-        commit_slot.assert_called_with(message=None)
+        init_slot.assert_called_with(session='sess')
+        add_slot.assert_called_with(pathnames='names', session='sess')
+        commit_slot.assert_called_with(message=None, session='sess')
         signals.vcs.INIT.disconnect(init_slot)
         signals.vcs.ADD.disconnect(add_slot)
         signals.vcs.COMMIT.disconnect(commit_slot)

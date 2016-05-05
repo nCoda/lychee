@@ -291,10 +291,11 @@ def process_forced_accid(l_note, attrib):
     put stuff in attrib for a forced accidental, if required.
     '''
     if l_note['accidental_force'] == '!':
-        if attrib['accid.ges']:
+        if 'accid.ges' in attrib:
             attrib['accid'] = attrib['accid.ges']
         else:
-            attrib['accid'] = 'n'  # show a natural
+            # show a natural
+            attrib['accid'] = 'n'
 
     return attrib
 
@@ -308,7 +309,7 @@ def process_caut_accid(l_note, attrib, m_note):
     :returns: The MEI ``<note>`` element.
     '''
     if l_note['accidental_force'] == '?':
-        if attrib['accid.ges']:
+        if 'accid.ges' in attrib:
             etree.SubElement(m_note, mei.ACCID, {'accid': attrib['accid.ges'], 'func': 'cautionary'})
         else:
             # show a natural

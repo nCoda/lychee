@@ -17,7 +17,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2016, 5, 5, 5, 17, 9, 3)
+__version__ = (2016, 5, 5, 20, 11, 46, 3)
 
 __all__ = [
     'LilyPondParser',
@@ -234,25 +234,25 @@ class LilyPondParser(Parser):
     def _duration_number_(self):
         with self._choice():
             with self._option():
-                self._token('1')
-            with self._option():
-                self._token('2')
-            with self._option():
-                self._token('4')
-            with self._option():
-                self._token('8')
-            with self._option():
-                self._token('16')
-            with self._option():
-                self._token('32')
-            with self._option():
-                self._token('64')
-            with self._option():
-                self._token('128')
+                self._token('512')
             with self._option():
                 self._token('256')
             with self._option():
-                self._token('512')
+                self._token('128')
+            with self._option():
+                self._token('64')
+            with self._option():
+                self._token('32')
+            with self._option():
+                self._token('16')
+            with self._option():
+                self._token('8')
+            with self._option():
+                self._token('4')
+            with self._option():
+                self._token('2')
+            with self._option():
+                self._token('1')
             self._error('expecting one of: 1 128 16 2 256 32 4 512 64 8')
 
     @graken()

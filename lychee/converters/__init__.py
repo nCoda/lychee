@@ -64,14 +64,14 @@ incoming Lychee-MEI documents. We may enforce this for all converters, if possib
 
 # Jeff: "Well, a universal converter is, by definition, a pretty slutty thing."
 
-__all__ = ['mei_to_ly', 'ly_to_mei', 'lmei_to_abjad', 'abjad_to_lmei', 'mei_to_lmei', 'lmei_to_mei',
+__all__ = ['mei_to_ly', 'ly_to_lmei', 'lmei_to_abjad', 'abjad_to_lmei', 'mei_to_lmei', 'lmei_to_mei',
     'lmei_to_verovio', 'registrar', 'vcs_outbound', 'document_outbound']
 
 from lychee.converters import *
 
 
 # NOTE: please keep the keys in lowercase
-INBOUND_CONVERTERS = {'lilypond': ly_to_mei.convert,
+INBOUND_CONVERTERS = {'lilypond': ly_to_lmei.convert,
                       'abjad': abjad_to_lmei.convert,
                       'mei': mei_to_lmei.convert
                      }

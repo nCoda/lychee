@@ -70,8 +70,15 @@ def convert_no_signals(document):
         left_recursion=True,
         comments_re='\\%\\{.*?\\%\\}')
 
-    check_version(parsed)
-    converted = do_file(parsed)
+    if 'score' in parsed:
+        check_version(parsed)
+        converted = do_file(parsed)
+    elif 'staff' in parsed:
+        parsed = {'score': [parsed]}
+        converted = do_file(parsed)
+    else:
+        raise RuntimeError('did not find a thing to do')
+
     return converted
 
 

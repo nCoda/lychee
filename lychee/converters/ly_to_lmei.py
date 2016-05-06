@@ -319,10 +319,10 @@ def process_caut_accid(l_note, attrib, m_note):
     '''
     if l_note['accidental_force'] == '?':
         if 'accid.ges' in attrib:
-            etree.SubElement(m_note, mei.ACCID, {'accid': attrib['accid.ges'], 'func': 'cautionary'})
+            etree.SubElement(m_note, mei.ACCID, {'accid': attrib['accid.ges'], 'func': 'caution'})
         else:
             # show a natural
-            etree.SubElement(m_note, mei.ACCID, {'accid': 'n', 'func': 'cautionary'})
+            etree.SubElement(m_note, mei.ACCID, {'accid': 'n', 'func': 'caution'})
 
     return m_note
 

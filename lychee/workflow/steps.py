@@ -64,6 +64,7 @@ _UNEXP_ERR_INBOUND_CONVERSION = 'Unexpected error during inbound conversion'
 _UNEXP_ERR_INBOUND_VIEWS = 'Unexpected error during inbound views processing'
 _INVALID_OUTBOUND_DTYPE = 'Invalid "dtype" for outbound conversion: "{0}"'
 _SCORE_IS_EMPTY = 'The score is empty; cannot continue outbound processing'
+_NO_INBOUND_VIEWS = 'There is no inbound views processor for {0}'
 _NO_OUTBOUND_VIEWS = 'There is no outbound views processor for {0}'
 
 
@@ -265,28 +266,26 @@ def flush_inbound_converters():
         signals.inbound.CONVERSION_START.disconnect(each_converter)
 
 
-def _dummy_inbound_views_slot(**kwargs):  # TODO: remove with T33
-    signals.inbound.VIEWS_FINISH.emit(views_info='<dummy views info>')
-
-
-def _choose_inbound_views(dtype):  # TODO: untested until T33
+def _choose_inbound_views(dtype):
     '''
     Connect the "inbound.VIEWS_START" signal to the appropriate views processor according to the
     inbound data type.
 
     :param str dtype: The inbound data type as specified in an as-yet-unknwon place.
-    :raises: :exc:`~lychee.exceptions.InvalidDataTypeError` when there is not inbound views
+    :raises: :exc:`~lychee.exceptions.InvalidDataTypeError` when there is no inbound views
         processor for the given ``dtype``.
-
-    .. warning:: This function is not implemented. Refer to T33.
     '''
     dtype = dtype.lower()
-    if dtype == 'abjad':
-        signals.inbound.VIEWS_START.connect(views_in.abjad.place_view)
-    elif dtype == 'lilypond':
-        signals.inbound.VIEWS_START.connect(views_in.lilypond.place_view)
+
+    modules = {
+        'abjad': views_in.abjad.place_view,
+        'lilypond': views_in.lilypond.place_view,
+    }
+
+    if dtype in modules:
+        signals.inbound.VIEWS_START.connect(modules[dtype])
     else:
-        signals.inbound.VIEWS_START.connect(_dummy_inbound_views_slot)
+        raise exceptions.InvalidDataTypeError(_NO_INBOUND_VIEWS.format(dtype))
 
 
 def flush_inbound_views():  # TODO: untested until T33

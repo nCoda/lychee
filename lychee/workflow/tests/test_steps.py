@@ -45,6 +45,7 @@ from lychee import exceptions
 from lychee.namespaces import mei, xml
 from lychee import signals
 from lychee.vcs import hg as vcs_hg_module
+from lychee.views import inbound as views_in
 from lychee.workflow import steps
 
 from test_session import TestInteractiveSession
@@ -352,6 +353,26 @@ class TestInboundViewsStep(TestInteractiveSession):
         finish_slot.assert_called_once_with(views_info=None)
         error_slot.assert_called_once_with(msg=steps._UNEXP_ERR_INBOUND_VIEWS)
         mock_flush.assert_called_once_with()
+
+    def test_choose_views_1(self):
+        '''
+        _choose_inbound_views() with a valid dtype
+        '''
+        dtype = 'LilyPond'
+        steps._choose_inbound_views(dtype)
+        assert signals.inbound.VIEWS_START.is_connected(views_in.lilypond.place_view)
+        signals.inbound.VIEWS_START.disconnect(views_in.lilypond.place_view)
+
+    def test_choose_views_2(self):
+        '''
+        _choose_inbound_views() with an invalid dtype
+        '''
+        dtype = 'Water Depot: Franchises still available!'
+        with pytest.raises(exceptions.InvalidDataTypeError) as exc:
+            steps._choose_inbound_views(dtype)
+
+        assert len(signals.inbound.VIEWS_START.slots) == 0
+        assert exc.value.args[0] == steps._NO_INBOUND_VIEWS.format(dtype.lower())
 
 
 class TestOutboundSteps(object):

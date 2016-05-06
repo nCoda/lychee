@@ -23,9 +23,9 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 '''
-The :mod:`views` modules allow *Lychee* to keep track of several discrete musical fragments at once,
-and to determine the most efficient way to provide updates for all registered outbound formats. An
-action with views processing looks approximately like this:
+The :mod:`~lychee.views` modules allow *Lychee* to keep track of several discrete musical fragments
+at once, and to determine the most efficient way to provide updates for all registered outbound
+formats. An action with views processing looks approximately like this:
 
 #. Inbound conversion.
 #. Inbound views ("What part of the music was updated?")

@@ -294,6 +294,8 @@ texinfo_documents = [
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'python': ('https://docs.python.org/3.4', None),
-                       'abjad': ('http://abjad.mbrsi.org/', None),
-                      }
+intersphinx_mapping = {
+    'abjad': ('http://abjad.mbrsi.org/', None),
+    'python': ('https://docs.python.org/3.5', None),
+    'signalslot': ('https://signalslot.readthedocs.org/en/latest/', None),
+}

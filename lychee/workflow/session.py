@@ -31,6 +31,8 @@ import os.path
 import shutil
 import tempfile
 
+from lxml import etree
+
 from mercurial import error as hg_error
 import hug
 
@@ -88,6 +90,13 @@ class InteractiveSession(object):
         # thse should be cleared for each action
         self._inbound_converted = None
         self._inbound_views_info = None
+
+    @property
+    def hug(self):
+        '''
+        Return the active :class:`mercurial-hug.Hug` instance.
+        '''
+        return self._hug
 
     def __del__(self):
         '''
@@ -248,7 +257,7 @@ class InteractiveSession(object):
             session=self,
             dtype=dtype,
             document=doc)
-        if self._inbound_converted is None:
+        if not isinstance(self._inbound_converted, (etree._Element, etree._ElementTree)):
             raise exceptions.InboundConversionError()
 
         steps.do_inbound_views(
@@ -256,7 +265,7 @@ class InteractiveSession(object):
             dtype=dtype,
             document=doc,
             converted=self._inbound_converted)
-        if self._inbound_views_info is None:
+        if not isinstance(self._inbound_views_info, str):
             raise exceptions.InboundConversionError()
 
         document_pathnames = steps.do_document(
@@ -293,7 +302,6 @@ class InteractiveSession(object):
         Accept the views data from an inbound views processor. Slot for :const:`inbound.VIEWS_FINISH`.
 
         :param views_info: Views data for an incoming change.
-        :type views_info: ????????????????
         '''
         self._inbound_views_info = views_info
         signals.inbound.VIEWS_FINISHED.emit()

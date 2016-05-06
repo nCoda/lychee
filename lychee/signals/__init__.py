@@ -22,9 +22,6 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
-'''
-Initialize the :mod:`signals` module.
-'''
 
 # NOTE that you must import the :mod:`lychee.signals.workflow` separately because it isn't imported
 # by ``from lychee import *`` by default, because it caused too much trouble.

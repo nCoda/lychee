@@ -119,15 +119,17 @@ class TestVCSStep(TestInteractiveSession):
         # create and connect some mock slots for vcs.START and vcs.FINISHED
         start_slot = make_slot_mock()
         finished_slot = make_slot_mock()
+
         signals.vcs.START.connect(start_slot)
         signals.vcs.FINISHED.connect(finished_slot)
+        try:
+            steps.do_vcs(self.session, ['pathnames'])
+        finally:
+            signals.vcs.START.disconnect(start_slot)
+            signals.vcs.FINISHED.disconnect(finished_slot)
 
-        steps.do_vcs(self.session, ['pathnames'])
-
-        start_slot.assert_called_with(repo_dir=self.session.get_repo_dir(), pathnames=['pathnames'])
+        start_slot.assert_called_with(session=self.session, pathnames=['pathnames'])
         finished_slot.assert_called_with()
-        signals.vcs.START.disconnect(start_slot)
-        signals.vcs.FINISHED.disconnect(finished_slot)
 
     def test_vcs_driver_1(self):
         '''
@@ -142,18 +144,20 @@ class TestVCSStep(TestInteractiveSession):
         init_slot = make_slot_mock()
         add_slot = make_slot_mock()
         commit_slot = make_slot_mock()
+
         signals.vcs.INIT.connect(init_slot)
         signals.vcs.ADD.connect(add_slot)
         signals.vcs.COMMIT.connect(commit_slot)
+        try:
+            steps._vcs_driver(session='sess', pathnames='names')
+        finally:
+            signals.vcs.INIT.disconnect(init_slot)
+            signals.vcs.ADD.disconnect(add_slot)
+            signals.vcs.COMMIT.disconnect(commit_slot)
 
-        steps._vcs_driver('dir', 'names')
-
-        init_slot.assert_called_with(repodir='dir')
-        add_slot.assert_called_with(pathnames='names')
-        commit_slot.assert_called_with(message=None)
-        signals.vcs.INIT.disconnect(init_slot)
-        signals.vcs.ADD.disconnect(add_slot)
-        signals.vcs.COMMIT.disconnect(commit_slot)
+        init_slot.assert_called_with(session='sess')
+        add_slot.assert_called_with(pathnames='names', session='sess')
+        commit_slot.assert_called_with(message=None, session='sess')
 
 
 class TestInboundConversionStep(TestInteractiveSession):

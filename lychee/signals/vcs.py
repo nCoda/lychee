@@ -29,12 +29,14 @@ Signals for the "vcs" step.
 from . import signal
 
 
-START = signal.Signal(args=['pathnames'], name='vcs.START')
+START = signal.Signal(args=['pathnames', 'session'], name='vcs.START')
 '''
 Emitted by the :class:`WorkflowManager` to begin the "vcs" stage.
 
 :kwarg pathnames: A list of pathnames that were modified in the most recent write-to-disk.
 :type pathnames: list of str
+:kwarg session: A session instance from which to use repository information.
+:type session: :class:`lychee.workflow.session.InteractiveSession`
 '''
 
 
@@ -45,37 +47,43 @@ by the :const:`FINISHED` signal.
 '''
 
 
-INIT = signal.Signal(name='vcs.INIT', args=['repodir'])
+INIT = signal.Signal(name='vcs.INIT', args=['session'])
 '''
-This signal is emitted to cause a repository initialization. Such initialization may consist either
-of creating a new, empty local repository, of cloning a remote repository, or otherwise initializing
-an existing repository.
+Emit this signal to initialize a repository.
+
+:kwarg session: A session instance from which to use repository information.
+:type session: :class:`lychee.workflow.session.InteractiveSession`
+:raises: :exc:`~lychee.exceptions.RepositoryError` when the repository could not be initialized.
 
 .. note:: This signal is emitted before every :const:`ADD` and :const:`COMMIT`, so VCS implementation
     modules (1) can and should use this signal to perform any initialization, rather than doing it
     on Lychee startup; and (2) must not cause any harm when this signal is emitted with a repository
     that is already initialized.
 
-:kwarg repodir: The directory to the repository that will be initialized.
-:type repodir: str
+The listener for this signal may create a new, empty local repository, clone a remote repository,
+simply check that an existing repository is sound, or something else.
 '''
 
 
-ADD = signal.Signal(name='vcs.ADD', args=['pathnames'])
+ADD = signal.Signal(name='vcs.ADD', args=['pathnames', 'session'])
 '''
 This signal is emitted to cause files to be added to the VCS.
 
 :kwarg pathnames: The pathnames modified for this commit.
 :type pathnames: list of str
+:kwarg session: A session instance from which to use repository information.
+:type session: :class:`lychee.workflow.session.InteractiveSession`
 '''
 
 
-COMMIT = signal.Signal(name='vcs.COMMIT', args=['message'])
+COMMIT = signal.Signal(name='vcs.COMMIT', args=['message', 'session'])
 '''
 This signal is emitted to cause a new commit.
 
 :kwarg message: An optional commit message.
 :type message: str
+:kwarg session: A session instance from which to use repository information.
+:type session: :class:`lychee.workflow.session.InteractiveSession`
 '''
 
 

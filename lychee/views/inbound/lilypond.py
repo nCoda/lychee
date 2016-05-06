@@ -48,7 +48,8 @@ def place_view(converted, document, session, **kwargs):
     '''
     signals.inbound.VIEWS_STARTED.emit()
     try:
-        post = _place_view(converted, document, session)
+        section_id = kwargs['views_info'] if 'views_info' in kwargs else None
+        post = _place_view(converted, document, session, section_id)
     except Exception as exc:
         if lychee.DEBUG:
             raise
@@ -58,7 +59,7 @@ def place_view(converted, document, session, **kwargs):
         signals.inbound.VIEWS_FINISH.emit(views_info=post)
 
 
-def _place_view(converted, document, session):
+def _place_view(converted, document, session, section_id):
     '''
     Do the actual work for :func:`place_view`. That is a public wrapper function for error handling,
     and this is a private function with easier testing.
@@ -66,7 +67,7 @@ def _place_view(converted, document, session):
     if converted.tag != mei.SECTION:
         raise NotImplementedError('LilyPond inbound views must receive a <section>')
 
-    xmlid = 'Sme-s-m-l-e{}'.format(_seven_digits())
+    xmlid = section_id if section_id else 'Sme-s-m-l-e{}'.format(_seven_digits())
     converted.set(xml.ID, xmlid)
 
     for staff in converted.iter(tag=mei.STAFF):

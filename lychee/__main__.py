@@ -154,8 +154,9 @@ if 'lilypond' == test_which_format:
         \\layout { }
     }
     """
-    signals.ACTION_START.emit(dtype='LilyPond', doc=input_ly)
+    signals.ACTION_START.emit(dtype='LilyPond', doc=input_ly, views_info='Sme-s-m-l-e5811068')
 elif 'abjad' == test_which_format:
+    print('(starting to make Abjad score)')
     from abjad import *
     # Sibelius' 7th symphony, pg.5 m.6 through B
     violins_1_1 = Staff([
@@ -255,7 +256,7 @@ elif 'abjad' == test_which_format:
 
     score = Score([violins_1_1, violins_1_2, violins_2_1, violins_2_2, alti_1, alti_2, celli_1, celli_2, bassi])
     print('(finished making Abjad score)')
-    signals.ACTION_START.emit(dtype='abjad', doc=score)
+    signals.ACTION_START.emit(dtype='abjad', doc=score, views_info='Sme-s-m-l-e8151068')
 elif 'outbound only' == test_which_format:
     signals.ACTION_START.emit()
 else:

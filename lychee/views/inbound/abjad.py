@@ -54,7 +54,8 @@ def place_view(converted, document, session, **kwargs):
     '''
     signals.inbound.VIEWS_STARTED.emit()
     try:
-        post = _place_view(converted, document, session)
+        section_id = kwargs['views_info'] if 'views_info' in kwargs else None
+        post = _place_view(converted, document, session, section_id)
     except Exception as exc:
         if lychee.DEBUG:
             raise
@@ -64,7 +65,7 @@ def place_view(converted, document, session, **kwargs):
         signals.inbound.VIEWS_FINISH.emit(views_info=post)
 
 
-def _place_view(converted, document, session):
+def _place_view(converted, document, session, section_id):
     '''
     Do the actual work for :func:`place_view`. That is a public wrapper function for error handling,
     and this is a private function with easier testing.
@@ -81,6 +82,9 @@ def _place_view(converted, document, session):
                 _ids_atom = json.load(thefile)
 
     # TODO: load the "mtoa" map
+
+    if section_id:
+        converted.set(xml.ID, section_id)
 
     if converted.get(xml.ID) in _ids_atom:
         # It's not a new section.
@@ -101,7 +105,7 @@ def _place_view(converted, document, session):
         print('The Abjad-given ID is {}'.format(converted.get(xml.ID)))
         # It's a new section.
         # Generate a new ID, set it in the mappings, set it on the <section>, then return the ID.
-        xmlid = 'Sme-s-m-l-e{}'.format(_seven_digits())
+        xmlid = section_id if section_id else 'Sme-s-m-l-e{}'.format(_seven_digits())
         _ids_atom[converted.get(xml.ID)] = xmlid
         _ids_atom[xmlid] = converted.get(xml.ID)
         converted.set(xml.ID, xmlid)

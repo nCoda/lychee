@@ -79,7 +79,7 @@ class TestPlaceView(object):
     @mock.patch('lychee.views.inbound.abjad._place_view')
     def test_success(self, mock__place, mock_signals):
         '''
-        The conversion is successful.
+        The conversion is successful. ("views_info" not provided)
         '''
         expected = 'fourteen'
         mock__place.return_value = expected
@@ -89,7 +89,7 @@ class TestPlaceView(object):
 
         assert abjad.place_view(converted, document, session) is None
 
-        mock__place.assert_called_with(converted, document, session)
+        mock__place.assert_called_with(converted, document, session, None)
         mock_signals['started'].assert_called_with()
         mock_signals['finish'].assert_called_with(views_info=expected)
         assert mock_signals['error'].call_count == 0
@@ -97,18 +97,19 @@ class TestPlaceView(object):
     @mock.patch('lychee.views.inbound.abjad._place_view')
     def test_fail_debug(self, mock__place, mock_signals):
         '''
-        The conversion fails and DEBUG is True.
+        The conversion fails and DEBUG is True. ("views_info" is provided)
         '''
         mock__place.side_effect = RuntimeError()
         converted = 'ddd'
         document = 'eee'
         session = 'fff'
+        views_info = '可以'
 
         orig_DEBUG = lychee.DEBUG
         try:
             lychee.DEBUG = True
             with pytest.raises(RuntimeError):
-                abjad.place_view(converted, document, session)
+                abjad.place_view(converted, document, session, views_info=views_info)
         finally:
             lychee.DEBUG = orig_DEBUG
 
@@ -119,21 +120,22 @@ class TestPlaceView(object):
     @mock.patch('lychee.views.inbound.abjad._place_view')
     def test_fail_nodebug(self, mock__place, mock_signals):
         '''
-        The conversion fails and DEBUG is False.
+        The conversion fails and DEBUG is False. ("views_info" is provided)
         '''
         mock__place.side_effect = RuntimeError()
         converted = 'ddd'
         document = 'eee'
         session = 'fff'
+        views_info = '可以'
 
         orig_DEBUG = lychee.DEBUG
         try:
             lychee.DEBUG = False
-            assert abjad.place_view(converted, document, session) is None
+            assert abjad.place_view(converted, document, session, views_info=views_info) is None
         finally:
             lychee.DEBUG = orig_DEBUG
 
-        mock__place.assert_called_with(converted, document, session)
+        mock__place.assert_called_with(converted, document, session, views_info)
         mock_signals['started'].assert_called_with()
         mock_signals['error'].assert_called_with(msg=abjad._GENERIC_ERROR.format('RuntimeError()'))
         assert mock_signals['finish'].call_count == 0

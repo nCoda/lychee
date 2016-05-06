@@ -288,13 +288,12 @@ def _choose_inbound_views(dtype):
         raise exceptions.InvalidDataTypeError(_NO_INBOUND_VIEWS.format(dtype))
 
 
-def flush_inbound_views():  # TODO: untested until T33
+def flush_inbound_views():
     '''
     Clear any inbound views processors that may be connected.
-
-    .. warning:: This function is not implemented. Refer to T33.
     '''
-    signals.inbound.VIEWS_START.disconnect(_dummy_inbound_views_slot)
+    for slot in signals.inbound.VIEWS_START.slots:
+        signals.inbound.VIEWS_START.disconnect(slot)
 
 
 def _do_outbound_views(repo_dir, views_info, dtype):

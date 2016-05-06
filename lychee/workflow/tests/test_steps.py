@@ -374,6 +374,28 @@ class TestInboundViewsStep(TestInteractiveSession):
         assert len(signals.inbound.VIEWS_START.slots) == 0
         assert exc.value.args[0] == steps._NO_INBOUND_VIEWS.format(dtype.lower())
 
+    def test_flush_views_1(self):
+        '''
+        flush_inbound_views() when nothing was connected to begin with.
+        '''
+        assert len(signals.inbound.VIEWS_START.slots) == 0  # pre-condition
+        steps.flush_inbound_views()
+        assert len(signals.inbound.VIEWS_START.slots) == 0
+
+    def test_flush_views_2(self):
+        '''
+        flush_inbound_views() when nothing was connected to begin with.
+        '''
+        assert len(signals.inbound.VIEWS_START.slots) == 0  # pre-condition
+        # connect two slots
+        signals.inbound.VIEWS_START.connect(views_in.abjad.place_view)
+        signals.inbound.VIEWS_START.connect(views_in.lilypond.place_view)
+        assert len(signals.inbound.VIEWS_START.slots) == 2  # pre-condition
+
+        steps.flush_inbound_views()
+
+        assert len(signals.inbound.VIEWS_START.slots) == 0
+
 
 class TestOutboundSteps(object):
     '''

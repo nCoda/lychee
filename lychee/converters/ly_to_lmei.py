@@ -107,10 +107,11 @@ def do_file(parsed):
     '''
     m_section = etree.Element(mei.SECTION)
     m_scoredef = etree.SubElement(m_section, mei.SCORE_DEF)
+    m_staffgrp = etree.SubElement(m_scoredef, mei.STAFF_GRP)
 
     staff_n = 1
     for l_staff in parsed['score']:
-        m_staffdef = etree.SubElement(m_scoredef, mei.STAFF_DEF, {'n': str(staff_n)})
+        m_staffdef = etree.SubElement(m_staffgrp, mei.STAFF_DEF, {'n': str(staff_n)})
         do_staff(l_staff, m_section, staff_n, m_staffdef)
         staff_n += 1
 

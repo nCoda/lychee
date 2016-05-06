@@ -86,7 +86,7 @@ print('this is the repodir: {}'.format(session.get_repo_dir()))
 
 # this is what starts a test "action"
 if 'lilypond' == test_which_format:
-    input_ly = "\clef treble a''4( b'16 c''2)  | \clef \"bass\" d?2 e!2  | f,,2( fis,2)  |"
+    input_ly = """\\clef "treble" a''4 b'16 c''2  | \\clef "bass" d?2 e!2  | f,,2 fis,2  |"""
     signals.ACTION_START.emit(dtype='LilyPond', doc=input_ly)
 elif 'abjad' == test_which_format:
     from abjad import *

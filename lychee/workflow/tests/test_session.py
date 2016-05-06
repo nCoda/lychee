@@ -412,7 +412,7 @@ class TestActionStart(TestInteractiveSession):
         '''
         An integration test (no mocks) for when everything works and all code paths are excuted.
         '''
-        input_ly = "\clef treble a''4( b'16 c''2)  | \clef \"bass\" d?2 e!2  | f,,2( fis,2)  |"
+        input_ly = """\\clef "treble" a''4 b'16 c''2  | \\clef "bass" d?2 e!2  | f,,2 fis,2  |"""
         assert not os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
         # unfortunately we need a mock for this, so we can be sure it was called
         finish_mock = make_slot_mock()

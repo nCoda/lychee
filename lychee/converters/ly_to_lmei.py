@@ -72,13 +72,14 @@ def convert_no_signals(document):
 
     if 'score' in parsed:
         check_version(parsed)
-        converted = do_file(parsed)
     elif 'staff' in parsed:
         parsed = {'score': [parsed]}
-        converted = do_file(parsed)
+    elif isinstance(parsed, list) and 'measure' in parsed[0]:
+        parsed = {'score': [{'staff': {'measures': parsed}}]}
     else:
-        raise RuntimeError('did not find a thing to do')
+        raise RuntimeError('Need score, staff, or measures for the top-level thing')
 
+    converted = do_file(parsed)
     return converted
 
 

@@ -17,7 +17,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2016, 5, 6, 2, 48, 49, 4)
+__version__ = (2016, 5, 6, 3, 2, 16, 4)
 
 __all__ = [
     'LilyPondParser',
@@ -56,6 +56,8 @@ class LilyPondParser(Parser):
                 self._score_()
             with self._option():
                 self._staff_()
+            with self._option():
+                self._measures_()
             self._error('no available options')
 
     @graken()

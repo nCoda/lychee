@@ -276,8 +276,11 @@ def _choose_inbound_views(dtype):  # TODO: untested until T33
 
     .. warning:: This function is not implemented. Refer to T33.
     '''
-    if dtype.lower() == 'abjad':
+    dtype = dtype.lower()
+    if dtype == 'abjad':
         signals.inbound.VIEWS_START.connect(views_in.abjad.place_view)
+    elif dtype == 'lilypond':
+        signals.inbound.VIEWS_START.connect(views_in.lilypond.place_view)
     else:
         signals.inbound.VIEWS_START.connect(_dummy_inbound_views_slot)
 

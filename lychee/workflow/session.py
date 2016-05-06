@@ -217,8 +217,10 @@ class InteractiveSession(object):
         try:
             if 'dtype' in kwargs and 'doc' in kwargs:
                 # only do the inbound, document, and VCS steps if there's an incoming change
+                if 'views_info' not in kwargs:
+                    kwargs['views_info'] = None
                 try:
-                    self._run_inbound_doc_vcs(kwargs['dtype'], kwargs['doc'])
+                    self._run_inbound_doc_vcs(kwargs['dtype'], kwargs['doc'], kwargs['views_info'])
                 except exceptions.InboundConversionError:
                     lychee.log(_FAILURE_DURING_INBOUND)
                     return
@@ -240,12 +242,13 @@ class InteractiveSession(object):
         finally:
             self._cleanup_for_new_action()
 
-    def _run_inbound_doc_vcs(self, dtype, doc):
+    def _run_inbound_doc_vcs(self, dtype, doc, views_info):
         '''
         Helper method for :meth:`_action_start`.
 
-        :arg str dtype: From the :const:`~lychee.signals.ACTION_START` signal.
-        :arg ??? doc: From the :const:`~lychee.signals.ACTION_START` signal.
+        :param str dtype: From the :const:`~lychee.signals.ACTION_START` signal.
+        :param ??? doc: From the :const:`~lychee.signals.ACTION_START` signal.
+        :param str views_info: For :const:`lychee.signals.inbound.VIEWS_START`.
         :raises: :exc:`lychee.exceptions.InboundConversionError` when the conversion or views
             processing steps fail.
 
@@ -264,7 +267,8 @@ class InteractiveSession(object):
             session=self,
             dtype=dtype,
             document=doc,
-            converted=self._inbound_converted)
+            converted=self._inbound_converted,
+            views_info=views_info)
         if not isinstance(self._inbound_views_info, str):
             raise exceptions.InboundConversionError()
 

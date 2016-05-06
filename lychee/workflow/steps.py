@@ -98,7 +98,7 @@ def do_inbound_conversion(session, dtype, document):
         flush_inbound_converters()
 
 
-def do_inbound_views(session, dtype, document, converted):
+def do_inbound_views(session, dtype, document, converted, views_info):
     '''
     Run the "inbound views" step.
 
@@ -111,6 +111,8 @@ def do_inbound_views(session, dtype, document, converted):
     :type document: As required by the converter.
     :param converted: The incoming (partial) document, already converted.
     :type converted: :class:`lxml.etree.Element`
+    :param str views_info: The ``views_info`` argument from the :const:`~lychee.signals.ACTION_START`
+        signal. This is interpreted as the Lychee-MEI @xml:id that should be used for ``converted``.
 
     This function chooses an inbound views-processor then runs it. Resulting data is emitted from
     the processor with the :const:`~lychee.signals.inbound.VIEWS_FINISH` signal and not returned
@@ -120,7 +122,9 @@ def do_inbound_views(session, dtype, document, converted):
     '''
     try:
         _choose_inbound_views(dtype)
-        signals.inbound.VIEWS_START.emit(document=document, converted=converted, session=session)
+        signals.inbound.VIEWS_START.emit(
+            document=document, converted=converted, session=session, views_info=views_info
+        )
     except Exception as exc:
         if isinstance(exc, exceptions.InvalidDataTypeError):
             msg = exc.args[0]

@@ -48,8 +48,10 @@ Emit this signal to start an "action" through Lychee.
 :kwarg str dtype: The format (data type) of the inbound musical document. LilyPond, Abjad, etc.
 :kwarg object doc: The inbound musical document. The required type is determined by each converter
     module individually.
-:kwarg str views_info: Substitue information from the inbound "views processing" step if the ``doc``
-    is omitted. See below.
+:kwarg str views_info: Information for "views processing," being the @xml:id of the relevant
+    ``<section>`` element. If the ``doc`` argument is also provided, this value *overrides* an
+    @xml:id that may be assigned in ``doc``, which is assumed to correspond to the external format.
+    If the ``doc`` argument is omitted, ``views_info`` is used for an outbound-only workflow.
 
 **Outbound-only Workflow**
 

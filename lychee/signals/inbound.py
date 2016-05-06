@@ -65,7 +65,10 @@ Emitted when there's an error during the in bound conversion step.
 :kwarg str msg: A descriptive error message for the log file.
 '''
 
-VIEWS_START = signal.Signal(args=['converted', 'document', 'session'], name='inbound.VIEWS_START')
+VIEWS_START = signal.Signal(
+    args=['converted', 'document', 'session', 'views_info'],
+    name='inbound.VIEWS_START'
+)
 '''
 Emit this signal to start the inbound views processing step.
 
@@ -76,6 +79,9 @@ Emit this signal to start the inbound views processing step.
 :type document: As required by the converter.
 :param session: A session instance for the ongoing notation session.
 :type session: :class:`lychee.workflow.session.InteractiveSession`
+:param str views_info: The ``views_info`` argument from the :const:`~lychee.signals.ACTION_START`
+    signal. This is interpreted as the Lychee-MEI @xml:id that should be used for ``converted``. If
+    omitted, assume ``converted`` is a new ``<section>`` in this document.
 
 By default, this signal is not connected to a views-processing module so you must connect it to the
 proper function before you emit this signal. This is provided as a signal so that additional modules

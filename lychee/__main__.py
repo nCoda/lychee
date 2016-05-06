@@ -35,8 +35,8 @@ outbound = lychee.signals.outbound
 # NB: it's weird, but this guarantees we won't accidentally reinitialize any of the signals
 
 # test_which_format = 'outbound only'
-# test_which_format = 'lilypond'
-test_which_format = 'abjad'
+test_which_format = 'lilypond'
+# test_which_format = 'abjad'
 
 
 session = lychee.InteractiveSession()
@@ -86,7 +86,74 @@ print('this is the repodir: {}'.format(session.get_repo_dir()))
 
 # this is what starts a test "action"
 if 'lilypond' == test_which_format:
-    input_ly = """\\clef "treble" a''4 b'16 c''2  | \\clef "bass" d?2 e!2  | f,,2 fis,2  |"""
+    input_ly = """
+    \\version "2.18.2"
+    \\score {
+        <<
+            \\new Staff {
+                %{ staff 1 %}
+                \\set Staff.instrumentName = "Violin I"
+                \\clef "treble"
+                \\key g \\major
+                \\time 3/2
+                %{ m.1 %} %{ l.1 %} r2 r4 a''4 g''8 f''8 e''8 f''8 |
+                %{ m.2 %} %{ l.1 %} g''8 e''8 d''4 r4 c'''8 b''8 a''8 g''8 f''8 g''8 |
+                %{ m.3 %} %{ l.1 %} a''4 d''4 r4 b''8 a''8 g''8 f''8 e''8 f''8 |
+                %{ m.4 %} %{ l.1 %} g''8 f''8 e''8 d''8 e''8 f''8 g''8 b''8 a''8 g''8 f''8 e''8 |
+                %{ m.5 %} %{ l.1 %} f''8 g''8 f''8 e''8 d''8 d''8 e''8 f''8 d''8 e''8 c''8 d''8 |
+            }
+            \\new Staff {
+                %{ staff 2 %}
+                \\set Staff.instrumentName = "Violin II"
+                \\clef "treble"
+                \\key g \\major
+                \\time 3/2
+                %{ m.1 %} %{ l.1 %} f''8 e''8 f''4 r2 r2 |
+                %{ m.2 %} %{ l.1 %} r2 r4 c''8 b'8 a'8 g'8 f'8 g'8 |
+                %{ m.3 %} %{ l.1 %} a'4 d'4 r4 d''8 c''8 b'8 a'8 g'8 a'8 |
+                %{ m.4 %} %{ l.1 %} b'8 a'8 g'8 f'8 g'8 a'8 b'8 d''8 c''8 b'8 a'8 g'8 |
+                %{ m.5 %} %{ l.1 %} a'8 b'8 a'8 g'8 a'8 d''8 c''8 d''8 b'8 c''8 a'8 b'8 |
+            }
+            \\new Staff {
+                %{ staff 3 %}
+                \\set Staff.instrumentName = "Viola"
+                \\clef "alto"
+                \\key g \\major
+                \\time 3/2
+                %{ m.1 %} %{ l.1 %} f'8 e'8 f'4 r4 a'4 g'8 f'8 e'8 f'8 |
+                %{ m.2 %} %{ l.1 %} g'8 e'8 d'4 r2 r2 |
+                %{ m.3 %} %{ l.1 %} r2 r4 d'8 c'8 b8 a8 g8 a8 |
+                %{ m.4 %} %{ l.1 %} b4 d4 e4 f4 g4 b4 |
+                %{ m.5 %} %{ l.1 %} d'4 d4 e4 f4 g4 b4 |
+            }
+            \\new Staff {
+                %{ staff 4 %}
+                \\set Staff.instrumentName = "Cello"
+                \\clef "bass"
+                \\key g \\major
+                \\time 3/2
+                %{ m.1 %} %{ l.1 %} r4 c2 d2 c4 |
+                %{ m.2 %} %{ l.1 %} b,4 c4 d4 b,4 c4 d4 |
+                %{ m.3 %} %{ l.1 %} c4 d4 e4 c4 d4 e4 |
+                %{ m.4 %} %{ l.1 %} r4 d,4 e,4 f,4 g,4 b,4 |
+                %{ m.5 %} %{ l.1 %} r4 d,4 e,4 f,4 g,4 b,4 |
+            }
+            \\new Staff {
+                %{ staff 5 %}
+                \\set Staff.instrumentName = "Double Bass"
+                \\clef "bass"
+                \\key g \\major
+                \\time 3/2
+                %{ m.1 %} %{ l.1 %} c2 d2 d2 |
+                %{ m.2 %} %{ l.1 %} g4 a4 b4 g4 a4 b4 |
+                %{ m.3 %} %{ l.1 %} a4 b4 c'4 a4 b4 c'4 |
+                %{ m.4 %} %{ l.1 %} r4 d4 e4 f4 g4 b4 |
+                %{ m.5 %} %{ l.1 %} r4 d4 e4 f4 g4 b4 |
+            }
+        >>
+        \\layout { }
+    }
+    """
     signals.ACTION_START.emit(dtype='LilyPond', doc=input_ly)
 elif 'abjad' == test_which_format:
     from abjad import *

@@ -119,11 +119,28 @@ node = note | rest | spacer | staff_setting ;
 nodes = {node}+ ;
 
 
-# Measure and Barcheck
-######################
+# Measure, Layers, and Barcheck
+###############################
 
 barcheck = ly_type:`barcheck` '|' ;
-measure = measure:( nodes barcheck ) ;
+
+unmarked_layer =
+    ly_type:`layer` layer:nodes
+    ;
+marked_layer =
+    ly_type:`layer` '{' layer:nodes '}'
+    ;
+
+monophonic_layers =
+    layers+:unmarked_layer barcheck
+    ;
+polyphonic_layers =
+    simul_l layers:( '\\\'.{marked_layer} ) simul_r barcheck
+    ;
+
+measure =
+    ly_type:`measure` settings:{staff_setting}* measure:( monophonic_layers | polyphonic_layers )
+    ;
 measures = {measure}*;
 
 

@@ -17,7 +17,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2016, 5, 6, 3, 2, 16, 4)
+__version__ = (2016, 5, 7, 3, 27, 10, 5)
 
 __all__ = [
     'LilyPondParser',
@@ -363,14 +363,82 @@ class LilyPondParser(Parser):
         )
 
     @graken()
-    def _measure_(self):
+    def _unmarked_layer_(self):
+        self._constant('layer')
+        self.name_last_node('ly_type')
+        self._nodes_()
+        self.name_last_node('layer')
+
+        self.ast._define(
+            ['ly_type', 'layer'],
+            []
+        )
+
+    @graken()
+    def _marked_layer_(self):
+        self._constant('layer')
+        self.name_last_node('ly_type')
+        self._token('{')
+        self._nodes_()
+        self.name_last_node('layer')
+        self._token('}')
+
+        self.ast._define(
+            ['ly_type', 'layer'],
+            []
+        )
+
+    @graken()
+    def _monophonic_layers_(self):
+        self._unmarked_layer_()
+        self.add_last_node_to_name('layers')
+        self._barcheck_()
+
+        self.ast._define(
+            [],
+            ['layers']
+        )
+
+    @graken()
+    def _polyphonic_layers_(self):
+        self._simul_l_()
         with self._group():
-            self._nodes_()
-            self._barcheck_()
+
+            def sep1():
+                self._token('\\\\')
+
+            def block1():
+                self._marked_layer_()
+            self._positive_closure(block1, prefix=sep1)
+        self.name_last_node('layers')
+        self._simul_r_()
+        self._barcheck_()
+
+        self.ast._define(
+            ['layers'],
+            []
+        )
+
+    @graken()
+    def _measure_(self):
+        self._constant('measure')
+        self.name_last_node('ly_type')
+
+        def block2():
+            self._staff_setting_()
+        self._closure(block2)
+        self.name_last_node('settings')
+        with self._group():
+            with self._choice():
+                with self._option():
+                    self._monophonic_layers_()
+                with self._option():
+                    self._polyphonic_layers_()
+                self._error('no available options')
         self.name_last_node('measure')
 
         self.ast._define(
-            ['measure'],
+            ['ly_type', 'settings', 'measure'],
             []
         )
 
@@ -534,6 +602,18 @@ class LilyPondSemantics(object):
         return ast
 
     def barcheck(self, ast):
+        return ast
+
+    def unmarked_layer(self, ast):
+        return ast
+
+    def marked_layer(self, ast):
+        return ast
+
+    def monophonic_layers(self, ast):
+        return ast
+
+    def polyphonic_layers(self, ast):
         return ast
 
     def measure(self, ast):

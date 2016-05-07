@@ -92,63 +92,122 @@ if 'lilypond' == test_which_format:
         <<
             \\new Staff {
                 %{ staff 1 %}
-                \\set Staff.instrumentName = "Violin I"
+                \\set Staff.instrumentName = "Flutes"
                 \\clef "treble"
-                \\key g \\major
-                \\time 3/2
-                %{ m.1 %} %{ l.1 %} r2 r4 a''4 g''8 f''8 e''8 f''8 |
-                %{ m.2 %} %{ l.1 %} g''8 e''8 d''4 r4 c'''8 b''8 a''8 g''8 f''8 g''8 |
-                %{ m.3 %} %{ l.1 %} a''4 d''4 r4 b''8 a''8 g''8 f''8 e''8 f''8 |
-                %{ m.4 %} %{ l.1 %} g''8 f''8 e''8 d''8 e''8 f''8 g''8 b''8 a''8 g''8 f''8 e''8 |
-                %{ m.5 %} %{ l.1 %} f''8 g''8 f''8 e''8 d''8 d''8 e''8 f''8 d''8 e''8 c''8 d''8 |
+                \\key ees \\major
+                %{ m.1 %} %{ l.1 %} r4 <f'' f'''>4 |
+                %{ m.2 %} %{ l.1 %} <f'' f'''>2 |
+                %{ m.3 %} %{ l.1 %} <f'' f'''>4 <g'' g'''>4 |
+                %{ m.4 %} %{ l.1 %} <bes'' bes'''>4 <aes'' aes'''>4 |
+                %{ m.5 %} %{ l.1 %} <g'' g'''>4 <f'' f'''>4 |
             }
             \\new Staff {
                 %{ staff 2 %}
-                \\set Staff.instrumentName = "Violin II"
+                \\set Staff.instrumentName = "Oboes"
                 \\clef "treble"
-                \\key g \\major
-                \\time 3/2
-                %{ m.1 %} %{ l.1 %} f''8 e''8 f''4 r2 r2 |
-                %{ m.2 %} %{ l.1 %} r2 r4 c''8 b'8 a'8 g'8 f'8 g'8 |
-                %{ m.3 %} %{ l.1 %} a'4 d'4 r4 d''8 c''8 b'8 a'8 g'8 a'8 |
-                %{ m.4 %} %{ l.1 %} b'8 a'8 g'8 f'8 g'8 a'8 b'8 d''8 c''8 b'8 a'8 g'8 |
-                %{ m.5 %} %{ l.1 %} a'8 b'8 a'8 g'8 a'8 d''8 c''8 d''8 b'8 c''8 a'8 b'8 |
+                \\key ees \\major
+                %{ m.1 %} %{ l.1 %} r4 <f' f''>4 |
+                %{ m.2 %} %{ l.1 %} <f' f''>2 |
+                %{ m.3 %} %{ l.1 %} <f' f''>4 <g' g''>4 |
+                %{ m.4 %} %{ l.1 %} <bes' bes''>4 <aes' aes''>4 |
+                %{ m.5 %} %{ l.1 %} <g' g''>4 <f' f''>4 |
             }
             \\new Staff {
                 %{ staff 3 %}
-                \\set Staff.instrumentName = "Viola"
-                \\clef "alto"
-                \\key g \\major
-                \\time 3/2
-                %{ m.1 %} %{ l.1 %} f'8 e'8 f'4 r4 a'4 g'8 f'8 e'8 f'8 |
-                %{ m.2 %} %{ l.1 %} g'8 e'8 d'4 r2 r2 |
-                %{ m.3 %} %{ l.1 %} r2 r4 d'8 c'8 b8 a8 g8 a8 |
-                %{ m.4 %} %{ l.1 %} b4 d4 e4 f4 g4 b4 |
-                %{ m.5 %} %{ l.1 %} d'4 d4 e4 f4 g4 b4 |
+                \\set Staff.instrumentName = "Clarinets"
+                \\clef "treble"
+                \\key f \\major
+                %{ m.1 %} %{ l.1 %} r4 g''4 |
+                %{ m.2 %} %{ l.1 %} g''2 |
+                %{ m.3 %} %{ l.1 %} g''4 a''4 |
+                %{ m.4 %} %{ l.1 %} c'''4 bes''4 |
+                %{ m.5 %} %{ l.1 %} a''4 g''4 |
             }
             \\new Staff {
                 %{ staff 4 %}
-                \\set Staff.instrumentName = "Cello"
+                \\set Staff.instrumentName = "Bassoons"
                 \\clef "bass"
-                \\key g \\major
-                \\time 3/2
-                %{ m.1 %} %{ l.1 %} r4 c2 d2 c4 |
-                %{ m.2 %} %{ l.1 %} b,4 c4 d4 b,4 c4 d4 |
-                %{ m.3 %} %{ l.1 %} c4 d4 e4 c4 d4 e4 |
-                %{ m.4 %} %{ l.1 %} r4 d,4 e,4 f,4 g,4 b,4 |
-                %{ m.5 %} %{ l.1 %} r4 d,4 e,4 f,4 g,4 b,4 |
+                \\key ees \\major
+                %{ m.1 %} %{ l.1 %} bes,2 |
+                %{ m.2 %} %{ l.1 %} bes,2 |
+                %{ m.3 %} %{ l.1 %} bes,4 r8 |
+                %{ m.4 %} %{ l.1 %} d,2 |
+                %{ m.5 %} %{ l.1 %} d,2 |
+            }
+            \\new Staff {
+                %{ staff 5 %}
+                \\set Staff.instrumentName = "Horns 1 & 3"
+                \\clef "treble"
+                %{ m.1 %} << { %{ l.1 %} bes'!2 } \\\\ { %{ l.2 %} g'2 } >> |
+                %{ m.2 %} << { %{ l.1 %} f''2 } \\\\ { %{ l.2 %} d''2 } >> |
+                %{ m.3 %} << { %{ l.1 %} bes'!2 } \\\\ { %{ l.2 %} g'2 } >> |
+                %{ m.4 %} << { %{ l.1 %} a'2 } \\\\ { %{ l.2 %} f'2 } >> |
+                %{ m.5 %} << { %{ l.1 %} r2 } \\\\ { %{ l.2 %} r2 } >> |
+            }
+            \\new Staff {
+                %{ staff 6 %}
+                \\set Staff.instrumentName = "Horns 2 & 4"
+                \\clef "treble"
+                %{ m.1 %} << { %{ l.1 %} bes'!2 } \\\\ { %{ l.2 %} g'2 } >> |
+                %{ m.2 %} << { %{ l.1 %} r2 } \\\\ { %{ l.2 %} r2 } >> |
+                %{ m.3 %} << { %{ l.1 %} r2 } \\\\ { %{ l.2 %} r2 } >> |
+                %{ m.4 %} << { %{ l.1 %} a'2 } \\\\ { %{ l.2 %} f'2 } >> |
+                %{ m.5 %} << { %{ l.1 %} f''2 } \\\\ { %{ l.2 %} d''2 } >> |
+            }
+            \\new Staff {
+                %{ staff 7 %}
+                \\set Staff.instrumentName = "Violin I"
+                \\clef "treble"
+                \\key ees \\major
+                %{ m.1 %} << { %{ l.1 %} ees'2 } \\\\ { %{ l.2 %} c'2 } >> |
+                %{ m.2 %} << { %{ l.1 %} ees'2 } \\\\ { %{ l.2 %} c'2 } >> |
+                %{ m.3 %} << { %{ l.1 %} ees'2 } \\\\ { %{ l.2 %} c'2 } >> |
+                %{ m.4 %} << { %{ l.1 %} bes'2 } \\\\ { %{ l.2 %} g'2 } >> |
+                %{ m.5 %} << { %{ l.1 %} bes'2 } \\\\ { %{ l.2 %} g'2 } >> |
+            }
+            \\new Staff {
+                %{ staff 8 %}
+                \\set Staff.instrumentName = "Violin II"
+                \\clef "treble"
+                \\key ees \\major
+                %{ m.1 %} << { %{ l.1 %} ees'2 } \\\\ { %{ l.2 %} c'2 } >> |
+                %{ m.2 %} << { %{ l.1 %} bes'2 } \\\\ { %{ l.2 %} g'2 } >> |
+                %{ m.3 %} << { %{ l.1 %} bes'2 } \\\\ { %{ l.2 %} g'2 } >> |
+                %{ m.4 %} << { %{ l.1 %} d'2 } \\\\ { %{ l.2 %} bes2 } >> |
+                %{ m.5 %} << { %{ l.1 %} d'2 } \\\\ { %{ l.2 %} bes2 } >> |
+            }
+            \\new Staff {
+                %{ staff 9 %}
+                \\set Staff.instrumentName = "Viola"
+                \\clef "alto"
+                \\key ees \\major
+                %{ m.1 %} << { %{ l.1 %} bes'2 } \\\\ { %{ l.2 %} g'2 } >> |
+                %{ m.2 %} << { %{ l.1 %} bes'2 } \\\\ { %{ l.2 %} g'2 } >> |
+                %{ m.3 %} << { %{ l.1 %} ees'2 } \\\\ { %{ l.2 %} c'2 } >> |
+                %{ m.4 %} << { %{ l.1 %} bes'2 } \\\\ { %{ l.2 %} d'2 } >> |
+                %{ m.5 %} << { %{ l.1 %} bes'2 } \\\\ { %{ l.2 %} d'2 } >> |
+            }
+            \\new Staff {
+                %{ staff 10 %}
+                \\set Staff.instrumentName = "Cello"
+                \\clef "tenor"
+                \\key ees \\major
+                %{ m.1 %} %{ l.1 %} r4 f'4 |
+                %{ m.2 %} %{ l.1 %} f'2 |
+                %{ m.3 %} %{ l.1 %} f'4 g'4 |
+                %{ m.4 %} %{ l.1 %} bes'4 aes'4 |
+                %{ m.5 %} %{ l.1 %} g'4 f'4 |
             }
             \\new Staff {
                 %{ staff 5 %}
                 \\set Staff.instrumentName = "Double Bass"
                 \\clef "bass"
-                \\key g \\major
-                \\time 3/2
-                %{ m.1 %} %{ l.1 %} c2 d2 d2 |
-                %{ m.2 %} %{ l.1 %} g4 a4 b4 g4 a4 b4 |
-                %{ m.3 %} %{ l.1 %} a4 b4 c'4 a4 b4 c'4 |
-                %{ m.4 %} %{ l.1 %} r4 d4 e4 f4 g4 b4 |
-                %{ m.5 %} %{ l.1 %} r4 d4 e4 f4 g4 b4 |
+                \\key ees \\major
+                %{ m.1 %} << { %{ l.1 %} bes'!2 } \\\\ { %{ l.2 %} g'2 } >> |
+                %{ m.2 %} << { %{ l.1 %} f''2 } \\\\ { %{ l.2 %} d''2 } >> |
+                %{ m.3 %} << { %{ l.1 %} bes'!2 } \\\\ { %{ l.2 %} g'2 } >> |
+                %{ m.4 %} << { %{ l.1 %} a'2 } \\\\ { %{ l.2 %} f'2 } >> |
+                %{ m.5 %} << { %{ l.1 %} r2 } \\\\ { %{ l.2 %} r2 } >> |
             }
         >>
         \\layout { }

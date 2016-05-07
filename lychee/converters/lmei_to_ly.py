@@ -96,6 +96,19 @@ def rest(m_rest):
     return post
 
 
+def chord(m_chord):
+    '''
+    '''
+    assert m_chord.tag == mei.CHORD
+    l_chord = []
+    for m_note in m_chord.iter(tag=mei.NOTE):
+        l_chord.append(note(m_note))
+
+    l_chord = '<{0}>{1}'.format(' '.join(l_chord), m_chord.get('dur', ''))
+
+    return l_chord
+
+
 def layer(m_layer):
     '''
     '''
@@ -106,6 +119,8 @@ def layer(m_layer):
             post.append(note(elem))
         elif elem.tag == mei.REST:
             post.append(rest(elem))
+        elif elem.tag == mei.CHORD:
+            post.append(chord(elem))
         else:
             lychee.log('missed a {} in a <layer>'.format(elem.tag))
 

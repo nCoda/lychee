@@ -107,22 +107,22 @@ real score is unlikely to do so.
                 'label': 'C',
                 'last_changeset': '8e552c8c9c2f',
                 'sections': {
-                    'score_order': ['Sme-s-m-l-e9029823', 'Sme-s-m-l-e1795937'],
-                        'Sme-s-m-l-e9029823': {
-                            # NOTE: this section is linked to the one earlier with the same @xml:id
-                            'label': 'a',
-                            'staffGrp': [
-                                [{'n': '1', 'label': 'Right Hand'}, {'n': '2', 'label': 'Left Hand'}]
-                            ],
-                            'last_changeset': '6074c498c731'
-                        },
-                        'Sme-s-m-l-e1795937': {
-                            'label': 'b',
-                            'staffGrp': [
-                                [{'n': '1', 'label': 'Right Hand'}, {'n': '2', 'label': 'Left Hand'}]
-                            ],
-                            'last_changeset': 'fac50d50a9d3'
-                        }
+                'score_order': ['Sme-s-m-l-e9029823', 'Sme-s-m-l-e1795937'],
+                    'Sme-s-m-l-e9029823': {
+                        # NOTE: this section is linked to the one earlier with the same @xml:id
+                        'label': 'a',
+                        'staffGrp': [
+                            [{'n': '1', 'label': 'Right Hand'}, {'n': '2', 'label': 'Left Hand'}]
+                        ],
+                        'last_changeset': '6074c498c731'
+                    },
+                    'Sme-s-m-l-e1795937': {
+                        'label': 'b',
+                        'staffGrp': [
+                            [{'n': '1', 'label': 'Right Hand'}, {'n': '2', 'label': 'Left Hand'}]
+                        ],
+                        'last_changeset': 'fac50d50a9d3'
+                    }
                 }
             }
         }

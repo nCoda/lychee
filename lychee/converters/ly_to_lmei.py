@@ -224,39 +224,60 @@ def do_measure(l_measure, m_staff, measure_n, m_staffdef):
     :type m_staff: :class:`lxml.etree.Element`
     :param int measure_n: The @n value for this ``<measure>``.
     '''
-    m_measure = etree.SubElement(m_staff, mei.MEASURE, {'n': str(measure_n)})
-    m_layer = etree.SubElement(m_measure, mei.LAYER, {'n': '1'})
+    assert l_measure['ly_type'] == 'measure'
 
-    initial_options_converters = {
+    m_measure = etree.SubElement(m_staff, mei.MEASURE, {'n': str(measure_n)})
+
+    options_converters = {
         'clef': set_initial_clef,
         'key': set_initial_key,
         'instr_name': set_instrument_name,
         'time': set_initial_time,
     }
+    if l_measure['settings']:
+        # We should only use the <staffDef> given to us, which is for the <staff> as a whole, if
+        # this is the first <measure>. Otherwise we'll make a <measure>-specific <staffDef>.
+        if measure_n > 1:
+            m_staffdef = etree.SubElement(m_measure, mei.STAFF_DEF)
+        for setting in l_measure['settings']:
+            if setting['ly_type'] in options_converters:
+                options_converters[setting['ly_type']](setting, m_staffdef)
+
+    layer_n = 1
+    for l_layer in l_measure['measure']['layers']:
+        if l_layer['ly_type'] == 'layer':
+            # might also be 'barcheck' which is useless
+            do_layer(l_layer, m_measure, layer_n)
+            layer_n += 1
+
+    return m_measure
+
+
+def do_layer(l_layer, m_measure, layer_n):
+    '''
+    :param dict l_layer: A LilyPond layer from the parser.
+    :param m_measure: An MEI ``<measure>`` element to put this layer into.
+    :type m_measure: :class:`lxml.etree.Element`
+    :param int layer_n: The @n value for this ``<layer>``.
+    '''
+    assert l_layer['ly_type'] == 'layer'
+
+    m_layer = etree.SubElement(m_measure, mei.LAYER, {'n': str(layer_n)})
+
     node_converters = {
         'note': do_note,
         'rest': do_rest,
         'spacer': do_spacer,
     }
 
-    passed_initial_settings = False
-    for obj in l_measure['measure'][0]:
-        if obj['ly_type'] in initial_options_converters and not passed_initial_settings:
-            initial_options_converters[obj['ly_type']](obj, m_staffdef)
-
-        elif obj['ly_type'] in initial_options_converters:
-            # TODO
-            lychee.log('Not converting {} in a measure from LilyPond'.format(obj['ly_type']))
-
-        elif obj['ly_type'] in node_converters:
-            if not passed_initial_settings:
-                passed_initial_settings = True
+    for obj in l_layer['layer']:
+        if obj['ly_type'] in node_converters:
             node_converters[obj['ly_type']](obj, m_layer)
 
         else:
             raise RuntimeError()
 
-    return m_measure
+    return m_layer
 
 
 def process_octave(l_oct):

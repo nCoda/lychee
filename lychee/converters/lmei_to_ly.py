@@ -80,9 +80,9 @@ def note(m_note):
     post = m_note.get('pname')
     if m_note.get('accid.ges'):
         post += _VALID_ACCIDENTALS[m_note.get('accid.ges')]
+    post += _OCTAVE_TO_MARK[m_note.get('oct')]
     if m_note.get('accid'):
         post += '!'
-    post += _OCTAVE_TO_MARK[m_note.get('oct')]
     post += m_note.get('dur', '')
     return post
 

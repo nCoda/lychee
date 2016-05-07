@@ -107,7 +107,7 @@ def layer(m_layer):
         elif elem.tag == mei.REST:
             post.append(rest(elem))
         else:
-            print('missed a {} in a <layer>'.format(elem.tag))
+            lychee.log('missed a {} in a <layer>'.format(elem.tag))
 
     return ' '.join(post)
 
@@ -197,9 +197,6 @@ def meter(m_staffdef):
     if m_staffdef.get('meter.count') and m_staffdef.get('meter.unit'):
         return '\\time {0}/{1}\n'.format(m_staffdef.get('meter.count'), m_staffdef.get('meter.unit'))
     else:
-        print('ballz')
-        print(str(m_staffdef.get('meter.count')))
-        print(str(m_staffdef.get('meter.unit')))
         return '\n'
 
 

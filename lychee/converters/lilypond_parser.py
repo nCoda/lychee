@@ -17,7 +17,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2016, 5, 7, 3, 27, 10, 5)
+__version__ = (2016, 5, 7, 5, 18, 22, 5)
 
 __all__ = [
     'LilyPondParser',
@@ -283,6 +283,25 @@ class LilyPondParser(Parser):
         )
 
     @graken()
+    def _durationless_note_(self):
+        self._note_name_()
+        self.name_last_node('note_name')
+        with self._optional():
+            self._accidental_()
+            self.name_last_node('accidental')
+        with self._optional():
+            self._octave_()
+            self.name_last_node('octave')
+        with self._optional():
+            self._accidental_force_()
+            self.name_last_node('accidental_force')
+
+        self.ast._define(
+            ['note_name', 'accidental', 'octave', 'accidental_force'],
+            []
+        )
+
+    @graken()
     def _note_(self):
         self._constant('note')
         self.name_last_node('ly_type')
@@ -297,11 +316,31 @@ class LilyPondParser(Parser):
         with self._optional():
             self._accidental_force_()
             self.name_last_node('accidental_force')
+
         self._duration_()
         self.name_last_node('duration')
 
         self.ast._define(
             ['ly_type', 'note_name', 'accidental', 'octave', 'accidental_force', 'duration'],
+            []
+        )
+
+    @graken()
+    def _chord_(self):
+        self._constant('chord')
+        self.name_last_node('ly_type')
+        self._token('<')
+
+        def block2():
+            self._durationless_note_()
+        self._closure(block2)
+        self.name_last_node('notes')
+        self._token('>')
+        self._duration_()
+        self.name_last_node('duration')
+
+        self.ast._define(
+            ['ly_type', 'notes', 'duration'],
             []
         )
 
@@ -338,6 +377,8 @@ class LilyPondParser(Parser):
                 self._note_()
             with self._option():
                 self._rest_()
+            with self._option():
+                self._chord_()
             with self._option():
                 self._spacer_()
             with self._option():
@@ -586,7 +627,13 @@ class LilyPondSemantics(object):
     def duration(self, ast):
         return ast
 
+    def durationless_note(self, ast):
+        return ast
+
     def note(self, ast):
+        return ast
+
+    def chord(self, ast):
         return ast
 
     def rest(self, ast):

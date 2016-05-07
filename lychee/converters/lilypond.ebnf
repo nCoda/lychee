@@ -68,8 +68,8 @@ staff_setting =
     ;
 
 
-# Nodes: notes, rests, spacers
-##############################
+# Nodes: notes, rests, chords, spacers
+######################################
 
 note_name =
     /a/ | /b/ | /c/ | /d/ | /e/ | /f/ | /g/
@@ -98,12 +98,23 @@ duration =
     number:duration_number [dots:duration_dots]
     ;
 
-note =
-    ly_type:`note`
+durationless_note =
     note_name:note_name
     [accidental:accidental]
     [octave:octave]
     [accidental_force:accidental_force]
+    ;
+note =
+    ly_type:`note`
+    >durationless_note
+    duration:duration
+    ;
+
+chord =
+    ly_type:`chord`
+    '<'
+    notes:{durationless_note}*
+    '>'
     duration:duration
     ;
 
@@ -115,7 +126,7 @@ spacer =
     ly_type:`spacer` /s/ duration:duration
     ;
 
-node = note | rest | spacer | staff_setting ;
+node = note | rest | chord | spacer | staff_setting ;
 nodes = {node}+ ;
 
 

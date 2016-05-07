@@ -265,6 +265,7 @@ def do_layer(l_layer, m_measure, layer_n):
     m_layer = etree.SubElement(m_measure, mei.LAYER, {'n': str(layer_n)})
 
     node_converters = {
+        'chord': do_chord,
         'note': do_note,
         'rest': do_rest,
         'spacer': do_spacer,
@@ -357,6 +358,30 @@ def process_dots(l_note, attrib):
         attrib['dots'] = str(len(l_note['duration']['dots']))
 
     return attrib
+
+
+def do_chord(l_chord, m_layer):
+    assert l_chord['ly_type'] == 'chord'
+
+    attrib = {'dur': l_chord['duration']['number']}
+    process_dots(l_chord, attrib)
+
+    m_chord = etree.SubElement(m_layer, mei.CHORD, attrib)
+
+    for l_note in l_chord['notes']:
+        attrib = {
+            'pname': l_note['note_name'],
+            'oct': process_octave(l_note['octave']),
+        }
+
+        process_accidental(l_note['accidental'], attrib)
+        process_forced_accid(l_note, attrib)
+
+        m_note = etree.SubElement(m_chord, mei.NOTE, attrib)
+
+        process_caut_accid(l_note, attrib, m_note)
+
+    return m_chord
 
 
 def do_note(l_note, m_layer):

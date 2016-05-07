@@ -54,6 +54,7 @@ from lychee import document
 from lychee import exceptions
 from lychee.namespaces import mei
 from lychee import signals
+from lychee.views import inbound as views_in
 from lychee.views import outbound as views_out
 
 
@@ -63,6 +64,7 @@ _UNEXP_ERR_INBOUND_CONVERSION = 'Unexpected error during inbound conversion'
 _UNEXP_ERR_INBOUND_VIEWS = 'Unexpected error during inbound views processing'
 _INVALID_OUTBOUND_DTYPE = 'Invalid "dtype" for outbound conversion: "{0}"'
 _SCORE_IS_EMPTY = 'The score is empty; cannot continue outbound processing'
+_NO_INBOUND_VIEWS = 'There is no inbound views processor for {0}'
 _NO_OUTBOUND_VIEWS = 'There is no outbound views processor for {0}'
 
 
@@ -97,7 +99,7 @@ def do_inbound_conversion(session, dtype, document):
         flush_inbound_converters()
 
 
-def do_inbound_views(session, dtype, document, converted):
+def do_inbound_views(session, dtype, document, converted, views_info):
     '''
     Run the "inbound views" step.
 
@@ -110,6 +112,8 @@ def do_inbound_views(session, dtype, document, converted):
     :type document: As required by the converter.
     :param converted: The incoming (partial) document, already converted.
     :type converted: :class:`lxml.etree.Element`
+    :param str views_info: The ``views_info`` argument from the :const:`~lychee.signals.ACTION_START`
+        signal. This is interpreted as the Lychee-MEI @xml:id that should be used for ``converted``.
 
     This function chooses an inbound views-processor then runs it. Resulting data is emitted from
     the processor with the :const:`~lychee.signals.inbound.VIEWS_FINISH` signal and not returned
@@ -119,7 +123,9 @@ def do_inbound_views(session, dtype, document, converted):
     '''
     try:
         _choose_inbound_views(dtype)
-        signals.inbound.VIEWS_START.emit(document=document, converted=converted)
+        signals.inbound.VIEWS_START.emit(
+            document=document, converted=converted, session=session, views_info=views_info
+        )
     except Exception as exc:
         if isinstance(exc, exceptions.InvalidDataTypeError):
             msg = exc.args[0]
@@ -171,7 +177,7 @@ def do_vcs(session, pathnames):
     '''
     # NOTE: why bother with the signal at all? Why not just call self._vcs_driver() ? Because
     # this way we can enable/disable the VCS step by changing who's listening to vcs.START.
-    signals.vcs.START.emit(repo_dir=session.get_repo_dir(), pathnames=pathnames)
+    signals.vcs.START.emit(session=session, pathnames=pathnames)
     signals.vcs.FINISHED.emit()
 
 
@@ -226,14 +232,14 @@ def do_outbound_steps(repo_dir, views_info, dtype):
         raise exceptions.InvalidDataTypeError(_INVALID_OUTBOUND_DTYPE.format(dtype))
 
 
-def _vcs_driver(repo_dir, pathnames, **kwargs):
+def _vcs_driver(session, pathnames, **kwargs):
     '''
     Slot for vcs.START that actually runs the "VCS step," and will only be called when the VCS
     system is enabled.
     '''
-    signals.vcs.INIT.emit(repodir=repo_dir)
-    signals.vcs.ADD.emit(pathnames=pathnames)
-    signals.vcs.COMMIT.emit(message=None)
+    signals.vcs.INIT.emit(session=session)
+    signals.vcs.ADD.emit(pathnames=pathnames, session=session)
+    signals.vcs.COMMIT.emit(message=None, session=session)
 
 
 def _choose_inbound_converter(dtype):
@@ -260,31 +266,34 @@ def flush_inbound_converters():
         signals.inbound.CONVERSION_START.disconnect(each_converter)
 
 
-def _dummy_inbound_views_slot(**kwargs):  # TODO: remove with T33
-    signals.inbound.VIEWS_FINISH.emit(views_info='<dummy views info>')
-
-
-def _choose_inbound_views(dtype):  # TODO: untested until T33
+def _choose_inbound_views(dtype):
     '''
     Connect the "inbound.VIEWS_START" signal to the appropriate views processor according to the
     inbound data type.
 
     :param str dtype: The inbound data type as specified in an as-yet-unknwon place.
-    :raises: :exc:`~lychee.exceptions.InvalidDataTypeError` when there is not inbound views
+    :raises: :exc:`~lychee.exceptions.InvalidDataTypeError` when there is no inbound views
         processor for the given ``dtype``.
-
-    .. warning:: This function is not implemented. Refer to T33.
     '''
-    signals.inbound.VIEWS_START.connect(_dummy_inbound_views_slot)
+    dtype = dtype.lower()
+
+    modules = {
+        'abjad': views_in.abjad.place_view,
+        'lilypond': views_in.lilypond.place_view,
+    }
+
+    if dtype in modules:
+        signals.inbound.VIEWS_START.connect(modules[dtype])
+    else:
+        raise exceptions.InvalidDataTypeError(_NO_INBOUND_VIEWS.format(dtype))
 
 
-def flush_inbound_views():  # TODO: untested until T33
+def flush_inbound_views():
     '''
     Clear any inbound views processors that may be connected.
-
-    .. warning:: This function is not implemented. Refer to T33.
     '''
-    signals.inbound.VIEWS_START.disconnect(_dummy_inbound_views_slot)
+    for slot in signals.inbound.VIEWS_START.slots:
+        signals.inbound.VIEWS_START.disconnect(slot)
 
 
 def _do_outbound_views(repo_dir, views_info, dtype):

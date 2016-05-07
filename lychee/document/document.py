@@ -23,98 +23,12 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 '''
-Contains an object representing an MEI document.
+The :class:`Document` class represents a Lychee-MEI document. In order to ensure compliance with the
+Lychee-MEI specification, we recommend using :class:`Document` whenever possible to avoid duplicating
+functionality (improperly).
 
-
-Metadata Currently Supported by Lychee
---------------------------------------
-
-Here are all the metadata fields we'll support. Only the ones that say "required" are required,
-and they are included in the header returned by :func:`document._empty_head` with a placeholder.
-
-.. note:: Additional metadata will very likely be added in the future.
-
-::
-
-    <meiHead>
-        <fileDesc>  <!-- required -->
-            <titleStmt>  <!-- required -->
-                <!-- NB: having all title parts in a containing <title>, and using the @type attribute,
-                     are required for Lychee-MEI, and optional in standard MEI
-                     NB: the @xml:lang and @translit are optional, and their use will be specified later
-                -->
-                <title @xml:lang="??" @translit="?"> <!-- required -->
-                    <title type="main"></title>  <!-- required -->
-                    <title type="subordinate"></title>
-                    <title type="abbreviated"></title>
-                    <title type="alternative"></title>
-                    <title type="translated"></title>
-                    <title type="uniform"></title>
-                </title>
-                <!-- NB: the following <titleStmt> child elements are not required -->
-                <respStmt>
-                    <!-- this is for users who worked on the document -->
-                    <!-- users may wish to credit Abjad; translatable string -->
-                    <name type="process">Abjad API for Formalized Score Control</name>
-                    <persName @xml:id="p8109850029">
-                        <!-- NB: use as many of the @type="full", @type="given", @type="other", and
-                             @type="family" child elements as possible, according to what the person
-                             responsible wishes
-                             NB: the @xml:lang and @translit are optional, and will be specified later
-                        -->
-                        <persName type=""></persName>
-                    </persName>
-                </respStmt>
-                <!-- NB: the following are what is written on the engraved score; if they correspond to
-                     a person in the <respStmt>, this should be done with a @nymref on the <persName>
-                -->
-                <arranger>
-                    <!-- for an arranger who isn't a Lychee user -->
-                    <persName xml:id="p12341234">
-                        <persName type="full">Robert W. Smith</persName>
-                    </persName>
-                </arranger>
-                <author>
-                    <!-- for an author who is a Lychee user -->
-                    <persName nymref="#p8109850029"/>
-                </author>
-                <composer><persName/></composer>
-                <editor><persName/></editor>
-                <funder><persName/></funder>
-                <librettist><persName/></librettist>
-                <lyricist><persName/></lyricist>
-                <sponsor><persName/></sponsor>
-            </titleStmt>
-
-            <pubStmt>  <!-- required -->
-                <!-- NB: all Lychee scores are considered unpublished for now -->
-                <unpub>  <!-- required; text content is translatable -->
-                    This is an unpublished Lychee-MEI document.
-                </unpub>
-            </pubStmt>
-        </fileDesc>
-
-        <workDesc>  <!-- (NB: not yet implemented) -->
-            <work>
-                <audience/  <!-- e.g., "beginner bands" (NB: not yet implemented) -->
-                <classification/>  <!-- like "keywords" (NB: not yet implemented) -->
-                <contents/>  <!-- a description of doc contents (NB: not yet implemented) -->
-                <context/>  <!-- socio-historical context (NB: not yet implemented) -->
-                <history/>  <!-- (NB: not yet implemented) -->
-                <key pname="" accid="" mode=""/>  <!-- (NB: not yet implemented) -->
-                <langUsage/>  <!-- related to @xml:lang elsewhere (NB: not yet implemented) -->
-                <mensuration/>  <!-- (NB: not yet implemented) -->
-                <meter count="" sym="" unit=""/>  <!--  (NB: not yet implemented) -->
-                <notesStmt/>  <!-- for score-wide notes left by users (NB: not yet implemented) -->
-                <perfMedium/>  <!-- intened performers of this version (NB: not yet implemented) -->
-            </work>
-        </workDesc>
-
-        <revisionDesc>
-            <!-- NB: not yet implemented -->
-        </revisionDesc>
-    </meiHead>
-
+The Lychee-MEI specification is described in :ref:`lychee_mei`. You can find information about
+supported Lychee-MEI metadata headers in :ref:`mei_headers`.
 '''
 
 import os.path

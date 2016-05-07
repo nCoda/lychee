@@ -45,6 +45,7 @@ from lychee import exceptions
 from lychee.namespaces import mei, xml
 from lychee import signals
 from lychee.vcs import hg as vcs_hg_module
+from lychee.views import inbound as views_in
 from lychee.workflow import steps
 
 from test_session import TestInteractiveSession
@@ -119,15 +120,17 @@ class TestVCSStep(TestInteractiveSession):
         # create and connect some mock slots for vcs.START and vcs.FINISHED
         start_slot = make_slot_mock()
         finished_slot = make_slot_mock()
+
         signals.vcs.START.connect(start_slot)
         signals.vcs.FINISHED.connect(finished_slot)
+        try:
+            steps.do_vcs(self.session, ['pathnames'])
+        finally:
+            signals.vcs.START.disconnect(start_slot)
+            signals.vcs.FINISHED.disconnect(finished_slot)
 
-        steps.do_vcs(self.session, ['pathnames'])
-
-        start_slot.assert_called_with(repo_dir=self.session.get_repo_dir(), pathnames=['pathnames'])
+        start_slot.assert_called_with(session=self.session, pathnames=['pathnames'])
         finished_slot.assert_called_with()
-        signals.vcs.START.disconnect(start_slot)
-        signals.vcs.FINISHED.disconnect(finished_slot)
 
     def test_vcs_driver_1(self):
         '''
@@ -142,18 +145,20 @@ class TestVCSStep(TestInteractiveSession):
         init_slot = make_slot_mock()
         add_slot = make_slot_mock()
         commit_slot = make_slot_mock()
+
         signals.vcs.INIT.connect(init_slot)
         signals.vcs.ADD.connect(add_slot)
         signals.vcs.COMMIT.connect(commit_slot)
+        try:
+            steps._vcs_driver(session='sess', pathnames='names')
+        finally:
+            signals.vcs.INIT.disconnect(init_slot)
+            signals.vcs.ADD.disconnect(add_slot)
+            signals.vcs.COMMIT.disconnect(commit_slot)
 
-        steps._vcs_driver('dir', 'names')
-
-        init_slot.assert_called_with(repodir='dir')
-        add_slot.assert_called_with(pathnames='names')
-        commit_slot.assert_called_with(message=None)
-        signals.vcs.INIT.disconnect(init_slot)
-        signals.vcs.ADD.disconnect(add_slot)
-        signals.vcs.COMMIT.disconnect(commit_slot)
+        init_slot.assert_called_with(session='sess')
+        add_slot.assert_called_with(pathnames='names', session='sess')
+        commit_slot.assert_called_with(message=None, session='sess')
 
 
 class TestInboundConversionStep(TestInteractiveSession):
@@ -282,17 +287,20 @@ class TestInboundViewsStep(TestInteractiveSession):
         dtype = 'dtype'
         document = 'document'
         converted = 'converted'
+        views_info = 'Section XMLID'
         start_slot = make_slot_mock()
         assert 0 == len(signals.inbound.VIEWS_START.slots)
         signals.inbound.VIEWS_START.connect(start_slot)
 
         try:
-            steps.do_inbound_views(self.session, dtype, document, converted=converted)
-            mock_choose.assert_called_once_with(dtype)
-            start_slot.assert_called_once_with(document=document, converted=converted)
-            mock_flush.assert_called_once_with()
+            steps.do_inbound_views(self.session, dtype, document, converted, views_info)
         finally:
             signals.inbound.VIEWS_START.disconnect(start_slot)
+
+        mock_choose.assert_called_once_with(dtype)
+        start_slot.assert_called_with(
+            document=document, converted=converted, session=self.session, views_info=views_info)
+        mock_flush.assert_called_with()
 
     @mock.patch('lychee.workflow.steps.flush_inbound_views')
     @mock.patch('lychee.workflow.steps._choose_inbound_views')
@@ -303,6 +311,7 @@ class TestInboundViewsStep(TestInteractiveSession):
         dtype = 'dtype'
         document = 'document'
         converted = 'converted'
+        views_info = 'Section XMLID'
         mock_choose.side_effect = exceptions.InvalidDataTypeError('rawr')
         finish_slot = make_slot_mock()
         signals.inbound.VIEWS_FINISH.connect(finish_slot)
@@ -310,13 +319,14 @@ class TestInboundViewsStep(TestInteractiveSession):
         signals.inbound.VIEWS_ERROR.connect(error_slot)
 
         try:
-            steps.do_inbound_views(self.session, dtype, document, converted)
-            finish_slot.assert_called_once_with(views_info=None)
-            error_slot.assert_called_once_with(msg='rawr')
-            mock_flush.assert_called_once_with()
+            steps.do_inbound_views(self.session, dtype, document, converted, views_info)
         finally:
             signals.inbound.VIEWS_FINISH.disconnect(finish_slot)
             signals.inbound.VIEWS_ERROR.disconnect(error_slot)
+
+        finish_slot.assert_called_once_with(views_info=None)
+        error_slot.assert_called_once_with(msg='rawr')
+        mock_flush.assert_called_once_with()
 
     @mock.patch('lychee.workflow.steps.flush_inbound_views')
     @mock.patch('lychee.workflow.steps._choose_inbound_views')
@@ -327,6 +337,7 @@ class TestInboundViewsStep(TestInteractiveSession):
         dtype = 'dtype'
         document = 'document'
         converted = 'converted'
+        views_info = 'Section XMLID'
         mock_choose.side_effect = TypeError
         finish_slot = make_slot_mock()
         signals.inbound.VIEWS_FINISH.connect(finish_slot)
@@ -334,13 +345,56 @@ class TestInboundViewsStep(TestInteractiveSession):
         signals.inbound.VIEWS_ERROR.connect(error_slot)
 
         try:
-            steps.do_inbound_views(self.session, dtype, document, converted)
-            finish_slot.assert_called_once_with(views_info=None)
-            error_slot.assert_called_once_with(msg=steps._UNEXP_ERR_INBOUND_VIEWS)
-            mock_flush.assert_called_once_with()
+            steps.do_inbound_views(self.session, dtype, document, converted, views_info)
         finally:
             signals.inbound.VIEWS_FINISH.disconnect(finish_slot)
             signals.inbound.VIEWS_ERROR.disconnect(error_slot)
+
+        finish_slot.assert_called_once_with(views_info=None)
+        error_slot.assert_called_once_with(msg=steps._UNEXP_ERR_INBOUND_VIEWS)
+        mock_flush.assert_called_once_with()
+
+    def test_choose_views_1(self):
+        '''
+        _choose_inbound_views() with a valid dtype
+        '''
+        dtype = 'LilyPond'
+        steps._choose_inbound_views(dtype)
+        assert signals.inbound.VIEWS_START.is_connected(views_in.lilypond.place_view)
+        signals.inbound.VIEWS_START.disconnect(views_in.lilypond.place_view)
+
+    def test_choose_views_2(self):
+        '''
+        _choose_inbound_views() with an invalid dtype
+        '''
+        dtype = 'Water Depot: Franchises still available!'
+        with pytest.raises(exceptions.InvalidDataTypeError) as exc:
+            steps._choose_inbound_views(dtype)
+
+        assert len(signals.inbound.VIEWS_START.slots) == 0
+        assert exc.value.args[0] == steps._NO_INBOUND_VIEWS.format(dtype.lower())
+
+    def test_flush_views_1(self):
+        '''
+        flush_inbound_views() when nothing was connected to begin with.
+        '''
+        assert len(signals.inbound.VIEWS_START.slots) == 0  # pre-condition
+        steps.flush_inbound_views()
+        assert len(signals.inbound.VIEWS_START.slots) == 0
+
+    def test_flush_views_2(self):
+        '''
+        flush_inbound_views() when nothing was connected to begin with.
+        '''
+        assert len(signals.inbound.VIEWS_START.slots) == 0  # pre-condition
+        # connect two slots
+        signals.inbound.VIEWS_START.connect(views_in.abjad.place_view)
+        signals.inbound.VIEWS_START.connect(views_in.lilypond.place_view)
+        assert len(signals.inbound.VIEWS_START.slots) == 2  # pre-condition
+
+        steps.flush_inbound_views()
+
+        assert len(signals.inbound.VIEWS_START.slots) == 0
 
 
 class TestOutboundSteps(object):

@@ -92,6 +92,13 @@ class InteractiveSession(object):
         self._inbound_converted = None
         self._inbound_views_info = None
 
+    @property
+    def hug(self):
+        '''
+        Return the active :class:`mercurial-hug.Hug` instance.
+        '''
+        return self._hug
+
     def __del__(self):
         '''
         If this session is using a temporary directory, delete it.
@@ -215,8 +222,10 @@ class InteractiveSession(object):
         try:
             if 'dtype' in kwargs and 'doc' in kwargs:
                 # only do the inbound, document, and VCS steps if there's an incoming change
+                if 'views_info' not in kwargs:
+                    kwargs['views_info'] = None
                 try:
-                    self._run_inbound_doc_vcs(kwargs['dtype'], kwargs['doc'])
+                    self._run_inbound_doc_vcs(kwargs['dtype'], kwargs['doc'], kwargs['views_info'])
                 except exceptions.InboundConversionError:
                     lychee.log(_FAILURE_DURING_INBOUND)
                     return
@@ -239,12 +248,13 @@ class InteractiveSession(object):
             if initial_revision:
                 self._hug.update(initial_revision)
 
-    def _run_inbound_doc_vcs(self, dtype, doc):
+    def _run_inbound_doc_vcs(self, dtype, doc, views_info):
         '''
         Helper method for :meth:`_action_start`.
 
-        :arg str dtype: From the :const:`~lychee.signals.ACTION_START` signal.
-        :arg ??? doc: From the :const:`~lychee.signals.ACTION_START` signal.
+        :param str dtype: From the :const:`~lychee.signals.ACTION_START` signal.
+        :param ??? doc: From the :const:`~lychee.signals.ACTION_START` signal.
+        :param str views_info: For :const:`lychee.signals.inbound.VIEWS_START`.
         :raises: :exc:`lychee.exceptions.InboundConversionError` when the conversion or views
             processing steps fail.
 
@@ -263,7 +273,8 @@ class InteractiveSession(object):
             session=self,
             dtype=dtype,
             document=doc,
-            converted=self._inbound_converted)
+            converted=self._inbound_converted,
+            views_info=views_info)
         if not isinstance(self._inbound_views_info, str):
             raise exceptions.InboundConversionError()
 
@@ -323,7 +334,6 @@ class InteractiveSession(object):
         Accept the views data from an inbound views processor. Slot for :const:`inbound.VIEWS_FINISH`.
 
         :param views_info: Views data for an incoming change.
-        :type views_info: ????????????????
         '''
         self._inbound_views_info = views_info
         signals.inbound.VIEWS_FINISHED.emit()

@@ -82,7 +82,7 @@ class LilyPondParser(Parser):
         self._token('Staff.instrumentName')
         self._token('=')
         self._token('"')
-        self._pattern(r'[A-Z a-z]*')
+        self._pattern(r'[A-Z a-z0-9&]*')
         self.name_last_node('instrument_name')
         self._token('"')
 

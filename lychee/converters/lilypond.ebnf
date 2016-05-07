@@ -47,7 +47,7 @@ version_stmt =
 ################
 
 instr_name =
-    ly_type:`instr_name` '\\set' 'Staff.instrumentName' '=' '"' instrument_name:/[A-Z a-z]*/ '"'
+    ly_type:`instr_name` '\\set' 'Staff.instrumentName' '=' '"' instrument_name:/[A-Z a-z0-9&]*/ '"'
     ;
 
 clef =

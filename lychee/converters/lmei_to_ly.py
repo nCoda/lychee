@@ -140,7 +140,7 @@ def measure(m_meas):
     if len(layers) > 1:
         before_layers.append('<< {')
         after_layers.insert(0, '} >>')
-        layers = [' } // { '.join(layers)]
+        layers = [' } \\\ { '.join(layers)]
 
     post = before_layers + layers + after_layers
 

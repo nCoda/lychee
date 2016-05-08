@@ -76,7 +76,7 @@ begun processing, and only once for all registered outbound formats.
 '''
 
 
-CONVERSION_FINISHED = signal.Signal(args=['dtype', 'placement', 'document', 'parent'],
+CONVERSION_FINISHED = signal.Signal(args=['dtype', 'placement', 'document', 'changeset'],
                                     name='outbound.CONVERSION_FINISHED')
 '''
 Emitted when one of the registered data types has finished outbound processing.

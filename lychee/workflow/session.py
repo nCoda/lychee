@@ -223,7 +223,7 @@ class InteractiveSession(object):
         self._cleanup_for_new_action()
         initial_revision = None
         if 'revision' in kwargs:
-            initial_revision = self._hug.summary()['parent']
+            initial_revision = self._hug.summary()['parent'].split(' ')[0]
 
         try:
             if 'dtype' in kwargs and 'doc' in kwargs:

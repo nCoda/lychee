@@ -400,8 +400,9 @@ class TestActionStart(TestInteractiveSession):
     def test_when_hg_update_works(self):
         '''
         A unit test (fully mocked) for when running Hug.update() works.
+        Initial revision is on a tag.
         '''
-        parent_revision = 'tip'
+        parent_revision = '99:801774903828 tip'
         target_revision = '40:964b28acc4ee'
         self.session._cleanup_for_new_action = mock.Mock()
         self.session._run_outbound = mock.Mock()
@@ -415,13 +416,15 @@ class TestActionStart(TestInteractiveSession):
         assert self.session._cleanup_for_new_action.call_count == 2
         assert self.session._hug.update.call_count == 2
         self.session._hug.update.assert_any_call(target_revision)
-        self.session._hug.update.assert_called_with(parent_revision)  # final call
+        # the tag name (the "tip" part) should be removed
+        self.session._hug.update.assert_called_with(parent_revision[:-4])  # final call
 
     def test_when_hg_update_fails(self):
         '''
         A unit test (fully mocked) for when running Hug.update() fails.
+        Initial revision is not on a tag.
         '''
-        parent_revision = 'tip'
+        parent_revision = '99:801774903828'
         target_revision = '44444444444444444'
         self.session._cleanup_for_new_action = mock.Mock()
         self.session._run_outbound = mock.Mock()

@@ -309,6 +309,7 @@ def _do_outbound_views(repo_dir, views_info, dtype):
     '''
     views_dict = {
         'mei': views_out.mei.get_view,
+        'lilypond': views_out.mei.get_view,
         'verovio': views_out.mei.get_view,
     }
 

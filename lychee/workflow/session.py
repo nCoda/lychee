@@ -128,12 +128,14 @@ class InteractiveSession(object):
         self._doc = document.Document(self._repo_dir)
         return self._doc
 
-    def set_repo_dir(self, path):
+    def set_repo_dir(self, path, run_outbound=False):
         '''
-        Change the pathname to Lychee's repository.
+        Change the pathname to Lychee's repository then run any registered outbound converters.
 
         :param str path: The pathname of the directory of the repository. This should either be an
             absolute path or something that will become absolute with :func:`os.path.abspath`.
+        :param bool run_outbound: Whether to run conversions for all registered outbound formats
+            after setting the repository directory. Defaults to ``False``.
         :returns: The absolute pathname to the repository directory.
         :rtype: str
         :raises: :exc:`~lychee.exceptions.RepositoryError` when ``path`` exists and contains files
@@ -170,6 +172,9 @@ class InteractiveSession(object):
         except hg_error.RepoError:
             raise exceptions.RepositoryError(_CANNOT_SAFELY_HG_INIT)
 
+        if run_outbound:
+            self._run_outbound()
+
         return self._repo_dir
 
     def unset_repo_dir(self):
@@ -200,7 +205,8 @@ class InteractiveSession(object):
         if self._repo_dir:
             return self._repo_dir
         else:
-            return self.set_repo_dir('')
+            # NOTE: "run_outbound" must be False, in order to avoid a recursion loop
+            return self.set_repo_dir('', run_outbound=False)
 
     def _action_start(self, **kwargs):
         '''

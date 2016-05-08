@@ -129,7 +129,7 @@ class TestRepository(TestInteractiveSession):
         actual._repo_dir = None
         actual.set_repo_dir = mock.MagicMock(return_value='six')
         assert 'six' == actual.get_repo_dir()
-        actual.set_repo_dir.assert_called_with('')
+        actual.set_repo_dir.assert_called_with('', run_outbound=False)
 
     def test_unset_repo_dir_1(self):
         '''
@@ -183,12 +183,13 @@ class TestRepository(TestInteractiveSession):
         assert actual._repo_dir is None
         assert actual._temp_dir is False
 
-    def test_set_repo_dir_1(self):
+    def test_set_repo_dir_1a(self):
         '''
         When "path" is '', it makes a temp dir and initializes a new Hg repo.
         '''
         sess = self.session
-        actual = sess.set_repo_dir('')
+        sess._run_outbound = mock.Mock()
+        actual = sess.set_repo_dir('', run_outbound=True)
         if sys.platform == 'linux2':
             assert actual.startswith('/tmp/')
         elif sys.platform == 'darwin':
@@ -196,6 +197,17 @@ class TestRepository(TestInteractiveSession):
         else:
             raise NotImplementedError("This test isn't yet implemented on this platform.")
         assert os.path.exists(os.path.join(actual, '.hg'))
+        assert sess._run_outbound.call_count == 1
+
+    def test_set_repo_dir_1b(self):
+        '''
+        Same as 1a, but with run_outbound=False.
+        '''
+        # only test what's different from 1b
+        sess = self.session
+        sess._run_outbound = mock.Mock()
+        actual = sess.set_repo_dir('', run_outbound=False)
+        assert sess._run_outbound.call_count == 0
 
     @mock.patch('lychee.workflow.session.hug')
     def test_set_repo_dir_2(self, mock_hug):
@@ -203,12 +215,14 @@ class TestRepository(TestInteractiveSession):
         When it makes a temp dir but can't initialize a new Hg repo.
         '''
         sess = self.session
+        sess._run_outbound = mock.Mock()
         mock_hug.Hug.side_effect = hg_error.RepoError
         with pytest.raises(exceptions.RepositoryError) as exc:
-            sess.set_repo_dir('')
+            sess.set_repo_dir('', run_outbound=True)
         assert session._CANNOT_SAFELY_HG_INIT == exc.value.args[0]
         # the _repo_dir still must have been set, so unset_repo_dir() can delete it on __del__()
         assert sess._repo_dir is not None
+        assert sess._run_outbound.call_count == 0
 
     @mock.patch('lychee.workflow.session.hug')
     def test_set_repo_dir_3(self, mock_hug):
@@ -216,11 +230,13 @@ class TestRepository(TestInteractiveSession):
         When the path exists, and it initializes fine.
         '''
         sess = self.session
-        actual = sess.set_repo_dir('../tests')
+        sess._run_outbound = mock.Mock()
+        actual = sess.set_repo_dir('../tests', run_outbound=True)
         assert actual.endswith('tests')
         assert sess._hug is not None
         assert sess._temp_dir is False
         assert sess._repo_dir == actual
+        assert sess._run_outbound.call_count == 1
 
     @mock.patch('lychee.workflow.session.hug')
     def test_set_repo_dir_4(self, mock_hug):
@@ -229,19 +245,25 @@ class TestRepository(TestInteractiveSession):
         '''
         assert not os.path.exists('zests')  # for the test to work, this dir must not already exist
         sess = self.session
-        actual = sess.set_repo_dir('zests')
-        assert actual.endswith('zests')
-        assert os.path.exists(actual)
-        shutil.rmtree(actual)
+        sess._run_outbound = mock.Mock()
+        try:
+            actual = sess.set_repo_dir('zests', run_outbound=True)
+        finally:
+            assert actual.endswith('zests')
+            assert os.path.exists(actual)
+            shutil.rmtree(actual)
+        assert sess._run_outbound.call_count == 1
 
     def test_set_repo_dir_5(self):
         '''
         When the path must be created, but it can't be.
         '''
         sess = self.session
+        sess._run_outbound = mock.Mock()
         with pytest.raises(exceptions.RepositoryError) as exc:
-            sess.set_repo_dir('/bin/delete_me')
+            sess.set_repo_dir('/bin/delete_me', run_outbound=True)
         assert session._CANNOT_MAKE_HG_DIR == exc.value.args[0]
+        assert sess._run_outbound.call_count == 0
 
     def test_hug_property(self):
         '''

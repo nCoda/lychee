@@ -30,7 +30,7 @@ from lxml import etree
 
 import pytest
 
-from lychee.converters import mei_to_ly as lmei_to_ly
+from lychee.converters import lmei_to_ly
 from lychee import exceptions
 from lychee.namespaces import mei
 
@@ -55,7 +55,7 @@ class TestNoteRest(object):
         m_note.set('accid', 'f')
         m_note.set('oct', '6')
         m_note.set('dur', '2')
-        assert lmei_to_ly.note(m_note) == "ees!'''2"
+        assert lmei_to_ly.note(m_note) == "ees'''!2"
 
     def test_note_2(self):
         m_note = etree.Element(mei.NOTE)
@@ -125,7 +125,7 @@ class TestLayerMeasure(object):
                 <mei:note dur="2" oct="3" pname="e"/>
             </mei:layer>
         </mei:measure>''')
-        expected = "%{ m.5 %} << { %{ l.1 %} d'2 d2 } // { %{ l.2 %} e'2 e2 } >> |\n"
+        expected = "%{ m.5 %} << { %{ l.1 %} d'2 d2 } \\\\ { %{ l.2 %} e'2 e2 } >> |\n"
         assert lmei_to_ly.measure(m_measure) == expected
 
     def test_measure_3(self):
@@ -145,7 +145,7 @@ class TestLayerMeasure(object):
                 <mei:note dur="2" oct="3" pname="f"/>
             </mei:layer>
         </mei:measure>''')
-        expected = "%{ m.5 %} << { %{ l.1 %} d'2 d2 } // { %{ l.2 %} e'2 e2 } // { %{ l.3 %} f'2 f2 } >> |\n"
+        expected = "%{ m.5 %} << { %{ l.1 %} d'2 d2 } \\\\ { %{ l.2 %} e'2 e2 } \\\\ { %{ l.3 %} f'2 f2 } >> |\n"
         assert lmei_to_ly.measure(m_measure) == expected
 
 

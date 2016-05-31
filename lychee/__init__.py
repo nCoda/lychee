@@ -37,8 +37,8 @@ __metadata__ = {
     'description': 'An engine for MEI document management and converion.',
     'license': 'GPLv3+',
     'name': 'Lychee',
-    'url': 'https://ncodamusic.org/lychee/',
-    'version': '0.2.0',
+    'url': 'https://lychee.ncodamusic.org/',
+    'version': '0.3.0',
 }
 
 __version__ = __metadata__['version']

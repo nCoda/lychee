@@ -14,6 +14,15 @@ File Management
 - Clients are therefore encouraged to use sections generously.
 - An "all_files" MEI file holds references to all sections and metadata, in an arbitrary order.
 - A "score" MEI file holds cross-references to "active" section files, in score order.
+- Every LMEI file MUST include a ``@version`` attribute from the Lychee namespace on the root
+  element. This will be the three-part version number of the Lychee version that saved the file.
+  For example:
+
+.. sourcecode:: xml
+
+    <section xmlns:ly="https://lychee.ncodamusic.org" ly:version="0.3.2">
+        <!-- musical content -->
+    </section>
 
 
 Others

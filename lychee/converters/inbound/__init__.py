@@ -23,6 +23,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 
-__all__ = ['abjad_to_lmei', 'lilypond_parser', 'ly_to_lmei', 'mei_to_lmei']
+__all__ = ['__abjad', 'lilypond_parser', 'lilypond', 'mei']
 
 from . import *
+abjad = __abjad

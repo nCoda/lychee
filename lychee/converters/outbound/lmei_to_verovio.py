@@ -46,7 +46,7 @@ do not require breaking conformance with XML, so we'll just work with what we ha
 from lxml import etree
 
 import lychee
-from lychee.converters import lmei_to_mei
+from lychee.converters.outbound import lmei_to_mei
 from lychee import exceptions
 from lychee.namespaces import mei
 from lychee.signals import outbound

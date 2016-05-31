@@ -34,7 +34,7 @@ try:
 except ImportError:
     import mock
 
-from lychee.converters import lmei_to_mei, lmei_to_verovio
+from lychee.converters.outbound import lmei_to_mei, lmei_to_verovio
 from lychee import exceptions
 from lychee.namespaces import mei
 from lychee.signals import outbound
@@ -234,8 +234,8 @@ class TestToMei:
 
 class TestToVerovio:
 
-    @mock.patch('lychee.converters.lmei_to_verovio.lmei_to_mei.change_measure_hierarchy')
-    @mock.patch('lychee.converters.lmei_to_verovio.lmei_to_mei.wrap_section_element')
+    @mock.patch('lychee.converters.outbound.lmei_to_verovio.lmei_to_mei.change_measure_hierarchy')
+    @mock.patch('lychee.converters.outbound.lmei_to_verovio.lmei_to_mei.wrap_section_element')
     def test_export_for_verovio(self, mock_wrap, mock_change):
         '''
         Make sure it works.

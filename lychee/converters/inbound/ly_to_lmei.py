@@ -37,7 +37,7 @@ Converts a LilyPond document to a Lychee-MEI document.
 from lxml import etree
 
 import lychee
-from lychee.converters import lilypond_parser
+from lychee.converters.inbound import lilypond_parser
 from lychee.namespaces import mei
 from lychee.signals import inbound
 

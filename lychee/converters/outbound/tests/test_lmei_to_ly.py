@@ -30,7 +30,7 @@ from lxml import etree
 
 import pytest
 
-from lychee.converters import lmei_to_ly
+from lychee.converters.outbound import lmei_to_ly
 from lychee import exceptions
 from lychee.namespaces import mei
 

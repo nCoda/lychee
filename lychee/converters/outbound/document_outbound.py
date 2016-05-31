@@ -161,7 +161,7 @@ The ``'last_changeset'`` member holds the changeset ID of the most recent change
 from lxml import etree
 
 import lychee
-from lychee.converters import vcs_outbound
+from lychee.converters.outbound import vcs_outbound
 from lychee import document
 from lychee import exceptions
 from lychee.namespaces import mei, xml

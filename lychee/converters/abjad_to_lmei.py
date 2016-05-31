@@ -55,6 +55,7 @@ from lychee.namespaces import mei, xml
 # translatable strings
 # error messages
 _NOT_A_LEAF_NODE = 'Object of type {0} is not a leaf node'
+_UNKNOWN_OBJ_TO_CONVERT = 'Cannot convert {0} objects'
 
 
 def convert(document, **kwargs):
@@ -62,8 +63,11 @@ def convert(document, **kwargs):
     Convert an Abjad document into an MEI document.
 
     :param object document: the Abjad document.
-    :returns: The corresponding MEI document.
-    :rtype: :class:`lxml.etree.ElementTree.Element` or :class:`lxml.etree.ElementTree.ElementTree`
+    :returns: ``None``
+    :raises: :exc:`lychee.exceptions.InboundConversionError` for a forseeable error during conversion.
+
+    This function emits the :const:`lychee.inbound.CONVERSION_STARTED` signal immediately, and the
+    :const:`lychee.inbound.CONVERSION_FINISHED` signal with the converted document.
     '''
     inbound.CONVERSION_STARTED.emit()
 
@@ -77,10 +81,10 @@ def convert(document, **kwargs):
         "<class 'abjad.tools.scoretools.Staff.Staff'>": staff_to_staff,
         "<class 'abjad.tools.scoretools.Score.Score'>": score_to_section,
     }
-    converted = conversion_dict[str(type(document))](document)
-
-    inbound.CONVERSION_FINISH.emit(converted=converted)
-    return converted
+    try:
+        inbound.CONVERSION_FINISH.emit(converted=conversion_dict[str(type(document))](document))
+    except KeyError:
+        raise exceptions.InboundConversionError(_UNKNOWN_OBJ_TO_CONVERT.format(type(document)))
 
 
 def convert_accidental(abjad_accidental_string):
@@ -442,7 +446,7 @@ def staff_to_staff(abjad_staff):
     if len(abjad_staff) > 0:
         if isinstance(abjad_staff[0], Voice) and abjad_staff.is_simultaneous:
             # simultaneous Voices become <layer> in <staff>
-            # raise NotImplementedError('a')
+            raise NotImplementedError('Staff must have Measures through 1605')
             for i, voice in enumerate(abjad_staff):
                 mei_layer = voice_to_layer(voice)
                 mei_layer.set('n', str(i + 1))
@@ -455,7 +459,7 @@ def staff_to_staff(abjad_staff):
 
         else:
             # sequential Voices and/or mixture of Voices and leaf nodes are flattened to one <layer>
-            # raise NotImplementedError('b')
+            raise NotImplementedError('Staff must have Measures through 1605')
             out_voice = Voice()
             for component in abjad_staff:
                 if isinstance(component, Voice):

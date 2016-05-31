@@ -23,6 +23,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 from lxml import etree
+import signalslot
 import pytest
 from abjad.tools.indicatortools import Clef
 from abjad.tools.scoretools.Note import Note
@@ -44,6 +45,7 @@ from abjad.tools.topleveltools.attach import attach
 from lychee.converters import abjad_to_lmei
 from lychee import exceptions
 from lychee.namespaces import mei, xml
+from lychee import signals
 import unittest
 import abjad_test_case
 
@@ -51,6 +53,61 @@ try:
     from unittest import mock
 except ImportError:
     import mock
+
+
+def make_slot_mock():
+    slot = mock.MagicMock(spec=signalslot.slot.BaseSlot)
+    slot.is_alive = True
+    return slot
+
+
+class TestConvert(object):
+    '''
+    Tests for convert().
+    '''
+
+    def test_works(self):
+        '''
+        Given an object that convert() can convert, expect the result emitted via CONVERSION_FINISH.
+        '''
+        document = Note("d,,2")
+        conversion_started = make_slot_mock()
+        conversion_finish = make_slot_mock()
+        signals.inbound.CONVERSION_STARTED.connect(conversion_started)
+        signals.inbound.CONVERSION_FINISH.connect(conversion_finish)
+
+        try:
+            assert abjad_to_lmei.convert(document=document) is None
+        finally:
+            signals.inbound.CONVERSION_STARTED.disconnect(conversion_started)
+            signals.inbound.CONVERSION_FINISH.disconnect(conversion_finish)
+
+        assert conversion_started.call_count == 1
+        assert conversion_finish.call_count == 1
+        converted = conversion_finish.call_args[1]['converted']
+        assert isinstance(converted, etree._Element)
+        assert converted.tag == mei.NOTE
+
+    def test_unknown_type(self):
+        '''
+        Given an object that convert() can't convert, expect an InboundConversionError.
+        '''
+        document = etree.Element(mei.NOTE)
+        conversion_started = make_slot_mock()
+        conversion_finish = make_slot_mock()
+        signals.inbound.CONVERSION_STARTED.connect(conversion_started)
+        signals.inbound.CONVERSION_FINISH.connect(conversion_finish)
+
+        try:
+            with pytest.raises(exceptions.InboundConversionError) as exc:
+                abjad_to_lmei.convert(document=document)
+        finally:
+            signals.inbound.CONVERSION_STARTED.disconnect(conversion_started)
+            signals.inbound.CONVERSION_FINISH.disconnect(conversion_finish)
+
+        assert conversion_started.call_count == 1
+        assert conversion_finish.call_count == 0
+        assert exc.value.args[0] == abjad_to_lmei._UNKNOWN_OBJ_TO_CONVERT.format(type(document))
 
 
 class TestAddXmlIds(object):
@@ -215,9 +272,11 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert mei_staff.get('n') is None
         assert len(mei_staff) == 0
 
-    # staff with one voice
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     def test_one_voice(self):
         '''
+        staff with one voice
+
         precondition: abjad Staff containing only one Voice
         postcondition: mei staff Element containing one layer Element
         '''
@@ -232,6 +291,7 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert len(mei_staff) == 1
         assert mei_staff[0].tag == mei.LAYER
 
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
     def test_one_voice_mock(self,mock_layer):
         '''
@@ -250,9 +310,11 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert len(mei_staff) == 1
         assert mei_staff[0].tag == mei.LAYER
 
-    # staff with parallel voices (enumerate n based on staff n)
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     def test_parallel(self):
         '''
+        staff with parallel voices (enumerate n based on staff n)
+
         precondition: abjad Staff containing two or more parallel voices
         postcondition: mei staff Element containing two or more layer Elements
         '''
@@ -269,6 +331,7 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert mei_staff[1].tag == mei.LAYER
         assert mei_staff[1].get('n') == '2'
 
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
     def test_parallel_mock(self,mock_layer):
         '''
@@ -289,9 +352,11 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert mei_staff[1].tag == mei.LAYER
         assert mei_staff[1].get('n') == '2'
 
-    # staff with consecutive voices
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     def test_consecutive(self):
         '''
+        staff with consecutive voices
+
         precondition: abjad Staff containing two or more consecutive Voices
         postcondition: mei staff Element containing one layer Element
         '''
@@ -305,6 +370,7 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert mei_staff[0].tag == mei.LAYER
         assert mei_staff[0].get('n') == '1'
 
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
     def test_consecutive_mock(self,mock_layer):
         '''
@@ -322,9 +388,11 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert mei_staff[0].tag == mei.LAYER
         assert mei_staff[0].get('n') == '1'
 
-    # staff with leaves and no voice(s)
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     def test_leaves(self):
         '''
+        staff with leaves and no voice(s)
+
         precondition: abjad Staff containing leaves and no Voices
         postcondition: mei layer Element containing children leaf Elements
         '''
@@ -336,6 +404,7 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert mei_staff[0].tag == mei.LAYER
         assert mei_staff[0].get('n') == '1'
 
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
     def test_leaves_mock(self, mock_layer):
         '''
@@ -351,9 +420,11 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert mei_staff[0].tag == mei.LAYER
         assert mei_staff[0].get('n') == '1'
 
-    # staff with some combination of leaves and voices
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     def test_leaves_and_voices(self):
         '''
+        staff with some combination of leaves and voices
+
         precondition: abjad Staff containing both leaves and Voices as siblings
         postcondition: mei staff Element containing one layer Element
         '''
@@ -372,6 +443,7 @@ class TestStaffToStaff(abjad_test_case.AbjadTestCase):
         assert mei_staff[0].get('n') == '1'
         assert len(mei_staff[0]) == 8
 
+    @pytest.mark.xfail(True, reason='Staff must have Measures through 1605')
     @mock.patch("lychee.converters.abjad_to_lmei.voice_to_layer")
     def test_leaves_and_voices_mock(self, mock_layer):
         '''

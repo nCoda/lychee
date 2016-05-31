@@ -161,7 +161,7 @@ The ``'last_changeset'`` member holds the changeset ID of the most recent change
 from lxml import etree
 
 import lychee
-from lychee.converters.outbound import vcs_outbound
+from lychee.converters.outbound import vcs
 from lychee import document
 from lychee import exceptions
 from lychee.namespaces import mei, xml
@@ -354,7 +354,7 @@ def find_last_changeset(section_id, revlog):
     Find the hash of the most changeset in which a file was modified.
 
     :param str section_id: The @xml:id of a ``<section>``.
-    :param dict revlog: The outpuf of :func:`vcs_outbound.convert_helper`
+    :param dict revlog: The outpuf of :func:`vcs.convert_helper`
     :returns: The hash of the that file's last changeset.
     :rtype: str
 
@@ -375,7 +375,7 @@ def prepare_sections_inner(doc, section_ids, vcs_data):
     :param doc: The :class:`Document` from which to extract MEI header data.
     :type doc: :class:`lychee.document.Document`
     :param section_ids: The @xml:id attributes of the ``<section>`` elements, in score order.
-    :param vcs_data: The output of :func:`lychee.converters.vcs_outbound.convert_helper`.
+    :param vcs_data: The output of :func:`lychee.converters.vcs.convert_helper`.
     :type vcs_data: dict
     :type section_ids: list of str
     :returns: A dictionary with relevant header data.
@@ -420,5 +420,5 @@ def prepare_sections(doc, repo_dir):
     :mod:`~lychee.converters.document_outbound`.
     '''
     section_ids = doc.get_section_ids()
-    vcs_data = vcs_outbound.convert_helper(repo_dir)
+    vcs_data = vcs.convert_helper(repo_dir)
     return prepare_sections_inner(doc, section_ids, vcs_data)

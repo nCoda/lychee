@@ -29,7 +29,7 @@ Tests for the "registrar" module.
 from lxml import etree
 import pytest
 
-from lychee.converters.outbound import document_outbound as docout
+from lychee.converters.outbound import document as docout
 from lychee import exceptions
 
 

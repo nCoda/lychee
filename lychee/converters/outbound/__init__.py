@@ -23,7 +23,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 
-__all__ = ['document_outbound', 'lmei_to_abjad', 'lmei_to_ly', 'lmei_to_mei', 'lmei_to_verovio',
-    'vcs_outbound']
+__all__ = ['__abjad', 'document', 'lilypond', 'mei', 'vcs', 'verovio']
 
 from . import *
+abjad = __abjad

@@ -5,7 +5,7 @@
 # Program Description:    MEI document manager for formalized document control
 #
 # Filename:               lychee/converters/test/test_lmei_to_mei.py
-# Purpose:                Tests for "lmei_to_mei.py" and "lmei_to_verovio.py"
+# Purpose:                Tests for "lmei_to_mei.py" and "verovio.py"
 #
 # Copyright (C) 2016 Christopher Antila
 #
@@ -23,7 +23,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 '''
-Tests for "lmei_to_mei.py" and "lmei_to_verovio.py"
+Tests for "lmei_to_mei.py" and "verovio.py"
 '''
 
 from lxml import etree
@@ -34,7 +34,7 @@ try:
 except ImportError:
     import mock
 
-from lychee.converters.outbound import lmei_to_mei, lmei_to_verovio
+from lychee.converters.outbound import verovio, mei as lmei_to_mei
 from lychee import exceptions
 from lychee.namespaces import mei
 from lychee.signals import outbound
@@ -234,8 +234,8 @@ class TestToMei:
 
 class TestToVerovio:
 
-    @mock.patch('lychee.converters.outbound.lmei_to_verovio.lmei_to_mei.change_measure_hierarchy')
-    @mock.patch('lychee.converters.outbound.lmei_to_verovio.lmei_to_mei.wrap_section_element')
+    @mock.patch('lychee.converters.outbound.verovio.lmei_to_mei.change_measure_hierarchy')
+    @mock.patch('lychee.converters.outbound.verovio.lmei_to_mei.wrap_section_element')
     def test_export_for_verovio(self, mock_wrap, mock_change):
         '''
         Make sure it works.
@@ -245,7 +245,7 @@ class TestToVerovio:
         mock_wrap.return_value = wrap_return
         expected = '<?xml version="1.0" encoding="UTF-8"?><section xmlns:mei="http://www.music-encoding.org/ns/mei"/>'
 
-        actual = lmei_to_verovio.export_for_verovio(document)
+        actual = verovio.export_for_verovio(document)
 
         mock_change.assert_called_once_with(document)
         assert expected == actual
@@ -350,7 +350,7 @@ class TestIntegration:
                    )
         document = etree.fromstring(initial)
 
-        actual = lmei_to_verovio.convert(document)
+        actual = verovio.convert(document)
 
         assert expected == actual
 
@@ -360,8 +360,8 @@ class TestIntegration:
         '''
         document = 'dddddddddddddd'
         with pytest.raises(exceptions.OutboundConversionError) as exc:
-            lmei_to_verovio.convert(document)
-        assert lmei_to_verovio._ERR_INPUT_NOT_SECTION == exc.value.args[0]
+            verovio.convert(document)
+        assert verovio._ERR_INPUT_NOT_SECTION == exc.value.args[0]
 
     def test_integration_to_verovio_3(self):
         '''
@@ -369,5 +369,5 @@ class TestIntegration:
         '''
         document = etree.Element('dddddddddddddd')
         with pytest.raises(exceptions.OutboundConversionError) as exc:
-            lmei_to_verovio.convert(document)
-        assert lmei_to_verovio._ERR_INPUT_NOT_SECTION == exc.value.args[0]
+            verovio.convert(document)
+        assert verovio._ERR_INPUT_NOT_SECTION == exc.value.args[0]

@@ -4,7 +4,7 @@
 # Program Name:           Lychee
 # Program Description:    MEI document manager for formalized document control
 #
-# Filename:               lychee/converters/test/test_lmei_to_ly.py
+# Filename:               lychee/converters/test/test_lilypond.py
 # Purpose:                Converts an MEI document to a LilyPond document.
 #
 # Copyright (C) 2016 Christopher Antila
@@ -30,7 +30,7 @@ from lxml import etree
 
 import pytest
 
-from lychee.converters.outbound import lmei_to_ly
+from lychee.converters.outbound import lilypond
 from lychee import exceptions
 from lychee.namespaces import mei
 
@@ -39,12 +39,12 @@ class TestConvert(object):
     def test_convert_1(self):
         mei_thing = etree.fromstring(
             '<mei:note dur="4" oct="4" pname="d" xmlns:mei="http://www.music-encoding.org/ns/mei"/>')
-        assert isinstance(lmei_to_ly.convert(mei_thing), str)
+        assert isinstance(lilypond.convert(mei_thing), str)
 
     def test_convert_2(self):
         mei_thing = etree.fromstring('<mei:joke xmlns:mei="http://www.music-encoding.org/ns/mei"/>')
         with pytest.raises(exceptions.OutboundConversionError):
-            lmei_to_ly.convert(mei_thing)
+            lilypond.convert(mei_thing)
 
 
 class TestNoteRest(object):
@@ -55,22 +55,22 @@ class TestNoteRest(object):
         m_note.set('accid', 'f')
         m_note.set('oct', '6')
         m_note.set('dur', '2')
-        assert lmei_to_ly.note(m_note) == "ees'''!2"
+        assert lilypond.note(m_note) == "ees'''!2"
 
     def test_note_2(self):
         m_note = etree.Element(mei.NOTE)
         m_note.set('pname', 'e')
         m_note.set('oct', '2')
-        assert lmei_to_ly.note(m_note) == "e,"
+        assert lilypond.note(m_note) == "e,"
 
     def test_rest_1(self):
         m_rest = etree.Element(mei.REST)
         m_rest.set('dur', '32')
-        assert lmei_to_ly.rest(m_rest) == "r32"
+        assert lilypond.rest(m_rest) == "r32"
 
     def test_rest_2(self):
         m_rest = etree.Element(mei.REST)
-        assert lmei_to_ly.rest(m_rest) == "r"
+        assert lilypond.rest(m_rest) == "r"
 
 
 class TestLayerMeasure(object):
@@ -85,12 +85,12 @@ class TestLayerMeasure(object):
             <mei:note dur="4" oct="3" pname="b"/>
         </mei:layer>''')
         expected = "%{ l.22 %} d'4 d4 e4 f4 g4 b4"
-        assert lmei_to_ly.layer(m_layer) == expected
+        assert lilypond.layer(m_layer) == expected
 
     def test_layer_2(self):
         m_layer = etree.fromstring('<mei:layer n="1" xmlns:mei="http://www.music-encoding.org/ns/mei"/>')
         expected = '%{ l.1 %}'
-        assert lmei_to_ly.layer(m_layer) == expected
+        assert lilypond.layer(m_layer) == expected
 
     def test_measure_0(self):
         "No layers."
@@ -98,7 +98,7 @@ class TestLayerMeasure(object):
         '''<mei:measure n="5" xmlns:mei="http://www.music-encoding.org/ns/mei">
         </mei:measure>''')
         expected = "%{ m.5 %} |\n"
-        assert lmei_to_ly.measure(m_measure) == expected
+        assert lilypond.measure(m_measure) == expected
 
     def test_measure_1(self):
         "One layer."
@@ -110,7 +110,7 @@ class TestLayerMeasure(object):
             </mei:layer>
         </mei:measure>''')
         expected = "%{ m.5 %} %{ l.1 %} d'2 d2 |\n"
-        assert lmei_to_ly.measure(m_measure) == expected
+        assert lilypond.measure(m_measure) == expected
 
     def test_measure_2(self):
         "Two layers."
@@ -126,7 +126,7 @@ class TestLayerMeasure(object):
             </mei:layer>
         </mei:measure>''')
         expected = "%{ m.5 %} << { %{ l.1 %} d'2 d2 } \\\\ { %{ l.2 %} e'2 e2 } >> |\n"
-        assert lmei_to_ly.measure(m_measure) == expected
+        assert lilypond.measure(m_measure) == expected
 
     def test_measure_3(self):
         "Three layers."
@@ -146,7 +146,7 @@ class TestLayerMeasure(object):
             </mei:layer>
         </mei:measure>''')
         expected = "%{ m.5 %} << { %{ l.1 %} d'2 d2 } \\\\ { %{ l.2 %} e'2 e2 } \\\\ { %{ l.3 %} f'2 f2 } >> |\n"
-        assert lmei_to_ly.measure(m_measure) == expected
+        assert lilypond.measure(m_measure) == expected
 
 
 class TestStaffClefAndKey(object):
@@ -154,19 +154,19 @@ class TestStaffClefAndKey(object):
         # bass
         m_staffdef = etree.fromstring(
             '''<mei:staffDef clef.line="4" clef.shape="F" xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lmei_to_ly.clef(m_staffdef) == '\\clef "bass"\n'
+        assert lilypond.clef(m_staffdef) == '\\clef "bass"\n'
         # tenor
         m_staffdef = etree.fromstring(
             '''<mei:staffDef clef.line="4" clef.shape="C" xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lmei_to_ly.clef(m_staffdef) == '\\clef "tenor"\n'
+        assert lilypond.clef(m_staffdef) == '\\clef "tenor"\n'
         # alto
         m_staffdef = etree.fromstring(
             '''<mei:staffDef clef.line="3" clef.shape="C" xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lmei_to_ly.clef(m_staffdef) == '\\clef "alto"\n'
+        assert lilypond.clef(m_staffdef) == '\\clef "alto"\n'
         # treble
         m_staffdef = etree.fromstring(
             '''<mei:staffDef clef.line="2" clef.shape="G" xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lmei_to_ly.clef(m_staffdef) == '\\clef "treble"\n'
+        assert lilypond.clef(m_staffdef) == '\\clef "treble"\n'
         # none
         m_staffdef = etree.fromstring(
             '''<mei:staffDef xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
@@ -175,29 +175,29 @@ class TestStaffClefAndKey(object):
         # 0 sharps or flats
         m_staffdef = etree.fromstring(
             '''<mei:staffDef key.sig="0" xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lmei_to_ly.key(m_staffdef) == '\\key c \\major\n'
+        assert lilypond.key(m_staffdef) == '\\key c \\major\n'
         # 3 flats
         m_staffdef = etree.fromstring(
             '''<mei:staffDef key.sig="3f" xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lmei_to_ly.key(m_staffdef) == '\\key ees \\major\n'
+        assert lilypond.key(m_staffdef) == '\\key ees \\major\n'
         # 3 sharps
         m_staffdef = etree.fromstring(
             '''<mei:staffDef key.sig="3s" xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lmei_to_ly.key(m_staffdef) == '\\key a \\major\n'
+        assert lilypond.key(m_staffdef) == '\\key a \\major\n'
         # none
         m_staffdef = etree.fromstring(
             '''<mei:staffDef xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lmei_to_ly.key(m_staffdef) == '\n'
+        assert lilypond.key(m_staffdef) == '\n'
 
     def test_meter_1(self):
         m_staffdef = etree.Element(mei.STAFF_DEF)
-        assert lmei_to_ly.meter(m_staffdef) == '\n'
+        assert lilypond.meter(m_staffdef) == '\n'
 
     def test_meter_2(self):
         m_staffdef = etree.Element(mei.STAFF_DEF)
         m_staffdef.set('meter.count', '3')
         m_staffdef.set('meter.unit', '2')
-        assert lmei_to_ly.meter(m_staffdef) == '\\time 3/2\n'
+        assert lilypond.meter(m_staffdef) == '\\time 3/2\n'
 
     def test_staff_1(self):
         "One measure."
@@ -232,7 +232,7 @@ class TestStaffClefAndKey(object):
             "%{ m.9 %} %{ l.6 %} d,2 d,2 |\n",
             "}\n",
         ])
-        assert lmei_to_ly.staff(m_staff, m_staffdef) == expected
+        assert lilypond.staff(m_staff, m_staffdef) == expected
 
     def test_staff_2(self):
         "Three measures."
@@ -281,7 +281,7 @@ class TestStaffClefAndKey(object):
             "%{ m.11 %} %{ l.1 %} fis,2 fis,2 |\n",
             "}\n",
         ])
-        assert lmei_to_ly.staff(m_staff, m_staffdef) == expected
+        assert lilypond.staff(m_staff, m_staffdef) == expected
 
 
 class TestSection(object):
@@ -341,4 +341,4 @@ class TestSection(object):
             "\\layout { }\n",
             "}\n",
         ])
-        assert lmei_to_ly.section(m_section) == expected
+        assert lilypond.section(m_section) == expected

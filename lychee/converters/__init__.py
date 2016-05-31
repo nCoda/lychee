@@ -78,12 +78,12 @@ converts from that format to Lychee-MEI.
 '''
 
 # NOTE: please keep the keys in lowercase
-OUTBOUND_CONVERTERS = {'lilypond': outbound.lmei_to_ly.convert,
-                       'abjad': outbound.lmei_to_abjad.convert,
-                       'mei': outbound.lmei_to_mei.convert,
-                       'verovio': outbound.lmei_to_verovio.convert,
-                       'vcs': outbound.vcs_outbound.convert,
-                       'document': outbound.document_outbound.convert,
+OUTBOUND_CONVERTERS = {'abjad': outbound.abjad.convert,
+                       'document': outbound.document.convert,
+                       'lilypond': outbound.lilypond.convert,
+                       'mei': outbound.mei.convert,
+                       'vcs': outbound.vcs.convert,
+                       'verovio': outbound.verovio.convert,
                       }
 '''
 Mapping from the lowercase name of an outbound converter format to the :func:`convert` function that

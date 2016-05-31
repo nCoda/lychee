@@ -11,9 +11,9 @@ Inbound Converters
 .. toctree::
     :maxdepth: 1
 
-    converters-abjad_to_lmei
-    converters-ly_to_mei
-    converters-mei_to_lmei
+    converters-abjad_in
+    converters-lilypond_in
+    converters-mei_in
 
 
 Outbound Converters
@@ -22,8 +22,8 @@ Outbound Converters
 .. toctree::
     :maxdepth: 1
 
-    converters-document_outbound
-    converters-lmei_to_abjad
-    converters-mei_to_ly
-    converters-lmei_to_mei
-    converters-vcs_outbound
+    converters-abjad_out
+    converters-document_out
+    converters-lilypond_out
+    converters-mei_out
+    converters-vcs_out

@@ -398,11 +398,12 @@ class TestSaveAndLoad(DocumentTestCase):
             document._save_out(tree, to_here)
         assert document._SAVE_OUT_ERROR == err.value[0]
 
+    @mock.patch('lychee.document.document._check_version_attr')
     @mock.patch('lxml.etree.XMLParser')
     @mock.patch('lxml.etree.parse')
-    def test__load_in_1(self, mock_parse, mock_parser_class):
+    def test__load_in_1(self, mock_parse, mock_parser_class, mock_check):
         '''
-        Pathname is invalid; raises FileNotFoundError. (Mocked lxml).
+        Pathname is invalid; raises FileNotFoundError. (Mocked lxml and _check_version_attr()).
         '''
         from_here = 'something'
         recover = False
@@ -419,12 +420,14 @@ class TestSaveAndLoad(DocumentTestCase):
         self.assertEqual(exp_message, fnfe.exception.args[0])
         mock_parse.assert_called_with(from_here, mock_parser)
         mock_parser_class.assert_called_with(recover=False)
+        assert mock_check.call_count == 0
 
+    @mock.patch('lychee.document.document._check_version_attr')
     @mock.patch('lxml.etree.XMLParser')
     @mock.patch('lxml.etree.parse')
-    def test__load_in_2(self, mock_parse, mock_parser_class):
+    def test__load_in_2(self, mock_parse, mock_parser_class, mock_check):
         '''
-        File can't be parsed by "lxml"; raises InvalidFileError. (Mocked lxml).
+        File can't be parsed by "lxml"; raises InvalidFileError. (Mocked lxml and _check_version_attr()).
         '''
         from_here = 'something'
         recover = False
@@ -437,25 +440,29 @@ class TestSaveAndLoad(DocumentTestCase):
         self.assertEqual('shmooba', ife.exception.args[0])
         mock_parse.assert_called_with(from_here, mock_parser)
         mock_parser_class.assert_called_with(recover=False)
+        assert mock_check.call_count == 0
 
+    @mock.patch('lychee.document.document._check_version_attr')
     @mock.patch('lxml.etree.XMLParser')
     @mock.patch('lxml.etree.parse')
-    def test__load_in_3(self, mock_parse, mock_parser_class):
+    def test__load_in_3(self, mock_parse, mock_parser_class, mock_check):
         '''
-        File is loaded just fine. Returns the file. (Mocked lxml).
+        File is loaded just fine. Returns the file. (Mocked lxml and _check_version_attr()).
         '''
         from_here = 'something'
         recover = True
         mock_parser = 'a parser'
         mock_parser_class.return_value = mock_parser
+        mock_parse.return_value = 'parsed'
         expected = 'such an XML'
-        mock_parse.return_value = expected
+        mock_check.return_value = expected
 
         actual = document._load_in(from_here, recover)
 
         assert expected == actual
         mock_parse.assert_called_with(from_here, mock_parser)
         mock_parser_class.assert_called_with(recover=True)
+        mock_check.assert_called_with('parsed')
 
     def test__load_in_1_int(self):
         '''

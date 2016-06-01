@@ -198,11 +198,23 @@ def _load_in(from_here, recover=None):
         recover = False
 
     try:
-        return etree.parse(from_here, etree.XMLParser(recover=recover))
+        return _check_version_attr(etree.parse(from_here, etree.XMLParser(recover=recover)))
     except (IOError, OSError):
         raise exceptions.FileNotFoundError(_ERR_MISSING_FILE)
     except etree.XMLSyntaxError as xse:
         raise exceptions.InvalidFileError(xse.args[0])
+
+
+def _check_version_attr(lmei):
+    '''
+    Check the @ly:version attribute on the root element of an LMEI :class:`ElementTree`.
+
+    :param lmei: An LMEI :class:`ElementTree` to check.
+    :type lmei: :class:`lxml.etree.ElementTree`
+    :returns: The unmodified LMEI document.
+    :rtype: :class:`lxml.etree.ElementTree`
+    '''
+    return lmei
 
 
 def _make_ptr(targettype, target):

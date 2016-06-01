@@ -56,6 +56,9 @@ _PUBSTMT_DEFAULT_CONTENTS = 'This is an unpublished Lychee-MEI document.'
 _ABJAD_FULL_NAME = 'Abjad API for Formalized Score Control'
 _PLACEHOLDER_TITLE = '(Untitled)'
 _SAVE_OUT_ERROR = 'Could not save an XML file (IOError).'
+_LY_VERSION_MISSING = 'Lychee-MEI file file is missing @ly:version'
+_LY_VERSION_MISMATCH = 'Lychee-MEI file has different version than us'
+_LY_VERSION_INVALID = 'Lychee-MEI file has invalid @ly:version'
 
 
 def _check_xmlid_chars(xmlid):
@@ -213,7 +216,30 @@ def _check_version_attr(lmei):
     :type lmei: :class:`lxml.etree.ElementTree`
     :returns: The unmodified LMEI document.
     :rtype: :class:`lxml.etree.ElementTree`
+
+    Currently, this function checks whether the @ly:version attribute is present on the root element
+    of the :class:`ElementTree` given, and:
+
+    - if @ly:version is missing, prints an "error" log message
+    - if @ly:version is not a proper "semantic versioning" string, prints an "error" log message
+    - if @ly:version is different than the version of this Lychee, prints a "warning" log message
+    - if @ly:version is the same as the version of this Lychee, continues silently
     '''
+    version = lmei.getroot().get(lyns.VERSION)
+    if version is None:
+        lychee.log(_LY_VERSION_MISSING, 'error')
+    elif version != lychee.__version__:
+        version_numbers = version.split('.')
+        if len(version_numbers) != 3:
+            lychee.log(_LY_VERSION_INVALID, 'error')
+        else:
+            try:
+                [int(num) for num in version_numbers]
+            except ValueError:
+                lychee.log(_LY_VERSION_INVALID, 'error')
+            else:
+                lychee.log(_LY_VERSION_MISMATCH, 'warning')
+
     return lmei
 
 

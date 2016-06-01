@@ -325,6 +325,61 @@ class TestSmallThings(DocumentTestCase):
         assert expected == actual
 
 
+class TestCheckVersionAttr(unittest.TestCase):
+    "Tests for document._check_version_attr()."
+
+    @mock.patch('lychee.log')
+    def test_check_version_1(self, mock_log):
+        '''
+        version is missing
+        '''
+        lmei = etree.ElementTree(etree.Element(mei.SECTION))
+        actual = document._check_version_attr(lmei)
+        assert actual is lmei
+        mock_log.assert_called_with(document._LY_VERSION_MISSING, 'error')
+
+    @mock.patch('lychee.log')
+    def test_check_version_2(self, mock_log):
+        '''
+        the version has only two numbers
+        '''
+        lmei = etree.ElementTree(etree.Element(mei.SECTION, {lyns.VERSION: '4.6'}))
+        actual = document._check_version_attr(lmei)
+        assert actual is lmei
+        mock_log.assert_called_with(document._LY_VERSION_INVALID, 'error')
+
+    @mock.patch('lychee.log')
+    def test_check_version_3(self, mock_log):
+        '''
+        the version contains letters
+        '''
+        lmei = etree.ElementTree(etree.Element(mei.SECTION, {lyns.VERSION: '9.2.3a'}))
+        actual = document._check_version_attr(lmei)
+        assert actual is lmei
+        mock_log.assert_called_with(document._LY_VERSION_INVALID, 'error')
+
+    @mock.patch('lychee.log')
+    def test_check_version_4(self, mock_log):
+        '''
+        the version is different than the version of this Lychee
+        '''
+        lmei = etree.ElementTree(etree.Element(mei.SECTION, {lyns.VERSION: '0.2.1'}))
+        actual = document._check_version_attr(lmei)
+        assert actual is lmei
+        mock_log.assert_called_with(document._LY_VERSION_MISMATCH, 'warning')
+
+    @mock.patch('lychee.log')
+    def test_check_version_5(self, mock_log):
+        '''
+        the version is correct
+        '''
+        lmei = etree.ElementTree(etree.Element(mei.SECTION, {lyns.VERSION: lychee.__version__}))
+        actual = document._check_version_attr(lmei)
+        assert actual is lmei
+        assert mock_log.call_count == 0
+
+
+
 class TestSaveAndLoad(DocumentTestCase):
     '''
     Tests for document._save_out() and document._load_in().

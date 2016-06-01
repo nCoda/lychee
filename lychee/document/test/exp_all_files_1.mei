@@ -3,7 +3,7 @@
      - "test_document.py"
 -->
 <mei:meiCorpus xmlns:mei="http://www.music-encoding.org/ns/mei">
-    <mei:meiHead xmlns:mei="http://www.music-encoding.org/ns/mei">
+    <mei:meiHead>
         <mei:fileDesc>
             <mei:titleStmt>
                 <mei:title>

@@ -50,15 +50,14 @@ import hug
 import lychee
 from lychee import exceptions
 from lychee.document import document
-from lychee.namespaces import mei, xlink, xml
+from lychee.namespaces import mei, xlink, xml, lychee as lyns
 from lychee.workflow import session
 
 
-class TestSmallThings(unittest.TestCase):
+class DocumentTestCase(unittest.TestCase):
     '''
-    Tests for small helper functions that require few tests:
-    - :func:`_check_xmlid_chars`
-    - :meth:`_set_default`
+    Base for test cases that use an instance of :class:`lychee.document.Document`. The setUp()
+    method here does some things those test cases will want.
     '''
 
     def assertElementsEqual(self, first, second, msg=None):
@@ -77,14 +76,44 @@ class TestSmallThings(unittest.TestCase):
             second_keys = [x for x in second_list[i].keys()]
             six.assertCountEqual(self, first_keys, second_keys)
             for key in first_keys:
-                self.assertEqual(first_list[i].get(key), second_list[i].get(key))
+                if key == lyns.VERSION:
+                    assert first_list[i].get(key) is not None and second_list[i].get(key) is not None
+                else:
+                    assert first_list[i].get(key) == second_list[i].get(key)
+
+    def setUp(self):
+        '''
+        Make an empty Document on "self.document" with a temporary directory. The repository
+        directory's name is stored in "self.repo_dir." There should already be an "all_files.mei"
+        file, in accordance with how Document.__init__() works.
+        '''
+        self.addTypeEqualityFunc(etree._Element, self.assertElementsEqual)
+        self.addTypeEqualityFunc(etree._ElementTree, self.assertElementsEqual)
+        self._session = session.InteractiveSession()
+        self.repo_dir = self._session.set_repo_dir('')
+        self.doc = self._session.get_document()
+
+    def tearDown(self):
+        '''
+        In Python before 3.2, we need to clean up the temporary directory ourselves.
+        '''
+        self._session.unset_repo_dir()
+
+
+class TestSmallThings(DocumentTestCase):
+    '''
+    Tests for small helper functions that require few tests:
+    - :func:`_check_xmlid_chars`
+    - :meth:`_set_default`
+    '''
 
     def setUp(self):
         '''
         Make a temporary directory.
         '''
-        self.addTypeEqualityFunc(etree._Element, self.assertElementsEqual)
-        self.addTypeEqualityFunc(etree._ElementTree, self.assertElementsEqual)
+        # self.addTypeEqualityFunc(etree._Element, self.assertElementsEqual)
+        # self.addTypeEqualityFunc(etree._ElementTree, self.assertElementsEqual)
+        DocumentTestCase.setUp(self)
         try:
             # Python 3.2+
             self._temp_dir = tempfile.TemporaryDirectory()
@@ -100,6 +129,8 @@ class TestSmallThings(unittest.TestCase):
         '''
         if self._temp_dir is None:
             shutil.rmtree(self.repo_dir)
+
+        DocumentTestCase.tearDown(self)
 
     def test__check_xmlid_chars_1(self):
         '''
@@ -132,7 +163,7 @@ class TestSmallThings(unittest.TestCase):
         # 1.) get a temporary file
         test_path = os.path.join(self.repo_dir, 'test_all_files.mei')
         expected_path = os.path.join(os.path.dirname(inspect.getfile(self.__class__)),
-                                     'exp_all_files_1.mei')
+                                     'exp_all_files_1a.mei')
         expected = etree.parse(expected_path)
         # 2.) run the function
         actual = document._make_empty_all_files(test_path)
@@ -149,7 +180,7 @@ class TestSmallThings(unittest.TestCase):
         # 1.) get a temporary file
         test_path = None
         expected_path = os.path.join(os.path.dirname(inspect.getfile(self.__class__)),
-                                     'exp_all_files_1.mei')
+                                     'exp_all_files_1b.mei')
         expected = etree.parse(expected_path)
         # 2.) run the function
         actual = document._make_empty_all_files(test_path)
@@ -294,36 +325,20 @@ class TestSmallThings(unittest.TestCase):
         assert expected == actual
 
 
-class TestSaveAndLoad(unittest.TestCase):
+class TestSaveAndLoad(DocumentTestCase):
     '''
     Tests for document._save_out() and document._load_in().
     '''
 
-    def assertElementsEqual(self, first, second, msg=None):
-        '''
-        Type-specific equality function for :class:`lxml.etree.Element` and
-        :class:`lxml.etree.ElementTree` objects.
-        '''
-        first_list = [x for x in first.iter()]
-        second_list = [x for x in second.iter()]
-        if len(first_list) != len(second_list):
-            raise self.failureException('element trees are different sizes')
-        for i in range(len(first_list)):
-            if first_list[i].tag != second_list[i].tag:
-                raise self.failureException('Tags are not equal')
-            first_keys = [x for x in first_list[i].keys()]
-            second_keys = [x for x in second_list[i].keys()]
-            six.assertCountEqual(self, first_keys, second_keys)
-            for key in first_keys:
-                self.assertEqual(first_list[i].get(key), second_list[i].get(key))
 
     def setUp(self):
         '''
         Make a temporary directory.
         '''
+        DocumentTestCase.setUp(self)
         self.path_to_here = os.path.dirname(inspect.getfile(self.__class__))
-        self.addTypeEqualityFunc(etree._Element, self.assertElementsEqual)
-        self.addTypeEqualityFunc(etree._ElementTree, self.assertElementsEqual)
+        # self.addTypeEqualityFunc(etree._Element, DocumentTestCase.assertElementsEqual)
+        # self.addTypeEqualityFunc(etree._ElementTree, DocumentTestCase.assertElementsEqual)
         try:
             # Python 3.2+
             self._temp_dir = tempfile.TemporaryDirectory()
@@ -340,42 +355,41 @@ class TestSaveAndLoad(unittest.TestCase):
         if self._temp_dir is None:
             shutil.rmtree(self.repo_dir)
 
+        DocumentTestCase.tearDown(self)
+
     def test__save_out_1(self):
         '''
-        Given an ElementTree, it just saves it.
-        '''
-        tree = mock.MagicMock(spec_set=etree._ElementTree)
-        to_here = 'whatever.mei'
-        document._save_out(tree, to_here)
-        tree.write.assert_called_once_with(to_here, encoding='UTF-8', pretty_print=True,
-            xml_declaration=True)
-
-    @mock.patch('lychee.document.document.etree.ElementTree')
-    def test__save_out_2(self, mock_etree):
-        '''
-        Given an Element, it's turned into an ElementTree and saved.
-        '''
-        tree = mock.MagicMock(spec_set=etree._ElementTree)
-        mock_etree.return_value = tree
-        to_here = 'whatever.mei'
-        elem = mock.MagicMock(spec_set=etree._Element)
-        document._save_out(elem, to_here)
-        mock_etree.assert_called_once_with(elem)
-        tree.write.assert_called_once_with(to_here, encoding='UTF-8', pretty_print=True,
-            xml_declaration=True)
-
-    def test__save_out_3(self):
-        '''
-        Do it for real (no mocks)!
+        Given an Element without @ly:version, save it as an ElementTree with @ly:version.
         '''
         elem = etree.Element('something')
         to_here = os.path.join(self.repo_dir, 'something.mei')
         document._save_out(elem, to_here)
         self.assertTrue(os.path.exists(to_here))
+        # escape the 'lxml' echo chamber
+        with open(to_here, 'r') as the_file:
+            saved = the_file.read()
+        assert '<?xml' in saved
+        assert 'UTF-8' in saved
+        assert 'ly:version="{0}"'.format(lychee.__version__) in saved
 
-    def test__save_out_4(self):
+    def test__save_out_2(self):
         '''
-        Given an ElementTree, it tries to save but gets C14NError, so raises CannotSaveError.
+        Given an ElementTree with outdated @ly:version, save it with updated @ly:version.
+        '''
+        elem = etree.ElementTree(etree.Element('something', {lyns.VERSION: '0.0.1'}))
+        to_here = os.path.join(self.repo_dir, 'something.mei')
+        document._save_out(elem, to_here)
+        self.assertTrue(os.path.exists(to_here))
+        # escape the 'lxml' echo chamber
+        with open(to_here, 'r') as the_file:
+            saved = the_file.read()
+        assert '<?xml' in saved
+        assert 'UTF-8' in saved
+        assert 'ly:version="{0}"'.format(lychee.__version__) in saved
+
+    def test__save_out_3(self):
+        '''
+        Given an ElementTree, it tries to save but gets IOError, so raises CannotSaveError.
         '''
         tree = mock.MagicMock(spec_set=etree._ElementTree)
         tree.write.side_effect = IOError('lol')
@@ -657,49 +671,6 @@ class TestDocumentInit(unittest.TestCase):
                 self.assertIsInstance(doc, document.Document)
                 raise RuntimeError('asdf')
         self.assertEqual(0, mock_save.call_count)
-
-
-class DocumentTestCase(unittest.TestCase):
-    '''
-    Base for test cases that use an instance of :class:`lychee.document.Document`. The setUp()
-    method here does some things those test cases will want.
-    '''
-
-    def assertElementsEqual(self, first, second, msg=None):
-        '''
-        Type-specific equality function for :class:`lxml.etree.Element` and
-        :class:`lxml.etree.ElementTree` objects.
-        '''
-        first_list = [x for x in first.iter()]
-        second_list = [x for x in second.iter()]
-        if len(first_list) != len(second_list):
-            raise self.failureException('element trees are different sizes')
-        for i in range(len(first_list)):
-            if first_list[i].tag != second_list[i].tag:
-                raise self.failureException('Tags are not equal')
-            first_keys = [x for x in first_list[i].keys()]
-            second_keys = [x for x in second_list[i].keys()]
-            six.assertCountEqual(self, first_keys, second_keys)
-            for key in first_keys:
-                self.assertEqual(first_list[i].get(key), second_list[i].get(key))
-
-    def setUp(self):
-        '''
-        Make an empty Document on "self.document" with a temporary directory. The repository
-        directory's name is stored in "self.repo_dir." There should already be an "all_files.mei"
-        file, in accordance with how Document.__init__() works.
-        '''
-        self.addTypeEqualityFunc(etree._Element, self.assertElementsEqual)
-        self.addTypeEqualityFunc(etree._ElementTree, self.assertElementsEqual)
-        self._session = session.InteractiveSession()
-        self.repo_dir = self._session.set_repo_dir('')
-        self.doc = self._session.get_document()
-
-    def tearDown(self):
-        '''
-        In Python before 3.2, we need to clean up the temporary directory ourselves.
-        '''
-        self._session.unset_repo_dir()
 
 
 class TestGetSectionIds(DocumentTestCase):

@@ -4,7 +4,7 @@
 
      NOTE: this file is intentionally invalid
 -->
-<mei:meiHead xmlns:mei="http://www.music-encoding.org/ns/mei">
+<mei:meiHead xmlns:mei="http://www.music-encoding.org/ns/mei" xmlns:ly="https://lychee.ncodamusic.org" ly:version="?">
     <mei:fileDesc>
         <mei:titleStmt>
             <mei:title>Lychee-MEI Test File</mei:title>

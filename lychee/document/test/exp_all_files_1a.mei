@@ -1,0 +1,16 @@
+<!-- This is an "expected" result for the test suite. It's an empty "all_files" file. -->
+<mei:meiCorpus xmlns:mei="http://www.music-encoding.org/ns/mei" xmlns:ly="https://lychee.ncodamusic.org" ly:version="?">
+    <mei:meiHead>
+        <mei:fileDesc>
+            <mei:titleStmt>
+                <mei:title>
+                    <mei:title type="main">(Untitled)</mei:title>
+                </mei:title>
+            </mei:titleStmt>
+            <mei:pubStmt>
+                <mei:unpub>This is an unpublished Lychee-MEI document.</mei:unpub>
+            </mei:pubStmt>
+        </mei:fileDesc>
+    </mei:meiHead>
+    <mei:mei/>
+</mei:meiCorpus>

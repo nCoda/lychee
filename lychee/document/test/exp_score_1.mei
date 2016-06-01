@@ -5,7 +5,7 @@
 -->
 <!-- This is also an input for the test suite ("test_document.py").
 -->
-<mei:score xmlns:mei="http://www.music-encoding.org/ns/mei" xmlns:xlink="http://www.w3.org/1999/xlink">
+<mei:score xmlns:mei="http://www.music-encoding.org/ns/mei" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ly="https://lychee.ncodamusic.org" ly:version="?">
     <mei:ptr target="1.mei" targettype="section" xlink:actuate="onRequest" xlink:show="embed"/>
     <mei:ptr target="2.mei" targettype="section" xlink:actuate="onRequest" xlink:show="embed"/>
     <mei:ptr target="1.mei" targettype="section" xlink:actuate="onRequest" xlink:show="embed"/>

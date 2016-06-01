@@ -41,7 +41,7 @@ from lxml import etree
 
 import lychee
 from lychee import exceptions
-from lychee.namespaces import mei, xlink, xml
+from lychee.namespaces import mei, xlink, xml, lychee as lyns
 
 
 # translatable strings
@@ -162,8 +162,15 @@ def _save_out(this, to_here):
     :returns: ``None``
     :raises: :exc:`lychee.exceptions.CannotSaveError` if something messes up
     '''
+    # get an ElementTree in "this" and the root Element in "root"
     if isinstance(this, etree._Element):  # pylint: disable=protected-access
+        root = this
         this = etree.ElementTree(this)
+    else:
+        root = this.getroot()
+    # make sure the root element has a proper @ly:version attribute
+    root.set(lyns.VERSION, lychee.__version__)
+    # finally, save it out
     try:
         this.write(to_here, encoding='UTF-8', pretty_print=True, xml_declaration=True)
     except IOError:

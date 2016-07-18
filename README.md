@@ -2,6 +2,8 @@
 
 *Lychee* is an engine for MEI document management and conversion.
 
+[![CircleCI](https://circleci.com/gh/nCoda/lychee.svg?style=svg)](https://circleci.com/gh/nCoda/lychee)
+
 ## License
 
 *Lychee* is copyrighted according to the terms of the GNU GPLv3+. A copy of the license is held in

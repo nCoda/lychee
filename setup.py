@@ -8,6 +8,14 @@ setup(
     name = lychee.__metadata__['name'],
     version = lychee.__metadata__['version'],
     packages = ['lychee'],
+    install_requires = (
+        'Abjad==2.17',
+        'grako',
+        'lxml>3',
+        'mercurial<3.5',
+        'mercurial-hug>0.4',
+        'signalslot',
+    ),
 
     # metadata for upload to PyPI
     author = lychee.__metadata__['author'],

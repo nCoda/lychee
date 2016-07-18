@@ -76,8 +76,10 @@ def log(message, level=None):
 
 
 # many other modules will want to import :mod:`exceptions`, so it should be imported first
-from lychee import exceptions
-from lychee import *
-
-
-InteractiveSession = workflow.session.InteractiveSession
+try:
+    from lychee import exceptions
+    from lychee import *
+except ImportError as exc:
+    log(str(exc), level='ERROR')
+else:
+    InteractiveSession = workflow.session.InteractiveSession

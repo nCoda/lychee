@@ -1,8 +1,10 @@
 Documentation for Lychee
 ========================
 
-*Lychee* is an MEI document management system.
+*Lychee* is the MEI document management system developed by `nCoda <https://ncodamusic.org/>`_.
 
+
+**Table of Contents**
 
 .. toctree::
     :maxdepth: 3
@@ -17,10 +19,6 @@ Documentation for Lychee
     vcs
     namespaces
     tui
-
-
-Indices and tables
-==================
 
 * :ref:`genindex`
 * :ref:`modindex`

@@ -2,7 +2,7 @@
 
 *Lychee* is an engine for MEI document management and conversion.
 
-[![Build Status](https://travis-ci.org/nCoda/lychee.svg?branch=main)](https://travis-ci.org/nCoda/lychee)
+[![CircleCI](https://circleci.com/gh/nCoda/lychee.svg?style=svg)](https://circleci.com/gh/nCoda/lychee)
 
 ## License
 

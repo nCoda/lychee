@@ -7,3 +7,5 @@ install:
   - pip install -r ci_requirements.txt
 script: py.test --cov=lychee
 # after_success: coveralls
+addons:
+  ssh_known_hosts: goldman.ncodamusic.org

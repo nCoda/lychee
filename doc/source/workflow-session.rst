@@ -1,3 +1,5 @@
+.. _workflow-session:
+
 Session Management
 ==================
 

@@ -1,10 +1,12 @@
+.. _basic:
+
 Basic Concepts
 ==============
 
 *Lychee* manages an MEI document during a score editing session. *Lychee* performs
 nearly-instantaneous conversion between various representations (Abjad, LilyPond, and MEI) with
-optional version control integration, and connections to an event-driven notification system for
-use in GUI applications.
+optional version control integration, and provides a connection point for user interfaces (whether
+over the web, to a desktop application, or a commandline).
 
 While *Lychee* is developed primarily for use as the core of `nCoda`_, we are developing *Lychee*
 with other use cases in mind so that our work benefits a larger audience.
@@ -12,11 +14,42 @@ with other use cases in mind so that our work benefits a larger audience.
 .. _ncoda: https://ncodamusic.org/
 
 
+.. _basic-introduction:
+
+Introduction, Audiences, API Stability
+--------------------------------------
+
+This documentation is designed for three types of *Lychee* users, each with their own needs:
+
+#. People who want to use existing *Lychee* functionality for purposes we predicted, for example as
+   the backend of *nCoda*. These users will primarily refer to the :ref:`workflow-session` section.
+   Furthermore, the *Lychee* version numbers are designed for these users: once we reach version 1.0,
+   any backward-incompatible change to the :ref:`workflow-session` API will be signalled with a
+   new "major" version number, which we intend to be infrequent.
+#. People who want to use existing *Lychee* functionality for purposes we did not predict. (No example
+   use case here, or else we would have predicted it). In addition to the :ref:`workflow-session`
+   API, we expect these users to be interested in the rest of the :ref:`workflow` APIs, the
+   :ref:`lychee_mei` specification, the :ref:`document`, the :ref:`views` functionality, and the
+   :ref:`vcs` section. (Indeed, this includes most of *Lychee*). **We have not yet decided what level of
+   API stability to offer for these modules**: backward-incompatible changes may be signalled either
+   with a new "major" or "minor" version number.
+#. People developing *Lychee*, who may need to modify the behaviour of API functions, and who will
+   be expected to use and develop internal interfaces where appropriate. In addition to the above,
+   these users will be interested in class- and module-level private functions, including the inner
+   workings of the format converters. Internal APIs may change at any time, so we have clearly marked
+   them with a warning against use in external software. If you would like to use an internal *Lychee*
+   API in external software, please ask us to consider making the internal API public!
+
+There are two additional points worth making explicit. First, you may not fit cleanly into one of
+the categories described above. Second, there's a good chance you won't need to read most of the
+documentation here.
+
+
 Starter Example
 ---------------
 
-We admit it: *Lychee* is a complex complex of software, but using it is simple! This example shows
-one way to get started with *Lychee*.
+*Lychee* is a complex complex of software, but most functionality is simple enough to use! This
+example shows one way to get started with *Lychee*.
 
 .. sourcecode:: python
     :linenos:
@@ -41,6 +74,14 @@ Line 8: connect :func:`print_converted` so it is called when *Lychee* finishes o
 
 Line 9: use :const:`~lychee.signals.ACTION_START` to submit a small LilyPond document to
 *Lychee*. You should see :func:`print_converted` print out an MEI document ready for *Verovio*!
+
+.. note::
+    Even this simple example shows our inconsistent use of the observer pattern (that is, the
+    signals). We are gradually replacing this pattern with the :mod:`~lychee.workflow.session`
+    module. While the observer pattern is well-suited for many potential real-world uses of *Lychee*,
+    we originally used it at the wrong level of abstraction. Therefore, the signals are moving into
+    user interface glue layers like `Fujian <https://fujian.ncodamusic.org/>`_ and the future
+    :mod:`lychee.tui` module.
 
 
 Program Modules

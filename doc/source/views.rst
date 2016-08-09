@@ -1,3 +1,5 @@
+.. _views:
+
 Views Processing (Partial Document Updates)
 ===========================================
 

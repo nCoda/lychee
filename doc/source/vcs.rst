@@ -1,3 +1,5 @@
+.. _vcs:
+
 VCS: Version Control System Management
 ======================================
 

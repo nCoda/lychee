@@ -1,3 +1,5 @@
+.. _document:
+
 MEI Document Representation
 ===========================
 

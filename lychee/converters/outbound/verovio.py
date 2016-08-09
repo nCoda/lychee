@@ -25,6 +25,16 @@
 '''
 Convert a Lychee-MEI document to a standard MEI document that Verovio will accept.
 
+.. danger:: This module is not fully implemented yet.
+
+.. warning::
+    This module is intended for internal *Lychee* use only, so the API may change without notice.
+    If you wish to use this module outside *Lychee*, please contact us to discuss the best way.
+
+.. tip::
+    We recommend that you use the converters indirectly.
+    Refer to :ref:`how-to-use-converters` for more information.
+
 This module runs the same conversions as :mod:`lmei_to_mei`, and makes the following two changes:
 
 #. Convert the document to a string with an XML declaration that uses double quotes. Note that,

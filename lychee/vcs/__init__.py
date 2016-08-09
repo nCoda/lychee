@@ -36,6 +36,9 @@ helpful to ignore.
 
 .. _mercurial: https://www.mercurial-scm.org/
 
+.. warning:: The "VCS" functionality is only partially implemented; this documentation represents
+    the current implementation plan.
+
 
 Interacting with the VCS
 ------------------------

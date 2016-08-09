@@ -25,6 +25,14 @@
 '''
 "Converts" VCS data into an easier format for clients.
 
+.. warning::
+    This module is intended for internal *Lychee* use only, so the API may change without notice.
+    If you wish to use this module outside *Lychee*, please contact us to discuss the best way.
+
+.. tip::
+    We recommend that you use the converters indirectly.
+    Refer to :ref:`how-to-use-converters` for more information.
+
 .. note:: This is an outbound converter that does not emit signals directly. Refer to the
     :mod:`lychee.signals.outbound` module for more information.
 

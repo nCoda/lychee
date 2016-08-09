@@ -22,6 +22,16 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
+'''
+.. warning::
+    This module is intended for internal *Lychee* use only, so the API may change without notice.
+    If you wish to use this module outside *Lychee*, please contact us to discuss the best way.
+
+.. tip::
+    We recommend that you use the converters indirectly.
+    Refer to :ref:`how-to-use-converters` for more information.
+'''
+
 import uuid
 
 from lxml import etree as etree

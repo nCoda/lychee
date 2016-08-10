@@ -34,6 +34,10 @@ from . import vcs
 
 MOVE_SECTION_TO = signal.Signal(args=['xmlid', 'position'], name='document.MOVE_SECTION_TO')
 '''
+.. warning::
+    This signal is deprecated.
+    Refer to `T108 <https://goldman.ncodamusic.org/T108>`_ for more information.
+
 Emit this signal to move a ``<section>`` to a specific position in the currently active score.
 
 :kwarg string xmlid: The @xml:id attribute of the ``<section>`` to move. The section may or may

@@ -268,18 +268,20 @@ def _make_empty_head():
 
     The output produced is not truly "empty." It contains the minimal information required:
 
-    <meiHead>
-        <fileDesc>
-            <titleStmt>
-                <title>
-                    <title type="main">(Untitled)</title>
-                </title>
-            </titleStmt>
-            <pubStmt>
-                <unpub>This is an unpublished Lychee-MEI document.</unpub>
-            </pubStmt>
-        </fileDesc>
-    </meiHead>
+    .. code-block:: xml
+
+        <meiHead>
+            <fileDesc>
+                <titleStmt>
+                    <title>
+                        <title type="main">(Untitled)</title>
+                    </title>
+                </titleStmt>
+                <pubStmt>
+                    <unpub>This is an unpublished Lychee-MEI document.</unpub>
+                </pubStmt>
+            </fileDesc>
+        </meiHead>
     '''
     mei_head = etree.Element(mei.MEI_HEAD)
 
@@ -537,15 +539,15 @@ class Document(object):
         else:
             return self._score_order
 
-    def load_everything(self):
-        '''
-        Load all portions of the MEI document from files. This method effectively caches the
-        document in memory for faster access later.
-
-        .. caution:: This method is not yet implemented.
-        '''
-        # NB: when you write this, it should just call the other methods
-        raise NotImplementedError()
+    # def load_everything(self):
+    #     '''
+    #     Load all portions of the MEI document from files. This method effectively caches the
+    #     document in memory for faster access later.
+    #
+    #     .. caution:: This method is not yet implemented.
+    #     '''
+    #     # NB: when you write this, it should just call the other methods
+    #     raise NotImplementedError()
 
     def save_everything(self):
         '''
@@ -730,26 +732,24 @@ class Document(object):
     def put_in_head(self, new_elem):
         '''
         As per :meth:`get_from_head`, but with setting instead.
-        '''
-        raise NotImplementedError('Document.set_in_head() is not implemented.')
 
-    def get_ui(self):
+        .. warning::
+            This method is not implemented.
+            Refer to `T109 <https://goldman.ncodamusic.org/T109>`_ for more information.
         '''
-        Load and return Lychee-specific user interface data.
+        raise NotImplementedError('Document.put_in_head() is not implemented.')
 
-        :returns: Some element... ???
-        :rtype: :class:`lxml.etree.Element`
-        '''
-        raise NotImplementedError()
+    # def get_ui(self):
+    #     '''
+    #     Load and return Lychee-specific user interface data.
+    #     '''
+    #     raise NotImplementedError()
 
-    def put_ui(self, new_ui):
-        '''
-        Save new Lychee-specific user interface data.
-
-        :param new_ui: Some element... ???
-        :type new_ui: :class:`lxml.etree.Element`
-        '''
-        raise NotImplementedError()
+    # def put_ui(self, new_ui):
+    #     '''
+    #     Save new Lychee-specific user interface data.
+    #     '''
+    #     raise NotImplementedError()
 
     def get_score(self):
         '''
@@ -866,6 +866,10 @@ class Document(object):
 
         Note that this isn't the slot itself. After the work for MOVE_SECTION_TO is completed by this
         function, an "outbound" conversion must run. That must be done by whichever function calls this.
+
+        .. warning::
+            This method will be changed when the MOVE_SECTION_TO signal is removed.
+            Refer to `T108 <https://goldman.ncodamusic.org/T108>`_ for more information.
         '''
         position = int(position)
 

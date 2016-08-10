@@ -36,4 +36,6 @@ XLINKNS = '{http://www.w3.org/1999/xlink}'
 etree.register_namespace('xlink', XLINKNS[1:-1])
 
 ACTUATE = '{}actuate'.format(XLINKNS)
+'An XLink attribute name.'
 SHOW = '{}show'.format(XLINKNS)
+'An XLink attribute name.'

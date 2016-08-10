@@ -26,11 +26,11 @@
 Constants for the "MEI" XML namespace.
 '''
 
+# NOTE: please keep this list alphabetical!
+# NOTE: the weird string after each constant makes Sphinx show the constant in the API.
 
 from lxml import etree
 
-
-# NOTE: please keep this list alphabetical!
 
 # namespace
 MEINS = '{http://www.music-encoding.org/ns/mei}'
@@ -38,55 +38,106 @@ etree.register_namespace('mei', MEINS[1:-1])
 
 # tag names
 ACCID = '{}accid'.format(MEINS)
+'An MEI tag name.'
 ARRANGER = '{}arranger'.format(MEINS)
+'An MEI tag name.'
 AUDIENCE = '{}audience'.format(MEINS)
+'An MEI tag name.'
 AUTHOR = '{}author'.format(MEINS)
+'An MEI tag name.'
 BODY = '{}body'.format(MEINS)
+'An MEI tag name.'
 CHORD = '{}chord'.format(MEINS)
+'An MEI tag name.'
 CLASSIFICATION = '{}classification'.format(MEINS)
+'An MEI tag name.'
 COMPOSER = '{}composer'.format(MEINS)
+'An MEI tag name.'
 CONTENTS = '{}contents'.format(MEINS)
+'An MEI tag name.'
 CONTEXT = '{}context'.format(MEINS)
+'An MEI tag name.'
 EDITOR = '{}editor'.format(MEINS)
+'An MEI tag name.'
 FILE_DESC = '{}fileDesc'.format(MEINS)
+'An MEI tag name.'
 FUNDER = '{}funder'.format(MEINS)
+'An MEI tag name.'
 HISTORY = '{}history'.format(MEINS)
+'An MEI tag name.'
 KEY = '{}key'.format(MEINS)
+'An MEI tag name.'
 LANG_USAGE = '{}langUsage'.format(MEINS)
+'An MEI tag name.'
 LAYER = '{}layer'.format(MEINS)
+'An MEI tag name.'
 LIBRETTIST = '{}librettist'.format(MEINS)
+'An MEI tag name.'
 LYRICIST = '{}lyricist'.format(MEINS)
+'An MEI tag name.'
 MDIV = '{}mdiv'.format(MEINS)
+'An MEI tag name.'
 MEASURE = '{}measure'.format(MEINS)
+'An MEI tag name.'
 MEI = '{}mei'.format(MEINS)
+'An MEI tag name.'
 MEI_CORPUS = '{}meiCorpus'.format(MEINS)
+'An MEI tag name.'
 MEI_HEAD = '{}meiHead'.format(MEINS)
+'An MEI tag name.'
 MENSURATION = '{}mensuration'.format(MEINS)
+'An MEI tag name.'
 METER = '{}meter'.format(MEINS)
+'An MEI tag name.'
 MUSIC = '{}music'.format(MEINS)
+'An MEI tag name.'
 NAME = '{}name'.format(MEINS)
+'An MEI tag name.'
 NOTE = '{}note'.format(MEINS)
+'An MEI tag name.'
 NOTES_STMT = '{}notesStmt'.format(MEINS)
+'An MEI tag name.'
 PERF_MEDIUM = '{}perfMedium'.format(MEINS)
+'An MEI tag name.'
 PERS_NAME = '{}persName'.format(MEINS)
+'An MEI tag name.'
 PTR = '{}ptr'.format(MEINS)
+'An MEI tag name.'
 PUB_STMT = '{}pubStmt'.format(MEINS)
+'An MEI tag name.'
 RESP_STMT = '{}respStmt'.format(MEINS)
+'An MEI tag name.'
 REST = '{}rest'.format(MEINS)
+'An MEI tag name.'
 REVISION_DESC = '{}revisionDesc'.format(MEINS)
+'An MEI tag name.'
 SCORE = '{}score'.format(MEINS)
+'An MEI tag name.'
 SCORE_DEF = '{}scoreDef'.format(MEINS)
+'An MEI tag name.'
 SECTION = '{}section'.format(MEINS)
+'An MEI tag name.'
 SPACE = '{}space'.format(MEINS)
+'An MEI tag name.'
 SPONSOR = '{}sponsor'.format(MEINS)
+'An MEI tag name.'
 STAFF = '{}staff'.format(MEINS)
+'An MEI tag name.'
 STAFF_DEF = '{}staffDef'.format(MEINS)
+'An MEI tag name.'
 STAFF_GRP = '{}staffGrp'.format(MEINS)
+'An MEI tag name.'
 TITLE = '{}title'.format(MEINS)
+'An MEI tag name.'
 TITLE_STMT = '{}titleStmt'.format(MEINS)
+'An MEI tag name.'
 TUPLET_SPAN = '{}tupletSpan'.format(MEINS)
+'An MEI tag name.'
 UNPUB = '{}unpub'.format(MEINS)
+'An MEI tag name.'
 WORK_DESC = '{}workDesc'.format(MEINS)
+'An MEI tag name.'
 WORK = '{}work'.format(MEINS)
+'An MEI tag name.'
 
 # attribute names

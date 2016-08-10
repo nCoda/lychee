@@ -26,7 +26,6 @@ If you do not know what *Lychee* is, please start with the :ref:`basic` section.
     views
     vcs
     namespaces
-    tui
 
 * :ref:`genindex`
 * :ref:`modindex`

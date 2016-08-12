@@ -24,6 +24,10 @@
 #--------------------------------------------------------------------------------------------------
 '''
 Signals for the "vcs" step.
+
+.. warning::
+    These signals are deprecated.
+    Refer to `T110 <https://goldman.ncodamusic.org/T110>`_ for more information.
 '''
 
 from . import signal

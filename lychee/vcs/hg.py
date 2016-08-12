@@ -23,7 +23,15 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 '''
-Mercurial integration module for *Lychee*.
+Mercurial integration module for *Lychee*. This is a wrapper for :mod:`mercurial-hug`.
+
+.. warning::
+    This module is intended for internal *Lychee* use only, so the API may change without notice.
+    If you wish to use this module outside *Lychee*, please contact us to discuss the best way.
+
+.. warning::
+    This module may become deprecated, and is very likely to change.
+    Refer to `T110 <https://goldman.ncodamusic.org/T110>`_ for more information.
 '''
 
 

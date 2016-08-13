@@ -3,12 +3,31 @@
 Lychee-MEI (LMEI)
 =================
 
-Lychee-MEI (LMEI) is the internal document format Lychee uses. LMEI restricts MEI to allow faster
-and safer encoding. The LMEI restrictions are changing as development continues.
+:dfn:`Lychee-MEI` (:abbr:`LMEI`) is the internal document encoding *Lychee* uses. LMEI is based on
+:abbr:`MEI (Music Encoding Initiative)`, currently
+`version 2.1.1 <http://music-encoding.org/documentation/2.1.1/chapters/>`_.
+LMEI restricts MEI to optimize for speed and safety in the use cases for which *Lychee* is optimized.
+
+The additional rules of LMEI continue to evolve as development progresses. Once we reach a stable
+set of rules, we will formalize Lychee-MEI using the MEI customization tools, making it possible to
+validate whether a file is valid LMEI.
 
 
-File Management
----------------
+.. raw:: html
+
+    <nav class="scrollspy-nav in-page-nav" data-am-scrollspynav="{offsetTop: 142.2}" data-am-sticky="{top: 51}" data-am-sticky>
+
+.. contents::
+    :depth: 1
+    :local:
+
+.. raw:: html
+
+    </nav>
+
+
+File Layout
+-----------
 
 - Every MEI ``<section>`` is kept in its own file, to ease version control.
 - Clients are therefore encouraged to use sections generously.
@@ -25,152 +44,11 @@ File Management
     </section>
 
 
-Others
-------
+File Management
+---------------
 
-- Use semantic @xml:id values as described below.
-- The ``<multiRest>`` element isn't allowed; on conversion from MEI to Lychee-MEI, convert into
-  multiple ``<mRest>`` elements.
-- ``<mRest>`` elements must have a @dur attribute (and @dots if relevant).
-- The ``<dot>`` element is forbidden in favour of @dot attributes. (We may need ``<dot>`` when
-  dealing with particular repertoire or critical editions, later, but for now it's an
-  unnecessary complication to support).
-- When the @accid attribute appears on an element, the @accid.ges attribute must be used too. Using
-  @accid.ges doesn't require @accid, however.
-
-
-Spanners
---------
-
-- The ``<tupletSpan>``, ``<beamSpan>``, ``<slur>``, and other elements that may refer to spanner
-  objects with @startid and @endid, and are therefore inherently ambiguous and error-prone, must
-  always use the @plist attribute to eliminate this ambiguity.
-- Spanners that may be encoded as either an element containing other elements (like ``<tuplet>``)
-  or as a pointing element (like ``<tupletSpan>``) must use the pointing version.
-- Spanner elements must be sibling elements to the element indicated by its @startid attribute,
-  and the spanner must precede the @startid element.
-- The @plist attribute must include all child elements, not just immediate children (so in a
-  nested tuplet, the highest-level ``<tupletSpan>`` will have in its @plist all of the notes/rests
-  in that and any contained ``<tupletSpan>`` elements.
-- Collectively, these restrictions eliminate the need for a multiple-pass parser.
-- For a spanner that contains another spanner, the element defining the inner spanner must
-  appear in the document *after* the element defining the outer spanner. This is implied in the
-  previous rules, but specified more clearly here for consistency.
-- Both @num and @numbase are required on every ``<tupletSpan>``.
-
-
-"n" Attributes
---------------
-
-- For containers that require an @n attribute, the values must be enumerated from 1, incremented
-  by 1, and start with the top-most or left-most sub-container, as applicable.
-- Therefore the first ``<section>`` will have ``@n="1"``, the next ``@n="2"``, and so on. An
-  "inactive" ``<section>``, not part of the current "score," should either have ``@n="0"`` or no
-  @n attribute at all.
-- Therefore the top-most ``<staff>`` will have ``@n="1"``, the next ``@n="2"``, and so on.
-- Therefore the ``<layer>`` with the "upper voice" will have ``@n="1"``, the "lower voice"
-  ``@n="2"``, a subsequent "upper voice" ``@n="3"``, and so on (the goal being that "upper"
-  voices with upward-pointing stems will have odd values of @n, and "lower" voices with
-  downward-pointing stems will have even values of @n).
-- Implication: when a sub-container is added or removed from a container (e.g., a ``<layer>``
-  removed from  a ``<staff>``) the @n values of following sub-containers must be adjusted. This
-  maintains the predictability of the "incremented by 1" stipulation.
-- Additionally, the @n attribute of an element must equal the @n attribute of the corresponding
-  element in other contexts (e.g., the principal flute's ``<staff>`` should be ``@n="1"`` in every
-  ``<measure>``). This appears to create missing @n values, for example if an instrument does not
-  appear in a particular ``<section>``. However, it allows us to assume that, if an @n value is
-  missing in a context, the absence signifies an "empty" value. If @n values could be assigned
-  arbitrarily, a missing @n value would not necessarily mean anything.
-- Every ``<staffDef>`` element must have an @n attribute that is the same as the corresponding
-  ``<staff>`` element(s).
-- These rules specify extra precision for which standard MEI would require attributes like @prev
-  and @next. Therefore the LMEI-to-MEI converter should add those attributes in order to allow
-  proper round-trip conversion.
-
-
-Nesting of Measures and Staves
-------------------------------
-
-This restriction is notable for being the only incompatibility between MEI and LMEI. Lychee-MEI
-reverses the nesting order for ``<staff>`` and ``<measure>`` elements compared to MEI. The LMEI
-document hierarchy looks like this:
-
-.. sourcecode:: xml
-
-    <section>
-        <staff>
-            <measure>  <!-- optional -->
-                <layer/>
-            </measure>
-        </staff>
-    </section>
-
-There are two principal reasons we use this nesting order.
-
-#. It more closely reflects the document hierarchy used in other formats, such as LilyPond, MusicXML,
-   music21, and others. Conversion between these formats is faster when LMEI uses the same hierarchy.
-#. It allows greater consistency between mensural and non-mensural representations. In standard MEI,
-   converting a piece between mensural and non-mensural representations would require a significant
-   change to the document hierarchy. With the measure-inside-staff nesting of LMEI, the change is
-   less dramatic.
-
-The second point, about converting between mensural and non-mensural representations, may seem like
-an esoteric item of concern only to contemporary composers. However, this is about (non-)mensural
-*representations*, not *scores*. Every score coming from LilyPond, for example, necessarily uses a
-non-mensural representation because LilyPond syntax has no means to encode measures. Verovio, on the
-other hand, currently requires ``<measure>`` elements in its input. We predict therefore that
-converting between mensural and non-mensural representations will happen often.
-
-
-ScoreDef and StaffDef
----------------------
-
-- To the fullest extent possible, every ``<staffDef>`` must appear within a ``<scoreDef>``.
-- Also as much as possible, both elements must only appear as the first element within a
-  ``<section>``. It may not always be possible to abide by this rule, so exceptions may be
-  clarified in the future.
-- Every ``<staffDef>`` element must have an @n attribute that is the same as the corresponding
-  ``<staff>`` element(s).
-
-
-Semantic XML IDs
-----------------
-
-The @xml:id attribute of musical elements contained within a ``<section>`` must use the following
-scheme to encode the element's position within the document hierarchy.
-
-- Every element has a seven-digit "element ID."
-- The @xml:id concatenates the element IDs for the section, staff, measure, and layer that contain
-  the element. Each portion is separated with a hyphen. Each element ID is preceded by a single-letter
-  reminder of its tag.
-- If an element is a section, staff, measure, or layer, its place in the @xml:id is marked with "me".
-- The element IDs of missing or irrelevant hierarchic elements are omitted.
-- The generic ``@xml:id`` is ``@xml:id="SX-sX-mX-lX-eX"``, where ``X`` is an element ID.
-
-Consider this example:
-
-.. sourcecode:: xml
-
-    <section xml:id="Sme-s-m-l-e1234567">
-        <staff xml:id="S1234567-sme-m-l-e8974095">
-            <measure xml:id="S1234567-s8974095-mme-l-e8290395">
-                <layer xml:id="S1234567-s8974095-m8290395-lme-e7389825">
-                    <note xml:id="S1234567-s8974095-m8290395-l7389825-e7290542"/>
-                </layer>
-                <slur xml:id="S1234567-s8974095-m8290395-l-e3729884"/>
-            </measure>
-        </staff>
-    </section>
-
-.. note:: This poses a unique problem for conversion to and from proper MEI documents where the
-    document hierarchy may be different. We have yet to determine how to handle this situation.
-
-
-Cross-References with Files
----------------------------
-
-Lychee shall maintain a file called ``all_files.mei`` in which cross-reference links are kept for
-all other MEI files in the repository. These cross-references use the ``<ptr>`` element.
+Every LMEI document requires a central ``all_files.mei`` file, in which cross-reference links are
+kept for all other LMEI files in the document. The cross-references use the ``<ptr>`` element.
 
 - The @target attribute holds a URL to the other file, relative to ``all_files.mei``
 - @targettype may be ``"section"``, ``"score"``, or ``"head"``, as appropriate.
@@ -195,26 +73,179 @@ all other MEI files in the repository. These cross-references use the ``<ptr>`` 
     specification here to follow MEI if possible.
 
 
+Miscellaneous
+-------------
+
+- The ``<multiRest>`` element is not allowed; use multiple ``<mRest>`` elements.
+- ``<mRest>`` elements must have a @dur attribute (and @dots if relevant).
+- The ``<dot>`` element is forbidden in favour of @dot attributes. (We may need ``<dot>`` when
+  dealing with particular repertoire or critical editions, later, but for now it's an
+  unnecessary complication to support).
+- When the @accid attribute appears on an element, the @accid.ges attribute must be used too. Using
+  @accid.ges doesn't require @accid, however. (NB: accidental encoding was changed in MEI 3, and
+  will therefore change soon in Lychee-MEI).
+
+
+Spanners
+--------
+
+A "spanner" is a single notation element that groups several temporal events, such as a beam, slur,
+tie, or tuplet. The following restrictions eliminate rare but possible ambiguities and, more
+importantly, eliminate the need for multiple-pass parsing.
+
+.. todo:: be more specific about which elements are required in a @plist attribute
+
+- Given the choice between a spanner container (like ``<tuplet>``) and a spanner pointer (like
+  ``<tupletSpan>``), the pointer must be used.
+- The @plist attribute is required, containing a list of the @xml:id attributes of all affected
+  music events. An "affected music event" has a different meaning with or without the spanner in
+  question. The meaning of ``<accid>`` elements is not affected by slurs, so they need not be
+  included in @plist attributes. Likewise, nesting slurs does not affect their meaning (at least,
+  not in a definite and consistent way). On the other hand, nesting tuplets has a significant impact
+  on the meaning, so the highest-level ``<tupletSpan>`` would include all the nested tuplets *and*
+  every notes and rests.
+- Spanners must indicate either @startid and @endid or @tstamp and @tstamp2.
+- Prefer @startid and @endid over @tstamp and @tstamp2 when possible. An example "not possible"
+  situation is a *laissez vibrer* tie, the end of which is not attached to a note or rest.
+- A spanner element should be a sibling of the first spanned element, as close as possible *before*
+  that element.
+- Nested spanners must appear in hierarchic document order (that is, with the highest level first
+  in the document).
+
+**Tuplets Only**
+
+- Both @num and @numbase are required on every ``<tupletSpan>``.
+
+
+"n" Attributes
+--------------
+
+These rules specify extra precision for which standard MEI would otherwise require attributes such
+as @prev and @next, and some level of assumption.
+
+- For containers that require an @n attribute, the values begin at 1, increment by 1, and start
+  with the top-most or left-most sub-container, as applicable. Therefore the first ``<section>``
+  will have ``@n="1"``, the next ``@n="2"``, and so on. The top-most ``<staff>`` will have
+  ``@n="1"``, the next ``@n="2"``, and so on.
+- An inactive ``<section>`` (not part of the current "score") should not have an @n attribute.
+- For layers, ``@n="1"`` is the first "upper voice" and ``@n="2"`` the first "lower voice," with
+  subsequent upper voices receiving odd @n values and lower voices receiving even @n values. This
+  follows the practice established by several point-and-click music notation editors.
+- When a sub-container is added or removed from a container (e.g., a ``<layer>`` removed from  a
+  ``<staff>``) the @n values of the following sub-containers must be adjusted in order to maintain
+  the "incremented by 1" stipulation.
+- The @n attribute of an element must equal the @n attribute of a corresponding element in other
+  contexts (e.g., the principal flute's ``<staff>`` would be ``@n="1"`` in every ``<measure>``).
+  Because of the "increment by 1" rule, an @n value missing from a container signifies a deliberate
+  absence of content. For example, in a score with fifteen parts, omitting the ``@n="3"`` ``<staff>``
+  in one ``<section>`` indicates that the ``@n="3"`` part has no music in that ``<section>``.
+- Corresponding metadata elements must also share @n attributes, such as ``<staffDef>`` and ``<staff>``.
+- The LMEI-to-MEI converter should add @prev and @next attributes to ease round-trip conversion.
+
+
+Nesting of Measures and Staves
+------------------------------
+
+.. note::
+    We are considering alternatives to this rule. We would prefer a solution that is a strict subset
+    of MEI, whereas this solution is strictly incompatible.
+
+Lychee-MEI reverses the nesting order of ``<staff>`` and ``<measure>`` elements. This rule is the
+most significant difference from standard MEI. The LMEI document hierarchy looks like this:
+
+.. sourcecode:: xml
+
+    <section>
+        <staff>
+            <measure>  <!-- optional -->
+                <layer/>
+            </measure>
+        </staff>
+    </section>
+
+We use this nesting order for two principal reasons:
+
+#. It more closely reflects the document hierarchy used in other formats, such as LilyPond, MusicXML,
+   music21, and others. Conversion between these formats is faster when LMEI uses the same hierarchy.
+#. It allows greater consistency between mensural and non-mensural representations. In standard MEI,
+   converting a piece between mensural and non-mensural representations would require a significant
+   change to the document hierarchy. With the measure-inside-staff nesting of LMEI, the change is
+   less dramatic.
+
+The second point, about converting between mensural and non-mensural representations, may seem like
+an esoteric item of concern only to contemporary composers. However, this is about (non-)mensural
+*representations*, not *scores*. Every score coming from LilyPond, for example, necessarily uses a
+non-mensural representation because LilyPond syntax has no means to encode measures. Verovio, on the
+other hand, currently requires ``<measure>`` elements in its input. We predict therefore that
+converting between mensural and non-mensural representations will happen often.
+
+
+ScoreDef and StaffDef
+---------------------
+
+- Whenever possible, every ``<staffDef>`` must be contained in a ``<scoreDef>``.
+- Whenever possible, ``<staffDef>`` and ``<scoreDef>`` must be the first element in a ``<section>``.
+- Every ``<staffDef>`` element must have an @n attribute that is the same as the corresponding
+  ``<staff>`` elements.
+
+
+Semantic XML IDs
+----------------
+
+.. note::
+    We are considering alternatives to this rule. If semantic XML IDs are unnecessary for the
+    :mod:`~lychee.views` module's diff implementation, we will abandon this rule.
+
+The @xml:id attribute of musical elements contained within a ``<section>`` must use the following
+scheme to encode the element's position within the document hierarchy.
+
+- The @xml:id concatenates the element IDs for the section, staff, measure, and layer that contain
+  the element. Each portion is separated with a hyphen. Each element ID is preceded by a single-letter
+  reminder of its tag.
+- If an element is a section, staff, measure, or layer, its place in the @xml:id is marked with "me".
+- Every element has a seven-digit "element ID."
+- The element IDs of missing or irrelevant hierarchic elements are omitted.
+- The generic ``@xml:id`` is ``@xml:id="SX-sX-mX-lX-eX"``, where ``X`` is an element ID.
+
+Consider this example:
+
+.. sourcecode:: xml
+
+    <section xml:id="Sme-s-m-l-e1234567">
+        <staff xml:id="S1234567-sme-m-l-e8974095">
+            <measure xml:id="S1234567-s8974095-mme-l-e8290395">
+                <layer xml:id="S1234567-s8974095-m8290395-lme-e7389825">
+                    <note xml:id="S1234567-s8974095-m8290395-l7389825-e7290542"/>
+                </layer>
+                <slur xml:id="S1234567-s8974095-m8290395-l-e3729884"/>
+            </measure>
+        </staff>
+    </section>
+
+.. note:: This poses a unique problem for conversion to and from proper MEI documents where the
+    document hierarchy may be different. We have yet to determine how to handle this situation.
+
+
 .. _mei_headers:
 
 MEI Headers
 -----------
 
-These limitations apply to child elements of ``<meiHead>``.
+These rules apply to child elements of ``<meiHead>``.
 
 - All title parts must be contained in a single ``<title>`` element. Use of the @type attribute is
   mandatory, with the possible values being those suggested by the MEI Guidelines: main, subordinate,
   abbreviated, alternative, translated, uniform. This means every ``<meiHead>`` element contains at
   least two ``<title>`` elements.
-- The ``<respStmt>`` element contains ``<persName>`` elements referring to Lychee users.
-  Contributors who have not used Lychee (or a Lychee client application) should be identified
-  only with a more specific child element in the ``<titleStmt>``.
-- The ``<persName>`` in ``<respStmt>`` should use child elements with @type="full", @type="given",
-  @type="other", and @type="family" attributes to encode name parts. Use as many as possible,
-  but only with values provided specifically by end users. That is, if a user provides only their
-  full name, it should not be automatically encoded as parts; likewise, if a user only provides
-  their name in parts, it should not be automatically encoded as a full name. This reduces the
-  possibility of inadvertently using an incorrect name.
+- The ``<respStmt>`` element contains ``<persName>`` elements referring to *Lychee* users.
+  Contributors who have not used *Lychee* (or a *Lychee* client application) may be identified
+  with a more specific child element in the ``<titleStmt>``.
+- The ``<persName>`` in ``<respStmt>`` should use child elements with ``@type="full"``,
+  ``@type="given"``, ``@type="other"``, and ``@type="family"`` attributes to encode name parts.
+  Use as many as possible, but only with values provided specifically by end users. That is, if a
+  user provides only their full name, it should not be automatically encoded as parts; likewise,
+  if a user only provides their name in parts, it should not be automatically encoded as a full name.
+  This reduces the possibility of inadvertently using an incorrect name.
 - A ``<persName>`` element may contain a ``<ptr>`` that links to a an externally-hosted image to be
   used as an avatar representing that person. In this case:
 
@@ -240,8 +271,8 @@ Metadata Currently Supported by Lychee
 
 The following document excerpt shows all the metadata fields that Lychee will support. Only the
 fields with a ``<!-- required -->`` comment must be in the ``<meiHead>`` of every Lychee-MEI
-document. They are therefore produced by the :func:`~lychee.document._empty_head` with placeholder
-values.
+document. The :class:`~lychee.document.document.Document` class automatically filles in placehlder
+values for all required header fields.
 
 Additional metadata will very likely be added in the future.
 

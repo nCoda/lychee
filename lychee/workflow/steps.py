@@ -25,11 +25,9 @@
 '''
 Functions to combine as "steps" in a workflow action.
 
-.. caution:: We intend the functions in this module to be used by primarily an
-    :class:`~lychee.workflow.session.InteractiveSession` instance, which knows the proper sequencing
-    and error-handling strategies. We invite you to use this module too when you are extending and
-    working with Lychee, but be careful---mistakes in the order or the input data can cause loss or
-    corruption of the Lychee-MEI document and repository.
+.. warning::
+    This module is intended for internal *Lychee* use only, so the API may change without notice.
+    If you wish to use this module outside *Lychee*, please contact us to discuss the best way.
 
 The module defines several "steps," which follow a determinate order but are not all mandatory:
 

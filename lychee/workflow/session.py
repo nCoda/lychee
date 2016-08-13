@@ -107,6 +107,10 @@ class InteractiveSession(object):
 
     def get_document(self):
         '''
+        .. deprecated:: 0.4.0
+            This method will be replaced with an attribute as described in
+            `T114 <https://goldman.ncodamusic.org/T114>`_.
+
         Get a :class:`~lychee.document.Document` for this session's repository.
 
         :returns: The :class:`Document` for this session.
@@ -327,6 +331,9 @@ class InteractiveSession(object):
 
     def inbound_conversion_finish(self, converted, **kwargs):
         '''
+        .. deprecated:: 0.4.0
+            This method will be removed as described in `T114 <https://goldman.ncodamusic.org/T114>`_.
+
         Accept the data emitted by an inbound converter. Slot for :const:`inbound.CONVERSION_FINISH`.
 
         :param converted: Lychee-MEI data for an incoming change.
@@ -337,6 +344,9 @@ class InteractiveSession(object):
 
     def inbound_views_finish(self, views_info, **kwargs):
         '''
+        .. deprecated:: 0.4.0
+            This method will be removed as described in `T114 <https://goldman.ncodamusic.org/T114>`_.
+
         Accept the views data from an inbound views processor. Slot for :const:`inbound.VIEWS_FINISH`.
 
         :param views_info: Views data for an incoming change.

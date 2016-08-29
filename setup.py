@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
-from setuptools import setup, Command
+from setuptools import setup, find_packages
 import lychee  # for metadata
 
 
 setup(
     name = lychee.__metadata__['name'],
     version = lychee.__metadata__['version'],
-    packages = ['lychee'],
+    packages = find_packages(exclude=['*.tests']),
     install_requires = (
         'Abjad==2.17',
         'grako',

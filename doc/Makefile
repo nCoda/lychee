@@ -1,6 +1,9 @@
 # Makefile for Sphinx documentation
 #
 
+AMAZEUI_DIR=$(CURDIR)/ncoda_sphinx_theme/amazeui
+AMAZEUI_TASKS_DIR=$(AMAZEUI_DIR)/tools/tasks
+
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
@@ -19,7 +22,7 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) sou
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
-.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest coverage gettext
+.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest coverage gettext amazeui
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -190,3 +193,10 @@ pseudoxml:
 	$(SPHINXBUILD) -b pseudoxml $(ALLSPHINXOPTS) $(BUILDDIR)/pseudoxml
 	@echo
 	@echo "Build finished. The pseudo-XML files are in $(BUILDDIR)/pseudoxml."
+
+amazeui:
+	@echo "Recompiling the amazeUI theme."
+	rm -f $(AMAZEUI_TASKS_DIR)/config.json
+	ln -s $(AMAZEUI_TASKS_DIR)/config-sphinx.json $(AMAZEUI_TASKS_DIR)/config.json
+	cd $(AMAZEUI_DIR) && gulp customize
+	rm $(AMAZEUI_TASKS_DIR)/config.json

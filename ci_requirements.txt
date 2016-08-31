@@ -1,5 +1,0 @@
--e .
-mock
-pytest>2.7,<3
-python-coveralls
-pytest-cov>2,<3

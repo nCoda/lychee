@@ -16,6 +16,14 @@ setup(
         'mercurial-hug>0.4',
         'signalslot',
     ),
+    extras_require = {
+        'devel': (
+            'mock',
+            'pytest<3',
+            'python-coveralls',
+            'pytest-cov<3',
+        ),
+    },
 
     # metadata for upload to PyPI
     author = lychee.__metadata__['author'],

@@ -4,7 +4,7 @@ machine:
 
 dependencies:
   override:
-    - pip install -r ci_requirements.txt
+    - pip install ".[devel]"
 
 test:
   override:

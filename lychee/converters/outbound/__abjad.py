@@ -315,7 +315,7 @@ def tupletspan_element_to_empty_tuplet(mei_tupletspan):
     '''
     numerator = mei_tupletspan.get('numBase')
     mei_duration = mei_tupletspan.get('dur')
-    if numerator and mei_duration == None:
+    if numerator and mei_duration is None:
         denominator = mei_tupletspan.get('num')
         multiplier = Multiplier(int(numerator), int(denominator))
         return Tuplet(multiplier, [])

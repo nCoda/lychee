@@ -22,6 +22,7 @@ setup(
             'pytest<3',
             'python-coveralls',
             'pytest-cov<3',
+            'sphinx',
         ),
     },
 

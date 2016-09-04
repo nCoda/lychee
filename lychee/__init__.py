@@ -33,7 +33,7 @@ import time
 __metadata__ = {
     'author': 'Christopher Antila',
     'author_email': 'christopher.antila@ncodamusic.org',
-    'copyright': u'2016 Christopher Antila and Jeffrey Treviño',
+    'copyright': u'2016 nCoda and others',  # only used in the API
     'description': 'An engine for MEI document management and converion.',
     'license': 'GPLv3+',
     'name': 'Lychee',

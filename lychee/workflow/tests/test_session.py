@@ -94,6 +94,23 @@ class TestGeneral(TestInteractiveSession):
         assert actual._inbound_converted is None
         assert actual._inbound_views_info is None
 
+        assert actual._vcs is None
+
+    def test_init_with_vcs_1(self):
+        '''
+        The __init__() method sets the "vcs" appropriately.
+        '''
+        actual = session.InteractiveSession(vcs='mercurial')
+        assert actual._vcs == 'mercurial'
+
+    def test_init_with_vcs_2(self):
+        '''
+        The __init__() method complains when the "vcs" is an invalid type.
+        '''
+        with pytest.raises(exceptions.RepositoryError) as err:
+            session.InteractiveSession(vcs='git')
+        # TODO: check the err
+
     @mock.patch('lychee.workflow.session.steps.flush_inbound_converters')
     @mock.patch('lychee.workflow.session.steps.flush_inbound_views')
     def test_cleanup_for_new_action(self, mock_flush_views, mock_flush_conv):
@@ -107,11 +124,29 @@ class TestGeneral(TestInteractiveSession):
         mock_flush_conv.assert_called_once_with()
         mock_flush_views.assert_called_once_with()
 
+    def test_vcs_property_1(self):
+        '''
+        When the VCS is enabled, the "vcs_enabled" property should be True.
+        '''
+        actual = session.InteractiveSession(vcs='mercurial')
+        assert actual.vcs_enabled is True
+
+    def test_vcs_property_2(self):
+        '''
+        When the VCS is disabled, the "vcs_enabled" property should be False.
+        '''
+        actual = session.InteractiveSession(vcs=None)
+        assert actual.vcs_enabled is False
+
 
 class TestRepository(TestInteractiveSession):
     '''
     Test functionality related to the repository.
     '''
+
+    def setUp(self):
+        "Make an InteractiveSession."
+        self.session = session.InteractiveSession(vcs='mercurial')
 
     def test_get_repo_dir_1(self):
         '''
@@ -265,6 +300,22 @@ class TestRepository(TestInteractiveSession):
         assert session._CANNOT_MAKE_HG_DIR == exc.value.args[0]
         assert sess._run_outbound.call_count == 0
 
+    def test_set_repo_dir_6(self):
+        '''
+        When the VCS is not enabled, the repository is still set, but not initialized with Hug.
+        (Based on test 1a).
+        '''
+        sess = session.InteractiveSession()
+        actual = sess.set_repo_dir('', run_outbound=False)
+        if sys.platform == 'linux2':
+            assert actual.startswith('/tmp/')
+        elif sys.platform == 'darwin':
+            assert actual.startswith('/var/')
+        else:
+            raise NotImplementedError("This test isn't yet implemented on this platform.")
+        assert not os.path.exists(os.path.join(actual, '.hg'))
+        assert sess.hug is None
+
     def test_hug_property(self):
         '''
         Make sure InteractiveSession.hug returns InteractiveSession._hug.
@@ -402,6 +453,7 @@ class TestActionStart(TestInteractiveSession):
         A unit test (fully mocked) for when running Hug.update() works.
         Initial revision is on a tag.
         '''
+        self.session = session.InteractiveSession(vcs='mercurial')
         parent_revision = '99:801774903828 tip'
         target_revision = '40:964b28acc4ee'
         self.session._cleanup_for_new_action = mock.Mock()
@@ -424,6 +476,7 @@ class TestActionStart(TestInteractiveSession):
         A unit test (fully mocked) for when running Hug.update() fails.
         Initial revision is not on a tag.
         '''
+        self.session = session.InteractiveSession(vcs='mercurial')
         parent_revision = '99:801774903828'
         target_revision = '44444444444444444'
         self.session._cleanup_for_new_action = mock.Mock()
@@ -446,10 +499,25 @@ class TestActionStart(TestInteractiveSession):
         self.session._hug.update.assert_any_call(target_revision)
         self.session._hug.update.assert_called_with(parent_revision)  # final call
 
+    def test_revision_ignored(self):
+        '''
+        A unit test (fully mocked) to check the "revision" argument is ignored if VCS is disabled.
+        NB: there would be an AttributeError if the VCS isn't enabled
+        '''
+        target_revision = '40:964b28acc4ee'
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session._run_outbound = mock.Mock()
+
+        self.session._action_start(revision=target_revision)
+
+        self.session._run_outbound.assert_called_with()
+        assert self.session._cleanup_for_new_action.call_count == 2
+
     def test_everything_works_unmocked(self):
         '''
         An integration test (no mocks) for when everything works and all code paths are excuted.
         '''
+        self.session = session.InteractiveSession(vcs='mercurial')
         input_ly = """\\clef "treble" a''4 b'16 c''2  | \\clef "bass" d?2 e!2  | f,,2 fis,2  |"""
         assert not os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))  # pre-condition
         # unfortunately we need a mock for this, so we can be sure it was called
@@ -494,6 +562,7 @@ class TestRunOutbound(TestInteractiveSession):
         '''
         A single format is registered for outbound conversion. Repo is at a tag.
         '''
+        self.session = session.InteractiveSession(vcs='mercurial')
         outbound_dtype = 'mei'
         views_info = 'IBV'
         self.session._inbound_views_info = views_info
@@ -525,6 +594,7 @@ class TestRunOutbound(TestInteractiveSession):
         '''
         Three formats are registered for outbound conversion. Repo is not at a tag.
         '''
+        self.session = session.InteractiveSession(vcs='mercurial')
         outbound_dtypes = ['document', 'mei', 'vcs']
         views_info = 'IBV'
         self.session._inbound_views_info = views_info
@@ -548,6 +618,35 @@ class TestRunOutbound(TestInteractiveSession):
             placement=mock_do_out.return_value['placement'],
             document=mock_do_out.return_value['document'],
             changeset='16:96eb6fba2374')
+
+    @mock.patch('lychee.workflow.steps.do_outbound_steps')
+    @mock.patch('lychee.signals.outbound.CONVERSION_FINISHED')
+    @mock.patch('lychee.signals.outbound.STARTED')
+    def test_vcs_disabled(self, mock_out_started, mock_out_finished, mock_do_out):
+        '''
+        A single format is registered for outbound conversion. VCS is disabled.
+        '''
+        outbound_dtype = 'mei'
+        views_info = 'IBV'
+        self.session._inbound_views_info = views_info
+        mock_do_out.return_value = {'placement': None, 'document': None}
+
+        signals.outbound.REGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_single_format')
+        try:
+            self.session._run_outbound()
+        finally:
+            signals.outbound.UNREGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_single_format')
+
+        mock_out_started.emit.assert_called_once_with()
+        mock_do_out.assert_called_once_with(
+            self.session.get_repo_dir(),
+            views_info,
+            outbound_dtype)
+        mock_out_finished.emit.assert_called_once_with(
+            dtype=outbound_dtype,
+            placement=mock_do_out.return_value['placement'],
+            document=mock_do_out.return_value['document'],
+            changeset='')
 
 
 class TestRunInboundDocVcs(TestInteractiveSession):

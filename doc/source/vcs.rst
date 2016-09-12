@@ -18,11 +18,13 @@ helpful to ignore.
 
 .. warning::
     (August 2016) The *Lychee* version control features are not a primary development priority,
-    so we will not invest significant development effort here for several months. However, version
-    control is a secondary development priority, so we do expect to develop this module significantly
-    during calendar year 2017.
+    so we will not invest significant development effort here for several months.
 
-    For more information, please refer to
+    (September 2016) VCS integration is disabled by default. You can enable VCS support when you
+    create an :class:`~lychee.workflow.session.InteractiveSession` instance.
+
+    Version control is a secondary development priority, so we do expect to develop this module
+    significantly during 2017. For more information, please refer to
     `this discussion <https://spivak.ncodamusic.org/t/choosing-ncoda-use-cases-july-2016/145>`_
     on *nCoda* Discourse.
 

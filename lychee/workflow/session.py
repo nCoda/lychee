@@ -48,6 +48,7 @@ _CANNOT_SAFELY_HG_INIT = 'Could not safely initialize the repository'
 _CANNOT_MAKE_HG_DIR = 'Could not create repository directory'
 _FAILURE_DURING_INBOUND = 'Action failed during the inbound steps'
 _UNKNOWN_REVISION = "ACTION_START requested a revision that doesn't exist"
+_UNSUPPORTED_VCS = 'Unsupported VCS'
 
 
 def _error_slot(**kwargs):
@@ -70,10 +71,16 @@ class InteractiveSession(object):
     '''
     Manage the Lychee-MEI :class:`~lychee.document.Document`, Mercurial repository, and
     other related data for an interactive music notation session.
+
+    Version control is disabled by default, and must be enabled with the ``vcs`` parameter. Do note
+    that *most* documentation referring to the Lychee "repository" refers to the directory in which
+    the music document is stored, whether or not the directory is a VCS repository.
     '''
 
     def __init__(self, *args, **kwargs):
         '''
+        :param str vcs: The VCS system to use. This is the string ``'mercurial'`` or ``None``.
+        :raises: :exc:`lychee.exceptions.RepositoryError` when ``vcs`` is not valid.
         '''
         self._doc = None
         self._hug = None
@@ -92,12 +99,27 @@ class InteractiveSession(object):
         self._inbound_converted = None
         self._inbound_views_info = None
 
+        # handle VCS enablement
+        self._vcs = None
+        if 'vcs' in kwargs and kwargs['vcs']:
+            if kwargs['vcs'] == 'mercurial':
+                self._vcs = 'mercurial'
+            else:
+                raise exceptions.RepositoryError(_UNSUPPORTED_VCS)
+
     @property
     def hug(self):
         '''
         Return the active :class:`mercurial-hug.Hug` instance.
         '''
         return self._hug
+
+    @property
+    def vcs_enabled(self):
+        '''
+        Return ``True`` if the VCS is enabled in this :class:`InteractiveSession`.
+        '''
+        return self._vcs is not None
 
     def __del__(self):
         '''
@@ -134,7 +156,7 @@ class InteractiveSession(object):
 
     def set_repo_dir(self, path, run_outbound=False):
         '''
-        Change the pathname to Lychee's repository then run any registered outbound converters.
+        Change the pathname to Lychee's repository then optionally run registered outbound converters.
 
         :param str path: The pathname of the directory of the repository. This should either be an
             absolute path or something that will become absolute with :func:`os.path.abspath`.
@@ -150,7 +172,11 @@ class InteractiveSession(object):
         If ``path`` does not exist, it will be created.
 
         If ``path`` is ``''`` (an empty string) the repository will be initialized in a new
-        temporary directory that should be automatically deleted.
+        temporary directory that should be automatically deleted when the :class:`InteractiveSession`
+        instance is garbage collected.
+
+        If VCS is enabled for this :class:`InteractiveSession`, a :class:`hug.Hug` instance will be
+        created on the :prop:`hug` property.
 
         .. warning:: If this :class:`InteractiveSession` instance already has a repository in a
             temporary directory, it will be deleted before the new repository directory is set.
@@ -171,10 +197,11 @@ class InteractiveSession(object):
                 except OSError:
                     raise exceptions.RepositoryError(_CANNOT_MAKE_HG_DIR)
 
-        try:
-            self._hug = hug.Hug(self._repo_dir, safe=True)
-        except hg_error.RepoError:
-            raise exceptions.RepositoryError(_CANNOT_SAFELY_HG_INIT)
+        if self._vcs == 'mercurial':
+            try:
+                self._hug = hug.Hug(self._repo_dir, safe=True)
+            except hg_error.RepoError:
+                raise exceptions.RepositoryError(_CANNOT_SAFELY_HG_INIT)
 
         if run_outbound:
             self._run_outbound()
@@ -226,7 +253,7 @@ class InteractiveSession(object):
         '''
         self._cleanup_for_new_action()
         initial_revision = None
-        if 'revision' in kwargs:
+        if self._vcs == 'mercurial' and 'revision' in kwargs:
             initial_revision = self._hug.summary()['parent'].split(' ')[0]
 
         try:
@@ -243,7 +270,7 @@ class InteractiveSession(object):
             else:
                 if 'views_info' in kwargs:
                     self._inbound_views_info = kwargs['views_info']
-                if 'revision' in kwargs:
+                if self._vcs == 'mercurial' and 'revision' in kwargs:
                     try:
                         self._hug.update(kwargs['revision'])
                     except RuntimeError:
@@ -299,11 +326,13 @@ class InteractiveSession(object):
         '''
         Run the outbound conversions.
         '''
-        summary = self._hug.summary()
-        if 'tag' in summary:
-            changeset = summary['tag']
-        else:
-            changeset = summary['parent']
+        changeset = ''
+        if self._vcs == 'mercurial':
+            summary = self._hug.summary()
+            if 'tag' in summary:
+                changeset = summary['tag']
+            else:
+                changeset = summary['parent']
 
         signals.outbound.STARTED.emit()
         for outbound_dtype in self._registrar.get_registered_formats():

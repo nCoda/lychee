@@ -1229,19 +1229,12 @@ class TestSaveLoadEverything(DocumentTestCase):
         - expected is ``['all_files.mei']``
         '''
 
-        def get_from_kwargs(key, val):
-            "Return kwargs[key] if that will work, otherwise return 'val.'"
-            if key in kwargs:
-                return kwargs[key]
-            else:
-                return val
-
         # 1.) prepare the preconditions parameters
-        head = get_from_kwargs('head', None)
-        score_order = get_from_kwargs('score_order', [])
-        sections = get_from_kwargs('sections', {})
+        head = kwargs.get('head', None)
+        score_order = kwargs.get('score_order', [])
+        sections = kwargs.get('sections', {})
         # prepend the full path to the "expected" return values
-        expected = get_from_kwargs('expected', ['all_files.mei'])
+        expected = kwargs.get('expected', ['all_files.mei'])
         expected = [os.path.join(self.repo_dir, x) for x in expected]
 
         # 2.) prepare the Document instance
@@ -1332,11 +1325,10 @@ class TestSaveLoadEverything(DocumentTestCase):
         Integration test for test_save_3a().
         '''
         saved_out = ['all_files.mei', 'head.mei']
-        exp_listdir = saved_out + ['.hg']
         head = etree.parse(os.path.join(self.path_to_here, 'input_meiHead.mei'))
         files = self.test_save_template_nomock(head=head, expected=saved_out)
         listdir = os.listdir(os.path.dirname(files[0]))
-        six.assertCountEqual(self, exp_listdir, listdir)
+        six.assertCountEqual(self, saved_out, listdir)
         for each_file in files:
             if each_file.endswith('all_files.mei'):
                 self.load_n_compare('exp_all_files_2.mei', each_file)
@@ -1365,10 +1357,9 @@ class TestSaveLoadEverything(DocumentTestCase):
                     '3': etree.Element(mei.SECTION, attrib={xml.ID: '3'})
                    }
         saved_out = ['all_files.mei', '1.mei', '2.mei', '3.mei']
-        exp_listdir = saved_out + ['.hg']
         files = self.test_save_template_nomock(sections=sections, expected=saved_out)
         listdir = os.listdir(os.path.dirname(files[0]))
-        six.assertCountEqual(self, exp_listdir, listdir)
+        six.assertCountEqual(self, saved_out, listdir)
         for each_file in files:
             if each_file.endswith('all_files.mei'):
                 self.load_n_compare('exp_all_files_3.mei', each_file)
@@ -1410,11 +1401,10 @@ class TestSaveLoadEverything(DocumentTestCase):
                     '3': etree.Element(mei.SECTION, attrib={xml.ID: '3'})
                    }
         saved_out = ['all_files.mei', 'score.mei', '1.mei', '2.mei', '3.mei']
-        exp_listdir = saved_out + ['.hg']
         files = self.test_save_template_nomock(sections=sections, score_order=['1', '2', '1'],
                                                expected=saved_out)
         listdir = os.listdir(os.path.dirname(files[0]))
-        six.assertCountEqual(self, exp_listdir, listdir)
+        six.assertCountEqual(self, saved_out, listdir)
         for each_file in files:
             if each_file.endswith('all_files.mei'):
                 self.load_n_compare('exp_all_files_4.mei', each_file)
@@ -1465,11 +1455,10 @@ class TestSaveLoadEverything(DocumentTestCase):
                     '3': etree.Element(mei.SECTION, attrib={xml.ID: '3'})
                    }
         saved_out = ['all_files.mei', 'head.mei', 'score.mei', '1.mei', '2.mei', '3.mei']
-        exp_listdir = saved_out + ['.hg']
         files = self.test_save_template_nomock(sections=sections, score_order=['1', '2', '1'],
                                                head=head, expected=saved_out)
         listdir = os.listdir(os.path.dirname(files[0]))
-        six.assertCountEqual(self, exp_listdir, listdir)
+        six.assertCountEqual(self, saved_out, listdir)
         for each_file in files:
             if each_file.endswith('all_files.mei'):
                 self.load_n_compare('exp_all_files_5.mei', each_file)

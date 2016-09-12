@@ -46,7 +46,7 @@ from lychee.namespaces import mei, xml
 from lychee import signals
 from lychee.vcs import hg as vcs_hg_module
 from lychee.views import inbound as views_in
-from lychee.workflow import steps
+from lychee.workflow import session, steps
 
 from test_session import TestInteractiveSession
 
@@ -110,19 +110,30 @@ class TestVCSStep(TestInteractiveSession):
     Tests for the "VCS" step.
     '''
 
+    def setUp(self):
+        "Make an InteractiveSession."
+        self.session = session.InteractiveSession(vcs='mercurial')
+        # disconnect any pre-existing slots
+        def disconnect_everything(signal):
+            for slot in signal.slots:
+                signal.disconnect(slot)
+
+        disconnect_everything(signals.vcs.START)
+        disconnect_everything(signals.vcs.VCS_DISABLED)
+        disconnect_everything(signals.vcs.FINISHED)
+        disconnect_everything(signals.vcs.INIT)
+        disconnect_everything(signals.vcs.ADD)
+        disconnect_everything(signals.vcs.COMMIT)
+
     def test_do_vcs_1(self):
         '''
-        That do_vcs() works.
+        That do_vcs() works when the VCS is enabled.
         '''
-        signals.vcs.START.disconnect(steps._vcs_driver)
-        assert 0 == len(signals.vcs.START.slots)  # pre-condition
-        assert 0 == len(signals.vcs.FINISHED.slots)  # pre-condition
-        # create and connect some mock slots for vcs.START and vcs.FINISHED
         start_slot = make_slot_mock()
         finished_slot = make_slot_mock()
-
         signals.vcs.START.connect(start_slot)
         signals.vcs.FINISHED.connect(finished_slot)
+
         try:
             steps.do_vcs(self.session, ['pathnames'])
         finally:
@@ -132,23 +143,43 @@ class TestVCSStep(TestInteractiveSession):
         start_slot.assert_called_with(session=self.session, pathnames=['pathnames'])
         finished_slot.assert_called_with()
 
+    def test_do_vcs_2(self):
+        '''
+        That do_vcs() works when the VCS is disabled.
+        '''
+        # pre setup
+        self.session.unset_repo_dir()
+        self.session = session.InteractiveSession(vcs=None)
+        # end pre setup
+        start_slot = make_slot_mock()
+        disabled_slot = make_slot_mock()
+        finished_slot = make_slot_mock()
+        signals.vcs.START.connect(start_slot)
+        signals.vcs.VCS_DISABLED.connect(disabled_slot)
+        signals.vcs.FINISHED.connect(finished_slot)
+
+        try:
+            steps.do_vcs(self.session, ['pathnames'])
+        finally:
+            signals.vcs.START.disconnect(start_slot)
+            signals.vcs.VCS_DISABLED.disconnect(disabled_slot)
+            signals.vcs.FINISHED.disconnect(finished_slot)
+
+        assert start_slot.call_count == 0
+        disabled_slot.assert_called_with()
+        finished_slot.assert_called_with()
+
     def test_vcs_driver_1(self):
         '''
         That _vcs_driver() works.
         '''
-        signals.vcs.INIT.disconnect(vcs_hg_module.init_repo)
-        signals.vcs.ADD.disconnect(vcs_hg_module.add)
-        signals.vcs.COMMIT.disconnect(vcs_hg_module.commit)
-        assert 0 == len(signals.vcs.INIT.slots)  # pre-condition
-        assert 0 == len(signals.vcs.ADD.slots)  # pre-condition
-        assert 0 == len(signals.vcs.COMMIT.slots)  # pre-condition
         init_slot = make_slot_mock()
         add_slot = make_slot_mock()
         commit_slot = make_slot_mock()
-
         signals.vcs.INIT.connect(init_slot)
         signals.vcs.ADD.connect(add_slot)
         signals.vcs.COMMIT.connect(commit_slot)
+
         try:
             steps._vcs_driver(session='sess', pathnames='names')
         finally:

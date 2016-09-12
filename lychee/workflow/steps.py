@@ -175,7 +175,10 @@ def do_vcs(session, pathnames):
     '''
     # NOTE: why bother with the signal at all? Why not just call self._vcs_driver() ? Because
     # this way we can enable/disable the VCS step by changing who's listening to vcs.START.
-    signals.vcs.START.emit(session=session, pathnames=pathnames)
+    if session.vcs_enabled:
+        signals.vcs.START.emit(session=session, pathnames=pathnames)
+    else:
+        signals.vcs.VCS_DISABLED.emit()
     signals.vcs.FINISHED.emit()
 
 

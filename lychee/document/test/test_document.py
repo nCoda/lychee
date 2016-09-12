@@ -1229,19 +1229,12 @@ class TestSaveLoadEverything(DocumentTestCase):
         - expected is ``['all_files.mei']``
         '''
 
-        def get_from_kwargs(key, val):
-            "Return kwargs[key] if that will work, otherwise return 'val.'"
-            if key in kwargs:
-                return kwargs[key]
-            else:
-                return val
-
         # 1.) prepare the preconditions parameters
-        head = get_from_kwargs('head', None)
-        score_order = get_from_kwargs('score_order', [])
-        sections = get_from_kwargs('sections', {})
+        head = kwargs.get('head', None)
+        score_order = kwargs.get('score_order', [])
+        sections = kwargs.get('sections', {})
         # prepend the full path to the "expected" return values
-        expected = get_from_kwargs('expected', ['all_files.mei'])
+        expected = kwargs.get('expected', ['all_files.mei'])
         expected = [os.path.join(self.repo_dir, x) for x in expected]
 
         # 2.) prepare the Document instance

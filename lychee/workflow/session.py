@@ -114,6 +114,13 @@ class InteractiveSession(object):
         '''
         return self._hug
 
+    @property
+    def vcs_enabled(self):
+        '''
+        Return ``True`` if the VCS is enabled in this :class:`InteractiveSession`.
+        '''
+        return self._vcs is not None
+
     def __del__(self):
         '''
         If this session is using a temporary directory, delete it.

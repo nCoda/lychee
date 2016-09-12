@@ -124,6 +124,20 @@ class TestGeneral(TestInteractiveSession):
         mock_flush_conv.assert_called_once_with()
         mock_flush_views.assert_called_once_with()
 
+    def test_vcs_property_1(self):
+        '''
+        When the VCS is enabled, the "vcs_enabled" property should be True.
+        '''
+        actual = session.InteractiveSession(vcs='mercurial')
+        assert actual.vcs_enabled is True
+
+    def test_vcs_property_2(self):
+        '''
+        When the VCS is disabled, the "vcs_enabled" property should be False.
+        '''
+        actual = session.InteractiveSession(vcs=None)
+        assert actual.vcs_enabled is False
+
 
 class TestRepository(TestInteractiveSession):
     '''

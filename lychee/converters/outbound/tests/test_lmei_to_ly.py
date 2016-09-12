@@ -47,6 +47,28 @@ class TestConvert(object):
             lilypond.convert(mei_thing)
 
 
+class TestDuration(object):
+    def test_duration_1(self):
+        m_note = etree.Element(mei.NOTE)
+        assert lilypond.duration(m_note) == ""
+
+    def test_duration_2(self):
+        m_note = etree.Element(mei.NOTE)
+        m_note.set("dur", "2")
+        m_note.set("dots", "2")
+        assert lilypond.duration(m_note) == "2.."
+
+    def test_duration_3(self):
+        m_note = etree.Element(mei.NOTE)
+        m_note.set("dur", "16")
+        assert lilypond.duration(m_note) == "16"
+
+    def test_duration_4(self):
+        m_note = etree.Element(mei.NOTE)
+        m_note.set("dots", "2")
+        assert lilypond.duration(m_note) == "4.."
+
+
 class TestNoteRest(object):
     def test_note_1(self):
         m_note = etree.Element(mei.NOTE)

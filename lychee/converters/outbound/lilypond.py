@@ -82,6 +82,19 @@ _VALID_ACCIDENTALS = {
 }
 
 
+def duration(m_thing):
+    '''
+    Extract the duration of an MEI object -- note, chord, or rest -- as a LilyPond duration string.
+    '''
+    post = m_thing.get('dur', '')
+    dot_count = int(m_thing.get('dots', '0'))
+    assert dot_count >= 0
+    if dot_count > 0 and post == '':
+        post = '4'
+    post += '.' * dot_count
+    return post
+
+
 def note(m_note):
     '''
     '''
@@ -92,7 +105,7 @@ def note(m_note):
     post += _OCTAVE_TO_MARK[m_note.get('oct')]
     if m_note.get('accid'):
         post += '!'
-    post += m_note.get('dur', '')
+    post += duration(m_note)
     return post
 
 
@@ -101,7 +114,7 @@ def rest(m_rest):
     '''
     assert m_rest.tag == mei.REST
     post = 'r'
-    post += m_rest.get('dur', '')
+    post += duration(m_rest)
     return post
 
 
@@ -113,7 +126,7 @@ def chord(m_chord):
     for m_note in m_chord.iter(tag=mei.NOTE):
         l_chord.append(note(m_note))
 
-    l_chord = '<{0}>{1}'.format(' '.join(l_chord), m_chord.get('dur', ''))
+    l_chord = '<{0}>{1}'.format(' '.join(l_chord), duration(m_chord))
 
     return l_chord
 

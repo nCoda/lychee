@@ -172,9 +172,10 @@ def do_vcs(session, pathnames):
         :func:`do_document`).
     :type pathnames: list of str
     :returns: ``None``
+
+    If the VCS step is disabled in the :class:`Session` instance given as ``session``, then the
+    VCS step is skipped.
     '''
-    # NOTE: why bother with the signal at all? Why not just call self._vcs_driver() ? Because
-    # this way we can enable/disable the VCS step by changing who's listening to vcs.START.
     if session.vcs_enabled:
         signals.vcs.START.emit(session=session, pathnames=pathnames)
     else:

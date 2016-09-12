@@ -28,6 +28,10 @@ Signals for the "vcs" step.
 .. warning::
     These signals are deprecated.
     Refer to `T110 <https://goldman.ncodamusic.org/T110>`_ for more information.
+
+.. note::
+    The VCS step is disabled by default. Refer to the
+    :class:`~lychee.workflow.session.InteractiveSession` documentation for more information.
 '''
 
 from . import signal
@@ -35,7 +39,8 @@ from . import signal
 
 START = signal.Signal(args=['pathnames', 'session'], name='vcs.START')
 '''
-Emitted by the :class:`WorkflowManager` to begin the "vcs" stage.
+Emitted by the :class:`WorkflowManager` to begin the "vcs" stage. This signal is not emitted when
+the VCS step is disabled.
 
 :kwarg pathnames: A list of pathnames that were modified in the most recent write-to-disk.
 :type pathnames: list of str

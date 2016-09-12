@@ -127,7 +127,9 @@ step may be skipped if there is no incoming change.
 
 The **VCS** step manages the repository holding the Lychee-MEI document. This may involve committing
 a new changeset, updating to another bookmark, or even computing a diff. The VCS step may be
-skipped if there is no incoming change, if the VCS is disabled, or for many other reasons.
+skipped if there is no incoming change, if the VCS is disabled, or for many other reasons. Do note
+that the VCS step is disabled by default; you can enable it when you create an
+:class:`~lychee.workflow.session.InteractiveSession` instance.
 
 The **outbound** step produces documents in an external format according to the (newly-changed)
 Lychee-MEI document. The **outbound views** step first determines which portion of the Lychee-MEI

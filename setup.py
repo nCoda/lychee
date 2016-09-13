@@ -10,8 +10,8 @@ setup(
     packages = find_packages(exclude=['*.tests']),
     install_requires = (
         'Abjad==2.17',
-        'grako',
-        'lxml>3',
+        'grako>=3.14,<3.15',
+        'lxml>3,<4',
         'mercurial<3.5',
         'mercurial-hug>0.4',
         'signalslot',
@@ -19,9 +19,9 @@ setup(
     extras_require = {
         'devel': (
             'mock',
-            'pytest<3',
+            'pytest>3,<4',
             'python-coveralls',
-            'pytest-cov<3',
+            'pytest-cov',
             'sphinx',
         ),
     },

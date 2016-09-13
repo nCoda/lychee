@@ -13,11 +13,12 @@
 
 from __future__ import print_function, division, absolute_import, unicode_literals
 
+from grako.buffering import Buffer
 from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2016, 5, 7, 5, 18, 22, 5)
+__version__ = (2016, 9, 13, 0, 58, 29, 1)
 
 __all__ = [
     'LilyPondParser',
@@ -28,6 +29,28 @@ __all__ = [
 KEYWORDS = set([])
 
 
+class LilyPondBuffer(Buffer):
+    def __init__(self,
+                 text,
+                 whitespace=None,
+                 nameguard=None,
+                 comments_re='\\%\\{.*?\\%\\}',
+                 eol_comments_re=None,
+                 ignorecase=None,
+                 namechars='',
+                 **kwargs):
+        super(LilyPondBuffer, self).__init__(
+            text,
+            whitespace=whitespace,
+            nameguard=nameguard,
+            comments_re=comments_re,
+            eol_comments_re=eol_comments_re,
+            ignorecase=ignorecase,
+            namechars=namechars,
+            **kwargs
+        )
+
+
 class LilyPondParser(Parser):
     def __init__(self,
                  whitespace=None,
@@ -36,7 +59,9 @@ class LilyPondParser(Parser):
                  eol_comments_re=None,
                  ignorecase=None,
                  left_recursion=True,
+                 parseinfo=True,
                  keywords=KEYWORDS,
+                 namechars='',
                  **kwargs):
         super(LilyPondParser, self).__init__(
             whitespace=whitespace,
@@ -45,9 +70,16 @@ class LilyPondParser(Parser):
             eol_comments_re=eol_comments_re,
             ignorecase=ignorecase,
             left_recursion=left_recursion,
+            parseinfo=parseinfo,
             keywords=keywords,
+            namechars=namechars,
             **kwargs
         )
+
+    def parse(self, text, *args, **kwargs):
+        if not isinstance(text, Buffer):
+            text = LilyPondBuffer(text, **kwargs)
+        return super(LilyPondParser, self).parse(text, *args, **kwargs)
 
     @graken()
     def _start_(self):
@@ -70,7 +102,7 @@ class LilyPondParser(Parser):
 
         def block1():
             self._pattern(r'[0-9]*')
-        self._positive_closure(block1, prefix=sep1)
+        self._closure(block1, sep=sep1)
         self.name_last_node('@')
         self._token('"')
 
@@ -85,9 +117,8 @@ class LilyPondParser(Parser):
         self._pattern(r'[A-Z a-z0-9&]*')
         self.name_last_node('instrument_name')
         self._token('"')
-
         self.ast._define(
-            ['ly_type', 'instrument_name'],
+            ['instrument_name', 'ly_type'],
             []
         )
 
@@ -110,7 +141,6 @@ class LilyPondParser(Parser):
                 self._error('expecting one of: alto bass tenor treble')
         self.name_last_node('type')
         self._token('"')
-
         self.ast._define(
             ['ly_type', 'type'],
             []
@@ -135,9 +165,8 @@ class LilyPondParser(Parser):
                     self._token('minor')
                 self._error('expecting one of: major minor')
         self.name_last_node('mode')
-
         self.ast._define(
-            ['ly_type', 'keynote', 'accid', 'mode'],
+            ['accid', 'keynote', 'ly_type', 'mode'],
             []
         )
 
@@ -155,9 +184,8 @@ class LilyPondParser(Parser):
         self._token('/')
         self._duration_number_()
         self.name_last_node('unit')
-
         self.ast._define(
-            ['ly_type', 'count', 'unit'],
+            ['count', 'ly_type', 'unit'],
             []
         )
 
@@ -276,9 +304,8 @@ class LilyPondParser(Parser):
         with self._optional():
             self._duration_dots_()
             self.name_last_node('dots')
-
         self.ast._define(
-            ['number', 'dots'],
+            ['dots', 'number'],
             []
         )
 
@@ -295,9 +322,8 @@ class LilyPondParser(Parser):
         with self._optional():
             self._accidental_force_()
             self.name_last_node('accidental_force')
-
         self.ast._define(
-            ['note_name', 'accidental', 'octave', 'accidental_force'],
+            ['accidental', 'accidental_force', 'note_name', 'octave'],
             []
         )
 
@@ -319,9 +345,8 @@ class LilyPondParser(Parser):
 
         self._duration_()
         self.name_last_node('duration')
-
         self.ast._define(
-            ['ly_type', 'note_name', 'accidental', 'octave', 'accidental_force', 'duration'],
+            ['accidental', 'accidental_force', 'duration', 'ly_type', 'note_name', 'octave'],
             []
         )
 
@@ -338,9 +363,8 @@ class LilyPondParser(Parser):
         self._token('>')
         self._duration_()
         self.name_last_node('duration')
-
         self.ast._define(
-            ['ly_type', 'notes', 'duration'],
+            ['duration', 'ly_type', 'notes'],
             []
         )
 
@@ -351,9 +375,8 @@ class LilyPondParser(Parser):
         self._pattern(r'r')
         self._duration_()
         self.name_last_node('duration')
-
         self.ast._define(
-            ['ly_type', 'duration'],
+            ['duration', 'ly_type'],
             []
         )
 
@@ -364,9 +387,8 @@ class LilyPondParser(Parser):
         self._pattern(r's')
         self._duration_()
         self.name_last_node('duration')
-
         self.ast._define(
-            ['ly_type', 'duration'],
+            ['duration', 'ly_type'],
             []
         )
 
@@ -397,7 +419,6 @@ class LilyPondParser(Parser):
         self._constant('barcheck')
         self.name_last_node('ly_type')
         self._token('|')
-
         self.ast._define(
             ['ly_type'],
             []
@@ -409,9 +430,8 @@ class LilyPondParser(Parser):
         self.name_last_node('ly_type')
         self._nodes_()
         self.name_last_node('layer')
-
         self.ast._define(
-            ['ly_type', 'layer'],
+            ['layer', 'ly_type'],
             []
         )
 
@@ -423,9 +443,8 @@ class LilyPondParser(Parser):
         self._nodes_()
         self.name_last_node('layer')
         self._token('}')
-
         self.ast._define(
-            ['ly_type', 'layer'],
+            ['layer', 'ly_type'],
             []
         )
 
@@ -434,7 +453,6 @@ class LilyPondParser(Parser):
         self._unmarked_layer_()
         self.add_last_node_to_name('layers')
         self._barcheck_()
-
         self.ast._define(
             [],
             ['layers']
@@ -450,11 +468,10 @@ class LilyPondParser(Parser):
 
             def block1():
                 self._marked_layer_()
-            self._positive_closure(block1, prefix=sep1)
+            self._closure(block1, sep=sep1)
         self.name_last_node('layers')
         self._simul_r_()
         self._barcheck_()
-
         self.ast._define(
             ['layers'],
             []
@@ -477,9 +494,8 @@ class LilyPondParser(Parser):
                     self._polyphonic_layers_()
                 self._error('no available options')
         self.name_last_node('measure')
-
         self.ast._define(
-            ['ly_type', 'settings', 'measure'],
+            ['ly_type', 'measure', 'settings'],
             []
         )
 
@@ -504,7 +520,6 @@ class LilyPondParser(Parser):
         self._measures_()
         self.name_last_node('measures')
         self._brace_r_()
-
         self.ast._define(
             ['measures'],
             []
@@ -524,7 +539,6 @@ class LilyPondParser(Parser):
         self._token_staff_()
         self._music_block_()
         self.name_last_node('staff')
-
         self.ast._define(
             ['staff'],
             []
@@ -571,9 +585,8 @@ class LilyPondParser(Parser):
             self._layout_block_()
             self.name_last_node('layout_block')
         self._brace_r_()
-
         self.ast._define(
-            ['version', 'score', 'layout_block'],
+            ['layout_block', 'score', 'version'],
             []
         )
 
@@ -716,6 +729,7 @@ def main(
         eol_comments_re=None,
         ignorecase=None,
         left_recursion=True,
+        parseinfo=True,
         **kwargs):
 
     with open(filename) as f:

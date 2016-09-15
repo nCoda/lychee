@@ -29,11 +29,14 @@
 # the EBNF grammar specification:
 # $ python -m grako -c -o lilypond_parser.py lilypond.ebnf
 
-@@grammar :: LilyPond
 @@comments :: /\%\{.*?\%\}/
+# @@eol_comments :: /%.*?$/  # TODO: negative lookahead assertion for %{
+@@grammar :: LilyPond
+@@left_recursion :: False
+@@parseinfo :: False
 
 
-start = score | staff | measures ;
+start = score | staff | staff_content ;
 
 
 # Document
@@ -47,20 +50,20 @@ version_stmt =
 ################
 
 instr_name =
-    ly_type:`instr_name` '\\set' 'Staff.instrumentName' '=' '"' instrument_name:/[A-Z a-z0-9&]*/ '"'
+    ly_type:`instr_name` '\\set' 'Staff.instrumentName' ~ '=' '"' name:/[A-Z a-z0-9&]*/ '"'
     ;
 
 clef =
-    ly_type:`clef` '\\clef' '"' type:( 'bass' | 'tenor' | 'alto' | 'treble' ) '"'
+    ly_type:`clef` '\\clef' ~ '"' type:( 'bass' | 'tenor' | 'alto' | 'treble' ) '"'
     ;
 
 key =
-    ly_type:`key` '\\key' keynote:note_name [accid:accidental_symbol] '\\' mode:( "major" | "minor" )
+    ly_type:`key` '\\key' ~ keynote:pitch_name accid:[accidental_symbol] '\\' mode:( "major" | "minor" )
     ;
 
 time_numerator = /[1-9][0-9]?/ ;
 time =
-    ly_type:`time` '\\time' count:time_numerator '/' unit:duration_number
+    ly_type:`time` '\\time' ~ count:time_numerator '/' unit:duration_number
     ;
 
 staff_setting =
@@ -71,16 +74,16 @@ staff_setting =
 # Nodes: notes, rests, chords, spacers
 ######################################
 
-note_name =
-    /a/ | /b/ | /c/ | /d/ | /e/ | /f/ | /g/
+pitch_name =
+    /[a-g]/
     ;
 
 octave =
     ",," | "," | "'''''" | "''''" | "'''" | "''" | "'"
     ;
 
-accidental_symbol = /is/ | /es/ ;
-accidental = {accidental_symbol}+ ;
+accidental_symbol = /[ei]s/ ;
+accidental = {accidental_symbol}* ;
 
 accidental_force =
     '?' | '!'
@@ -95,64 +98,61 @@ duration_dots =
     ;
 
 duration =
-    number:duration_number [dots:duration_dots]
+    ( dur:duration_number {dots:duration_dots}+ ) |
+    ( dur:duration_number dots:{} ) |
+    ( dur:() dots:{} )
     ;
 
-durationless_note =
-    note_name:note_name
-    [accidental:accidental]
-    [octave:octave]
-    [accidental_force:accidental_force]
+notehead =
+    pname:pitch_name ~
+    accid:accidental
+    [oct:octave]
+    [accid_force:accidental_force]
     ;
 note =
     ly_type:`note`
-    >durationless_note
-    duration:duration
+    >notehead
+    >duration
     ;
 
 chord =
     ly_type:`chord`
-    '<'
-    notes:{durationless_note}*
+    '<' !'<'
+    notes:{notehead}*
     '>'
-    duration:duration
+    >duration
     ;
 
 rest =
-    ly_type:`rest` /r/ duration:duration
+    ly_type:`rest` /r/ >duration
     ;
 
 spacer =
-    ly_type:`spacer` /s/ duration:duration
+    ly_type:`spacer` /s/ >duration
     ;
-
-node = note | rest | chord | spacer | staff_setting ;
-nodes = {node}+ ;
-
-
-# Measure, Layers, and Barcheck
-###############################
 
 barcheck = ly_type:`barcheck` '|' ;
 
+music_node = note | rest | chord | spacer ;
+nodes = { >music_node | >staff_setting | barcheck }+ ;
+
+
+# Layers
+########
+
 unmarked_layer =
-    ly_type:`layer` layer:nodes
+    nodes
     ;
 marked_layer =
-    ly_type:`layer` '{' layer:nodes '}'
+    '{' @:nodes '}'
     ;
 
 monophonic_layers =
-    layers+:unmarked_layer barcheck
+    layers+:unmarked_layer
     ;
 polyphonic_layers =
-    simul_l layers:( '\\\'.{marked_layer} ) simul_r barcheck
+    simul_l layers:( '\\\'.{marked_layer} ) simul_r
     ;
-
-measure =
-    ly_type:`measure` settings:{staff_setting}* measure:( monophonic_layers | polyphonic_layers )
-    ;
-measures = {measure}*;
 
 
 # Staff and Music Block
@@ -161,32 +161,38 @@ measures = {measure}*;
 brace_l = '{' ;
 brace_r = '}' ;
 
-music_block =
-    brace_l measures:measures brace_r
+staff_content =
+    initial_settings:{staff_setting}*
+    content:{( monophonic_layers | polyphonic_layers )}+
     ;
 
 token_new = '\\new' ;
 token_staff = 'Staff' ;
 staff =
-    token_new token_staff staff:music_block
+    ly_type:`staff`
+    token_new token_staff brace_l
+        >staff_content
+    brace_r
     ;
 
 
 # Score and Layout
+# TODO: these rules are untested; probably need to be rewritten
 ##################
 
 simul_l = '<<' ;
 simul_r = '>>' ;
 
-score_staff_content = simul_l @:{staff}+ simul_r ;
+score_staff_content = simul_l ~ @:{staff}+ simul_r ;
 
 layout_block = "\\layout" brace_l brace_r ;
 
 token_score = '\\score' ;
 score =
+    ly_type:`score`
     version:[version_stmt]
     token_score brace_l
-        score:score_staff_content
+        staves:score_staff_content
         [layout_block:layout_block]
     brace_r
     ;

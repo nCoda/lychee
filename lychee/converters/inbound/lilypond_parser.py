@@ -18,7 +18,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2016, 9, 13, 0, 58, 29, 1)
+__version__ = (2016, 9, 15, 21, 38, 48, 3)
 
 __all__ = [
     'LilyPondParser',
@@ -58,8 +58,8 @@ class LilyPondParser(Parser):
                  comments_re='\\%\\{.*?\\%\\}',
                  eol_comments_re=None,
                  ignorecase=None,
-                 left_recursion=True,
-                 parseinfo=True,
+                 left_recursion=False,
+                 parseinfo=False,
                  keywords=KEYWORDS,
                  namechars='',
                  **kwargs):
@@ -89,7 +89,7 @@ class LilyPondParser(Parser):
             with self._option():
                 self._staff_()
             with self._option():
-                self._measures_()
+                self._staff_content_()
             self._error('no available options')
 
     @graken()
@@ -112,13 +112,14 @@ class LilyPondParser(Parser):
         self.name_last_node('ly_type')
         self._token('\\set')
         self._token('Staff.instrumentName')
+        self._cut()
         self._token('=')
         self._token('"')
         self._pattern(r'[A-Z a-z0-9&]*')
-        self.name_last_node('instrument_name')
+        self.name_last_node('name')
         self._token('"')
         self.ast._define(
-            ['instrument_name', 'ly_type'],
+            ['ly_type', 'name'],
             []
         )
 
@@ -127,6 +128,7 @@ class LilyPondParser(Parser):
         self._constant('clef')
         self.name_last_node('ly_type')
         self._token('\\clef')
+        self._cut()
         self._token('"')
         with self._group():
             with self._choice():
@@ -151,11 +153,12 @@ class LilyPondParser(Parser):
         self._constant('key')
         self.name_last_node('ly_type')
         self._token('\\key')
-        self._note_name_()
+        self._cut()
+        self._pitch_name_()
         self.name_last_node('keynote')
         with self._optional():
             self._accidental_symbol_()
-            self.name_last_node('accid')
+        self.name_last_node('accid')
         self._token('\\')
         with self._group():
             with self._choice():
@@ -179,6 +182,7 @@ class LilyPondParser(Parser):
         self._constant('time')
         self.name_last_node('ly_type')
         self._token('\\time')
+        self._cut()
         self._time_numerator_()
         self.name_last_node('count')
         self._token('/')
@@ -203,23 +207,8 @@ class LilyPondParser(Parser):
             self._error('no available options')
 
     @graken()
-    def _note_name_(self):
-        with self._choice():
-            with self._option():
-                self._pattern(r'a')
-            with self._option():
-                self._pattern(r'b')
-            with self._option():
-                self._pattern(r'c')
-            with self._option():
-                self._pattern(r'd')
-            with self._option():
-                self._pattern(r'e')
-            with self._option():
-                self._pattern(r'f')
-            with self._option():
-                self._pattern(r'g')
-            self._error('expecting one of: a b c d e f g')
+    def _pitch_name_(self):
+        self._pattern(r'[a-g]')
 
     @graken()
     def _octave_(self):
@@ -242,19 +231,14 @@ class LilyPondParser(Parser):
 
     @graken()
     def _accidental_symbol_(self):
-        with self._choice():
-            with self._option():
-                self._pattern(r'is')
-            with self._option():
-                self._pattern(r'es')
-            self._error('expecting one of: es is')
+        self._pattern(r'[ei]s')
 
     @graken()
     def _accidental_(self):
 
         def block0():
             self._accidental_symbol_()
-        self._positive_closure(block0)
+        self._closure(block0)
 
     @graken()
     def _accidental_force_(self):
@@ -299,31 +283,49 @@ class LilyPondParser(Parser):
 
     @graken()
     def _duration_(self):
-        self._duration_number_()
-        self.name_last_node('number')
-        with self._optional():
-            self._duration_dots_()
-            self.name_last_node('dots')
+        with self._choice():
+            with self._option():
+                with self._group():
+                    self._duration_number_()
+                    self.name_last_node('dur')
+
+                    def block1():
+                        self._duration_dots_()
+                        self.name_last_node('dots')
+                    self._positive_closure(block1)
+            with self._option():
+                with self._group():
+                    self._duration_number_()
+                    self.name_last_node('dur')
+                    self._empty_closure()
+                    self.name_last_node('dots')
+            with self._option():
+                with self._group():
+                    pass
+                    self.name_last_node('dur')
+                    self._empty_closure()
+                    self.name_last_node('dots')
+            self._error('no available options')
         self.ast._define(
-            ['dots', 'number'],
+            ['dots', 'dur'],
             []
         )
 
     @graken()
-    def _durationless_note_(self):
-        self._note_name_()
-        self.name_last_node('note_name')
-        with self._optional():
-            self._accidental_()
-            self.name_last_node('accidental')
+    def _notehead_(self):
+        self._pitch_name_()
+        self.name_last_node('pname')
+        self._cut()
+        self._accidental_()
+        self.name_last_node('accid')
         with self._optional():
             self._octave_()
-            self.name_last_node('octave')
+            self.name_last_node('oct')
         with self._optional():
             self._accidental_force_()
-            self.name_last_node('accidental_force')
+            self.name_last_node('accid_force')
         self.ast._define(
-            ['accidental', 'accidental_force', 'note_name', 'octave'],
+            ['accid', 'accid_force', 'oct', 'pname'],
             []
         )
 
@@ -331,22 +333,43 @@ class LilyPondParser(Parser):
     def _note_(self):
         self._constant('note')
         self.name_last_node('ly_type')
-        self._note_name_()
-        self.name_last_node('note_name')
-        with self._optional():
-            self._accidental_()
-            self.name_last_node('accidental')
+        self._pitch_name_()
+        self.name_last_node('pname')
+        self._cut()
+        self._accidental_()
+        self.name_last_node('accid')
         with self._optional():
             self._octave_()
-            self.name_last_node('octave')
+            self.name_last_node('oct')
         with self._optional():
             self._accidental_force_()
-            self.name_last_node('accidental_force')
+            self.name_last_node('accid_force')
 
-        self._duration_()
-        self.name_last_node('duration')
+        with self._choice():
+            with self._option():
+                with self._group():
+                    self._duration_number_()
+                    self.name_last_node('dur')
+
+                    def block6():
+                        self._duration_dots_()
+                        self.name_last_node('dots')
+                    self._positive_closure(block6)
+            with self._option():
+                with self._group():
+                    self._duration_number_()
+                    self.name_last_node('dur')
+                    self._empty_closure()
+                    self.name_last_node('dots')
+            with self._option():
+                with self._group():
+                    pass
+                    self.name_last_node('dur')
+                    self._empty_closure()
+                    self.name_last_node('dots')
+            self._error('no available options')
         self.ast._define(
-            ['accidental', 'accidental_force', 'duration', 'ly_type', 'note_name', 'octave'],
+            ['accid', 'accid_force', 'dots', 'dur', 'ly_type', 'oct', 'pname'],
             []
         )
 
@@ -355,16 +378,39 @@ class LilyPondParser(Parser):
         self._constant('chord')
         self.name_last_node('ly_type')
         self._token('<')
+        with self._ifnot():
+            self._token('<')
 
         def block2():
-            self._durationless_note_()
+            self._notehead_()
         self._closure(block2)
         self.name_last_node('notes')
         self._token('>')
-        self._duration_()
-        self.name_last_node('duration')
+        with self._choice():
+            with self._option():
+                with self._group():
+                    self._duration_number_()
+                    self.name_last_node('dur')
+
+                    def block4():
+                        self._duration_dots_()
+                        self.name_last_node('dots')
+                    self._positive_closure(block4)
+            with self._option():
+                with self._group():
+                    self._duration_number_()
+                    self.name_last_node('dur')
+                    self._empty_closure()
+                    self.name_last_node('dots')
+            with self._option():
+                with self._group():
+                    pass
+                    self.name_last_node('dur')
+                    self._empty_closure()
+                    self.name_last_node('dots')
+            self._error('no available options')
         self.ast._define(
-            ['duration', 'ly_type', 'notes'],
+            ['dots', 'dur', 'ly_type', 'notes'],
             []
         )
 
@@ -373,10 +419,31 @@ class LilyPondParser(Parser):
         self._constant('rest')
         self.name_last_node('ly_type')
         self._pattern(r'r')
-        self._duration_()
-        self.name_last_node('duration')
+        with self._choice():
+            with self._option():
+                with self._group():
+                    self._duration_number_()
+                    self.name_last_node('dur')
+
+                    def block2():
+                        self._duration_dots_()
+                        self.name_last_node('dots')
+                    self._positive_closure(block2)
+            with self._option():
+                with self._group():
+                    self._duration_number_()
+                    self.name_last_node('dur')
+                    self._empty_closure()
+                    self.name_last_node('dots')
+            with self._option():
+                with self._group():
+                    pass
+                    self.name_last_node('dur')
+                    self._empty_closure()
+                    self.name_last_node('dots')
+            self._error('no available options')
         self.ast._define(
-            ['duration', 'ly_type'],
+            ['dots', 'dur', 'ly_type'],
             []
         )
 
@@ -385,34 +452,33 @@ class LilyPondParser(Parser):
         self._constant('spacer')
         self.name_last_node('ly_type')
         self._pattern(r's')
-        self._duration_()
-        self.name_last_node('duration')
-        self.ast._define(
-            ['duration', 'ly_type'],
-            []
-        )
-
-    @graken()
-    def _node_(self):
         with self._choice():
             with self._option():
-                self._note_()
+                with self._group():
+                    self._duration_number_()
+                    self.name_last_node('dur')
+
+                    def block2():
+                        self._duration_dots_()
+                        self.name_last_node('dots')
+                    self._positive_closure(block2)
             with self._option():
-                self._rest_()
+                with self._group():
+                    self._duration_number_()
+                    self.name_last_node('dur')
+                    self._empty_closure()
+                    self.name_last_node('dots')
             with self._option():
-                self._chord_()
-            with self._option():
-                self._spacer_()
-            with self._option():
-                self._staff_setting_()
+                with self._group():
+                    pass
+                    self.name_last_node('dur')
+                    self._empty_closure()
+                    self.name_last_node('dots')
             self._error('no available options')
-
-    @graken()
-    def _nodes_(self):
-
-        def block0():
-            self._node_()
-        self._positive_closure(block0)
+        self.ast._define(
+            ['dots', 'dur', 'ly_type'],
+            []
+        )
 
     @graken()
     def _barcheck_(self):
@@ -425,34 +491,65 @@ class LilyPondParser(Parser):
         )
 
     @graken()
+    def _music_node_(self):
+        with self._choice():
+            with self._option():
+                self._note_()
+            with self._option():
+                self._rest_()
+            with self._option():
+                self._chord_()
+            with self._option():
+                self._spacer_()
+            self._error('no available options')
+
+    @graken()
+    def _nodes_(self):
+
+        def block0():
+            with self._choice():
+                with self._option():
+                    with self._choice():
+                        with self._option():
+                            self._note_()
+                        with self._option():
+                            self._rest_()
+                        with self._option():
+                            self._chord_()
+                        with self._option():
+                            self._spacer_()
+                        self._error('no available options')
+                with self._option():
+                    with self._choice():
+                        with self._option():
+                            self._clef_()
+                        with self._option():
+                            self._key_()
+                        with self._option():
+                            self._time_()
+                        with self._option():
+                            self._instr_name_()
+                        self._error('no available options')
+                with self._option():
+                    self._barcheck_()
+                self._error('no available options')
+        self._positive_closure(block0)
+
+    @graken()
     def _unmarked_layer_(self):
-        self._constant('layer')
-        self.name_last_node('ly_type')
         self._nodes_()
-        self.name_last_node('layer')
-        self.ast._define(
-            ['layer', 'ly_type'],
-            []
-        )
 
     @graken()
     def _marked_layer_(self):
-        self._constant('layer')
-        self.name_last_node('ly_type')
         self._token('{')
         self._nodes_()
-        self.name_last_node('layer')
+        self.name_last_node('@')
         self._token('}')
-        self.ast._define(
-            ['layer', 'ly_type'],
-            []
-        )
 
     @graken()
     def _monophonic_layers_(self):
         self._unmarked_layer_()
         self.add_last_node_to_name('layers')
-        self._barcheck_()
         self.ast._define(
             [],
             ['layers']
@@ -471,40 +568,10 @@ class LilyPondParser(Parser):
             self._closure(block1, sep=sep1)
         self.name_last_node('layers')
         self._simul_r_()
-        self._barcheck_()
         self.ast._define(
             ['layers'],
             []
         )
-
-    @graken()
-    def _measure_(self):
-        self._constant('measure')
-        self.name_last_node('ly_type')
-
-        def block2():
-            self._staff_setting_()
-        self._closure(block2)
-        self.name_last_node('settings')
-        with self._group():
-            with self._choice():
-                with self._option():
-                    self._monophonic_layers_()
-                with self._option():
-                    self._polyphonic_layers_()
-                self._error('no available options')
-        self.name_last_node('measure')
-        self.ast._define(
-            ['ly_type', 'measure', 'settings'],
-            []
-        )
-
-    @graken()
-    def _measures_(self):
-
-        def block0():
-            self._measure_()
-        self._closure(block0)
 
     @graken()
     def _brace_l_(self):
@@ -515,13 +582,25 @@ class LilyPondParser(Parser):
         self._token('}')
 
     @graken()
-    def _music_block_(self):
-        self._brace_l_()
-        self._measures_()
-        self.name_last_node('measures')
-        self._brace_r_()
+    def _staff_content_(self):
+
+        def block1():
+            self._staff_setting_()
+        self._closure(block1)
+        self.name_last_node('initial_settings')
+
+        def block3():
+            with self._group():
+                with self._choice():
+                    with self._option():
+                        self._monophonic_layers_()
+                    with self._option():
+                        self._polyphonic_layers_()
+                    self._error('no available options')
+        self._positive_closure(block3)
+        self.name_last_node('content')
         self.ast._define(
-            ['measures'],
+            ['content', 'initial_settings'],
             []
         )
 
@@ -535,12 +614,31 @@ class LilyPondParser(Parser):
 
     @graken()
     def _staff_(self):
+        self._constant('staff')
+        self.name_last_node('ly_type')
         self._token_new_()
         self._token_staff_()
-        self._music_block_()
-        self.name_last_node('staff')
+        self._brace_l_()
+
+        def block2():
+            self._staff_setting_()
+        self._closure(block2)
+        self.name_last_node('initial_settings')
+
+        def block4():
+            with self._group():
+                with self._choice():
+                    with self._option():
+                        self._monophonic_layers_()
+                    with self._option():
+                        self._polyphonic_layers_()
+                    self._error('no available options')
+        self._positive_closure(block4)
+        self.name_last_node('content')
+
+        self._brace_r_()
         self.ast._define(
-            ['staff'],
+            ['content', 'initial_settings', 'ly_type'],
             []
         )
 
@@ -555,6 +653,7 @@ class LilyPondParser(Parser):
     @graken()
     def _score_staff_content_(self):
         self._simul_l_()
+        self._cut()
 
         def block1():
             self._staff_()
@@ -574,19 +673,21 @@ class LilyPondParser(Parser):
 
     @graken()
     def _score_(self):
+        self._constant('score')
+        self.name_last_node('ly_type')
         with self._optional():
             self._version_stmt_()
         self.name_last_node('version')
         self._token_score_()
         self._brace_l_()
         self._score_staff_content_()
-        self.name_last_node('score')
+        self.name_last_node('staves')
         with self._optional():
             self._layout_block_()
             self.name_last_node('layout_block')
         self._brace_r_()
         self.ast._define(
-            ['layout_block', 'score', 'version'],
+            ['layout_block', 'ly_type', 'staves', 'version'],
             []
         )
 
@@ -616,7 +717,7 @@ class LilyPondSemantics(object):
     def staff_setting(self, ast):
         return ast
 
-    def note_name(self, ast):
+    def pitch_name(self, ast):
         return ast
 
     def octave(self, ast):
@@ -640,7 +741,7 @@ class LilyPondSemantics(object):
     def duration(self, ast):
         return ast
 
-    def durationless_note(self, ast):
+    def notehead(self, ast):
         return ast
 
     def note(self, ast):
@@ -655,13 +756,13 @@ class LilyPondSemantics(object):
     def spacer(self, ast):
         return ast
 
-    def node(self, ast):
+    def barcheck(self, ast):
+        return ast
+
+    def music_node(self, ast):
         return ast
 
     def nodes(self, ast):
-        return ast
-
-    def barcheck(self, ast):
         return ast
 
     def unmarked_layer(self, ast):
@@ -676,19 +777,13 @@ class LilyPondSemantics(object):
     def polyphonic_layers(self, ast):
         return ast
 
-    def measure(self, ast):
-        return ast
-
-    def measures(self, ast):
-        return ast
-
     def brace_l(self, ast):
         return ast
 
     def brace_r(self, ast):
         return ast
 
-    def music_block(self, ast):
+    def staff_content(self, ast):
         return ast
 
     def token_new(self, ast):
@@ -728,8 +823,8 @@ def main(
         comments_re='\\%\\{.*?\\%\\}',
         eol_comments_re=None,
         ignorecase=None,
-        left_recursion=True,
-        parseinfo=True,
+        left_recursion=False,
+        parseinfo=False,
         **kwargs):
 
     with open(filename) as f:

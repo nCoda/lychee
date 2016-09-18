@@ -44,10 +44,39 @@ Converts a LilyPond document to a Lychee-MEI document.
 
 from lxml import etree
 
-import lychee
 from lychee.converters.inbound import lilypond_parser
+from lychee import exceptions
+from lychee.logs import INBOUND_LOG as log
 from lychee.namespaces import mei
 from lychee.signals import inbound
+
+
+def check(condition, message=None):
+    """
+    Check that ``condition`` is ``True``.
+
+    :param bool condition: This argument will be checked to be ``True``.
+    :param str message: A failure message to use if the check does not pass.
+    :raises: :exc:`exceptions.LilyPondError` when ``condition`` is anything other than ``True``.
+
+    Use this function to guarantee that something is the case. This function replaces the ``assert``
+    statement but is always executed (not only in debug mode).
+
+    **Example 1**
+
+    >>> check(5 == 5)
+
+    The ``5 == 5`` evaluates to ``True``, so the function returns just fine.
+
+    **Example 2**
+
+    >>> check(5 == 4)
+
+    The ``5 == 4`` evaluates to ``False``, so the function raises an :exc:`exceptions.LilyPondError`.
+    """
+    message = 'check failed' if message is None else message
+    if condition is not True:
+        raise exceptions.LilyPondError(message)
 
 
 def convert(document, **kwargs):
@@ -69,29 +98,27 @@ def convert_no_signals(document):
     the CONVERSION_FINISHED signal. Mostly for testing.
     '''
 
-    parser = lilypond_parser.LilyPondParser(parseinfo=False)
-    parsed = parser.parse(
-        document,
-        startrule='start',
-        filename='file',
-        trace=False,
-        left_recursion=True,
-        comments_re='\\%\\{.*?\\%\\}')
+    with log.info('parse LilyPond') as action:
+        parser = lilypond_parser.LilyPondParser(parseinfo=False)
+        parsed = parser.parse(document, filename='file', trace=False)
 
-    if 'score' in parsed:
-        check_version(parsed)
-    elif 'staff' in parsed:
-        parsed = {'score': [parsed]}
-    elif isinstance(parsed, list) and 'measure' in parsed[0]:
-        parsed = {'score': [{'staff': {'measures': parsed}}]}
-    else:
-        raise RuntimeError('Need score, staff, or measures for the top-level thing')
+    with log.info('convert LilyPond') as action:
+        if 'score' in parsed:
+            check_version(parsed)
+        elif 'staff' in parsed:
+            parsed = {'score': [parsed]}
+        elif isinstance(parsed, list) and 'measure' in parsed[0]:
+            parsed = {'score': [{'staff': {'measures': parsed}}]}
+        else:
+            raise RuntimeError('need score, staff, or measures for the top-level thing')
 
-    converted = do_file(parsed)
+        converted = do_file(parsed)
+
     return converted
 
 
-def check_version(parsed):
+@log.wrap('info', 'check syntax version', 'action')
+def check_version(parsed, action):
     '''
     Guarantees the version is at least somewhat compatible.
 
@@ -100,9 +127,11 @@ def check_version(parsed):
     '''
     if parsed['version']:
         if parsed['version'][0] != '2':
-            raise RuntimeError()
+            raise RuntimeError('inbound LilyPond parser expects version 2.18.x')
         elif parsed['version'][1] != '18':
-            lychee.log('The inbound LilyPond parsers expects version 2.18.x')
+            action.failure('inbound LilyPond parser expects version 2.18.x')
+    else:
+        action.failure('missing version info')
 
 
 def do_file(parsed):
@@ -357,13 +386,23 @@ def process_caut_accid(l_note, attrib, m_note):
     return m_note
 
 
-def process_dots(l_note, attrib):
-    '''
-    Given a aprsed LilyPond note/rest/spacer and the "attrib" dictionary for its yet-to-be-created
-    MEI element, put stuff in attrib for dots, if required.
-    '''
-    if len(l_note['duration']['dots']):
-        attrib['dots'] = str(len(l_note['duration']['dots']))
+@log.wrap('debug', 'process dots', 'action')
+def process_dots(l_node, attrib, action):
+    """
+    Handle the @dots attribute for a chord, note, rest, or spacer rest.
+
+    :param dict l_node: The LilyPond node from Grako.
+    :param dict attrib: The attribute dictionary that will be given to the :class:`Element` constructor.
+    :returns: The ``attrib`` dictionary.
+
+    Converts the "dots" member of ``l_node`` to the appropriate number in ``attrib``. If there is
+    no "dots" member in ``l_node``, submit a "failure" log message and assume there are no dots.
+    """
+    if 'dots' in l_node:
+        if l_node['dots']:
+            attrib['dots'] = str(len(l_node['dots']))
+    else:
+        action.failure("missing 'dots' in the LilyPond node")
 
     return attrib
 
@@ -412,11 +451,22 @@ def do_note(l_note, m_layer):
     return m_note
 
 
-def do_rest(l_rest, m_layer):
-    assert l_rest['ly_type'] == 'rest'
+@log.wrap('debug', 'convert rest', 'action')
+def do_rest(l_rest, m_layer, action):
+    """
+    Convert a LilyPond rest to an LMEI <rest/>.
+
+    :param dict l_rest: The LilyPond rest from Grako.
+    :param m_layer: The LMEI <layer> that will hold the rest.
+    :type m_layer: :class:`lxml.etree.Element`
+    :returns: The new <rest/> element.
+    :rtype: :class:`lxml.etree.Element`
+    :raises: :exc:`exceptions.LilyPondError` if ``l_rest`` does not contain a Grako rest
+    """
+    check(l_rest['ly_type'] == 'rest', 'did not receive a rest')
 
     attrib = {
-        'dur': l_rest['duration']['number'],
+        'dur': l_rest['dur'],
     }
 
     process_dots(l_rest, attrib)
@@ -426,11 +476,22 @@ def do_rest(l_rest, m_layer):
     return m_rest
 
 
-def do_spacer(l_spacer, m_layer):
-    assert l_spacer['ly_type'] == 'spacer'
+@log.wrap('debug', 'convert spacer', 'action')
+def do_spacer(l_spacer, m_layer, action):
+    """
+    Convert a LilyPond spacer rest to an LMEI <space/>.
+
+    :param dict l_spacer: The LilyPond spacer rest from Grako.
+    :param m_layer: The LMEI <layer> that will hold the space.
+    :type m_layer: :class:`lxml.etree.Element`
+    :returns: The new <space/> element.
+    :rtype: :class:`lxml.etree.Element`
+    :raises: :exc:`exceptions.LilyPondError` if ``l_spacer`` does not contain a Grako spacer rest
+    """
+    check(l_spacer['ly_type'] == 'spacer', 'did not receive a spacer rest')
 
     attrib = {
-        'dur': l_spacer['duration']['number'],
+        'dur': l_spacer['dur'],
     }
 
     process_dots(l_spacer, attrib)

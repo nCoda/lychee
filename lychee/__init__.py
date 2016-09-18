@@ -42,7 +42,7 @@ __metadata__ = {
 }
 
 __version__ = __metadata__['version']
-__all__ = ['converters', 'document', 'namespaces', 'signals', 'tui', 'workflow', 'vcs', 'views']
+__all__ = ['converters', 'document', 'logs', 'namespaces', 'signals', 'tui', 'workflow', 'vcs', 'views']
 
 DEBUG = False
 
@@ -78,6 +78,8 @@ def log(message, level=None):
 # many other modules will want to import :mod:`exceptions`, so it should be imported first
 try:
     from lychee import exceptions
+    from lychee import logs
+    logs.logging_init()
     from lychee import *
 except ImportError as exc:
     log(str(exc), level='ERROR')

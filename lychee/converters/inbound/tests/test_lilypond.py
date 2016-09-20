@@ -192,6 +192,73 @@ class TestProcesssDots(object):
         assert 'dots' not in attrib
 
 
+class TestChord(object):
+    """
+    For chords.
+    """
+
+    def test_not_a_chord(self):
+        """When it receives something other than a chord, raise exceptions.LilyPondError."""
+        l_chord = {'ly_type': 'broccoli'}
+        m_layer = etree.Element(mei.LAYER)
+        with pytest.raises(exceptions.LilyPondError):
+            lilypond.do_chord(l_chord, m_layer)
+
+    def test_empty_chord(self):
+        """When the chord has no noteheads."""
+        l_chord = {'ly_type': 'chord', 'dur': '2', 'dots': ['.'], 'notes': []}
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_chord(l_chord, m_layer)
+
+        assert actual.tag == mei.CHORD
+        assert actual is m_layer[0]
+        assert actual.get('dur') == '2'
+        assert actual.get('dots') == '1'
+        assert len(actual) == 0
+
+    def test_one_notehead(self):
+        """When the chord has one notehead, with a cautionary accidental."""
+        l_chord = {'ly_type': 'chord', 'dur': '2', 'dots': ['.'], 'notes': [
+            {'pname': 'd', 'oct': ',,', 'accid': ['es'], 'accid_force': '?'},
+        ]}
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_chord(l_chord, m_layer)
+
+        assert len(actual) == 1
+        assert actual[0].get('pname') == 'd'
+        assert actual[0].get('oct') == '1'
+        assert actual[0].get('accid.ges') == 'f'
+        assert actual[0][0].tag == mei.ACCID
+        assert actual[0][0].get('accid') == 'f'
+
+    def test_three_noteheads(self):
+        """When the chord has three noteheads, the first with a forced accidental."""
+        l_chord = {'ly_type': 'chord', 'dur': '2', 'dots': ['.'], 'notes': [
+            {'pname': 'd', 'oct': ',,', 'accid': ['es'], 'accid_force': '!'},
+            {'pname': 'f', 'oct': ',,', 'accid': ['is'], 'accid_force': None},
+            {'pname': 'a', 'oct': ',,', 'accid': [], 'accid_force': None},
+        ]}
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_chord(l_chord, m_layer)
+
+        assert len(actual) == 3
+        #
+        assert actual[0].get('pname') == 'd'
+        assert actual[0].get('oct') == '1'
+        assert actual[0].get('accid.ges') == 'f'
+        assert actual[0].get('accid') == 'f'
+        #
+        assert actual[1].get('pname') == 'f'
+        assert actual[1].get('oct') == '1'
+        assert actual[1].get('accid.ges') == 's'
+        assert actual[1].get('accid') is None
+        #
+        assert actual[2].get('pname') == 'a'
+        assert actual[2].get('oct') == '1'
+        assert actual[2].get('accid.ges') is None
+        assert actual[2].get('accid') is None
+
+
 class TestNote(object):
     """
     For notes.

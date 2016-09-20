@@ -439,26 +439,37 @@ def process_dots(l_node, attrib, action):
     return attrib
 
 
-def do_chord(l_chord, m_layer):
-    assert l_chord['ly_type'] == 'chord'
+@log.wrap('debug', 'convert chord', 'action')
+def do_chord(l_chord, m_layer, action):
+    """
+    Convert a LilyPond chord to an LMEI <chord/>.
 
-    attrib = {'dur': l_chord['duration']['number']}
+    :param dict l_chord: The LilyPond chord from Grako.
+    :param m_layer: The MEI <layer> that will hold the chord.
+    :type m_layer: :class:`lxml.etree.Element`
+    :returns: The new <chord/> element.
+    :rtype: :class:`lxml.etree.Element`
+    :raises: :exc:`exceptions.LilyPondError` if ``l_chord`` does not contain a Grako chord
+    """
+    check(l_chord['ly_type'] == 'chord', 'did not receive a chord')
+
+    attrib = {'dur': l_chord['dur']}
     process_dots(l_chord, attrib)
 
     m_chord = etree.SubElement(m_layer, mei.CHORD, attrib)
 
     for l_note in l_chord['notes']:
         attrib = {
-            'pname': l_note['note_name'],
-            'oct': process_octave(l_note['octave']),
+            'pname': l_note['pname'],
+            'oct': process_octave(l_note['oct']),
         }
 
-        process_accidental(l_note['accidental'], attrib)
+        process_accidental(l_note['accid'], attrib)
         process_forced_accid(l_note, attrib)
 
         m_note = etree.SubElement(m_chord, mei.NOTE, attrib)
 
-        process_caut_accid(l_note, attrib, m_note)
+        process_caut_accid(l_note, m_note)
 
     return m_chord
 

@@ -37,6 +37,134 @@ from lychee import exceptions
 from lychee.namespaces import mei
 
 
+class TestProcessOctave(object):
+    """
+    For the octave thing.
+    """
+
+    def test_works(self):
+        """It's an octave."""
+        assert '1' == lilypond.process_octave(',,')
+
+    def test_none(self):
+        """It's given ``None``."""
+        assert '3' == lilypond.process_octave(None)
+
+    def test_invalid(self):
+        """The octave is invalid."""
+        assert lilypond.process_octave(None) == lilypond.process_octave('celery')
+
+
+class TestAccidentals(object):
+    """
+    For regular accidental handling.
+    """
+
+    def test_no_accid(self):
+        """When there is no accidental."""
+        l_accid = []
+        attrib = {}
+        expected = {}
+        actual = lilypond.process_accidental(l_accid, attrib)
+        assert expected == actual
+
+    def test_double_sharp(self):
+        """Double sharp."""
+        l_accid = ['is', 'is']
+        attrib = {}
+        expected = {'accid.ges': 'ss'}
+        actual = lilypond.process_accidental(l_accid, attrib)
+        assert expected == actual
+
+    def test_single_flat(self):
+        """Single flat."""
+        l_accid = ['es']
+        attrib = {}
+        expected = {'accid.ges': 'f'}
+        actual = lilypond.process_accidental(l_accid, attrib)
+        assert expected == actual
+
+    def test_sharpflat(self):
+        """Sharpflat (invalid accidental)."""
+        l_accid = ['is', 'es']
+        attrib = {}
+        expected = {}
+        actual = lilypond.process_accidental(l_accid, attrib)
+        assert expected == actual
+
+
+class TestForcedAccidentals(object):
+    """
+    For the forced accidental stuff.
+    """
+
+    def test_dont_add_it(self):
+        """The note doesn't have a forced accidental."""
+        l_note = {'accid_force': None}  # this is enough to trick it
+        attrib = {}
+
+        actual = lilypond.process_forced_accid(l_note, attrib)
+
+        assert actual == {}
+
+    def test_add_a_flat(self):
+        """The note has a forced flat."""
+        l_note = {'accid_force': '!'}  # this is enough to trick it
+        attrib = {'accid.ges': 'f'}
+
+        actual = lilypond.process_forced_accid(l_note, attrib)
+
+        assert actual == {'accid.ges': 'f', 'accid': 'f'}
+
+    def test_add_a_natural(self):
+        """The note has a forced natural."""
+        l_note = {'accid_force': '!'}  # this is enough to trick it
+        attrib = {'dur': '4'}  # check it doesn't erase unrelated keys
+
+        actual = lilypond.process_forced_accid(l_note, attrib)
+
+        assert actual == {'dur': '4', 'accid': 'n'}
+
+
+class TestCautionaryAccidentals(object):
+    """
+    For the cautionary accidental garbage.
+    """
+
+    def test_dont_add_it(self):
+        """The note doesn't have a cautionary accidental."""
+        l_note = {'accid_force': None}  # this is enough to trick it
+        m_note = etree.Element(mei.NOTE)
+
+        actual = lilypond.process_caut_accid(l_note, m_note)
+
+        assert len(actual) == 0  # includes child elements only
+
+    def test_add_a_flat(self):
+        """The note has a cautionary flat."""
+        l_note = {'accid_force': '?'}  # this is enough to trick it
+        m_note = etree.Element(mei.NOTE, {'accid.ges': 'f'})
+
+        actual = lilypond.process_caut_accid(l_note, m_note)
+
+        assert len(actual) == 1  # includes child elements only
+        assert actual[0].tag == mei.ACCID
+        assert actual[0].get('accid') == 'f'
+        assert actual[0].get('func') == 'caution'
+
+    def test_add_a_natural(self):
+        """The note has a cautionary natural."""
+        l_note = {'accid_force': '?'}  # this is enough to trick it
+        m_note = etree.Element(mei.NOTE)
+
+        actual = lilypond.process_caut_accid(l_note, m_note)
+
+        assert len(actual) == 1  # includes child elements only
+        assert actual[0].tag == mei.ACCID
+        assert actual[0].get('accid') == 'n'
+        assert actual[0].get('func') == 'caution'
+
+
 class TestProcesssDots(object):
     """
     For the @dots attribute.

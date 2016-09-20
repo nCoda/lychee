@@ -51,6 +51,24 @@ from lychee.namespaces import mei
 from lychee.signals import inbound
 
 
+_ACCIDENTAL_MAPPING = {
+    'eses': 'ff',
+    'es': 'f',
+    'is': 's',
+    'isis': 'ss',
+}
+_OCTAVE_MAPPING = {
+    ",,": '1',
+    ",": '2',
+    "'''''": '8',
+    "''''": '7',
+    "'''": '6',
+    "''": '5',
+    "'": '4',
+    None: '3'
+}
+
+
 def check(condition, message=None):
     """
     Check that ``condition`` is ``True``.
@@ -318,47 +336,58 @@ def do_layer(l_layer, m_measure, layer_n):
     return m_layer
 
 
-def process_octave(l_oct):
+@log.wrap('debug', 'add octave', 'action')
+def process_octave(l_oct, action):
     '''
     Convert an octave specifier from the parsed LilyPond into an MEI @oct attribute.
+
+    :param str l_oct: The "octave" part of the LilyPond note as provided by Grako. May also be ``None``.
+    :returns: The LMEI octave number.
+    :rtype: str
+
+    If the octave is not recognized, :func:`process_octave` emits a failure log message and returns
+    the same value as if ``l_oct`` were ``None``.
     '''
-    convert_dict = {
-        ",,": '1',
-        ",": '2',
-        "'''''": '8',
-        "''''": '7',
-        "'''": '6',
-        "''": '5',
-        "'": '4',
-        None: '3'
-    }
-    return convert_dict[l_oct]
+    if l_oct in _OCTAVE_MAPPING:
+        return _OCTAVE_MAPPING[l_oct]
+    else:
+        action.failure('unknown octave: {octave}', octave=l_oct)
+        return _OCTAVE_MAPPING[None]
 
 
-def process_accidental(l_accid, attrib):
+@log.wrap('debug', 'add accidental', 'action')
+def process_accidental(l_accid, attrib, action):
     '''
-    Convert an accidental specifier from the parsed LilyPond into an MEI @accid attribute, putting
-    it in the "attrib" dictionary if given.
+    Add an accidental to the LMEI note, if required.
+
+    :param l_accid: The LilyPond accidental as provided by Grako.
+    :type l_accid: list of str
+    :param dict attrib: The attributes for the MEI <note/> element *before* creation.
+    :returns: The ``attrib`` argument.
+
+    If the accidental is not recognized, :func:`process_accidental` emits a failure log message and
+    returns the ``attrib`` argument unchanged.
     '''
-    convert_dict = {
-        'eses': 'ff',
-        'es': 'f',
-        'is': 's',
-        'isis': 'ss',
-    }
     if l_accid:
         l_accid = ''.join(l_accid)
-        attrib['accid.ges'] = convert_dict[l_accid]
+        if l_accid in _ACCIDENTAL_MAPPING:
+            attrib['accid.ges'] = _ACCIDENTAL_MAPPING[l_accid]
+        else:
+            action.failure('unknown accidental: {accid}', accid=l_accid)
 
     return attrib
 
 
-def process_forced_accid(l_note, attrib):
+@log.wrap('debug', 'add forced accidental', 'action')
+def process_forced_accid(l_note, attrib, action):
     '''
-    Given a parsed LilyPond note and the "attrib" dictionary for its yet-to-be-created MEI element,
-    put stuff in attrib for a forced accidental, if required.
+    Add a forced accidental to the LMEI note, if required.
+
+    :param dict l_note: The LilyPond note from Grako.
+    :param dict attrib: The attributes for the MEI <note/> element *before* creation.
+    :returns: The ``attrib`` argument.
     '''
-    if l_note['accidental_force'] == '!':
+    if l_note['accid_force'] == '!':
         if 'accid.ges' in attrib:
             attrib['accid'] = attrib['accid.ges']
         else:
@@ -368,20 +397,23 @@ def process_forced_accid(l_note, attrib):
     return attrib
 
 
-def process_caut_accid(l_note, attrib, m_note):
+@log.wrap('debug', 'add cautionary accidental', 'action')
+def process_caut_accid(l_note, m_note, action):
     '''
-    Given a parsed LilyPond note, the "attrib" dictionary of its already-created MEI element, and
-    that MEI element, add an ``<accid>`` subelement to the ``<note>`` for a cautionary accidental,
-    if required.
+    Add a cautionary accidental to the LMEI note, if required.
 
-    :returns: The MEI ``<note>`` element.
+    :param dict l_note: The LilyPond note from Grako.
+    :param m_note: The MEI <note/> element.
+    :type m_note: :class:`lxml.etree.Element`
+    :returns: The ``m_note`` argument.
     '''
-    if l_note['accidental_force'] == '?':
-        if 'accid.ges' in attrib:
-            etree.SubElement(m_note, mei.ACCID, {'accid': attrib['accid.ges'], 'func': 'caution'})
+    if l_note['accid_force'] == '?':
+        if m_note.get('accid.ges') is not None:
+            attribs = {'accid': m_note.get('accid.ges'), 'func': 'caution'}
         else:
             # show a natural
-            etree.SubElement(m_note, mei.ACCID, {'accid': 'n', 'func': 'caution'})
+            attribs = {'accid': 'n', 'func': 'caution'}
+        etree.SubElement(m_note, mei.ACCID, attribs)
 
     return m_note
 

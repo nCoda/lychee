@@ -463,22 +463,33 @@ def do_chord(l_chord, m_layer):
     return m_chord
 
 
-def do_note(l_note, m_layer):
-    assert l_note['ly_type'] == 'note'
+@log.wrap('debug', 'convert note', 'action')
+def do_note(l_note, m_layer, action):
+    """
+    Convert a LilyPond note to an LMEI <note/>.
+
+    :param dict l_note: The LilyPond note from Grako.
+    :param m_layer: The MEI <layer> that will hold the note.
+    :type m_layer: :class:`lxml.etree.Element`
+    :returns: The new <note/> element.
+    :rtype: :class:`lxml.etree.Element`
+    :raises: :exc:`exceptions.LilyPondError` if ``l_note`` does not contain a Grako note
+    """
+    check(l_note['ly_type'] == 'note', 'did not receive a note')
 
     attrib = {
-        'pname': l_note['note_name'],
-        'dur': l_note['duration']['number'],
-        'oct': process_octave(l_note['octave']),
+        'pname': l_note['pname'],
+        'dur': l_note['dur'],
+        'oct': process_octave(l_note['oct']),
     }
 
-    process_accidental(l_note['accidental'], attrib)
+    process_accidental(l_note['accid'], attrib)
     process_forced_accid(l_note, attrib)
     process_dots(l_note, attrib)
 
     m_note = etree.SubElement(m_layer, mei.NOTE, attrib)
 
-    process_caut_accid(l_note, attrib, m_note)
+    process_caut_accid(l_note, m_note)
 
     return m_note
 

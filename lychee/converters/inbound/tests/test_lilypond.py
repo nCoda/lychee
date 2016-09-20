@@ -192,6 +192,54 @@ class TestProcesssDots(object):
         assert 'dots' not in attrib
 
 
+class TestNote(object):
+    """
+    For notes.
+    """
+
+    def test_not_a_note(self):
+        """When it receives something other than a note, raise exceptions.LilyPondError."""
+        l_note = {'ly_type': 'broccoli'}
+        m_layer = etree.Element(mei.LAYER)
+        with pytest.raises(exceptions.LilyPondError):
+            lilypond.do_note(l_note, m_layer)
+
+    def test_basic_attribs(self):
+        """Note only has @pname, @oct, and @dur."""
+        l_note = {'ly_type': 'note', 'pname': 'f', 'accid': [], 'oct': "''", 'accid_force': None,
+            'dur': '256', 'dots': []}
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_note(l_note, m_layer)
+
+        assert actual.tag == mei.NOTE
+        assert actual is m_layer[0]
+        assert actual.get('dur') == '256'
+        assert actual.get('pname') == 'f'
+        assert actual.get('oct') == '5'
+
+    def test_external_attribs(self):
+        """Note has attributes handled by process_x() functions before Element creation."""
+        l_note = {'ly_type': 'note', 'pname': 'f', 'accid': ['is'], 'oct': "''", 'accid_force': '!',
+            'dur': '256', 'dots': ['.', '.']}
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_note(l_note, m_layer)
+
+        assert actual.get('accid.ges') == 's'
+        assert actual.get('accid') == 's'
+        assert actual.get('dots') == '2'
+
+    def test_children(self):
+        """Note has sub-elements added by process_x() functions after Element creation."""
+        l_note = {'ly_type': 'note', 'pname': 'f', 'accid': ['is'], 'oct': "''", 'accid_force': '?',
+            'dur': '256', 'dots': []}
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_note(l_note, m_layer)
+
+        assert actual.get('accid.ges') == 's'
+        assert actual.get('accid') is None
+        assert actual[0].tag == mei.ACCID
+
+
 class TestRestSpacer(object):
     """
     For rests and spacers.

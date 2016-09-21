@@ -67,6 +67,7 @@ _OCTAVE_MAPPING = {
     "'": '4',
     None: '3'
 }
+# defined at end of file: _STAFF_SETTINGS_FUNCTIONS
 
 
 def check(condition, message=None):
@@ -173,23 +174,6 @@ def do_file(parsed):
     return m_section
 
 
-def do_staff(l_staff, m_section, staff_n, m_staffdef):
-    '''
-    :param dict l_staff: A LilyPond staff from the parser.
-    :param m_section: An MEI ``<section>`` element to put this staff into.
-    :type m_section: :class:`lxml.etree.Element`
-    :param int staff_n: The @n value for this ``<staff>``.
-    '''
-    m_staff = etree.SubElement(m_section, mei.STAFF, {'n': str(staff_n)})
-
-    measure_n = 1
-    for l_measure in l_staff['staff']['measures']:
-        do_measure(l_measure, m_staff, measure_n, m_staffdef)
-        measure_n += 1
-
-    return m_staff
-
-
 def set_initial_clef(l_clef, m_staffdef):
     '''
     Set a Lilypond ``\clef`` command as the initial clef for a staff.
@@ -272,40 +256,57 @@ def set_instrument_name(l_name, m_staffdef):
     return m_staffdef
 
 
-def do_measure(l_measure, m_staff, measure_n, m_staffdef):
+@log.wrap('info', 'convert staff', 'action')
+def do_staff(l_staff, m_section, m_staffdef, action):
     '''
-    :param dict l_measure: A LilyPond measure from the parser.
-    :param m_staff: An MEI ``<staff>`` element to put this measure into.
-    :type m_staff: :class:`lxml.etree.Element`
-    :param int measure_n: The @n value for this ``<measure>``.
+    :param dict l_staff: The LilyPond Staff context from Grako.
+    :param m_section: The LMEI <section> that will hold the staff.
+    :type m_section: :class:`lxml.etree.Element`
+    :param m_staffdef: The LMEI <staffDef> used to define this staff.
+    :type m_staffdef: :class:`lxml.etree.Element`
+    :returns: ``None``
+    :raises: :exc:`exceptions.LilyPondError` when the ``l_staff`` argument is not a staff.
+    :raises: :exc:`exceptions.LilyPondError` when the ``m_staffdef`` argument does not have an @n attribute.
+
+    .. note:: This function assumes that the ``m_staffdef`` argument is already present in the score.
+        That is, the <staffDef> does not become a child element of the <staff> in this function.
+
+    If the Staff context contains unknown staff settings, :func:`do_staff` emits a failure log
+    message and continues processing the following settings and Voices in the Staff context.
+
+    The @n attribute is taken from the ``m_staffdef`` argument. If the @n attribute is missing,
+    :func:`do_staff` raises :exc:`exceptions.LilyPondError`.
+
+    This function will use a single <staff> element whenever possible. However, each change between
+    monophonic and polyphonic notation produces a new <staff> element. The following example shows
+    a section with two staves; the second staff is split between two <staff> elements for technical
+    reasons, but the @n attribute indicates they should be displayed as the same staff.
+
+    .. sourcecode:: xml
+
+        <section>
+            <staff n="1"><!-- some content --></staff>
+            <staff n="2"><!-- some monophonic content --></staff>
+            <staff n="2"><!-- some polyphonic content --></staff>
+        </section>
     '''
-    assert l_measure['ly_type'] == 'measure'
+    check(l_staff['ly_type'] == 'staff', 'did not receive a staff')
+    check(m_staffdef.get('n') is not None, '<staffDef> is missing @n')
 
-    m_measure = etree.SubElement(m_staff, mei.MEASURE, {'n': str(measure_n)})
+    for l_setting in l_staff['initial_settings']:
+        with log.debug('handle staff setting') as action:
+            if l_setting['ly_type'] in _STAFF_SETTINGS_FUNCTIONS:
+                _STAFF_SETTINGS_FUNCTIONS[l_setting['ly_type']](l_setting, m_staffdef)
+                action.success('converted {ly_type}', ly_type=l_setting['ly_type'])
+            else:
+                action.failure('unknown staff setting: {ly_type}', ly_type=l_setting['ly_type'])
 
-    options_converters = {
-        'clef': set_initial_clef,
-        'key': set_initial_key,
-        'instr_name': set_instrument_name,
-        'time': set_initial_time,
-    }
-    if l_measure['settings']:
-        # We should only use the <staffDef> given to us, which is for the <staff> as a whole, if
-        # this is the first <measure>. Otherwise we'll make a <measure>-specific <staffDef>.
-        if measure_n > 1:
-            m_staffdef = etree.SubElement(m_measure, mei.STAFF_DEF)
-        for setting in l_measure['settings']:
-            if setting['ly_type'] in options_converters:
-                options_converters[setting['ly_type']](setting, m_staffdef)
-
-    layer_n = 1
-    for l_layer in l_measure['measure']['layers']:
-        if l_layer['ly_type'] == 'layer':
-            # might also be 'barcheck' which is useless
-            do_layer(l_layer, m_measure, layer_n)
-            layer_n += 1
-
-    return m_measure
+    for i, l_each_staff in enumerate(l_staff['content']):
+        with log.debug('convert staff @n={staff_n}:{i}', staff_n=m_staffdef.get('n'), i=i):
+            m_each_staff = etree.SubElement(m_section, mei.STAFF, {'n': m_staffdef.get('n')})
+            for layer_n, l_layer in enumerate(l_each_staff['layers']):
+                # we must add 1 to layer_n or else the @n would start at 0, not 1
+                do_layer(l_layer, m_each_staff, layer_n + 1)
 
 
 @log.wrap('debug', 'convert voice/layer', 'action')
@@ -561,3 +562,12 @@ def do_spacer(l_spacer, m_layer, action):
     m_space = etree.SubElement(m_layer, mei.SPACE, attrib)
 
     return m_space
+
+
+# this is at the bottom so the functions will already be defined
+_STAFF_SETTINGS_FUNCTIONS = {
+    'clef': set_initial_clef,
+    'key': set_initial_key,
+    'instr_name': set_instrument_name,
+    'time': set_initial_time,
+}

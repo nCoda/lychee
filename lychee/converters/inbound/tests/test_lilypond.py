@@ -37,6 +37,194 @@ from lychee import exceptions
 from lychee.namespaces import mei
 
 
+class TestStaves(object):
+    """
+    For staves.
+    """
+
+    def test_error_1(self):
+        """When 'l_staff' is not a staff."""
+        l_staff = {'ly_type': 'job application'}
+        m_section = etree.Element(mei.SECTION)
+        m_staffdef = etree.Element(mei.STAFF_DEF, {'n': '8'})
+        with pytest.raises(exceptions.LilyPondError):
+            lilypond.do_staff(l_staff, m_section, m_staffdef)
+
+    def test_error_2(self):
+        """When 'm_staffdef' is missing @n."""
+        l_staff = {'ly_type': 'staff'}
+        m_section = etree.Element(mei.SECTION)
+        m_staffdef = etree.Element(mei.STAFF_DEF)
+        with pytest.raises(exceptions.LilyPondError):
+            lilypond.do_staff(l_staff, m_section, m_staffdef)
+
+    def test_settings_1(self):
+        """
+        No staff settings; the <staffDef> isn't changed.
+        """
+        l_staff = {
+            'ly_type': 'staff',
+            'initial_settings': [],
+            'content': [],
+        }
+        m_section = etree.Element(mei.SECTION)
+        m_staffdef = etree.Element(mei.STAFF_DEF, {'n': '8'})
+        lilypond.do_staff(l_staff, m_section, m_staffdef)
+
+        assert m_staffdef.attrib == {'n': '8'}
+
+    def test_settings_2(self):
+        """
+        One staff setting; handled properly.
+        """
+        l_staff = {
+            'ly_type': 'staff',
+            'initial_settings': [{'ly_type': 'time', 'count': '3', 'unit': '4'}],
+            'content': [],
+        }
+        m_section = etree.Element(mei.SECTION)
+        m_staffdef = etree.Element(mei.STAFF_DEF, {'n': '8'})
+        lilypond.do_staff(l_staff, m_section, m_staffdef)
+
+        assert m_staffdef.attrib == {'n': '8', 'meter.count': '3', 'meter.unit': '4'}
+
+    def test_settings_3(self):
+        """
+        All possible staff settings; handled properly.
+        """
+        l_staff = {
+            'ly_type': 'staff',
+            'initial_settings': [
+                {'ly_type': 'time', 'count': '3', 'unit': '4'},
+                {'ly_type': 'clef', 'type': 'bass'},
+                {'ly_type': 'key', 'keynote': 'd', 'accid': 'es', 'mode': 'major'},
+                {'ly_type': 'instr_name', 'name': 'Broccoliphone'},
+            ],
+            'content': [],
+        }
+        m_section = etree.Element(mei.SECTION)
+        m_staffdef = etree.Element(mei.STAFF_DEF, {'n': '8'})
+        lilypond.do_staff(l_staff, m_section, m_staffdef)
+
+        assert m_staffdef.attrib == {
+            'n': '8',
+            'meter.count': '3', 'meter.unit': '4',
+            'clef.shape': 'F', 'clef.line': '4',
+            'key.sig': '5f',
+            'label': 'Broccoliphone',
+        }
+
+    def test_staff_1(self):
+        """
+        A staff a monophonic passage.
+
+        Parsed version of this:
+        r'\new Staff { s2 s4 | s2 }'
+        """
+        l_staff = {
+            'ly_type': 'staff',
+            'initial_settings': [],
+            'content': [{'layers': [[
+                {'dur': '2', 'dots': [], 'ly_type': 'spacer'},
+                {'dur': '4', 'dots': [], 'ly_type': 'spacer'},
+                {'ly_type': 'barcheck'},
+                {'dur': '2', 'dots': [], 'ly_type': 'spacer'},
+            ]]}],
+        }
+        m_section = etree.Element(mei.SECTION)
+        m_staffdef = etree.Element(mei.STAFF_DEF, {'n': '8'})
+        lilypond.do_staff(l_staff, m_section, m_staffdef)
+
+        # one <staff>
+        assert len(m_section) == 1
+        assert m_section[0].tag == mei.STAFF
+        assert m_section[0].get('n') == '8'
+        # one <layer>
+        assert len(m_section[0]) == 1
+        assert m_section[0][0].tag == mei.LAYER
+        assert len(m_section[0][0]) == 3  # two spacer rests
+
+    def test_staff_2(self):
+        """
+        A staff with a polyphonic passage.
+
+        Parsed version of this:
+        r'\new Staff { << { s2 s4 } \\ { r2 r4 } >> }'
+        """
+        l_staff = {
+            'ly_type': 'staff',
+            'initial_settings': [],
+            'content': [{'layers': [
+                [
+                    {'dur': '2', 'dots': [], 'ly_type': 'spacer'},
+                    {'dur': '4', 'dots': [], 'ly_type': 'spacer'},
+                ],
+                [
+                    {'dur': '2', 'dots': [], 'ly_type': 'rest'},
+                    {'dur': '4', 'dots': [], 'ly_type': 'rest'},
+                ],
+            ]}],
+        }
+        m_section = etree.Element(mei.SECTION)
+        m_staffdef = etree.Element(mei.STAFF_DEF, {'n': '16'})
+        lilypond.do_staff(l_staff, m_section, m_staffdef)
+
+        assert len(m_section) == 1  # one <staff>
+        assert m_section[0].tag == mei.STAFF
+        assert m_section[0].get('n') == '16'
+        assert len(m_section[0]) == 2  # two <layer>s
+        assert m_section[0][0].tag == mei.LAYER
+        assert len(m_section[0][0]) == 2  # two spacer rests
+        assert m_section[0][1].tag == mei.LAYER
+        assert len(m_section[0][1]) == 2  # two spacer rests
+
+    def test_staff_3(self):
+        """
+        A staff with a polyphonic passage then a monophonic passage.
+
+        Parsed version of this:
+        r'\new Staff { << { s2 s4 } \\ { r2 r4 } >> bes,128 }'
+        """
+        l_staff = {
+            'ly_type': 'staff',
+            'initial_settings': [],
+            'content': [
+                {'layers': [
+                    [
+                        {'dur': '2', 'dots': [], 'ly_type': 'spacer'},
+                        {'dur': '4', 'dots': [], 'ly_type': 'spacer'},
+                    ],
+                    [
+                        {'dur': '2', 'dots': [], 'ly_type': 'rest'},
+                        {'dur': '4', 'dots': [], 'ly_type': 'rest'},
+                    ],
+                ]},
+                {'layers': [[{'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': None,
+                             'dur': '128', 'dots': [], 'ly_type': 'note'}]],
+                },
+            ],
+        }
+        m_section = etree.Element(mei.SECTION)
+        m_staffdef = etree.Element(mei.STAFF_DEF, {'n': '32'})
+        lilypond.do_staff(l_staff, m_section, m_staffdef)
+
+        assert len(m_section) == 2  # two <staff>s
+        assert m_section[0].tag == mei.STAFF
+        assert m_section[0].get('n') == '32'
+        assert m_section[1].tag == mei.STAFF
+        assert m_section[1].get('n') == '32'
+        # first <staff>
+        assert len(m_section[0]) == 2  # two <layer>s
+        assert m_section[0][0].tag == mei.LAYER
+        assert len(m_section[0][0]) == 2  # two spacer rests
+        assert m_section[0][1].tag == mei.LAYER
+        assert len(m_section[0][1]) == 2  # two spacer rests
+        # second <staff>
+        assert len(m_section[1]) == 1  # one <layer>
+        assert m_section[1][0].tag == mei.LAYER
+        assert len(m_section[1][0]) == 1  # one <note>
+
+
 class TestLayers(object):
     """
     For Voice contexts converting to layers.

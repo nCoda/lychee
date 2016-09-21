@@ -37,6 +37,65 @@ from lychee import exceptions
 from lychee.namespaces import mei
 
 
+class TestLayers(object):
+    """
+    For Voice contexts converting to layers.
+    """
+
+    def test_empty(self):
+        """The Voice context is empty."""
+        l_layer = []
+        m_container = etree.Element(mei.MEASURE)
+        layer_n = 42
+
+        actual = lilypond.do_layer(l_layer, m_container, layer_n)
+
+        assert m_container[0] is actual
+        assert actual.tag == mei.LAYER
+        assert actual.get('n') == str(layer_n)
+        assert len(actual) == 0
+
+    def test_unknown_nodes(self):
+        """The Voice context only has two unknown nodes and a rest."""
+        l_layer = [
+            {'ly_type': 'broccoli'},
+            {'ly_type': 'rest', 'dur': '2', 'dots': []},
+            {'ly_type': 'cabbage'},
+        ]
+        m_container = etree.Element(mei.STAFF)
+        layer_n = 42
+
+        actual = lilypond.do_layer(l_layer, m_container, layer_n)
+
+        assert len(actual) == 1
+        assert actual[0].tag == mei.REST
+
+    def test_mixed_nodes(self):
+        """The Voice context has nodes of every type."""
+        l_layer = [
+            {'ly_type': 'rest', 'dur': '2', 'dots': []},
+            {'ly_type': 'spacer', 'dur': '2', 'dots': []},
+            {'ly_type': '白菜'},
+            {'ly_type': 'note', 'pname': 'f', 'accid': [], 'oct': "''", 'accid_force': None,
+             'dur': '256', 'dots': []},
+            {'ly_type': 'chord', 'dur': '2', 'dots': ['.'], 'notes': [
+                {'pname': 'd', 'oct': ',,', 'accid': ['es'], 'accid_force': '!'},
+                {'pname': 'f', 'oct': ',,', 'accid': ['is'], 'accid_force': None},
+                {'pname': 'a', 'oct': ',,', 'accid': [], 'accid_force': None},
+            ]},
+        ]
+        m_container = etree.Element(mei.STAFF)
+        layer_n = 42
+
+        actual = lilypond.do_layer(l_layer, m_container, layer_n)
+
+        assert len(actual) == 4
+        assert actual[0].tag == mei.REST
+        assert actual[1].tag == mei.SPACE
+        assert actual[2].tag == mei.NOTE
+        assert actual[3].tag == mei.CHORD
+
+
 class TestProcessOctave(object):
     """
     For the octave thing.

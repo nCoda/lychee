@@ -308,16 +308,23 @@ def do_measure(l_measure, m_staff, measure_n, m_staffdef):
     return m_measure
 
 
-def do_layer(l_layer, m_measure, layer_n):
+@log.wrap('debug', 'convert voice/layer', 'action')
+def do_layer(l_layer, m_container, layer_n, action):
     '''
-    :param dict l_layer: A LilyPond layer from the parser.
-    :param m_measure: An MEI ``<measure>`` element to put this layer into.
-    :type m_measure: :class:`lxml.etree.Element`
-    :param int layer_n: The @n value for this ``<layer>``.
-    '''
-    assert l_layer['ly_type'] == 'layer'
+    Convert a LilyPond Voice context into an LMEI <layer> element.
 
-    m_layer = etree.SubElement(m_measure, mei.LAYER, {'n': str(layer_n)})
+    :param l_layer: The LilyPond Voice context from Grako.
+    :type l_layer: list of dict
+    :param m_container: The MEI <measure> or <staff> that will hold the layer.
+    :type m_container: :class:`lxml.etree.Element`
+    :returns: The new <layer> element.
+    :rtype: :class:`lxml.etree.Element`
+    :param int layer_n: The @n attribute value for this <layer>.
+
+    If the Voice context contains an unknown node type, :func:`do_layer` emits a failure log message
+    and continues processing the following nodes in the Voice context.
+    '''
+    m_layer = etree.SubElement(m_container, mei.LAYER, {'n': str(layer_n)})
 
     node_converters = {
         'chord': do_chord,
@@ -326,12 +333,13 @@ def do_layer(l_layer, m_measure, layer_n):
         'spacer': do_spacer,
     }
 
-    for obj in l_layer['layer']:
-        if obj['ly_type'] in node_converters:
-            node_converters[obj['ly_type']](obj, m_layer)
-
-        else:
-            raise RuntimeError()
+    for obj in l_layer:
+        with log.debug('node conversion') as action:
+            if obj['ly_type'] in node_converters:
+                node_converters[obj['ly_type']](obj, m_layer)
+                action.success('converted {ly_type}', ly_type=obj['ly_type'])
+            else:
+                action.failure('unknown node type: {ly_type}', ly_type=obj['ly_type'])
 
     return m_layer
 

@@ -42,6 +42,8 @@ Converts a LilyPond document to a Lychee-MEI document.
 # the EBNF grammar specification:
 # $ python -m grako -c -o lilypond_parser.py lilypond.ebnf
 
+from __future__ import unicode_literals
+
 import collections
 
 from lxml import etree
@@ -198,23 +200,25 @@ def check_version(parsed, action):
         action.failure('missing version info')
 
 
-def do_file(parsed):
+@log.wrap('info', 'convert score')
+def do_score(l_score):
     '''
-    Take the parsed result of a whole file and convert it.
+    Convert a LilyPond score to an LMEI <section>.
 
-    :param dict parsed: The LilyPond file straight from the parser.
-    :returns: A converted ``<section>`` element in Lychee-MEI.
+    :param dict l_score: The LilyPond score as parsed by Grako.
+    :returns: A converted Lychee-MEI <section> element.
     :rtype: :class:`lxml.etree.Element`
     '''
+    check(l_score['ly_type'] == 'score', 'did not receive a score')
+
     m_section = etree.Element(mei.SECTION)
     m_scoredef = etree.SubElement(m_section, mei.SCORE_DEF)
     m_staffgrp = etree.SubElement(m_scoredef, mei.STAFF_GRP)
 
-    staff_n = 1
-    for l_staff in parsed['score']:
-        m_staffdef = etree.SubElement(m_staffgrp, mei.STAFF_DEF, {'n': str(staff_n), 'lines': '5'})
-        do_staff(l_staff, m_section, staff_n, m_staffdef)
-        staff_n += 1
+    for staff_n, l_staff in enumerate(l_score['staves']):
+        # we have to add one to staff_n or else the @n attributes would start at zero!
+        m_staffdef = etree.SubElement(m_staffgrp, mei.STAFF_DEF, {'n': str(staff_n + 1), 'lines': '5'})
+        do_staff(l_staff, m_section, m_staffdef)
 
     return m_section
 

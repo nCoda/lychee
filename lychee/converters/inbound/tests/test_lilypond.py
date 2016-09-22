@@ -29,12 +29,106 @@ The tests in this file are only for the translator, not the parser. In other wor
 for the code that translated Grako's parse into Lychee-MEI.
 """
 
+from __future__ import unicode_literals
+
 from lxml import etree
 import pytest
 
 from lychee.converters.inbound import lilypond
 from lychee import exceptions
 from lychee.namespaces import mei
+
+
+class TestScore(object):
+    """
+    Converting a whole score.
+    """
+
+    def test_not_a_score(self):
+        """The input is not a score."""
+        l_score = {'ly_type': 'pizza'}
+        with pytest.raises(exceptions.LilyPondError):
+            lilypond.do_score(l_score)
+
+    def test_no_staves(self):
+        """No staves."""
+        l_score = {'ly_type': 'score', 'staves': []}
+        actual = lilypond.do_score(l_score)
+        assert actual.tag == mei.SECTION
+        assert len(actual) == 1
+        assert actual[0].tag == mei.SCORE_DEF
+        assert len(actual[0]) == 1
+        assert actual[0][0].tag == mei.STAFF_GRP
+        assert len(actual[0][0]) == 0
+
+    def test_one_staff(self):
+        """One staff."""
+        l_score = {'ly_type': 'score',
+            'staves': [{
+                'ly_type': 'staff',
+                'initial_settings': [{'ly_type': 'instr_name', 'name': 'Woo'}],
+                'content': [{'layers': [[{'pname': 'b', 'accid': ['es'], 'oct': ',',
+                             'accid_force': None, 'dur': '128', 'dots': [], 'ly_type': 'note'}]]}],
+            }]
+        }
+        actual = lilypond.do_score(l_score)
+        # in the <StaffGrp>
+        assert len(actual[0][0]) == 1
+        assert actual[0][0][0].tag == mei.STAFF_DEF
+        assert actual[0][0][0].get('n') == '1'
+        assert actual[0][0][0].get('lines') == '5'
+        assert actual[0][0][0].get('label') == 'Woo'
+        # the <staff> itself
+        assert actual[1].tag == mei.STAFF
+        assert actual[1].get('n') == '1'
+
+    def test_three_staves(self):
+        """Three staves."""
+        # shout-out to 女孩与机器人
+        l_score = {'ly_type': 'score',
+            'staves': [
+                {
+                    'ly_type': 'staff',
+                    'initial_settings': [{'ly_type': 'instr_name', 'name': 'Riin'}],
+                    'content': [{'layers': [[{'pname': 'b', 'accid': ['es'], 'oct': ',',
+                                 'accid_force': None, 'dur': '128', 'dots': [], 'ly_type': 'note'}]]}],
+                },
+                {
+                    'ly_type': 'staff',
+                    'initial_settings': [{'ly_type': 'instr_name', 'name': '蛋'}],
+                    'content': [{'layers': [[{'pname': 'b', 'accid': ['es'], 'oct': ',',
+                                 'accid_force': None, 'dur': '128', 'dots': [], 'ly_type': 'note'}]]}],
+                },
+                {
+                    'ly_type': 'staff',
+                    'initial_settings': [{'ly_type': 'instr_name', 'name': 'Jungle'}],
+                    'content': [{'layers': [[{'pname': 'b', 'accid': ['es'], 'oct': ',',
+                                 'accid_force': None, 'dur': '128', 'dots': [], 'ly_type': 'note'}]]}],
+                },
+            ]
+        }
+        actual = lilypond.do_score(l_score)
+        # in the <StaffGrp>
+        assert len(actual[0][0]) == 3
+        assert actual[0][0][0].tag == mei.STAFF_DEF
+        assert actual[0][0][0].get('n') == '1'
+        assert actual[0][0][0].get('lines') == '5'
+        assert actual[0][0][0].get('label') == 'Riin'
+        assert actual[0][0][1].tag == mei.STAFF_DEF
+        assert actual[0][0][1].get('n') == '2'
+        assert actual[0][0][1].get('lines') == '5'
+        assert actual[0][0][1].get('label') == '蛋'
+        assert actual[0][0][2].tag == mei.STAFF_DEF
+        assert actual[0][0][2].get('n') == '3'
+        assert actual[0][0][2].get('lines') == '5'
+        assert actual[0][0][2].get('label') == 'Jungle'
+        # the <staff> itself
+        assert actual[1].tag == mei.STAFF
+        assert actual[1].get('n') == '1'
+        assert actual[2].tag == mei.STAFF
+        assert actual[2].get('n') == '2'
+        assert actual[3].tag == mei.STAFF
+        assert actual[3].get('n') == '3'
 
 
 class TestClef(object):

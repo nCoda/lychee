@@ -245,15 +245,18 @@ def set_initial_key(l_key, m_staffdef):
     return m_staffdef
 
 
+@log.wrap('debug', 'set instrument name')
 def set_instrument_name(l_name, m_staffdef):
-    '''
-    Set a Lilypond ``\set Staff.instrumentName`` command as the staff's instrument name.
-    '''
-    assert l_name['ly_type'] == 'instr_name'
+    """
+    Set the instrument name for a staff.
 
-    m_staffdef.set('label', l_name['instrument_name'])
-
-    return m_staffdef
+    :param dict l_name: The instrument name as parsed by Grako.
+    :param m_staffdef: The LMEI <staffDef> on which to set the instrument name.
+    :type m_staffdef: :class:`lxml.etree.Element`
+    :returns: ``None``
+    """
+    check(l_name['ly_type'] == 'instr_name', 'did not receive an instrument name')
+    m_staffdef.set('label', l_name['name'])
 
 
 @log.wrap('info', 'convert staff', 'action')

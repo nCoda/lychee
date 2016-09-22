@@ -37,6 +37,26 @@ from lychee import exceptions
 from lychee.namespaces import mei
 
 
+class TestInstrumentName(object):
+    """
+    Setting the instrument name.
+    """
+
+    def test_invalid_name(self):
+        """The input isn't an instrument name."""
+        l_name = {'ly_type': '', 'name': 'FFFFFFF'}
+        m_staffdef = etree.Element(mei.STAFF_DEF)
+        with pytest.raises(exceptions.LilyPondError):
+            lilypond.set_instrument_name(l_name, m_staffdef)
+
+    def test_works(self):
+        """It works."""
+        l_name = {'ly_type': 'instr_name', 'name': 'Clarinet'}
+        m_staffdef = etree.Element(mei.STAFF_DEF)
+        lilypond.set_instrument_name(l_name, m_staffdef)
+        assert m_staffdef.get('label') == 'Clarinet'
+
+
 class TestStaves(object):
     """
     For staves.

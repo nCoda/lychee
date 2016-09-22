@@ -163,22 +163,21 @@ def convert_no_signals(document):
     It's the convert() function that returns the converted document rather than emitting it with
     the CONVERSION_FINISHED signal. Mostly for testing.
     '''
+    # NOTE: this function has no tests because it will soon be changed; see T113
 
     with log.info('parse LilyPond') as action:
         parser = lilypond_parser.LilyPondParser(parseinfo=False)
         parsed = parser.parse(document, filename='file', trace=False)
 
     with log.info('convert LilyPond') as action:
-        if 'score' in parsed:
+        if parsed['ly_type'] == 'score':
             check_version(parsed)
-        elif 'staff' in parsed:
-            parsed = {'score': [parsed]}
-        elif isinstance(parsed, list) and 'measure' in parsed[0]:
-            parsed = {'score': [{'staff': {'measures': parsed}}]}
+        elif parsed['ly_type'] == 'staff':
+            parsed = {'ly_type': 'score', 'staves': [parsed]}
         else:
             raise RuntimeError('need score, staff, or measures for the top-level thing')
 
-        converted = do_file(parsed)
+        converted = do_score(parsed)
 
     return converted
 

@@ -42,6 +42,8 @@ Converts a LilyPond document to a Lychee-MEI document.
 # the EBNF grammar specification:
 # $ python -m grako -c -o lilypond_parser.py lilypond.ebnf
 
+import collections
+
 from lxml import etree
 
 from lychee.converters.inbound import lilypond_parser
@@ -102,6 +104,13 @@ _KEY_MAPPING = {
         'dis': '6s',
         'ais': '7s',
     },
+}
+ClefSpec = collections.namedtuple('ClefSpec', ('shape', 'line'))
+_CLEF_MAPPING = {
+    'bass': ClefSpec('F', '4'),
+    'tenor': ClefSpec('C', '4'),
+    'alto': ClefSpec('C', '3'),
+    'treble': ClefSpec('G', '2'),
 }
 # defined at end of file: _STAFF_SETTINGS_FUNCTIONS
 
@@ -210,26 +219,25 @@ def do_file(parsed):
     return m_section
 
 
-def set_initial_clef(l_clef, m_staffdef):
+@log.wrap('debug', 'set clef', 'action')
+def set_initial_clef(l_clef, m_staffdef, action):
     '''
-    Set a Lilypond ``\clef`` command as the initial clef for a staff.
+    Set the clef for a staff.
+
+    :param dict l_time: The clef as parsed by Grako.
+    :param m_staffdef: The LMEI <staffDef> on which to set the clef.
+    :type m_staffdef: :class:`lxml.etree.Element`
+    :returns: ``None``
+
+    If the clef type is not recognized, :func:`set_initial_clef` emits a failure log message and
+    does not set a clef.
     '''
-    assert l_clef['ly_type'] == 'clef'
-
-    if l_clef['type'] == 'bass':
-        m_staffdef.set('clef.shape', 'F')
-        m_staffdef.set('clef.line', '4')
-    elif l_clef['type'] == 'tenor':
-        m_staffdef.set('clef.shape', 'C')
-        m_staffdef.set('clef.line', '4')
-    elif l_clef['type'] == 'alto':
-        m_staffdef.set('clef.shape', 'C')
-        m_staffdef.set('clef.line', '3')
-    elif l_clef['type'] == 'treble':
-        m_staffdef.set('clef.shape', 'G')
-        m_staffdef.set('clef.line', '2')
-
-    return m_staffdef
+    check(l_clef['ly_type'] == 'clef', 'did not receive a clef')
+    if l_clef['type'] in _CLEF_MAPPING:
+        m_staffdef.set('clef.shape', _CLEF_MAPPING[l_clef['type']].shape)
+        m_staffdef.set('clef.line', _CLEF_MAPPING[l_clef['type']].line)
+    else:
+        action.failure('unrecognized clef type: {clef_type}', clef_type=l_clef['type'])
 
 
 def set_initial_time(l_time, m_staffdef):

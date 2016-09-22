@@ -37,6 +37,35 @@ from lychee import exceptions
 from lychee.namespaces import mei
 
 
+class TestClef(object):
+    """
+    Setting the clef.
+    """
+
+    def test_invalid_clef(self):
+        """The input isn't a clef."""
+        l_time = {'ly_type': '', 'type': ''}
+        m_staffdef = etree.Element(mei.STAFF_DEF)
+        with pytest.raises(exceptions.LilyPondError):
+            lilypond.set_initial_clef(l_time, m_staffdef)
+
+    def test_nonexistent_clef(self):
+        """The clef type doesn't exist."""
+        l_time = {'ly_type': 'clef', 'type': 'bullshit'}
+        m_staffdef = etree.Element(mei.STAFF_DEF)
+        lilypond.set_initial_clef(l_time, m_staffdef)
+        assert m_staffdef.get('clef.shape') is None
+        assert m_staffdef.get('clef.line') is None
+
+    def test_works(self):
+        """It works."""
+        l_time = {'ly_type': 'clef', 'type': 'bass'}
+        m_staffdef = etree.Element(mei.STAFF_DEF)
+        lilypond.set_initial_clef(l_time, m_staffdef)
+        assert m_staffdef.get('clef.shape') == 'F'
+        assert m_staffdef.get('clef.line') == '4'
+
+
 class TestKeySignature(object):
     """
     Setting the key signature from the LilyPond key.

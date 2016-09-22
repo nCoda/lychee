@@ -37,6 +37,33 @@ from lychee import exceptions
 from lychee.namespaces import mei
 
 
+class TestKeySignature(object):
+    """
+    Setting the key signature from the LilyPond key.
+    """
+
+    def test_invalid_key(self):
+        """The input isn't a key."""
+        l_key = {'ly_type': 'rawr', 'keynote': '', 'accid': '', 'mode': ''}
+        m_staffdef = etree.Element(mei.STAFF_DEF)
+        with pytest.raises(exceptions.LilyPondError):
+            lilypond.set_initial_key(l_key, m_staffdef)
+
+    def test_major_key(self):
+        """Major key."""
+        l_key = {'ly_type': 'key', 'keynote': 'd', 'accid': 'es', 'mode': 'major'}
+        m_staffdef = etree.Element(mei.STAFF_DEF)
+        lilypond.set_initial_key(l_key, m_staffdef)
+        assert m_staffdef.get('key.sig') == '5f'
+
+    def test_minor_key(self):
+        """Minor key."""
+        l_key = {'ly_type': 'key', 'keynote': 'a', 'accid': '', 'mode': 'minor'}
+        m_staffdef = etree.Element(mei.STAFF_DEF)
+        lilypond.set_initial_key(l_key, m_staffdef)
+        assert m_staffdef.get('key.sig') == '0'
+
+
 class TestInstrumentName(object):
     """
     Setting the instrument name.

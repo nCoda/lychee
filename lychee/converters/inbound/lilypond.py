@@ -67,6 +67,42 @@ _OCTAVE_MAPPING = {
     "'": '4',
     None: '3'
 }
+_KEY_MAPPING = {
+    'major': {
+        'ces': '7f',
+        'ges': '6f',
+        'des': '5f',
+        'aes': '4f',
+        'ees': '3f',
+        'bes': '2f',
+        'f': '1f',
+        'c': '0',
+        'g': '1s',
+        'd': '2s',
+        'a': '3s',
+        'e': '4s',
+        'b': '5s',
+        'fis': '6s',
+        'cis': '7s',
+    },
+    'minor': {
+        'aes': '7f',
+        'ees': '6f',
+        'bes': '5f',
+        'f': '4f',
+        'c': '3f',
+        'g': '2f',
+        'd': '1f',
+        'a': '0',
+        'e': '1s',
+        'b': '2s',
+        'fis': '3s',
+        'cis': '4s',
+        'gis': '5s',
+        'dis': '6s',
+        'ais': '7s',
+    },
+}
 # defined at end of file: _STAFF_SETTINGS_FUNCTIONS
 
 
@@ -208,41 +244,24 @@ def set_initial_time(l_time, m_staffdef):
     return m_staffdef
 
 
+@log.wrap('debug', 'set key signature')
 def set_initial_key(l_key, m_staffdef):
     '''
-    Set a LilyPond ``\key`` command as the initial key signature for a staff.
+    Set the key signature for a staff.
 
-    NOTE: this function supports major keys only, for now, and will raise RuntimeError on minor.
+    :param dict l_key: The key specification as parsed by Grako.
+    :param m_staffdef: The LMEI <staffDef> on which to set the key signature.
+    :type m_staffdef: :class:`lxml.etree.Element`
+    :returns: ``None``
     '''
-    assert l_key['ly_type'] == 'key'
-    assert l_key['mode'] == 'major'
-
-    CONV = {
-        'ces': '7f',
-        'ges': '6f',
-        'des': '5f',
-        'aes': '4f',
-        'ees': '3f',
-        'bes': '2f',
-        'f': '1f',
-        'c': '0',
-        'g': '1s',
-        'd': '2s',
-        'a': '3s',
-        'e': '4s',
-        'b': '5s',
-        'fis': '6s',
-        'cis': '7s',
-    }
+    check(l_key['ly_type'] == 'key', 'did not receive a key specification')
 
     if l_key['accid']:
         keynote = l_key['keynote'] + l_key['accid']
     else:
         keynote = l_key['keynote']
 
-    m_staffdef.set('key.sig', CONV[keynote])
-
-    return m_staffdef
+    m_staffdef.set('key.sig', _KEY_MAPPING[l_key['mode']][keynote])
 
 
 @log.wrap('debug', 'set instrument name')

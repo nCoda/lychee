@@ -66,6 +66,27 @@ class TestClef(object):
         assert m_staffdef.get('clef.line') == '4'
 
 
+class TestTime(object):
+    """
+    Setting the time signature.
+    """
+
+    def test_invalid_time(self):
+        """The input isn't a time signature."""
+        l_time = {'ly_type': 'intro', 'count': '23', 'unit': '64'}
+        m_staffdef = etree.Element(mei.STAFF_DEF)
+        with pytest.raises(exceptions.LilyPondError):
+            lilypond.set_initial_time(l_time, m_staffdef)
+
+    def test_works(self):
+        """You know..."""
+        l_time = {'ly_type': 'time', 'count': '23', 'unit': '64'}
+        m_staffdef = etree.Element(mei.STAFF_DEF)
+        lilypond.set_initial_time(l_time, m_staffdef)
+        assert m_staffdef.get('meter.count') == '23'
+        assert m_staffdef.get('meter.unit') == '64'
+
+
 class TestKeySignature(object):
     """
     Setting the key signature from the LilyPond key.

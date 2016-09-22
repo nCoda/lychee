@@ -240,16 +240,19 @@ def set_initial_clef(l_clef, m_staffdef, action):
         action.failure('unrecognized clef type: {clef_type}', clef_type=l_clef['type'])
 
 
+@log.wrap('debug', 'set time signature')
 def set_initial_time(l_time, m_staffdef):
     '''
-    Set a Lilypond ``\time`` command as the initial time signature for a staff.
-    '''
-    assert l_time['ly_type'] == 'time'
+    Set the time signature for a staff.
 
+    :param dict l_time: The time specification as parsed by Grako.
+    :param m_staffdef: The LMEI <staffDef> on which to set the time signature.
+    :type m_staffdef: :class:`lxml.etree.Element`
+    :returns: ``None``
+    '''
+    check(l_time['ly_type'] == 'time', 'did not receive a time specification')
     m_staffdef.set('meter.count', l_time['count'])
     m_staffdef.set('meter.unit', l_time['unit'])
-
-    return m_staffdef
 
 
 @log.wrap('debug', 'set key signature')

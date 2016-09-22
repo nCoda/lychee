@@ -18,7 +18,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2016, 9, 15, 21, 38, 48, 3)
+__version__ = (2016, 9, 22, 4, 18, 56, 3)
 
 __all__ = [
     'LilyPondParser',
@@ -583,13 +583,15 @@ class LilyPondParser(Parser):
 
     @graken()
     def _staff_content_(self):
+        self._constant('staff')
+        self.name_last_node('ly_type')
 
-        def block1():
+        def block2():
             self._staff_setting_()
-        self._closure(block1)
+        self._closure(block2)
         self.name_last_node('initial_settings')
 
-        def block3():
+        def block4():
             with self._group():
                 with self._choice():
                     with self._option():
@@ -597,10 +599,10 @@ class LilyPondParser(Parser):
                     with self._option():
                         self._polyphonic_layers_()
                     self._error('no available options')
-        self._positive_closure(block3)
+        self._positive_closure(block4)
         self.name_last_node('content')
         self.ast._define(
-            ['content', 'initial_settings'],
+            ['content', 'initial_settings', 'ly_type'],
             []
         )
 
@@ -614,11 +616,11 @@ class LilyPondParser(Parser):
 
     @graken()
     def _staff_(self):
-        self._constant('staff')
-        self.name_last_node('ly_type')
         self._token_new_()
         self._token_staff_()
         self._brace_l_()
+        self._constant('staff')
+        self.name_last_node('ly_type')
 
         def block2():
             self._staff_setting_()

@@ -162,6 +162,7 @@ brace_l = '{' ;
 brace_r = '}' ;
 
 staff_content =
+    ly_type:`staff`
     initial_settings:{staff_setting}*
     content:{( monophonic_layers | polyphonic_layers )}+
     ;
@@ -169,7 +170,6 @@ staff_content =
 token_new = '\\new' ;
 token_staff = 'Staff' ;
 staff =
-    ly_type:`staff`
     token_new token_staff brace_l
         >staff_content
     brace_r

@@ -588,6 +588,7 @@ class TestStaffAndMusicBlock(object):
         """With an initial setting and monophonic stuff."""
         content = r'\time 3/4  s2 s4 | s2'
         expected = {
+            'ly_type': 'staff',
             'initial_settings': [{'ly_type': 'time', 'count': '3', 'unit': '4'}],
             'content': [{'layers': [[
                 {'dur': '2', 'dots': [], 'ly_type': 'spacer'},
@@ -603,6 +604,7 @@ class TestStaffAndMusicBlock(object):
         """Without an initial setting, one chunk of polyphonic stuff."""
         content = r'<< { s2 s4 } \\ { r2 r4 } >>'
         expected = {
+            'ly_type': 'staff',
             'initial_settings': [],
             'content': [{'layers': [
                 [
@@ -622,6 +624,7 @@ class TestStaffAndMusicBlock(object):
         """With two initial settings, a chunk of polyphonic stuff, then a monophonic chunk."""
         content = r"""\time 3/4 \clef "bass" << { s2 s4 } \\ { r2 r4 } >> bes,128"""
         expected = {
+            'ly_type': 'staff',
             'initial_settings': [
                 {'ly_type': 'time', 'count': '3', 'unit': '4'},
                 {'ly_type': 'clef', 'type': 'bass'},

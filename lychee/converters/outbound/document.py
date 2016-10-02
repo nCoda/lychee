@@ -168,10 +168,10 @@ The ``'last_changeset'`` member holds the changeset ID of the most recent change
 
 from lxml import etree
 
-import lychee
 from lychee.converters.outbound import vcs
 from lychee import document
 from lychee import exceptions
+from lychee.logs import OUTBOUND_LOG as log
 from lychee.namespaces import mei, xml
 from lychee.signals import outbound
 
@@ -299,11 +299,12 @@ def prepare_headers(doc):
 
     title_stmt = doc.get_from_head('titleStmt')
     if title_stmt:
-        try:
-            fileDesc['titleStmt'] = format_title_stmt(title_stmt[0])
-        except exceptions.LycheeMEIWarning:
-            lychee.log(_MISSING_HEADER_DATA, level='warning')
-            fileDesc['titleStmt'] = {}
+        with log.debug('convert <titleStmt>') as action:
+            try:
+                fileDesc['titleStmt'] = format_title_stmt(title_stmt[0])
+            except exceptions.LycheeMEIWarning:
+                action.failure(_MISSING_HEADER_DATA)
+                fileDesc['titleStmt'] = {}
 
     # TODO: this should be in a function
     respStmt = []
@@ -311,29 +312,34 @@ def prepare_headers(doc):
     if respStmtElem:
         respStmtElem = respStmtElem[0]
         for elem in respStmtElem:
-            if mei.NAME == elem.tag:
-                # TODO: this may be insufficient in the long term
-                respStmt.append({'full': elem.text})
-            elif mei.PERS_NAME == elem.tag:
-                try:
-                    respStmt.append(format_person(elem))
-                except exceptions.LycheeMEIWarning:
-                    lychee.log(_MISSING_HEADER_DATA, level='warning')
-            else:
-                lychee.log('Unexpected element found in <respStmt>: {}'.format(elem.tag), level='warning')
+            with log.debug('convert <respStmt> subelement') as action:
+                if mei.NAME == elem.tag:
+                    # TODO: this may be insufficient in the long term
+                    respStmt.append({'full': elem.text})
+                elif mei.PERS_NAME == elem.tag:
+                    try:
+                        respStmt.append(format_person(elem))
+                    except exceptions.LycheeMEIWarning:
+                        action.failure(_MISSING_HEADER_DATA)
+                else:
+                    action.failure('Unexpected element found in <respStmt>: {tag_name}', tag_name=elem.tag)
+
         fileDesc['respStmt'] = respStmt
 
     # TODO: this should be in a function
     roles = ('arranger', 'author', 'composer', 'editor', 'funder', 'librettist', 'lyricist', 'sponsor')  # TODO: this should be module-level
     for role in roles:
-        person = doc.get_from_head(role)
-        if person:
-            # TODO: is it enough to take only the first?
-            person = person[0].find('./{}'.format(mei.PERS_NAME))
-            try:
-                fileDesc[role] = format_person(person)
-            except exceptions.LycheeMEIWarning:
-                lychee.log(_MISSING_HEADER_DATA, level='warning')
+        with log.debug('convert {role} in header', role=role):
+            person = doc.get_from_head(role)
+            if person:
+                # TODO: is it enough to take only the first?
+                person = person[0].find('./{}'.format(mei.PERS_NAME))
+                try:
+                    fileDesc[role] = format_person(person)
+                except exceptions.LycheeMEIWarning:
+                    action.failure(_MISSING_HEADER_DATA)
+            else:
+                action.success('no {role} in this score')
 
     pubStmt = {'unpub': 'This is an unpublished Lychee-MEI document.'}
     fileDesc['pubStmt'] = pubStmt
@@ -347,12 +353,16 @@ def parse_staffGrp(sect_id, staffGrp):
     post = []
 
     for elem in staffGrp:
-        if mei.STAFF_GRP == elem.tag:
-            post.append(parse_staffGrp(sect_id, elem))
-        elif mei.STAFF_DEF == elem.tag:
-            post.append({'n': elem.get('n'), 'label': elem.get('label')})
-        else:
-            lychee.log('Section {} has unexpected <{}> in its <scoreDef>'.format(sect_id, elem.tag), level='warning')
+        with log.debug('convert element in <scoreDef>') as action:
+            if mei.STAFF_GRP == elem.tag:
+                post.append(parse_staffGrp(sect_id, elem))
+            elif mei.STAFF_DEF == elem.tag:
+                post.append({'n': elem.get('n'), 'label': elem.get('label')})
+            else:
+                action.failure(
+                    'Section {sect_id} has unexpected <{tag_name}> in its <scoreDef>',
+                    sect_id=sect_id,
+                    tag_name=elem.tag)
 
     return post
 

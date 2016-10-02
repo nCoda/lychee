@@ -35,6 +35,7 @@ Converts an MEI document to a LilyPond document.
 '''
 
 from lychee import exceptions
+from lychee.logs import OUTBOUND_LOG as log
 from lychee.namespaces import mei
 
 
@@ -123,14 +124,15 @@ def layer(m_layer):
     assert m_layer.tag == mei.LAYER
     post = ['%{{ l.{} %}}'.format(m_layer.get('n'))]
     for elem in m_layer.iterchildren('*'):
-        if elem.tag == mei.NOTE:
-            post.append(note(elem))
-        elif elem.tag == mei.REST:
-            post.append(rest(elem))
-        elif elem.tag == mei.CHORD:
-            post.append(chord(elem))
-        else:
-            lychee.log('missed a {} in a <layer>'.format(elem.tag))
+        with log.debug('convert element in a <layer>') as action:
+            if elem.tag == mei.NOTE:
+                post.append(note(elem))
+            elif elem.tag == mei.REST:
+                post.append(rest(elem))
+            elif elem.tag == mei.CHORD:
+                post.append(chord(elem))
+            else:
+                action.failure('missed a {tag_name} in a <layer>', tag_name=elem.tag)
 
     return ' '.join(post)
 

@@ -41,6 +41,7 @@ from lxml import etree
 
 import lychee
 from lychee import exceptions
+from lychee.logs import DOCUMENT_LOG as log
 from lychee.namespaces import mei, xlink, xml, lychee as lyns
 
 
@@ -208,7 +209,8 @@ def _load_in(from_here, recover=None):
         raise exceptions.InvalidFileError(xse.args[0])
 
 
-def _check_version_attr(lmei):
+@log.wrap('info', 'check LMEI version attribute', 'action')
+def _check_version_attr(lmei, action):
     '''
     Check the @ly:version attribute on the root element of an LMEI :class:`ElementTree`.
 
@@ -227,18 +229,18 @@ def _check_version_attr(lmei):
     '''
     version = lmei.getroot().get(lyns.VERSION)
     if version is None:
-        lychee.log(_LY_VERSION_MISSING, 'error')
+        action.failure(_LY_VERSION_MISSING)
     elif version != lychee.__version__:
         version_numbers = version.split('.')
         if len(version_numbers) != 3:
-            lychee.log(_LY_VERSION_INVALID, 'error')
+            action.failure(_LY_VERSION_INVALID)
         else:
             try:
                 [int(num) for num in version_numbers]
             except ValueError:
-                lychee.log(_LY_VERSION_INVALID, 'error')
+                action.failure(_LY_VERSION_INVALID)
             else:
-                lychee.log(_LY_VERSION_MISMATCH, 'warning')
+                action.failure(_LY_VERSION_MISMATCH)
 
     return lmei
 

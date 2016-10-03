@@ -44,7 +44,6 @@ Converts a LilyPond document to a Lychee-MEI document.
 
 from lxml import etree
 
-import lychee
 from lychee.converters.inbound import lilypond_parser
 from lychee.namespaces import mei
 from lychee.signals import inbound
@@ -103,7 +102,8 @@ def check_version(parsed):
         if parsed['version'][0] != '2':
             raise RuntimeError()
         elif parsed['version'][1] != '18':
-            lychee.log('The inbound LilyPond parsers expects version 2.18.x')
+            # NOTE: this is done properly in the "devel_T85" branch
+            pass
 
 
 def do_file(parsed):

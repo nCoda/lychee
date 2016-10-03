@@ -37,7 +37,7 @@ Mercurial integration module for *Lychee*. This is a wrapper for :mod:`mercurial
 
 import time
 
-import lychee
+from lychee.logs import VCS_LOG as log
 from lychee.signals import vcs
 
 
@@ -76,7 +76,8 @@ def add(pathnames, session, **kwargs):
     session.hug.add(pathnames)
 
 
-def commit(session, message=None, **kwargs):
+@log.wrap('info', 'make new Mercurial commit', 'action')
+def commit(session, message=None, action=None, **kwargs):
     '''
     Make a new commit, optionally with the supplied commit message.
 
@@ -91,7 +92,7 @@ def commit(session, message=None, **kwargs):
     try:
         session.hug.commit(message)
     except RuntimeError:
-        lychee.log('No files changed; commit aborted.', level='info')
+        action.failure('no files changed; commit aborted')
 
 
 _SIGNALS = [

@@ -38,41 +38,11 @@ __metadata__ = {
     'license': 'GPLv3+',
     'name': 'Lychee',
     'url': 'https://lychee.ncodamusic.org/',
-    'version': '0.5.0',
+    'version': '0.5.1',
 }
 
 __version__ = __metadata__['version']
 __all__ = ['converters', 'document', 'namespaces', 'signals', 'tui', 'workflow', 'vcs', 'views']
-
-DEBUG = False
-
-
-def log(message, level=None):
-    '''
-    Log a message according to runtime settings.
-
-    :param str message: The message to log. Context will be prepended (time, module, etc.).
-    :param str level: The level of the message in question (i.e., whether this is a "debug" or
-        "warning" or "error" message). The default is "debug."
-
-    **Side Effect**
-
-    This method may cause a message to be printed to stdout or stderr or into a file.
-    '''
-
-    if level is None:
-        level = 'debug'
-
-    level = level.lower()
-
-    if 'debug' == level and not DEBUG:
-        return
-
-    message = '[{time}] {name}: {message}'.format(name=__name__,
-                                                  time=time.strftime('%H:%M:%S'),
-                                                  message=message)
-
-    print(message)
 
 
 # many other modules will want to import "exceptions" and "logs" so they should be imported first

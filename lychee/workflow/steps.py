@@ -46,10 +46,10 @@ possibly simultaneously, depending on which outbound formats are registered.
 
 from lxml import etree
 
-import lychee
 from lychee import converters
 from lychee import document
 from lychee import exceptions
+from lychee.logs import SESSION_LOG as log
 from lychee.namespaces import mei
 from lychee import signals
 from lychee.views import inbound as views_in
@@ -66,6 +66,7 @@ _NO_INBOUND_VIEWS = 'There is no inbound views processor for {0}'
 _NO_OUTBOUND_VIEWS = 'There is no outbound views processor for {0}'
 
 
+@log.wrap('info', 'run the "inbound conversion" step')
 def do_inbound_conversion(session, dtype, document):
     '''
     Run the "inbound conversion" step.
@@ -97,6 +98,7 @@ def do_inbound_conversion(session, dtype, document):
         flush_inbound_converters()
 
 
+@log.wrap('info', 'run the "inbound views" step')
 def do_inbound_views(session, dtype, document, converted, views_info):
     '''
     Run the "inbound views" step.
@@ -135,6 +137,7 @@ def do_inbound_views(session, dtype, document, converted, views_info):
         flush_inbound_views()
 
 
+@log.wrap('info', 'run the "document" step')
 def do_document(session, converted, views_info):
     '''
     Run the "document" step.
@@ -149,19 +152,16 @@ def do_document(session, converted, views_info):
     .. note:: This function is only partially implemented. At the moment, it simply replaces the
         active score with a new one containing only the just-converted ``<section>``.
     '''
-    lychee.log('Beginning the "document" step.')
-
     score = etree.Element(mei.SCORE)
     score.append(converted)
     doc = session.get_document()
     doc.put_score(score)
     document_pathnames = doc.save_everything()
 
-    lychee.log('Finished the "document" step.')
-
     return document_pathnames
 
 
+@log.wrap('info', 'run the "VCS" step')
 def do_vcs(session, pathnames):
     '''
     Run the "VCS" step.
@@ -183,6 +183,7 @@ def do_vcs(session, pathnames):
     signals.vcs.FINISHED.emit()
 
 
+@log.wrap('info', 'run the "outbound" steps')
 def do_outbound_steps(repo_dir, views_info, dtype):
     '''
     Run the outbound veiws and conversion steps for a single outbound "dtype."
@@ -244,6 +245,7 @@ def _vcs_driver(session, pathnames, **kwargs):
     signals.vcs.COMMIT.emit(message=None, session=session)
 
 
+@log.wrap('debug', 'choose inbound converter format')
 def _choose_inbound_converter(dtype):
     '''
     Connect the "inbound.CONVERSION_START" signal to the appropriate converter according to the
@@ -260,6 +262,7 @@ def _choose_inbound_converter(dtype):
         raise exceptions.InvalidDataTypeError(_INVALID_INBOUND_DTYPE.format(dtype))
 
 
+@log.wrap('debug', 'clear inbound converter selection')
 def flush_inbound_converters():
     '''
     Clear any inbound converters that may be connected.
@@ -268,6 +271,7 @@ def flush_inbound_converters():
         signals.inbound.CONVERSION_START.disconnect(each_converter)
 
 
+@log.wrap('debug', 'choose inbound views format')
 def _choose_inbound_views(dtype):
     '''
     Connect the "inbound.VIEWS_START" signal to the appropriate views processor according to the
@@ -290,6 +294,7 @@ def _choose_inbound_views(dtype):
         raise exceptions.InvalidDataTypeError(_NO_INBOUND_VIEWS.format(dtype))
 
 
+@log.wrap('debug', 'clear inbound views selection')
 def flush_inbound_views():
     '''
     Clear any inbound views processors that may be connected.
@@ -298,6 +303,7 @@ def flush_inbound_views():
         signals.inbound.VIEWS_START.disconnect(slot)
 
 
+@log.wrap('info', 'run the "outbound views" step')
 def _do_outbound_views(repo_dir, views_info, dtype):
     '''
     Private helper function for :func:`do_outbound_steps`.

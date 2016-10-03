@@ -36,10 +36,10 @@ from lxml import etree
 from mercurial import error as hg_error
 import hug
 
-import lychee
 from lychee.converters import registrar
 from lychee.document import document
 from lychee import exceptions
+from lychee.logs import SESSION_LOG as log
 from lychee import signals
 from lychee.workflow import steps
 
@@ -51,14 +51,15 @@ _UNKNOWN_REVISION = "ACTION_START requested a revision that doesn't exist"
 _UNSUPPORTED_VCS = 'Unsupported VCS'
 
 
-def _error_slot(**kwargs):
+@log.wrap('info', 'error signal', 'action')
+def _error_slot(action, **kwargs):
     '''
     Slot for *_ERROR signals in any module.
     '''
     if 'msg' in kwargs:
-        lychee.log('Caught an ERROR signal: {}'.format(kwargs['msg']), level='error')
+        action.failure('Caught an ERROR signal: {msg}', msg=kwargs['msg'])
     else:
-        lychee.log('Caught an ERROR signal without a messge.', level='error')
+        action.failure('Caught an ERROR signal without a messge.')
 
 
 signals.inbound.CONVERSION_ERROR.connect(_error_slot)
@@ -154,6 +155,7 @@ class InteractiveSession(object):
         self._doc = document.Document(self._repo_dir)
         return self._doc
 
+    @log.wrap('info', 'set the repository directory')
     def set_repo_dir(self, path, run_outbound=False):
         '''
         Change the pathname to Lychee's repository then optionally run registered outbound converters.
@@ -208,6 +210,7 @@ class InteractiveSession(object):
 
         return self._repo_dir
 
+    @log.wrap('info', 'unset the repository directory')
     def unset_repo_dir(self):
         '''
         Unset the repository directory, deleting the repository if it's in a temporary directory,
@@ -239,7 +242,8 @@ class InteractiveSession(object):
             # NOTE: "run_outbound" must be False, in order to avoid a recursion loop
             return self.set_repo_dir('', run_outbound=False)
 
-    def _action_start(self, **kwargs):
+    @log.wrap('critical', 'run a Lychee action', 'action')
+    def _action_start(self, action, **kwargs):
         '''
         Slot for the ACTION_START signal.
 
@@ -264,7 +268,7 @@ class InteractiveSession(object):
                 try:
                     self._run_inbound_doc_vcs(kwargs['dtype'], kwargs['doc'], kwargs['views_info'])
                 except exceptions.InboundConversionError:
-                    lychee.log(_FAILURE_DURING_INBOUND)
+                    action.failure(_FAILURE_DURING_INBOUND)
                     return
 
             else:
@@ -275,7 +279,7 @@ class InteractiveSession(object):
                         self._hug.update(kwargs['revision'])
                     except RuntimeError:
                         # raised when the revision is invalid
-                        lychee.log(_UNKNOWN_REVISION)
+                        action.failure(_UNKNOWN_REVISION)
                         return
 
             self._run_outbound()

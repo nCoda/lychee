@@ -485,7 +485,18 @@ class TestRegisterOutbound(object):
         '''
         reg = registrar.Registrar()
         reg.register('mei', '111', False)
-        assert 0 == mock_signals.ACTION_START.emit.call_count
+        assert mock_signals.ACTION_START.emit.call_count == 0
+
+    @mock.patch('lychee.converters.registrar.signals')
+    def test_registration_fails(self, mock_signals):
+        '''
+        When the "outbound" argument is True but the "dtype" does not exist, registration will fail
+        and the ACTION_START signal is not emitted.
+        '''
+        reg = registrar.Registrar()
+        reg.register('WrongMEI', '111', True)
+        assert len(reg.get_registered_formats()) == 0
+        assert mock_signals.ACTION_START.emit.call_count == 0
 
 
 # Okay, I think that's far enough overboard for this module...

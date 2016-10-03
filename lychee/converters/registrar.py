@@ -31,12 +31,9 @@ module.
 
 import six
 
-import lychee
+import lychee.converters
+from lychee.logs import SESSION_LOG as log
 from lychee import signals
-
-# translatable strings
-_DTYPE_DOES_NOT_EXIST = 'Cannot register an invalid dtype ({dtype}) for outbound conversion.'
-_DTYPE_NOT_REGISTERED = 'Dtype/identifier was already unregistered: {dtype} and {identifier}.'
 
 
 class Registrar(object):
@@ -62,7 +59,8 @@ class Registrar(object):
         ""
         self._registrations = {}
 
-    def register(self, dtype, who=None, outbound=False, **kwargs):
+    @log.wrap('info', 'register outbound format', 'action')
+    def register(self, dtype, who=None, outbound=False, action=None, **kwargs):
         '''
         Register a format for outbound conversion.
 
@@ -75,17 +73,21 @@ class Registrar(object):
         the format will not be registered and WARN message will be written to the log.
         '''
         if dtype not in lychee.converters.OUTBOUND_CONVERTERS:
-            lychee.log(_DTYPE_DOES_NOT_EXIST.format(dtype=dtype), 'WARN')
+            action.failure('cannot register an invalid dtype ({dtype}) for outbound conversion', dtype=dtype)
+            return
         elif dtype in self._registrations:
             if who not in self._registrations[dtype]:
                 self._registrations[dtype].append(who)
         else:
             self._registrations[dtype] = [who]
 
+        action.success('registered {dtype} outbound for {who}', dtype=dtype, who=who)
+
         if outbound:
             signals.ACTION_START.emit()
 
-    def unregister(self, dtype, who=None, **kwargs):
+    @log.wrap('info', 'unregister outbound format', 'action')
+    def unregister(self, dtype, who=None, action=None, **kwargs):
         '''
         Unregister a format from outbound conversion.
 
@@ -104,8 +106,12 @@ class Registrar(object):
                     if who != each_who:
                         new_reg.append(each_who)
                 self._registrations[dtype] = new_reg
+            action.success('unregistered {dtype} outbound for {who}', dtype=dtype, who=who)
         else:
-            lychee.log(_DTYPE_NOT_REGISTERED.format(dtype=dtype, identifier=who), 'DEBUG')
+            action.failure(
+                'dtype/identifier was not registered: {dtype} and {identifier}',
+                dtype=dtype,
+                identifier=who)
 
     def get_registered_formats(self):
         '''

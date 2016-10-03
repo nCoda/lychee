@@ -36,8 +36,9 @@ Converts a conventional MEI document to a Lychee-MEI document.
     Refer to :ref:`how-to-use-converters` for more information.
 '''
 
-import lychee
+from lychee.logs import INBOUND_LOG as log
 from lychee.signals import inbound
+
 
 def convert(**kwargs):
     '''
@@ -48,8 +49,7 @@ def convert(**kwargs):
     :returns: The corresponding Lychee-MEI document.
     :rtype: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
     '''
-    inbound.CONVERSION_STARTED.emit()
-    lychee.log('{}.convert(document="{}")'.format(__name__, kwargs['document']))
-    #inbound.CONVERSION_ERROR.emit()
-    inbound.CONVERSION_FINISH.emit(converted='<l-mei stuff>')
-    lychee.log('{}.convert() after finish signal'.format(__name__))
+    with log.info('convert MEI to LMEI'):
+        inbound.CONVERSION_STARTED.emit()
+        #inbound.CONVERSION_ERROR.emit()
+        inbound.CONVERSION_FINISH.emit(converted='<l-mei stuff>')

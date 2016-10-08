@@ -53,16 +53,9 @@ def place_view(converted, document, session, **kwargs):
     Arguments as per :const:`lychee.signals.inbound.VIEWS_START`.
     '''
     signals.inbound.VIEWS_STARTED.emit()
-    try:
-        section_id = kwargs['views_info'] if 'views_info' in kwargs else None
-        post = _place_view(converted, document, session, section_id)
-    except Exception as exc:
-        if lychee.DEBUG:
-            raise
-        else:
-            signals.inbound.VIEWS_ERROR.emit(msg=_GENERIC_ERROR.format(repr(exc)))
-    else:
-        signals.inbound.VIEWS_FINISH.emit(views_info=post)
+    section_id = kwargs['views_info'] if 'views_info' in kwargs else None
+    post = _place_view(converted, document, session, section_id)
+    signals.inbound.VIEWS_FINISH.emit(views_info=post)
 
 
 def _place_view(converted, document, session, section_id):

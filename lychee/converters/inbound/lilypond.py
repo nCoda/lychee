@@ -61,6 +61,7 @@ def convert(document, **kwargs):
     inbound.CONVERSION_STARTED.emit()
     section = convert_no_signals(document)
     inbound.CONVERSION_FINISH.emit(converted=section)
+    return section
 
 
 def convert_no_signals(document):

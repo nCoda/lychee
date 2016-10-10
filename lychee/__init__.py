@@ -22,11 +22,9 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
-'''
+"""
 Initialize Lychee.
-'''
-
-import time
+"""
 
 
 # we'll keep PyPI metadata here so they can be used by Sphinx in the API too
@@ -38,17 +36,9 @@ __metadata__ = {
     'license': 'GPLv3+',
     'name': 'Lychee',
     'url': 'https://lychee.ncodamusic.org/',
-    'version': '0.5.1',
+    'version': '0.5.2',
 }
 
 __version__ = __metadata__['version']
-__all__ = ['converters', 'document', 'namespaces', 'signals', 'tui', 'workflow', 'vcs', 'views']
-
-
-# many other modules will want to import "exceptions" and "logs" so they should be imported first
-from lychee import exceptions
-from lychee import logs
-
-with logs.SESSION_LOG.critical('import Lychee') as action:
-    from lychee import *
-    InteractiveSession = workflow.session.InteractiveSession
+__all__ = ['converters', 'document', 'exceptions', 'logs', 'namespaces', 'signals', 'tui',
+    'workflow', 'vcs', 'views']

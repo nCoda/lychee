@@ -26,7 +26,8 @@
 Configure Lithoxyl logs for Lychee.
 """
 
-from lithoxyl import logger, SensibleFilter, SensibleFormatter, StreamEmitter, SensibleSink
+from __future__ import unicode_literals
+from lithoxyl import logger, SensibleFilter, SensibleSink
 
 
 INBOUND_LOG = None
@@ -34,6 +35,43 @@ DOCUMENT_LOG = None
 VCS_LOG = None
 OUTBOUND_LOG = None
 SESSION_LOG = None
+
+
+class LycheeEmitter(object):
+    """
+    An "emitter" for the Lithoxyl :class:`SensibleSink` that sends log messages through the
+    :const:`lychee.signals.LOG_MESSAGE` signal.
+    """
+
+    def emit_entry(self, action, entry):
+        import lychee.signals
+        lychee.signals.LOG_MESSAGE.emit(**entry)
+
+    on_begin = on_warn = on_end = on_comment = emit_entry
+
+
+class LycheeFormatter(object):
+    """
+    A "formatter" for the Lithoxyl :class:`SensibleSink` that formats log messages as a dictionary
+    with the following fields:
+
+    - level
+    - logger
+    - message
+    - status
+    - time
+    """
+
+    def do_format(self, event):
+        return {
+            'level': event.level_name.upper(),
+            'logger': event.logger.name,
+            'message': event.end_event.message,
+            'status': event.status,
+            'time': str(event.etime),
+        }
+
+    on_begin = on_warn = on_end = on_comment = do_format
 
 
 def logging_init():
@@ -51,11 +89,9 @@ def logging_init():
     global SESSION_LOG
 
     if INBOUND_LOG is None:
-        # NOTE: it's just copy-and-pasted from the Lithoxyl docs
         log_filter = SensibleFilter(success='critical', failure='info', exception='debug')
-        formatter = SensibleFormatter('{import_delta_s} {level_name_upper} {logger_name}: {end_message}')
-        emitter = StreamEmitter('stdout')
-        sink = SensibleSink(filters=[log_filter], formatter=formatter, emitter=emitter)
+        emitter = LycheeEmitter()
+        sink = SensibleSink(filters=[log_filter], formatter=LycheeFormatter(), emitter=emitter)
 
         INBOUND_LOG = logger.Logger('inbound', sinks=[sink])
         DOCUMENT_LOG = logger.Logger('document', sinks=[sink])

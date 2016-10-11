@@ -33,16 +33,24 @@ from . import signal
 
 
 def set_fujian(to_this):
-    '''
+    """
     Call this with a :class:`fujian.FujianWebSocketHandler` instance. :class:`Signal` instances will
     use it to emit themselves over the WebSocket connection.
-    '''
+    """
     from . import signal
     signal.set_fujian(to_this)
 
 
+def simple_log_outputter(level, logger, message, time, **kwargs):
+    """
+    Output log messages to "stdout" if Fujian is not running.
+    """
+    if not signal.have_fujian():
+        print('{} {} {}: {}'.format(time, level, logger, message))
+
+
 ACTION_START = signal.Signal(args=['dtype', 'doc', 'views_info', 'revision'], name='ACTION_START')
-'''
+"""
 Emit this signal to start an "action" through Lychee.
 
 :kwarg str dtype: The format (data type) of the inbound musical document. LilyPond, Abjad, etc.
@@ -76,4 +84,20 @@ This causes only the ``<section>`` with ``@xml:id="Sme-s-m-l-e1182873"`` to be s
 conversion.
 
 .. note:: You should provide ``dtype`` and ``doc``, or ``views_info`` by itself.
-'''
+"""
+
+
+LOG_MESSAGE = signal.Signal(args=['level', 'logger', 'message', 'status', 'time'], name='LOG_MESSAGE')
+"""
+Connect to this signal to receive log messages from Lychee. DO NOT use this signal to emit log
+messages; instead, use one of the loggers in :mod:`lychee.logs`.
+
+:kwarg str level: The log level of the message (one of "debug", "info", or "critical").
+:kwarg str logger: Name of the :mod:`lychee.logs` logger sending the message.
+:kwarg str message: The log message.
+:kwarg str status: Status of the logged event (one of "begin", "comment", "exception", "end", "warning").
+:kwarg str time: Running time of the logged event as measured by Lychee's loggers.
+"""
+
+
+LOG_MESSAGE.connect(simple_log_outputter)

@@ -40,6 +40,13 @@ from lychee.logs import SESSION_LOG as log
 _module_fujian = None
 
 
+def have_fujian():
+    '''
+    Return ``True`` if a :class:`~fujian.Fujian` instance is configured.
+    '''
+    return _module_fujian is not None
+
+
 def set_fujian(to_this):
     '''
     Call this with a :class:`fujian.FujianWebSocketHandler` instance. :class:`Signal` instances will

@@ -36,6 +36,19 @@ from lxml import etree
 from lychee.signals import signal
 
 
+def test_have_fujian_1():
+    '''When we have Fujian, it returns True.'''
+    try:
+        signal._module_fujian = 4
+        assert signal.have_fujian() is True
+    finally:
+        signal._module_fujian = None
+
+def test_have_fujian_2():
+    '''When we don't have Fujian, it returns False.'''
+    assert signal._module_fujian is None  # pre-condition
+    assert signal.have_fujian() is False
+
 def test_set_fujian():
     '''signal.set_fujian()'''
     assert signal._module_fujian is None

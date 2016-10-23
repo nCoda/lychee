@@ -88,7 +88,8 @@ def duration(m_thing):
     '''
     post = m_thing.get('dur', '')
     dot_count = int(m_thing.get('dots', '0'))
-    assert dot_count >= 0
+    if dot_count < 0:
+        raise exceptions.OutboundConversionError('Negative dot count')
     if dot_count > 0 and post == '':
         post = '4'
     post += '.' * dot_count

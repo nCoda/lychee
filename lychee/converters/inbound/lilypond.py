@@ -44,6 +44,7 @@ Converts a LilyPond document to a Lychee-MEI document.
 
 from lxml import etree
 
+from lychee import exceptions
 from lychee.converters.inbound import lilypond_parser
 from lychee.namespaces import mei
 from lychee.signals import inbound
@@ -277,6 +278,7 @@ def do_layer(l_layer, m_measure, layer_n):
         'chord': do_chord,
         'note': do_note,
         'rest': do_rest,
+        'measure_rest': do_measure_rest,
         'spacer': do_spacer,
     }
 
@@ -425,6 +427,22 @@ def do_rest(l_rest, m_layer):
     m_rest = etree.SubElement(m_layer, mei.REST, attrib)
 
     return m_rest
+
+
+def do_measure_rest(l_measure_rest, m_layer):
+    if l_measure_rest['ly_type'] != 'measure_rest':
+        raise exceptions.InboundConversionError(
+            "do_measure_rest was called on a parser node that isn't a measure_rest")
+
+    attrib = {
+        'dur': l_measure_rest['duration']['number'],
+    }
+
+    process_dots(l_measure_rest, attrib)
+
+    m_measure_rest = etree.SubElement(m_layer, mei.M_REST, attrib)
+
+    return m_measure_rest
 
 
 def do_spacer(l_spacer, m_layer):

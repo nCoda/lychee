@@ -18,7 +18,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2016, 9, 13, 0, 58, 29, 1)
+__version__ = (2016, 10, 28, 16, 55, 33, 4)
 
 __all__ = [
     'LilyPondParser',
@@ -381,6 +381,18 @@ class LilyPondParser(Parser):
         )
 
     @graken()
+    def _measure_rest_(self):
+        self._constant('measure_rest')
+        self.name_last_node('ly_type')
+        self._pattern(r'R')
+        self._duration_()
+        self.name_last_node('duration')
+        self.ast._define(
+            ['duration', 'ly_type'],
+            []
+        )
+
+    @graken()
     def _spacer_(self):
         self._constant('spacer')
         self.name_last_node('ly_type')
@@ -399,6 +411,8 @@ class LilyPondParser(Parser):
                 self._note_()
             with self._option():
                 self._rest_()
+            with self._option():
+                self._measure_rest_()
             with self._option():
                 self._chord_()
             with self._option():
@@ -650,6 +664,9 @@ class LilyPondSemantics(object):
         return ast
 
     def rest(self, ast):
+        return ast
+
+    def measure_rest(self, ast):
         return ast
 
     def spacer(self, ast):

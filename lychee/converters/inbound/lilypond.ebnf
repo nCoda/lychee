@@ -122,11 +122,15 @@ rest =
     ly_type:`rest` /r/ duration:duration
     ;
 
+measure_rest =
+    ly_type:`measure_rest` /R/ duration:duration
+    ;
+
 spacer =
     ly_type:`spacer` /s/ duration:duration
     ;
 
-node = note | rest | chord | spacer | staff_setting ;
+node = note | rest | measure_rest | chord | spacer | staff_setting ;
 nodes = {node}+ ;
 
 

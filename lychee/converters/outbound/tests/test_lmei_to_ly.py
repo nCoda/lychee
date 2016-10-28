@@ -95,6 +95,29 @@ class TestNoteRest(object):
         assert lilypond.rest(m_rest) == "r"
 
 
+class TestTie(object):
+    def test_tie_1(self):
+        m_note_1 = etree.Element(mei.NOTE)
+        m_note_1.attrib.update({
+            'pname': 'c',
+            'oct': '3',
+            'tie': 'i'
+            })
+        m_note_2 = etree.Element(mei.NOTE)
+        m_note_2.attrib.update({
+            'pname': 'c',
+            'oct': '3',
+            'tie': 't'
+            })
+        m_layer = etree.Element(mei.LAYER)
+        m_layer.attrib.update({
+            'n': '1'
+            })
+        m_layer.extend([m_note_1, m_note_2])
+        expected = '%{ l.1 %} c~ c'
+        assert lilypond.layer(m_layer) == expected
+
+
 class TestLayerMeasure(object):
     def test_layer_1(self):
         m_layer = etree.fromstring(

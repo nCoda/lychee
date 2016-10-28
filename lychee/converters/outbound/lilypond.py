@@ -52,6 +52,7 @@ def convert(document, **kwargs):
     CONV_FUNCS = {
         mei.NOTE: note,
         mei.REST: rest,
+        mei.M_REST: measure_rest,
         mei.LAYER: layer,
         mei.MEASURE: measure,
         mei.STAFF: staff,
@@ -130,6 +131,16 @@ def chord(m_chord):
     l_chord = '<{0}>{1}'.format(' '.join(l_chord), duration(m_chord))
 
     return l_chord
+
+
+def measure_rest(m_measure_rest):
+    '''
+    '''
+    if m_measure_rest.tag != mei.M_REST:
+        raise exceptions.OutboundConversionError("measure_rest was called on an XML node that isn't <mei:mRest>")
+    l_measure_rest = 'R'
+    l_measure_rest += duration(m_measure_rest)
+    return l_measure_rest
 
 
 def layer(m_layer):

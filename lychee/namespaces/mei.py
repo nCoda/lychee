@@ -85,6 +85,8 @@ MEI_CORPUS = '{}meiCorpus'.format(MEINS)
 'An MEI tag name.'
 MEI_HEAD = '{}meiHead'.format(MEINS)
 'An MEI tag name.'
+M_REST = '{}mRest'.format(MEINS)
+'An MEI tag name.'
 MENSURATION = '{}mensuration'.format(MEINS)
 'An MEI tag name.'
 METER = '{}meter'.format(MEINS)

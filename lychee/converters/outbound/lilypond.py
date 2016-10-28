@@ -96,6 +96,15 @@ def duration(m_thing):
     return post
 
 
+def tie(m_thing):
+    '''
+    Find the LilyPond tie string of an MEI object.
+    '''
+    if m_thing.get('tie') in ('i', 'm'):
+        return '~'
+    return ''
+
+
 def note(m_note):
     '''
     '''
@@ -107,6 +116,7 @@ def note(m_note):
     if m_note.get('accid'):
         post += '!'
     post += duration(m_note)
+    post += tie(m_note)
     return post
 
 
@@ -127,7 +137,7 @@ def chord(m_chord):
     for m_note in m_chord.iter(tag=mei.NOTE):
         l_chord.append(note(m_note))
 
-    l_chord = '<{0}>{1}'.format(' '.join(l_chord), duration(m_chord))
+    l_chord = '<{0}>{1}{2}'.format(' '.join(l_chord), duration(m_chord), tie(m_chord))
 
     return l_chord
 

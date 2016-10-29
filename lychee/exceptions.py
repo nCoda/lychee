@@ -161,3 +161,12 @@ class ViewsError(LycheeError):
     When an error occurs while processing "view" information.
     '''
     pass
+
+
+class LilyPondError(InboundConversionError):
+    '''
+    An error caused by incorrect LilyPond during inbound conversion.
+
+    An error during outbound conversion to LilyPond would be a :exc:`LycheeMEIError`.
+    '''
+    pass

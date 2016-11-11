@@ -809,3 +809,36 @@ class TestRestSpacer(object):
 
         with pytest.raises(exceptions.LilyPondError):
             lilypond.do_spacer(l_rest, m_layer)
+
+
+class TestTie(object):
+
+    @staticmethod
+    def ez_note(tie=None):
+        return {
+            'ly_type': 'note',
+            'pname': 'c',
+            'oct': '',
+            'dur': '4',
+            'accid': [],
+            'accid_force': None,
+            'dots': [],
+            'tie': tie
+        }
+
+    def test_basic_tie(self):
+        '''
+        Test the equivalent of the LilyPond code "c c~ c~ c c". This covers
+        four cases involving tied and untied notes:
+
+        - Untied note before tied note
+        - Tied note before tied note
+        - Tied note before untied note
+        - Untied note before untied note
+        '''
+        n = self.ez_note
+        l_layer = [n(), n('~'), n('~'), n(), n()]
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_layer(l_layer, m_layer, 1)
+        tie_attributes = [node.get('tie') for node in actual]
+        assert tie_attributes == [None, 'i', 'm', 't', None]

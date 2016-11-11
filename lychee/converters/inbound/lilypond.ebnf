@@ -103,24 +103,34 @@ duration =
     ( dur:() dots:{} )
     ;
 
+tie = '~';
+
 notehead =
     pname:pitch_name ~
     accid:accidental
     [oct:octave]
     [accid_force:accidental_force]
     ;
+
 note =
     ly_type:`note`
     >notehead
     >duration
+    [tie:tie]
+    ;
+
+chord_note =
+    >notehead
+    [tie:tie]
     ;
 
 chord =
     ly_type:`chord`
     '<' !'<'
-    notes:{notehead}*
+    notes:{chord_note}*
     '>'
     >duration
+    [tie:tie]
     ;
 
 rest =

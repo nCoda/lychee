@@ -18,7 +18,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2016, 9, 22, 4, 18, 56, 3)
+__version__ = (2016, 11, 11, 17, 21, 25, 4)
 
 __all__ = [
     'LilyPondParser',
@@ -312,6 +312,10 @@ class LilyPondParser(Parser):
         )
 
     @graken()
+    def _tie_(self):
+        self._token('~')
+
+    @graken()
     def _notehead_(self):
         self._pitch_name_()
         self.name_last_node('pname')
@@ -368,8 +372,34 @@ class LilyPondParser(Parser):
                     self._empty_closure()
                     self.name_last_node('dots')
             self._error('no available options')
+
+        with self._optional():
+            self._tie_()
+            self.name_last_node('tie')
         self.ast._define(
-            ['accid', 'accid_force', 'dots', 'dur', 'ly_type', 'oct', 'pname'],
+            ['accid', 'accid_force', 'dots', 'dur', 'ly_type', 'oct', 'pname', 'tie'],
+            []
+        )
+
+    @graken()
+    def _chord_note_(self):
+        self._pitch_name_()
+        self.name_last_node('pname')
+        self._cut()
+        self._accidental_()
+        self.name_last_node('accid')
+        with self._optional():
+            self._octave_()
+            self.name_last_node('oct')
+        with self._optional():
+            self._accidental_force_()
+            self.name_last_node('accid_force')
+
+        with self._optional():
+            self._tie_()
+            self.name_last_node('tie')
+        self.ast._define(
+            ['accid', 'accid_force', 'oct', 'pname', 'tie'],
             []
         )
 
@@ -382,7 +412,7 @@ class LilyPondParser(Parser):
             self._token('<')
 
         def block2():
-            self._notehead_()
+            self._chord_note_()
         self._closure(block2)
         self.name_last_node('notes')
         self._token('>')
@@ -409,8 +439,12 @@ class LilyPondParser(Parser):
                     self._empty_closure()
                     self.name_last_node('dots')
             self._error('no available options')
+
+        with self._optional():
+            self._tie_()
+            self.name_last_node('tie')
         self.ast._define(
-            ['dots', 'dur', 'ly_type', 'notes'],
+            ['dots', 'dur', 'ly_type', 'notes', 'tie'],
             []
         )
 
@@ -743,10 +777,16 @@ class LilyPondSemantics(object):
     def duration(self, ast):
         return ast
 
+    def tie(self, ast):
+        return ast
+
     def notehead(self, ast):
         return ast
 
     def note(self, ast):
+        return ast
+
+    def chord_note(self, ast):
         return ast
 
     def chord(self, ast):

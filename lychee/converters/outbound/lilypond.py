@@ -39,6 +39,14 @@ from lychee.logs import OUTBOUND_LOG as log
 from lychee.namespaces import mei
 
 
+def check_tag(m_thing, tag_name):
+    if m_thing.tag != tag_name:
+        raise exceptions.OutboundConversionError(
+            "Wrong tag: expected <{}>, found <{}>."
+            .format(m_thing.tag, tag_name))
+
+
+@log.wrap('info', 'convert LMEI to LilyPond')
 def convert(document, **kwargs):
     '''
     Convert an MEI document into a LilyPond document.
@@ -96,10 +104,11 @@ def duration(m_thing):
     return post
 
 
+@log.wrap('debug', 'convert note')
 def note(m_note):
     '''
     '''
-    assert m_note.tag == mei.NOTE
+    check_tag(m_note, mei.NOTE)
     post = m_note.get('pname')
     if m_note.get('accid.ges'):
         post += _VALID_ACCIDENTALS[m_note.get('accid.ges')]
@@ -110,19 +119,21 @@ def note(m_note):
     return post
 
 
+@log.wrap('debug', 'convert rest')
 def rest(m_rest):
     '''
     '''
-    assert m_rest.tag == mei.REST
+    check_tag(m_rest, mei.REST)
     post = 'r'
     post += duration(m_rest)
     return post
 
 
+@log.wrap('debug', 'convert chord')
 def chord(m_chord):
     '''
     '''
-    assert m_chord.tag == mei.CHORD
+    check_tag(m_chord, mei.CHORD)
     l_chord = []
     for m_note in m_chord.iter(tag=mei.NOTE):
         l_chord.append(note(m_note))
@@ -132,6 +143,7 @@ def chord(m_chord):
     return l_chord
 
 
+@log.wrap('debug', 'convert sequential music')
 def sequential_music(m_container):
     '''
     Convert the contents of any MEI element, interpreted as a container of
@@ -157,14 +169,16 @@ def sequential_music(m_container):
     return post
 
 
+@log.wrap('debug', 'convert layer')
 def layer(m_layer):
     '''Convert an MEI layer element to a LilyPond string.'''
-    assert m_layer.tag == mei.LAYER
+    check_tag(m_layer, mei.LAYER)
     post = ['%{{ l.{} %}}'.format(m_layer.get('n'))]
     post.extend(sequential_music(m_layer))
     return ' '.join(post)
 
 
+@log.wrap('debug', 'convert parallel music')
 def layers(m_container):
     '''
     Convert the contents of any MEI element containing multiple layers,
@@ -186,20 +200,22 @@ def layers(m_container):
     return post
 
 
+@log.wrap('debug', 'convert measure')
 def measure(m_meas):
     '''
     '''
-    assert m_meas.tag == mei.MEASURE
+    check_tag(m_meas, mei.MEASURE)
     before = ['%{{ m.{} %}}'.format(m_meas.get('n'))]
     after = ['|\n']
     post = before + layers(m_meas) + after
     return ' '.join(post)
 
 
+@log.wrap('debug', 'convert clef')
 def clef(m_staffdef):
     '''
     '''
-    assert m_staffdef.tag == mei.STAFF_DEF
+    check_tag(m_staffdef, mei.STAFF_DEF)
     if m_staffdef.get('clef.shape') and m_staffdef.get('clef.line'):
         shape = m_staffdef.get('clef.shape')
         line = m_staffdef.get('clef.line')
@@ -220,10 +236,11 @@ def clef(m_staffdef):
         return '\n'
 
 
+@log.wrap('debug', 'convert key signature')
 def key(m_staffdef):
     '''
     '''
-    assert m_staffdef.tag == mei.STAFF_DEF
+    check_tag(m_staffdef, mei.STAFF_DEF)
     CONV = {
         '7f': 'ces',
         '6f': 'ges',
@@ -254,21 +271,23 @@ def key(m_staffdef):
         return '\n'
 
 
+@log.wrap('debug', 'convert time signature')
 def meter(m_staffdef):
     '''
     '''
-    assert m_staffdef.tag == mei.STAFF_DEF
+    check_tag(m_staffdef, mei.STAFF_DEF)
     if m_staffdef.get('meter.count') and m_staffdef.get('meter.unit'):
         return '\\time {0}/{1}\n'.format(m_staffdef.get('meter.count'), m_staffdef.get('meter.unit'))
     else:
         return '\n'
 
 
+@log.wrap('info', 'convert staff')
 def staff(m_staff, m_staffdef):
     '''
     '''
-    assert m_staff.tag == mei.STAFF
-    assert m_staffdef.tag == mei.STAFF_DEF
+    check_tag(m_staff, mei.STAFF)
+    check_tag(m_staffdef, mei.STAFF_DEF)
 
     post = [
         '\\new Staff {\n',
@@ -292,10 +311,11 @@ def staff(m_staff, m_staffdef):
     return ''.join(post)
 
 
+@log.wrap('info', 'convert section')
 def section(m_section):
     '''
     '''
-    assert m_section.tag == mei.SECTION
+    check_tag(m_section, mei.SECTION)
 
     post = [
         '\\version "2.18.2"\n',

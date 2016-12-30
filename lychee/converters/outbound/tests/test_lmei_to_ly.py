@@ -305,6 +305,38 @@ class TestStaffClefAndKey(object):
         ])
         assert lilypond.staff(m_staff, m_staffdef) == expected
 
+    def test_staff_without_measures(self):
+        "Music without measures, but with layers."
+        m_staff = etree.fromstring(
+        '''<mei:staff n="4" xmlns:mei="http://www.music-encoding.org/ns/mei">
+            <mei:layer n="1">
+                <mei:note dur="2" oct="2" pname="d"/>
+                <mei:note dur="2" oct="2" pname="d"/>
+            </mei:layer>
+        </mei:staff>''')
+        m_staffdef = etree.fromstring(
+        '''
+        <mei:staffDef xmlns:mei="http://www.music-encoding.org/ns/mei"
+            label="Tuba"
+            clef.line="4"
+            clef.shape="F"
+            n="4"
+            key.sig="3s"
+            meter.count="2"
+            meter.unit="2"
+        />
+        ''')
+        expected = ''.join([
+            "\\new Staff {\n",
+            "%{ staff 4 %}\n",
+            '\\set Staff.instrumentName = "Tuba"\n',
+            "\\clef \"bass\"\n",
+            "\\key a \\major\n",
+            "\\time 2/2\n",
+            "%{ l.1 %} d,2 d,2\n",
+            "}\n",
+        ])
+        assert lilypond.staff(m_staff, m_staffdef) == expected
 
 class TestSection(object):
     def test_section_1(self):

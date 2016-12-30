@@ -132,13 +132,15 @@ def chord(m_chord):
     return l_chord
 
 
-def layer(m_layer):
+def sequential_music(m_container):
     '''
+    Convert the contents of any MEI element, interpreted as a container of
+    sequential music, to an array of LilyPond strings to be joined together
+    with whitespace.
     '''
-    assert m_layer.tag == mei.LAYER
-    post = ['%{{ l.{} %}}'.format(m_layer.get('n'))]
-    for elem in m_layer.iterchildren('*'):
-        with log.debug('convert element in a <layer>') as action:
+    post = []
+    for elem in m_container.iterchildren('*'):
+        with log.debug('convert element in a <{}>'.format(m_container.tag)) as action:
             if elem.tag == mei.NOTE:
                 post.append(note(elem))
             elif elem.tag == mei.REST:
@@ -146,19 +148,33 @@ def layer(m_layer):
             elif elem.tag == mei.CHORD:
                 post.append(chord(elem))
             else:
-                action.failure('missed a {tag_name} in a <layer>', tag_name=elem.tag)
+                action.failure(
+                    'missed a {tag_name} in a <{container_name}>',
+                    tag_name=elem.tag,
+                    container_name=m_container.tag,
+                    )
 
+    return post
+
+
+def layer(m_layer):
+    '''Convert an MEI layer element to a LilyPond string.'''
+    assert m_layer.tag == mei.LAYER
+    post = ['%{{ l.{} %}}'.format(m_layer.get('n'))]
+    post.extend(sequential_music(m_layer))
     return ' '.join(post)
 
 
-def measure(m_meas):
+def layers(m_container):
     '''
+    Convert the contents of any MEI element containing multiple layers,
+    interpreted as parallel music, to an array of LilyPond strings to be
+    joined together with whitespace.
     '''
-    assert m_meas.tag == mei.MEASURE
-    before_layers = ['%{{ m.{} %}}'.format(m_meas.get('n'))]
-    after_layers = ['|\n']
+    before_layers = []
+    after_layers = []
     layers = []
-    for elem in m_meas.iterchildren(tag=mei.LAYER):
+    for elem in m_container.iterchildren(tag=mei.LAYER):
         layers.append(layer(elem))
 
     if len(layers) > 1:
@@ -167,7 +183,16 @@ def measure(m_meas):
         layers = [' } \\\ { '.join(layers)]
 
     post = before_layers + layers + after_layers
+    return post
 
+
+def measure(m_meas):
+    '''
+    '''
+    assert m_meas.tag == mei.MEASURE
+    before = ['%{{ m.{} %}}'.format(m_meas.get('n'))]
+    after = ['|\n']
+    post = before + layers(m_meas) + after
     return ' '.join(post)
 
 
@@ -254,8 +279,13 @@ def staff(m_staff, m_staffdef):
         meter(m_staffdef),
     ]
 
+    there_are_no_measures = True
     for elem in m_staff.iterchildren(tag=mei.MEASURE):
         post.append(measure(elem))
+        there_are_no_measures = False
+
+    if there_are_no_measures:
+        post.append(' '.join(layers(m_staff)) + '\n')
 
     post.append('}\n')
 

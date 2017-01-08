@@ -578,7 +578,7 @@ def do_rest(l_rest, m_layer, action):
     return m_rest
 
 
-@log.wrap('debug', 'convert measure rest', 'action')
+@log.wrap('debug', 'convert measure rest')
 def do_measure_rest(l_measure_rest, m_layer):
     check(l_measure_rest['ly_type'] == 'measure_rest', 'did not receive a measure rest')
 

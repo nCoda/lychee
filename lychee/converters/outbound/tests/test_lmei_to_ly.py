@@ -94,12 +94,14 @@ class TestNoteRest(object):
         m_rest = etree.Element(mei.REST)
         assert lilypond.rest(m_rest) == "r"
 
-
-class TestMeasureRest(object):
     def test_measure_rest_1(self):
         m_measure_rest = etree.Element(mei.M_REST)
-        m_measure_rest.set('dur', '2')
-        assert lilypond.measure_rest(m_measure_rest) == 'R2'
+        m_measure_rest.set('dur', '32')
+        assert lilypond.measure_rest(m_measure_rest) == 'R32'
+
+    def test_measure_rest_2(self):
+        m_measure_rest = etree.Element(mei.M_REST)
+        assert lilypond.measure_rest(m_measure_rest) == 'R'
 
 
 class TestLayerMeasure(object):

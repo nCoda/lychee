@@ -780,6 +780,36 @@ class TestRestSpacer(object):
         with pytest.raises(exceptions.LilyPondError):
             lilypond.do_rest(l_rest, m_layer)
 
+    def test_measure_rest_1(self):
+        """When it works fine, no dots."""
+        l_measure_rest = {'ly_type': 'measure_rest', 'dur': '2', 'dots': []}
+        m_layer = etree.Element(mei.LAYER)
+
+        actual = lilypond.do_measure_rest(l_measure_rest, m_layer)
+
+        assert actual.tag == mei.M_REST
+        assert m_layer[0] is actual
+        assert actual.get('dur') == '2'
+        assert actual.get('dots') is None
+
+    def test_measure_rest_2(self):
+        """When it works fine, two dots."""
+        l_measure_rest = {'ly_type': 'measure_rest', 'dur': '2', 'dots': ['.', '.']}
+        m_layer = etree.Element(mei.LAYER)
+
+        actual = lilypond.do_measure_rest(l_measure_rest, m_layer)
+
+        assert actual.get('dur') == '2'
+        assert actual.get('dots') == '2'
+
+    def test_measure_rest_3(self):
+        """When it receives a rest, should fail."""
+        l_rest = {'ly_type': 'rest', 'dur': '2', 'dots': []}
+        m_layer = etree.Element(mei.LAYER)
+
+        with pytest.raises(exceptions.LilyPondError):
+            lilypond.do_measure_rest(l_rest, m_layer)
+
     def test_spacer_1(self):
         """When it works fine, no dots."""
         l_rest = {'ly_type': 'spacer', 'dur': '2', 'dots': []}

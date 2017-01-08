@@ -18,7 +18,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2017, 1, 8, 22, 35, 52, 6)
+__version__ = (2017, 1, 8, 22, 52, 17, 6)
 
 __all__ = [
     'LilyPondParser',
@@ -452,10 +452,31 @@ class LilyPondParser(Parser):
         self._constant('measure_rest')
         self.name_last_node('ly_type')
         self._pattern(r'R')
-        self._duration_()
-        self.name_last_node('duration')
+        with self._choice():
+            with self._option():
+                with self._group():
+                    self._duration_number_()
+                    self.name_last_node('dur')
+
+                    def block2():
+                        self._duration_dots_()
+                        self.name_last_node('dots')
+                    self._positive_closure(block2)
+            with self._option():
+                with self._group():
+                    self._duration_number_()
+                    self.name_last_node('dur')
+                    self._empty_closure()
+                    self.name_last_node('dots')
+            with self._option():
+                with self._group():
+                    pass
+                    self.name_last_node('dur')
+                    self._empty_closure()
+                    self.name_last_node('dots')
+            self._error('no available options')
         self.ast._define(
-            ['duration', 'ly_type'],
+            ['dots', 'dur', 'ly_type'],
             []
         )
 

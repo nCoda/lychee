@@ -578,13 +578,12 @@ def do_rest(l_rest, m_layer, action):
     return m_rest
 
 
+@log.wrap('debug', 'convert measure rest', 'action')
 def do_measure_rest(l_measure_rest, m_layer):
-    if l_measure_rest['ly_type'] != 'measure_rest':
-        raise exceptions.InboundConversionError(
-            "do_measure_rest was called on a parser node that isn't a measure_rest")
+    check(l_measure_rest['ly_type'] == 'measure_rest', 'did not receive a measure rest')
 
     attrib = {
-        'dur': l_measure_rest['duration']['number'],
+        'dur': l_measure_rest['dur'],
     }
 
     process_dots(l_measure_rest, attrib)

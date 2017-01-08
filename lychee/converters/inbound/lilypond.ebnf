@@ -128,7 +128,7 @@ rest =
     ;
 
 measure_rest =
-    ly_type:`measure_rest` /R/ duration:duration
+    ly_type:`measure_rest` /R/ >duration
     ;
 
 spacer =

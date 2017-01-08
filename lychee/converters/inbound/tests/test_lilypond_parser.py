@@ -305,6 +305,20 @@ class TestNoteChordRestSpacer(object):
         actual = parser.parse(content, rule_name='spacer')
         assert expected == actual
 
+    def test_measure_rest_1(self):
+        """Works as expected."""
+        content = 'R256..'
+        expected = {'dur': '256', 'dots': ['.', '.'], 'ly_type': 'measure_rest'}
+        actual = parser.parse(content, rule_name='measure_rest')
+        assert expected == actual
+
+    def test_measure_rest_2(self):
+        """Works without duration."""
+        content = 'R'
+        expected = {'dur': None, 'dots': [], 'ly_type': 'measure_rest'}
+        actual = parser.parse(content, rule_name='measure_rest')
+        assert expected == actual
+
     def test_music_node_1(self):
         """music_node: note"""
         content = 'bes,!256..'

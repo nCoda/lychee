@@ -35,22 +35,12 @@ from lychee import exceptions
 from lychee.namespaces import mei
 
 
-def leaf(tag, **attributes):
-    '''
-    Helper function for convenient one-liner creation of XML leaves.
-    '''
-    element = etree.Element(tag)
-    element.attrib.update(attributes)
-    return element
-
-
 def container(tag, children, **attributes):
     '''
     Helper function for convenient one-liner creation of XML containers.
     '''
-    element = etree.Element(tag)
+    element = etree.Element(tag, attributes)
     element.extend(children)
-    element.attrib.update(attributes)
     return element
 
 
@@ -120,8 +110,8 @@ class TestTie(object):
         A tie between two notes.
         '''
         m_notes = [
-            leaf(mei.NOTE, pname='c', oct='3', tie='i'),
-            leaf(mei.NOTE, pname='c', oct='3', tie='t'),
+            etree.Element(mei.NOTE, pname='c', oct='3', tie='i'),
+            etree.Element(mei.NOTE, pname='c', oct='3', tie='t'),
             ]
         m_layer = container(mei.LAYER, m_notes, n='1')
         assert lilypond.layer(m_layer) == '%{ l.1 %} c~ c'
@@ -131,9 +121,9 @@ class TestTie(object):
         A three-note tie.
         '''
         m_notes = [
-            leaf(mei.NOTE, pname='c', oct='3', tie='i'),
-            leaf(mei.NOTE, pname='c', oct='3', tie='m'),
-            leaf(mei.NOTE, pname='c', oct='3', tie='t'),
+            etree.Element(mei.NOTE, pname='c', oct='3', tie='i'),
+            etree.Element(mei.NOTE, pname='c', oct='3', tie='m'),
+            etree.Element(mei.NOTE, pname='c', oct='3', tie='t'),
             ]
         m_layer = container(mei.LAYER, m_notes, n='1')
         assert lilypond.layer(m_layer) == '%{ l.1 %} c~ c~ c'
@@ -145,16 +135,16 @@ class TestTie(object):
         m_chord_1 = container(
             mei.CHORD,
             [
-                leaf(mei.NOTE, pname='c', oct='3'),
-                leaf(mei.NOTE, pname='g', oct='3'),
+                etree.Element(mei.NOTE, pname='c', oct='3'),
+                etree.Element(mei.NOTE, pname='g', oct='3'),
                 ],
             tie='i',
             )
         m_chord_2 = container(
             mei.CHORD,
             [
-                leaf(mei.NOTE, pname='c', oct='3'),
-                leaf(mei.NOTE, pname='g', oct='3'),
+                etree.Element(mei.NOTE, pname='c', oct='3'),
+                etree.Element(mei.NOTE, pname='g', oct='3'),
                 ],
             tie='t',
             )
@@ -168,15 +158,15 @@ class TestTie(object):
         m_chord_1 = container(
             mei.CHORD,
             [
-                leaf(mei.NOTE, pname='c', oct='3', tie='i'),
-                leaf(mei.NOTE, pname='g', oct='3'),
+                etree.Element(mei.NOTE, pname='c', oct='3', tie='i'),
+                etree.Element(mei.NOTE, pname='g', oct='3'),
                 ],
             )
         m_chord_2 = container(
             mei.CHORD,
             [
-                leaf(mei.NOTE, pname='c', oct='3', tie='t'),
-                leaf(mei.NOTE, pname='g', oct='3'),
+                etree.Element(mei.NOTE, pname='c', oct='3', tie='t'),
+                etree.Element(mei.NOTE, pname='g', oct='3'),
                 ],
             )
         m_layer = container(mei.LAYER, [m_chord_1, m_chord_2], n='1')

@@ -353,6 +353,44 @@ def note_pitch(m_note):
     return (m_note.get('oct'), m_note.get('pname'), m_note.get('accid.ges', 'n'))
 
 
+@log.wrap('debug', 'remove unterminated tie', 'action')
+def _maybe_remove_unterminated_tie(note, target_pitches, action):
+    '''
+    :param note: The note to inspect.
+    :param target_pitches: A set of pitches that the note could possibly tie to.
+
+    If the given note tries to start a tie, then check to see if the
+    tie is terminated by any of the target pitches or not. If it's
+    unterminated, remove it. If it's terminated, make sure it is set
+    to initial.
+    '''
+    if note.attrib.get('tie', None) in ('i', 'm'):
+        pitch = note_pitch(note)
+        if pitch not in target_pitches:
+            action.failure('unterminated tie')
+            del note.attrib['tie']
+        else:
+            note.attrib['tie'] = 'i'
+
+
+@log.wrap('debug', 'set medial or final tie attribute')
+def _fix_tie_target(note, pitch_map):
+    '''
+    :param note: The note that might begin a tie.
+    :param dict pitch_map: A dict mapping pitches to notes.
+
+    If the note begins or continues a tie, find the note that
+    it is tied to and set its @tie to either 'm' or 't'.
+    '''
+    if note.attrib.get('tie', None) in ('i', 'm'):
+        pitch = note_pitch(note)
+        target_node = pitch_map[pitch]
+        if target_node.attrib.get('tie', None) in ('i', 'm'):
+            target_node.attrib['tie'] = 'm'
+        else:
+            target_node.attrib['tie'] = 't'
+
+
 @log.wrap('debug', 'fix ties', 'action')
 def fix_ties_in_layer(m_layer, action):
     '''
@@ -376,23 +414,11 @@ def fix_ties_in_layer(m_layer, action):
             elif next_node.tag == mei.CHORD:
                 next_pitches = frozenset([note_pitch(note) for note in next_node])
 
-        def maybe_remove_unterminated_tie(note):
-            # If the given note tries to start a tie, then check to see if the
-            # tie is terminated or not. If it's unterminated, remove it. If it's
-            # terminated, make sure it is set to initial.
-            if note.attrib.get('tie', None) in ('i', 'm'):
-                pitch = note_pitch(note)
-                if pitch not in next_pitches:
-                    action.failure('unterminated tie')
-                    del note.attrib['tie']
-                else:
-                    note.attrib['tie'] = 'i'
-
         if node.tag == mei.NOTE:
-            maybe_remove_unterminated_tie(node)
+            _maybe_remove_unterminated_tie(node, next_pitches)
         elif node.tag == mei.CHORD:
             for note in node:
-                maybe_remove_unterminated_tie(note)
+                _maybe_remove_unterminated_tie(note, next_pitches)
 
     # In the second pass, we change some initial @ties to medial @ties,
     # and add some final @ties as necessary.
@@ -414,23 +440,11 @@ def fix_ties_in_layer(m_layer, action):
             for note in next_node:
                 pitch_map[note_pitch(note)] = note
 
-        def fix_tie_target(note):
-            # If the given note starts a tie, then match the note with the
-            # note that terminates the tie, and modify that note's @tie so
-            # that it is either medial or terminal.
-            if note.attrib.get('tie', None) in ('i', 'm'):
-                pitch = note_pitch(note)
-                target_node = pitch_map[pitch]
-                if target_node.attrib.get('tie', None) in ('i', 'm'):
-                    target_node.attrib['tie'] = 'm'
-                else:
-                    target_node.attrib['tie'] = 't'
-
         if node.tag == mei.NOTE:
-            fix_tie_target(node)
+            _fix_tie_target(node, pitch_map)
         elif node.tag == mei.CHORD:
             for note in node:
-                fix_tie_target(note)
+                _fix_tie_target(note, pitch_map)
 
 
 @log.wrap('debug', 'convert voice/layer', 'action')

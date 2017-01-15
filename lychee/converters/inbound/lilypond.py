@@ -347,6 +347,107 @@ def do_staff(l_staff, m_section, m_staffdef, action):
                 do_layer(l_layer, m_each_staff, layer_n + 1)
 
 
+def note_pitch(m_note):
+    '''
+    Return a tuple uniquely identifying the pitch of an LMEI node.
+    '''
+    return (m_note.get('oct'), m_note.get('pname'), m_note.get('accid.ges', 'n'))
+
+
+@log.wrap('debug', 'remove unterminated tie', 'action')
+def _maybe_remove_unterminated_tie(note, target_pitches, action):
+    '''
+    :param note: The note to inspect.
+    :param target_pitches: A set of pitches that the note could possibly tie to.
+
+    If the given note tries to start a tie, then check to see if the
+    tie is terminated by any of the target pitches or not. If it's
+    unterminated, remove it. If it's terminated, make sure it is set
+    to initial.
+    '''
+    if note.attrib.get('tie', None) in ('i', 'm'):
+        pitch = note_pitch(note)
+        if pitch not in target_pitches:
+            action.failure('unterminated tie')
+            del note.attrib['tie']
+        else:
+            note.attrib['tie'] = 'i'
+
+
+@log.wrap('debug', 'set medial or final tie attribute')
+def _fix_tie_target(note, pitch_map):
+    '''
+    :param note: The note that might begin a tie.
+    :param dict pitch_map: A dict mapping pitches to notes.
+
+    If the note begins or continues a tie, find the note that
+    it is tied to and set its @tie to either 'm' or 't'.
+    '''
+    if note.attrib.get('tie', None) in ('i', 'm'):
+        pitch = note_pitch(note)
+        target_node = pitch_map[pitch]
+        if target_node.attrib.get('tie', None) in ('i', 'm'):
+            target_node.attrib['tie'] = 'm'
+        else:
+            target_node.attrib['tie'] = 't'
+
+
+@log.wrap('debug', 'fix ties', 'action')
+def fix_ties_in_layer(m_layer, action):
+    '''
+    Fix @tie attribute values in an LMEI <layer> element.
+    '''
+
+    # In the first pass, we remove all unterminated ties and set all ties to initial.
+
+    for i in range(len(m_layer)):
+        node = m_layer[i]
+
+        # next_pitches is the set of pitches that can be tied to in the next node.
+        # If the next node is a rest, spacer, etc. then next_pitches is empty,
+        # meaning that all ties from the current node are unterminated. next_pitches
+        # is also empty on the last node in the layer, since it can't tie to anything.
+        next_pitches = frozenset()
+        if i != len(m_layer) - 1:
+            next_node = m_layer[i + 1]
+            if next_node.tag == mei.NOTE:
+                next_pitches = frozenset([note_pitch(next_node)])
+            elif next_node.tag == mei.CHORD:
+                next_pitches = frozenset([note_pitch(note) for note in next_node])
+
+        if node.tag == mei.NOTE:
+            _maybe_remove_unterminated_tie(node, next_pitches)
+        elif node.tag == mei.CHORD:
+            for note in node:
+                _maybe_remove_unterminated_tie(note, next_pitches)
+
+    # In the second pass, we change some initial @ties to medial @ties,
+    # and add some final @ties as necessary.
+
+    for i in range(len(m_layer) - 1):
+        node = m_layer[i]
+        next_node = m_layer[i + 1]
+
+        # In the first pass, we used a set of pitches. But this time, we need to
+        # be able to get the node corresponding to each pitch, so we use a dict
+        # mapping pitches to the next node.
+
+        # This doesn't account for duplicate notes in a chord (e.g. <c c g>).
+        # Whatever, I don't even know if MEI supports that.
+        pitch_map = {}
+        if next_node.tag == mei.NOTE:
+            pitch_map[note_pitch(next_node)] = next_node
+        elif next_node.tag == mei.CHORD:
+            for note in next_node:
+                pitch_map[note_pitch(note)] = note
+
+        if node.tag == mei.NOTE:
+            _fix_tie_target(node, pitch_map)
+        elif node.tag == mei.CHORD:
+            for note in node:
+                _fix_tie_target(note, pitch_map)
+
+
 @log.wrap('debug', 'convert voice/layer', 'action')
 def do_layer(l_layer, m_container, layer_n, action):
     '''
@@ -380,6 +481,8 @@ def do_layer(l_layer, m_container, layer_n, action):
                 action.success('converted {ly_type}', ly_type=obj['ly_type'])
             else:
                 action.failure('unknown node type: {ly_type}', ly_type=obj['ly_type'])
+
+    fix_ties_in_layer(m_layer)
 
     return m_layer
 
@@ -487,6 +590,18 @@ def process_dots(l_node, attrib, action):
     return attrib
 
 
+@log.wrap('debug', 'process tie')
+def process_tie(l_thing, attrib):
+    '''
+    Given a parsed LilyPond note/chord and the "attrib" dictionary for its yet-to-be-created
+    MEI element, set the tie attribute if required.
+    '''
+    if l_thing.get('tie') is not None:
+        attrib['tie'] = 'i'
+
+    return attrib
+
+
 @log.wrap('debug', 'convert chord', 'action')
 def do_chord(l_chord, m_layer, action):
     """
@@ -504,6 +619,8 @@ def do_chord(l_chord, m_layer, action):
     attrib = {'dur': l_chord['dur']}
     process_dots(l_chord, attrib)
 
+    chord_has_tie = l_chord.get('tie') is not None
+
     m_chord = etree.SubElement(m_layer, mei.CHORD, attrib)
 
     for l_note in l_chord['notes']:
@@ -514,6 +631,10 @@ def do_chord(l_chord, m_layer, action):
 
         process_accidental(l_note['accid'], attrib)
         process_forced_accid(l_note, attrib)
+        process_tie(l_note, attrib)
+
+        if chord_has_tie:
+            attrib['tie'] = 'i'
 
         m_note = etree.SubElement(m_chord, mei.NOTE, attrib)
 
@@ -545,6 +666,7 @@ def do_note(l_note, m_layer, action):
     process_accidental(l_note['accid'], attrib)
     process_forced_accid(l_note, attrib)
     process_dots(l_note, attrib)
+    process_tie(l_note, attrib)
 
     m_note = etree.SubElement(m_layer, mei.NOTE, attrib)
 

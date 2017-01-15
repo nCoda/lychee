@@ -182,7 +182,7 @@ class TestNoteChordRestSpacer(object):
         """Works as expected."""
         content = 'bes,!256..'
         expected = {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': '!', 'dur': '256',
-            'dots': ['.', '.'], 'ly_type': 'note'}
+            'dots': ['.', '.'], 'ly_type': 'note', 'tie': None}
         actual = parser.parse(content, rule_name='note')
         assert expected == actual
 
@@ -193,7 +193,7 @@ class TestNoteChordRestSpacer(object):
         """
         content = 'c4!'
         expected = {'pname': 'c', 'accid': [], 'oct': None, 'accid_force': None, 'dur': '4',
-            'dots': [], 'ly_type': 'note'}
+            'dots': [], 'ly_type': 'note', 'tie': None}
         actual = parser.parse(content, rule_name='note')
         assert expected == actual
 
@@ -201,7 +201,7 @@ class TestNoteChordRestSpacer(object):
         """Works without duration."""
         content = 'bes,'
         expected = {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': None, 'dur': None,
-            'dots': [], 'ly_type': 'note'}
+            'dots': [], 'ly_type': 'note', 'tie': None}
         actual = parser.parse(content, rule_name='note')
         assert expected == actual
 
@@ -210,12 +210,13 @@ class TestNoteChordRestSpacer(object):
         content = '<bes,! ees,?>256..'
         expected = {
             'notes': [
-                {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': '!'},
-                {'pname': 'e', 'accid': ['es'], 'oct': ',', 'accid_force': '?'},
+                {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': '!', 'tie': None},
+                {'pname': 'e', 'accid': ['es'], 'oct': ',', 'accid_force': '?', 'tie': None},
             ],
             'dur': '256',
             'dots': ['.', '.'],
-            'ly_type': 'chord'
+            'ly_type': 'chord',
+            'tie': None
         }
         actual = parser.parse(content, rule_name='chord')
         assert expected == actual
@@ -228,11 +229,12 @@ class TestNoteChordRestSpacer(object):
         content = '<bes,!>256..'
         expected = {
             'notes': [
-                {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': '!'},
+                {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': '!', 'tie': None},
             ],
             'dur': '256',
             'dots': ['.', '.'],
-            'ly_type': 'chord'
+            'ly_type': 'chord',
+            'tie': None
         }
         actual = parser.parse(content, rule_name='chord')
         assert expected == actual
@@ -247,7 +249,8 @@ class TestNoteChordRestSpacer(object):
             'notes': [],
             'dur': '256',
             'dots': ['.', '.'],
-            'ly_type': 'chord'
+            'ly_type': 'chord',
+            'tie': None
         }
         actual = parser.parse(content, rule_name='chord')
         assert expected == actual
@@ -257,13 +260,14 @@ class TestNoteChordRestSpacer(object):
         content = "<bes,! ees,? g'>"
         expected = {
             'notes': [
-                {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': '!'},
-                {'pname': 'e', 'accid': ['es'], 'oct': ',', 'accid_force': '?'},
-                {'pname': 'g', 'accid': [], 'oct': "'", 'accid_force': None},
+                {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': '!', 'tie': None},
+                {'pname': 'e', 'accid': ['es'], 'oct': ',', 'accid_force': '?', 'tie': None},
+                {'pname': 'g', 'accid': [], 'oct': "'", 'accid_force': None, 'tie': None},
             ],
             'dur': None,
             'dots': [],
-            'ly_type': 'chord'
+            'ly_type': 'chord',
+            'tie': None
         }
         actual = parser.parse(content, rule_name='chord')
         print(str(actual))
@@ -323,7 +327,7 @@ class TestNoteChordRestSpacer(object):
         """music_node: note"""
         content = 'bes,!256..'
         expected = {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': '!', 'dur': '256',
-            'dots': ['.', '.'], 'ly_type': 'note'}
+            'dots': ['.', '.'], 'tie': None, 'ly_type': 'note'}
         actual = parser.parse(content, rule_name='music_node')
         assert expected == actual
 
@@ -332,11 +336,12 @@ class TestNoteChordRestSpacer(object):
         content = '<bes,! ees,?>256..'
         expected = {
             'notes': [
-                {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': '!'},
-                {'pname': 'e', 'accid': ['es'], 'oct': ',', 'accid_force': '?'},
+                {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': '!', 'tie': None},
+                {'pname': 'e', 'accid': ['es'], 'oct': ',', 'accid_force': '?', 'tie': None},
             ],
             'dur': '256',
             'dots': ['.', '.'],
+            'tie': None,
             'ly_type': 'chord'
         }
         actual = parser.parse(content, rule_name='music_node')
@@ -655,7 +660,7 @@ class TestStaffAndMusicBlock(object):
                     ],
                 ]},
                 {'layers': [[{'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': None,
-                             'dur': '128', 'dots': [], 'ly_type': 'note'}]],
+                             'dur': '128', 'dots': [], 'tie': None, 'ly_type': 'note'}]],
                 },
             ],
         }
@@ -719,7 +724,7 @@ class TestStaffAndMusicBlock(object):
                     ],
                 ]},
                 {'layers': [[{'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': None,
-                             'dur': '128', 'dots': [], 'ly_type': 'note'}]],
+                             'dur': '128', 'dots': [], 'tie': None, 'ly_type': 'note'}]],
                 },
             ],
         }

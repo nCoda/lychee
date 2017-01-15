@@ -35,6 +35,15 @@ from lychee import exceptions
 from lychee.namespaces import mei
 
 
+def container(tag, children, **attributes):
+    '''
+    Helper function for convenient one-liner creation of XML containers.
+    '''
+    element = etree.Element(tag, attributes)
+    element.extend(children)
+    return element
+
+
 class TestConvert(object):
     def test_convert_1(self):
         mei_thing = etree.fromstring(
@@ -102,6 +111,75 @@ class TestNoteRest(object):
     def test_measure_rest_2(self):
         m_measure_rest = etree.Element(mei.M_REST)
         assert lilypond.measure_rest(m_measure_rest) == 'R'
+
+
+class TestTie(object):
+    def test_tie_1(self):
+        '''
+        A tie between two notes.
+        '''
+        m_notes = [
+            etree.Element(mei.NOTE, pname='c', oct='3', tie='i'),
+            etree.Element(mei.NOTE, pname='c', oct='3', tie='t'),
+            ]
+        m_layer = container(mei.LAYER, m_notes, n='1')
+        assert lilypond.layer(m_layer) == '%{ l.1 %} c~ c'
+
+    def test_tie_2(self):
+        '''
+        A three-note tie.
+        '''
+        m_notes = [
+            etree.Element(mei.NOTE, pname='c', oct='3', tie='i'),
+            etree.Element(mei.NOTE, pname='c', oct='3', tie='m'),
+            etree.Element(mei.NOTE, pname='c', oct='3', tie='t'),
+            ]
+        m_layer = container(mei.LAYER, m_notes, n='1')
+        assert lilypond.layer(m_layer) == '%{ l.1 %} c~ c~ c'
+
+    def test_tie_3(self):
+        '''
+        A tie between chords.
+        '''
+        m_chord_1 = container(
+            mei.CHORD,
+            [
+                etree.Element(mei.NOTE, pname='c', oct='3'),
+                etree.Element(mei.NOTE, pname='g', oct='3'),
+                ],
+            tie='i',
+            )
+        m_chord_2 = container(
+            mei.CHORD,
+            [
+                etree.Element(mei.NOTE, pname='c', oct='3'),
+                etree.Element(mei.NOTE, pname='g', oct='3'),
+                ],
+            tie='t',
+            )
+        m_layer = container(mei.LAYER, [m_chord_1, m_chord_2], n='1')
+        assert lilypond.layer(m_layer) == '%{ l.1 %} <c g>~ <c g>'
+
+    def test_tie_3(self):
+        '''
+        A tie between two notes in different chords.
+        '''
+        m_chord_1 = container(
+            mei.CHORD,
+            [
+                etree.Element(mei.NOTE, pname='c', oct='3', tie='i'),
+                etree.Element(mei.NOTE, pname='g', oct='3'),
+                ],
+            )
+        m_chord_2 = container(
+            mei.CHORD,
+            [
+                etree.Element(mei.NOTE, pname='c', oct='3', tie='t'),
+                etree.Element(mei.NOTE, pname='g', oct='3'),
+                ],
+            )
+        m_layer = container(mei.LAYER, [m_chord_1, m_chord_2], n='1')
+        assert lilypond.layer(m_layer) == '%{ l.1 %} <c~ g> <c g>'
 
 
 class TestLayerMeasure(object):

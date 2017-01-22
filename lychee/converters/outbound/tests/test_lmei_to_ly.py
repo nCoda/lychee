@@ -263,19 +263,19 @@ class TestStaffClefAndKey(object):
         # bass
         m_staffdef = etree.fromstring(
             '''<mei:staffDef clef.line="4" clef.shape="F" xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lilypond.clef(m_staffdef) == '\\clef "bass"\n'
+        assert lilypond.clef(m_staffdef) == '\\clef "bass"'
         # tenor
         m_staffdef = etree.fromstring(
             '''<mei:staffDef clef.line="4" clef.shape="C" xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lilypond.clef(m_staffdef) == '\\clef "tenor"\n'
+        assert lilypond.clef(m_staffdef) == '\\clef "tenor"'
         # alto
         m_staffdef = etree.fromstring(
             '''<mei:staffDef clef.line="3" clef.shape="C" xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lilypond.clef(m_staffdef) == '\\clef "alto"\n'
+        assert lilypond.clef(m_staffdef) == '\\clef "alto"'
         # treble
         m_staffdef = etree.fromstring(
             '''<mei:staffDef clef.line="2" clef.shape="G" xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lilypond.clef(m_staffdef) == '\\clef "treble"\n'
+        assert lilypond.clef(m_staffdef) == '\\clef "treble"'
         # none
         m_staffdef = etree.fromstring(
             '''<mei:staffDef xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
@@ -284,29 +284,29 @@ class TestStaffClefAndKey(object):
         # 0 sharps or flats
         m_staffdef = etree.fromstring(
             '''<mei:staffDef key.sig="0" xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lilypond.key(m_staffdef) == '\\key c \\major\n'
+        assert lilypond.key(m_staffdef) == '\\key c \\major'
         # 3 flats
         m_staffdef = etree.fromstring(
             '''<mei:staffDef key.sig="3f" xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lilypond.key(m_staffdef) == '\\key ees \\major\n'
+        assert lilypond.key(m_staffdef) == '\\key ees \\major'
         # 3 sharps
         m_staffdef = etree.fromstring(
             '''<mei:staffDef key.sig="3s" xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lilypond.key(m_staffdef) == '\\key a \\major\n'
+        assert lilypond.key(m_staffdef) == '\\key a \\major'
         # none
         m_staffdef = etree.fromstring(
             '''<mei:staffDef xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lilypond.key(m_staffdef) == '\n'
+        assert lilypond.key(m_staffdef) == ''
 
     def test_meter_1(self):
         m_staffdef = etree.Element(mei.STAFF_DEF)
-        assert lilypond.meter(m_staffdef) == '\n'
+        assert lilypond.meter(m_staffdef) == ''
 
     def test_meter_2(self):
         m_staffdef = etree.Element(mei.STAFF_DEF)
         m_staffdef.set('meter.count', '3')
         m_staffdef.set('meter.unit', '2')
-        assert lilypond.meter(m_staffdef) == '\\time 3/2\n'
+        assert lilypond.meter(m_staffdef) == '\\time 3/2'
 
     def test_staff_1(self):
         "One measure."
@@ -421,6 +421,39 @@ class TestStaffClefAndKey(object):
             "\\key a \\major\n",
             "\\time 2/2\n",
             "%{ l.1 %} d,2 d,2\n",
+            "}\n",
+        ])
+        assert lilypond.staff(m_staff, m_staffdef) == expected
+
+    def test_clef_key_time_change(self):
+        "Clef, key, and time signature change mid-measure."
+        m_staff = etree.fromstring(
+        '''<mei:staff n="4" xmlns:mei="http://www.music-encoding.org/ns/mei">
+            <mei:layer n="1">
+                <mei:note dur="2" oct="2" pname="d"/>
+                <mei:staffDef xmlns:mei="http://www.music-encoding.org/ns/mei"
+                    n="4"
+                    clef.line="4"
+                    clef.shape="F"
+                    key.sig="3s"
+                    meter.count="2"
+                    meter.unit="2" />
+                <mei:note dur="2" oct="2" pname="d"/>
+            </mei:layer>
+        </mei:staff>''')
+        m_staffdef = etree.fromstring(
+        '''
+        <mei:staffDef xmlns:mei="http://www.music-encoding.org/ns/mei"
+            n="4" />
+        ''')
+        expected = ''.join([
+            "\\new Staff {\n",
+            "%{ staff 4 %}\n",
+            '\\set Staff.instrumentName = ""\n',
+            "\n",
+            "\n",
+            "\n",
+            "%{ l.1 %} d,2 \\clef \"bass\" \\key a \\major \\time 2/2 d,2\n",
             "}\n",
         ])
         assert lilypond.staff(m_staff, m_staffdef) == expected

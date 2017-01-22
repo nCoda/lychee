@@ -182,6 +182,11 @@ def sequential_music(m_container):
                 post.append(chord(elem))
             elif elem.tag == mei.M_REST:
                 post.append(measure_rest(elem))
+            elif elem.tag == mei.STAFF_DEF:
+                l_staff_def = staffdef(elem)
+                # staffdef might return an empty string.
+                if l_staff_def:
+                    post.append(l_staff_def)
             else:
                 action.failure(
                     'missed a {tag_name} in a <{container_name}>',
@@ -251,12 +256,11 @@ def clef(m_staffdef):
         elif shape == 'G' and line == '2':
             post = 'treble'
         else:
-            return '\n'
-
-        return '\\clef "{0}"\n'.format(post)
+            return ''
+        return '\\clef "{0}"'.format(post)
 
     else:
-        return '\n'
+        return ''
 
 
 @log.wrap('debug', 'convert key signature')
@@ -284,14 +288,14 @@ def key(m_staffdef):
     if m_staffdef.get('key.sig'):
         if m_staffdef.get('key.sig') in CONV:
             post = CONV[m_staffdef.get('key.sig')]
-            post = '\\key {0} \\major\n'.format(post)
+            post = '\\key {0} \\major'.format(post)
             return post
 
         else:
-            return '\n'
+            return ''
 
     else:
-        return '\n'
+        return ''
 
 
 @log.wrap('debug', 'convert time signature')
@@ -300,9 +304,29 @@ def meter(m_staffdef):
     '''
     check_tag(m_staffdef, mei.STAFF_DEF)
     if m_staffdef.get('meter.count') and m_staffdef.get('meter.unit'):
-        return '\\time {0}/{1}\n'.format(m_staffdef.get('meter.count'), m_staffdef.get('meter.unit'))
+        return '\\time {0}/{1}'.format(m_staffdef.get('meter.count'), m_staffdef.get('meter.unit'))
     else:
-        return '\n'
+        return ''
+
+
+@log.wrap('info', 'convert inline staffdef')
+def staffdef(m_staffdef):
+    '''
+    Convert an "inline" staffDef (one that appears inside a layer) to
+    LilyPond code.
+    '''
+    check_tag(m_staffdef, mei.STAFF_DEF)
+    post = []
+    l_clef = clef(m_staffdef)
+    l_key = key(m_staffdef)
+    l_meter = meter(m_staffdef)
+    if l_clef:
+        post.append(l_clef)
+    if l_key:
+        post.append(l_key)
+    if l_meter:
+        post.append(l_meter)
+    return ' '.join(post)
 
 
 @log.wrap('info', 'convert staff')
@@ -316,9 +340,9 @@ def staff(m_staff, m_staffdef):
         '\\new Staff {\n',
         '%{{ staff {0} %}}\n'.format(m_staff.get('n')),
         '\\set Staff.instrumentName = "{0}"\n'.format(m_staffdef.get('label', '')),
-        clef(m_staffdef),
-        key(m_staffdef),
-        meter(m_staffdef),
+        clef(m_staffdef) + '\n',
+        key(m_staffdef) + '\n',
+        meter(m_staffdef) + '\n',
     ]
 
     there_are_no_measures = True
@@ -346,7 +370,7 @@ def section(m_section):
         '<<\n',
     ]
 
-    for m_staffdef in m_section.iterfind('.//{0}'.format(mei.STAFF_DEF)):
+    for m_staffdef in m_section.iterfind('./{}//{}'.format(mei.SCORE_DEF, mei.STAFF_DEF)):
         query = './/{tag}[@n="{n}"]'.format(tag=mei.STAFF, n=m_staffdef.get('n'))
         post.append(staff(m_section.find(query), m_staffdef))
 

@@ -294,6 +294,18 @@ def set_instrument_name(l_name, m_staffdef):
     m_staffdef.set('label', l_name['name'])
 
 
+@log.wrap('info', 'postprocess staff')
+def postprocess_staff(m_staff):
+    '''
+    Fixes @n in <staffDef> elements so it matches the containing <staff>.
+
+    :param m_staff: The LMEI <staff>.
+    '''
+    staff_number = m_staff.get('n')
+    for m_staffdef in m_staff.iterfind('.//{}'.format(mei.STAFF_DEF)):
+        m_staffdef.set('n', staff_number)
+
+
 @log.wrap('info', 'convert staff', 'action')
 def do_staff(l_staff, m_section, m_staffdef, action):
     '''
@@ -345,6 +357,7 @@ def do_staff(l_staff, m_section, m_staffdef, action):
             for layer_n, l_layer in enumerate(l_each_staff['layers']):
                 # we must add 1 to layer_n or else the @n would start at 0, not 1
                 do_layer(l_layer, m_each_staff, layer_n + 1)
+            postprocess_staff(m_each_staff)
 
 
 def note_pitch(m_note):
@@ -479,6 +492,10 @@ def do_layer(l_layer, m_container, layer_n, action):
             if obj['ly_type'] in node_converters:
                 node_converters[obj['ly_type']](obj, m_layer)
                 action.success('converted {ly_type}', ly_type=obj['ly_type'])
+            elif obj['ly_type'] in _STAFF_SETTINGS_FUNCTIONS:
+                m_staffdef = etree.SubElement(m_layer, mei.STAFF_DEF)
+                _STAFF_SETTINGS_FUNCTIONS[obj['ly_type']](obj, m_staffdef)
+                # The <staffDef> has no "n" attribute, which we will fix in do_staff.
             else:
                 action.failure('unknown node type: {ly_type}', ly_type=obj['ly_type'])
 

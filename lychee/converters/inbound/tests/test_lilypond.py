@@ -159,6 +159,24 @@ class TestClef(object):
         assert m_staffdef.get('clef.shape') == 'F'
         assert m_staffdef.get('clef.line') == '4'
 
+    def test_change(self):
+        """Clef change in the context of a staff. The @n should match."""
+        l_staff = {
+            'ly_type': 'staff',
+            'initial_settings': [],
+            'content': [{'layers': [[
+                {'dur': '2', 'dots': [], 'ly_type': 'rest'},
+                {'ly_type': 'clef', 'type': 'treble'},
+                {'dur': '4', 'dots': [], 'ly_type': 'rest'},
+            ]]}],
+        }
+        m_staff = etree.Element(mei.STAFF)
+        m_staffdef = etree.Element(mei.STAFF_DEF)
+        m_staffdef.set('n', '888')
+        lilypond.do_staff(l_staff, m_staff, m_staffdef)
+        m_staffdef = m_staff.find('.//{}'.format(mei.STAFF_DEF))
+        assert m_staffdef.get('n') == '888'
+
 
 class TestTime(object):
     """
@@ -179,6 +197,24 @@ class TestTime(object):
         lilypond.set_initial_time(l_time, m_staffdef)
         assert m_staffdef.get('meter.count') == '23'
         assert m_staffdef.get('meter.unit') == '64'
+
+    def test_change(self):
+        """Time change in the context of a staff. The @n should match."""
+        l_staff = {
+            'ly_type': 'staff',
+            'initial_settings': [],
+            'content': [{'layers': [[
+                {'dur': '2', 'dots': [], 'ly_type': 'rest'},
+                {'ly_type': 'time', 'count': '4', 'unit': '4'},
+                {'dur': '4', 'dots': [], 'ly_type': 'rest'},
+            ]]}],
+        }
+        m_staff = etree.Element(mei.STAFF)
+        m_staffdef = etree.Element(mei.STAFF_DEF)
+        m_staffdef.set('n', '888')
+        lilypond.do_staff(l_staff, m_staff, m_staffdef)
+        m_staffdef = m_staff.find('.//{}'.format(mei.STAFF_DEF))
+        assert m_staffdef.get('n') == '888'
 
 
 class TestKeySignature(object):
@@ -206,6 +242,24 @@ class TestKeySignature(object):
         m_staffdef = etree.Element(mei.STAFF_DEF)
         lilypond.set_initial_key(l_key, m_staffdef)
         assert m_staffdef.get('key.sig') == '0'
+
+    def test_change(self):
+        """Key change in the context of a staff. The @n should match."""
+        l_staff = {
+            'ly_type': 'staff',
+            'initial_settings': [],
+            'content': [{'layers': [[
+                {'dur': '2', 'dots': [], 'ly_type': 'rest'},
+                {'ly_type': 'key', 'keynote': 'd', 'accid': '', 'mode': 'major'},
+                {'dur': '4', 'dots': [], 'ly_type': 'rest'},
+            ]]}],
+        }
+        m_staff = etree.Element(mei.STAFF)
+        m_staffdef = etree.Element(mei.STAFF_DEF)
+        m_staffdef.set('n', '888')
+        lilypond.do_staff(l_staff, m_staff, m_staffdef)
+        m_staffdef = m_staff.find('.//{}'.format(mei.STAFF_DEF))
+        assert m_staffdef.get('n') == '888'
 
 
 class TestInstrumentName(object):

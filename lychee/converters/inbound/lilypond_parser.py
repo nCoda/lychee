@@ -18,7 +18,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2017, 1, 15, 16, 54, 26, 6)
+__version__ = (2017, 2, 5, 18, 19, 40, 6)
 
 __all__ = [
     'LilyPondParser',
@@ -313,7 +313,39 @@ class LilyPondParser(Parser):
 
     @graken()
     def _tie_(self):
+        self._constant('tie')
+        self.name_last_node('ly_type')
         self._token('~')
+        self.ast._define(
+            ['ly_type'],
+            []
+        )
+
+    @graken()
+    def _slur_(self):
+        self._constant('slur')
+        self.name_last_node('ly_type')
+        with self._group():
+            with self._choice():
+                with self._option():
+                    self._token('(')
+                with self._option():
+                    self._token(')')
+                self._error('expecting one of: ( )')
+        self.name_last_node('slur')
+        self.ast._define(
+            ['ly_type', 'slur'],
+            []
+        )
+
+    @graken()
+    def _post_event_(self):
+        with self._choice():
+            with self._option():
+                self._tie_()
+            with self._option():
+                self._slur_()
+            self._error('no available options')
 
     @graken()
     def _notehead_(self):
@@ -373,11 +405,13 @@ class LilyPondParser(Parser):
                     self.name_last_node('dots')
             self._error('no available options')
 
-        with self._optional():
-            self._tie_()
-            self.name_last_node('tie')
+
+        def block14():
+            self._post_event_()
+        self._closure(block14)
+        self.name_last_node('post_events')
         self.ast._define(
-            ['accid', 'accid_force', 'dots', 'dur', 'ly_type', 'oct', 'pname', 'tie'],
+            ['accid', 'accid_force', 'dots', 'dur', 'ly_type', 'oct', 'pname', 'post_events'],
             []
         )
 
@@ -395,11 +429,13 @@ class LilyPondParser(Parser):
             self._accidental_force_()
             self.name_last_node('accid_force')
 
-        with self._optional():
-            self._tie_()
-            self.name_last_node('tie')
+
+        def block5():
+            self._post_event_()
+        self._closure(block5)
+        self.name_last_node('post_events')
         self.ast._define(
-            ['accid', 'accid_force', 'oct', 'pname', 'tie'],
+            ['accid', 'accid_force', 'oct', 'pname', 'post_events'],
             []
         )
 
@@ -440,11 +476,13 @@ class LilyPondParser(Parser):
                     self.name_last_node('dots')
             self._error('no available options')
 
-        with self._optional():
-            self._tie_()
-            self.name_last_node('tie')
+
+        def block12():
+            self._post_event_()
+        self._closure(block12)
+        self.name_last_node('post_events')
         self.ast._define(
-            ['dots', 'dur', 'ly_type', 'notes', 'tie'],
+            ['dots', 'dur', 'ly_type', 'notes', 'post_events'],
             []
         )
 
@@ -476,8 +514,14 @@ class LilyPondParser(Parser):
                     self._empty_closure()
                     self.name_last_node('dots')
             self._error('no available options')
+
+
+        def block10():
+            self._post_event_()
+        self._closure(block10)
+        self.name_last_node('post_events')
         self.ast._define(
-            ['dots', 'dur', 'ly_type'],
+            ['dots', 'dur', 'ly_type', 'post_events'],
             []
         )
 
@@ -509,8 +553,14 @@ class LilyPondParser(Parser):
                     self._empty_closure()
                     self.name_last_node('dots')
             self._error('no available options')
+
+
+        def block10():
+            self._post_event_()
+        self._closure(block10)
+        self.name_last_node('post_events')
         self.ast._define(
-            ['dots', 'dur', 'ly_type'],
+            ['dots', 'dur', 'ly_type', 'post_events'],
             []
         )
 
@@ -542,8 +592,14 @@ class LilyPondParser(Parser):
                     self._empty_closure()
                     self.name_last_node('dots')
             self._error('no available options')
+
+
+        def block10():
+            self._post_event_()
+        self._closure(block10)
+        self.name_last_node('post_events')
         self.ast._define(
-            ['dots', 'dur', 'ly_type'],
+            ['dots', 'dur', 'ly_type', 'post_events'],
             []
         )
 
@@ -828,6 +884,12 @@ class LilyPondSemantics(object):
         return ast
 
     def tie(self, ast):
+        return ast
+
+    def slur(self, ast):
+        return ast
+
+    def post_event(self, ast):
         return ast
 
     def notehead(self, ast):

@@ -103,7 +103,19 @@ duration =
     ( dur:() dots:{} )
     ;
 
-tie = '~';
+tie =
+    ly_type:`tie`
+    '~'
+    ;
+
+slur =
+    ly_type:`slur`
+    slur: ('(' | ')')
+    ;
+
+post_event =
+    tie | slur
+    ;
 
 notehead =
     pname:pitch_name ~
@@ -116,12 +128,12 @@ note =
     ly_type:`note`
     >notehead
     >duration
-    [tie:tie]
+    post_events:{post_event}*
     ;
 
 chord_note =
     >notehead
-    [tie:tie]
+    post_events:{post_event}*
     ;
 
 chord =
@@ -130,19 +142,19 @@ chord =
     notes:{chord_note}*
     '>'
     >duration
-    [tie:tie]
+    post_events:{post_event}*
     ;
 
 rest =
-    ly_type:`rest` /r/ >duration
+    ly_type:`rest` /r/ >duration post_events:{post_event}*
     ;
 
 measure_rest =
-    ly_type:`measure_rest` /R/ >duration
+    ly_type:`measure_rest` /R/ >duration post_events:{post_event}*
     ;
 
 spacer =
-    ly_type:`spacer` /s/ >duration
+    ly_type:`spacer` /s/ >duration post_events:{post_event}*
     ;
 
 node = note | rest | measure_rest | chord | spacer | staff_setting ;

@@ -28,6 +28,7 @@ Tests for "lmei_to_mei.py" and "verovio.py"
 
 from lxml import etree
 import pytest
+import six
 
 try:
     from unittest import mock
@@ -38,6 +39,26 @@ from lychee.converters.outbound import verovio, mei as lmei_to_mei
 from lychee import exceptions
 from lychee.namespaces import mei
 from lychee.signals import outbound
+
+
+def assert_elements_equal(first, second):
+    '''
+    Type-specific equality function for :class:`lxml.etree.Element` and
+    :class:`lxml.etree.ElementTree` objects.
+    '''
+    assert first.tag == second.tag
+    assert first.attrib == second.attrib
+    assert len(first) == len(second)
+
+    first_children = list(first)
+    second_children = list(second)
+
+    for i in range(len(first_children)):
+        try:
+            assert_elements_equal(first_children[i], second_children[i])
+        except AssertionError:
+            print('failed with children of {tag}'.format(tag=first.tag))
+            raise
 
 
 class TestToMei:
@@ -230,6 +251,797 @@ class TestToMei:
         actual = lmei_to_mei.change_measure_hierarchy(initial)
 
         assert ''.join(expected) == etree.tostring(actual)
+
+
+class TestMeasureCreation(object):
+
+    def test_1(self):
+        """one staff, several measures, 4/4 time signature given"""
+        initial = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:staff n="1">
+                    <mei:layer n="1">
+                        <!-- m.1 -->
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="4"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="1"/>
+                        <!-- m.3 -->
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="4"/>
+                        <!-- m.4 -->
+                        <mei:rest dur="1"/>
+                    </mei:layer>
+                </mei:staff>
+            </mei:section>
+            ''')
+        expected = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:measure n="1">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="4"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="2">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="3">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="4"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="4">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+            </mei:section>
+            ''')
+
+        actual = lmei_to_mei.create_measures(initial)
+
+        assert_elements_equal(expected, actual)
+
+    def test_several_layers(self):
+        """one staff, a few layers, a few measures"""
+        initial = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:staff n="1">
+                    <mei:layer n="1">
+                        <!-- m.1 -->
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="2"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="1"/>
+                    </mei:layer>
+                    <mei:layer n="2">
+                        <!-- m.1 -->
+                        <mei:rest dur="1"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="2"/>
+                    </mei:layer>
+                </mei:staff>
+            </mei:section>
+            ''')
+        expected = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:measure n="1">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="2"/>
+                        </mei:layer>
+                        <mei:layer n="2">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="2">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                        <mei:layer n="2">
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="2"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+            </mei:section>
+            ''')
+
+        actual = lmei_to_mei.create_measures(initial)
+
+        assert_elements_equal(expected, actual)
+
+    def test_1a_dots(self):
+        """Same as test_1() but with a dotted note."""
+        initial = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:staff n="1">
+                    <mei:layer n="1">
+                        <!-- m.1 -->
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="4"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="1"/>
+                        <!-- m.3 -->
+                        <mei:rest dur="2" dots="1"/>
+                        <mei:rest dur="4"/>
+                        <!-- m.4 -->
+                        <mei:rest dur="1"/>
+                    </mei:layer>
+                </mei:staff>
+            </mei:section>
+            ''')
+        expected = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:measure n="1">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="4"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="2">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="3">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="2" dots="1"/>
+                            <mei:rest dur="4"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="4">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+            </mei:section>
+            ''')
+
+        actual = lmei_to_mei.create_measures(initial)
+
+        assert_elements_equal(expected, actual)
+
+    def test_1b_dots(self):
+        """Same as test_1a() but with a double-dotted note."""
+        initial = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:staff n="1">
+                    <mei:layer n="1">
+                        <!-- m.1 -->
+                        <mei:rest dur="2" dots="2"/>
+                        <mei:rest dur="8"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="1"/>
+                        <!-- m.3 -->
+                        <mei:rest dur="2" dots="1"/>
+                        <mei:rest dur="4"/>
+                        <!-- m.4 -->
+                        <mei:rest dur="1"/>
+                    </mei:layer>
+                </mei:staff>
+            </mei:section>
+            ''')
+        expected = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:measure n="1">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="2" dots="2"/>
+                            <mei:rest dur="8"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="2">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="3">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="2" dots="1"/>
+                            <mei:rest dur="4"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="4">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+            </mei:section>
+            ''')
+
+        actual = lmei_to_mei.create_measures(initial)
+
+        assert_elements_equal(expected, actual)
+
+    def test_assumes_4_4(self):
+        """
+        One staff, several measures, no time signature; should assume 4/4 metre.
+
+        NB: it's the same as test_1() but the time signature is missing from the input.
+        """
+        initial = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:staff n="1">
+                    <mei:layer n="1">
+                        <!-- m.1 -->
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="4"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="1"/>
+                        <!-- m.3 -->
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="4"/>
+                        <!-- m.4 -->
+                        <mei:rest dur="1"/>
+                    </mei:layer>
+                </mei:staff>
+            </mei:section>
+            ''')
+        expected = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:measure n="1">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="4"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="2">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="3">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="4"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="4">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+            </mei:section>
+            ''')
+
+        actual = lmei_to_mei.create_measures(initial)
+
+        assert_elements_equal(expected, actual)
+
+    def test_6_8_metre(self):
+        """
+        One staff, several measures, 6/8 time signature given.
+
+        NB: This test guarantees a whole note in 6/8 is only interpreted as taking up the duration
+            of six eighth notes.
+        """
+        initial = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="6" meter.unit="8"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:staff n="1">
+                    <mei:layer n="1">
+                        <!-- m.1 -->
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="4"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="8"/>
+                        <mei:rest dur="8"/>
+                        <mei:rest dur="8"/>
+                        <mei:rest dur="8"/>
+                        <mei:rest dur="8"/>
+                        <mei:rest dur="8"/>
+                        <!-- m.3 -->
+                        <mei:rest dur="4" dots="1"/>
+                        <mei:rest dur="8"/>
+                        <mei:rest dur="8"/>
+                        <mei:rest dur="8"/>
+                        <!-- m.4 -->
+                        <mei:rest dur="1"/>
+                        <!-- m.5 -->
+                        <mei:rest dur="8"/>
+                    </mei:layer>
+                </mei:staff>
+            </mei:section>
+            ''')
+        expected = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="6" meter.unit="8"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:measure n="1">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="4"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="2">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="8"/>
+                            <mei:rest dur="8"/>
+                            <mei:rest dur="8"/>
+                            <mei:rest dur="8"/>
+                            <mei:rest dur="8"/>
+                            <mei:rest dur="8"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="3">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="4" dots="1"/>
+                            <mei:rest dur="8"/>
+                            <mei:rest dur="8"/>
+                            <mei:rest dur="8"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="4">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="5">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="8"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+            </mei:section>
+            ''')
+
+        actual = lmei_to_mei.create_measures(initial)
+
+        assert_elements_equal(expected, actual)
+
+    def test_3_2_metre(self):
+        """
+        One staff, several measures, 3/2 time signature given.
+
+        NB: This test guarantees a whole note on beat one in 3/2 will take up all three half notes,
+            but a whole note on beat 0.5 will only use four quarter notes.
+        """
+        initial = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="3" meter.unit="2"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:staff n="1">
+                    <mei:layer n="1">
+                        <!-- m.1 -->
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="2"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="4"/>
+                        <!-- m.3 -->
+                        <mei:rest dur="2" dots="1"/>
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="4"/>
+                        <!-- m.4 -->
+                        <mei:rest dur="1"/>
+                        <!-- m.5 -->
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="1"/>
+                        <mei:rest dur="4"/>
+                        <!-- m.6 -->
+                        <mei:rest dur="4"/>
+                    </mei:layer>
+                </mei:staff>
+            </mei:section>
+            ''')
+        expected = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="3" meter.unit="2"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:measure n="1">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="2"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="2">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="4"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="3">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="2" dots="1"/>
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="4"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="4">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="5">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="1"/>
+                            <mei:rest dur="4"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="6">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="4"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+            </mei:section>
+            ''')
+
+        actual = lmei_to_mei.create_measures(initial)
+
+        assert_elements_equal(expected, actual)
+
+    # def test_tuplets_3_4(self):
+    #     """one staff, several measures, 3/4 time signature given; handles tuplets properly"""
+    #     pass
+
+    def test_multi_staff_polyphony(self):
+        """
+        Properly handles polyphony created in the <staff n="1"> <staff n="1"> LilyPond way.
+
+        Change between monophony/polyphony on a barline.
+        """
+        initial = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:staff n="1">
+                    <mei:layer n="1">
+                        <!-- m.1 -->
+                        <mei:rest dur="1"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="2"/>
+                    </mei:layer>
+                </mei:staff>
+                <mei:staff n="1">
+                    <mei:layer n="1">
+                        <!-- m.3 -->
+                        <mei:rest dur="1"/>
+                        <!-- m.4 -->
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="2"/>
+                    </mei:layer>
+                    <mei:layer n="2">
+                        <!-- m.3 -->
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="2"/>
+                        <!-- m.4 -->
+                        <mei:rest dur="1"/>
+                    </mei:layer>
+                </mei:staff>
+            </mei:section>
+            ''')
+        expected = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:measure n="1">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="2">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="2"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="3">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                        <mei:layer n="2">
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="2"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="4">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="2"/>
+                        </mei:layer>
+                        <mei:layer n="2">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+            </mei:section>
+            ''')
+
+        actual = lmei_to_mei.create_measures(initial)
+
+        assert_elements_equal(expected, actual)
+
+    def test_three_staves(self):
+        """three staves, several measures, 4/4 time signature given"""
+        initial = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                            <mei:staffDef lines="5" n="2" meter.count="4" meter.unit="4"/>
+                            <mei:staffDef lines="5" n="3" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:staff n="1">
+                    <mei:layer n="1">
+                        <!-- m.1 -->
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="2"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="1"/>
+                    </mei:layer>
+                </mei:staff>
+                <mei:staff n="2">
+                    <mei:layer n="1">
+                        <!-- m.1 -->
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="2"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="1"/>
+                    </mei:layer>
+                </mei:staff>
+                <mei:staff n="3">
+                    <mei:layer n="1">
+                        <!-- m.1 -->
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="2"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="1"/>
+                    </mei:layer>
+                </mei:staff>
+            </mei:section>
+            ''')
+        expected = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                            <mei:staffDef lines="5" n="2" meter.count="4" meter.unit="4"/>
+                            <mei:staffDef lines="5" n="3" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:measure n="1">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="2"/>
+                        </mei:layer>
+                    </mei:staff>
+                    <mei:staff n="2">
+                        <mei:layer n="1">
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="2"/>
+                        </mei:layer>
+                    </mei:staff>
+                    <mei:staff n="3">
+                        <mei:layer n="1">
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="2"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="2">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                    <mei:staff n="2">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                    <mei:staff n="3">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+            </mei:section>
+            ''')
+
+        actual = lmei_to_mei.create_measures(initial)
+
+        assert_elements_equal(expected, actual)
 
 
 class TestToVerovio:

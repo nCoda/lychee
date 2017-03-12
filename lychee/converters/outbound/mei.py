@@ -91,48 +91,6 @@ def wrap_section_element(section):
     return post
 
 
-def change_measure_hierarchy(lmei_section):
-    '''
-    Convert a <section> with measure-within-staff hierarchy to staff-within-measure hierarchy. That
-    represents a conversion from Lychee-MEI to standard MEI.
-
-    :param lmei_section: The <section> to convert.
-    :type lmei_section: :class:`xml.etree.ElementTree.Element`
-    :returns: A converted <section>.
-    :rtype: :class:`xml.etree.ElementTree.Element`
-    '''
-
-    section = etree.Element(mei.SECTION)
-    sect_id = lmei_section.get(xml.ID)
-    if sect_id:
-        section.set(xml.ID, sect_id)
-    scoreDef = lmei_section.find('.//{}'.format(mei.SCORE_DEF))
-    if scoreDef is not None:
-        section.append(scoreDef)
-    measure_num = 0
-    still_have_measures = True
-
-    while still_have_measures:
-        measure_num += 1
-        xpath_query = './/{tag}[@n="{n}"]'.format(tag=mei.MEASURE, n=measure_num)
-        staffs = lmei_section.findall(xpath_query)
-
-        if 0 == len(staffs):
-            still_have_measures = False
-            continue
-
-        measure = etree.Element(mei.MEASURE, n=str(measure_num))
-
-        for i, each in enumerate(staffs):
-            each.tag = mei.STAFF
-            each.set('n', str(i+1))
-            measure.append(each)
-
-        section.append(measure)
-
-    return section
-
-
 def create_measures(lmei_section):
     '''
     Convert a Lychee-MEI <section> without <measure> elements into an MEI section by adding

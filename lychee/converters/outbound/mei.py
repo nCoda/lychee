@@ -39,12 +39,16 @@ Convert a Lychee-MEI document to a standard MEI document.
     :mod:`lychee.signals.outbound` module for more information.
 '''
 
+from fractions import Fraction
+
 from lxml import etree
 
 from lychee import exceptions
 from lychee.namespaces import mei, xml
 
 _ERR_INPUT_NOT_SECTION = 'LMEI-to-MEI did not receive a <section>'
+
+_DURATION_HAVING_ELEMENTS = (mei.CHORD, mei.NOTE, mei.REST, mei.SPACE)
 
 
 def convert(document, **kwargs):
@@ -187,9 +191,20 @@ def create_measures(lmei_section):
             #     Limitation: does not handle tuplets.
             meas_num = previous_measures + 1
             beat_count = 0.0
+            # We can't use beat_count to tell us when we're at the start of a <measure> (and should
+            # therefore make new <measure> and <layer> elements) because there may be elements
+            # without duration at the start of a <measure>.
+            things_in_this_measure = 0
+
+            # Hold information about tuplets.
+            # Keys are @xml:id of affected chord/note/rest/spacer (without leading #).
+            # Value is a list of tuplet ratios as Fraction instances. When you multiply the @dur
+            # of a note in a tuplet by these Fraction instances, you get the note's "beat count."
+            # To save memory, remove values from the dictionary once the note is converted.
+            tuplets = {}
 
             for l_elem in l_layer.iterfind('*'):
-                if beat_count == 0.0:
+                if things_in_this_measure == 0:
                     # create a new measure, or find it from a previous <staff>
                     if meas_num in m_measures:
                         m_meas = m_measures[meas_num]
@@ -203,27 +218,57 @@ def create_measures(lmei_section):
                         m_staff = etree.SubElement(m_meas, mei.STAFF, n=l_staff.get('n'))
                     m_layer = etree.SubElement(m_staff, mei.LAYER, n=l_layer.get('n'))
 
-                # whole note as first thing in measure will always take the whole measure
-                if beat_count == 0.0 and l_elem.get('dur') == '1':
+                # count the duration of this element (if relevant)
+                if l_elem.tag not in _DURATION_HAVING_ELEMENTS:
+                    pass
+                elif (beat_count == 0.0 and
+                      l_elem.get('dur') == '1' and
+                      l_elem.get(xml.ID) not in tuplets):
+                    # whole note as first thing in measure will always take the whole measure
                     beat_count = meter_count_factor
                 else:
                     # It's "scaled" according to the meter-count factor.
                     # Use float() so the division works properly.
                     scaled_dur = 1.0 / float(l_elem.get('dur'))
-                    beat_count += scaled_dur
 
                     if l_elem.get('dots'):
                         last_value_added = scaled_dur
                         for _ in range(int(l_elem.get('dots'))):
                             last_value_added /= 2.0
-                            beat_count += last_value_added
+                            scaled_dur += last_value_added
+
+                    if l_elem.get(xml.ID) in tuplets:
+                        for each_tuplet in tuplets[l_elem.get(xml.ID)]:
+                            scaled_dur = scaled_dur * each_tuplet
+
+                        del tuplets[l_elem.get(xml.ID)]
+
+                    beat_count += scaled_dur
+
+                # set up a <tupletSpan>
+                if l_elem.tag == mei.TUPLET_SPAN:
+                    plist = l_elem.get('plist', '')
+                    plist = plist.replace('#', '')
+                    if plist != '':
+                        plist = plist.split(' ')
+                        tuplet_ratio = Fraction(
+                            int(l_elem.get('numbase', 0)),
+                            int(l_elem.get('num', 0))
+                        )
+                        for each_xmlid in plist:
+                            if each_xmlid in tuplets:
+                                tuplets[each_xmlid].append(tuplet_ratio)
+                            else:
+                                tuplets[each_xmlid] = [tuplet_ratio]
 
                 m_layer.append(l_elem)
+                things_in_this_measure += 1
 
                 if beat_count >= meter_count_factor:
                     highest_meas_num_in_this_staff = max(highest_meas_num_in_this_staff, meas_num)
-                    beat_count = 0
+                    beat_count = 0.0
                     meas_num += 1
+                    things_in_this_measure = 0
 
         # update "meas_nums" for next time we hit a <staff> with this @n
         meas_nums[l_staff.get('n')] = highest_meas_num_in_this_staff

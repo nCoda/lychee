@@ -1043,6 +1043,260 @@ class TestMeasureCreation(object):
 
         assert_elements_equal(expected, actual)
 
+    def test_tuplets_1(self):
+        """one measure, one tuplet, 4/4 time"""
+        initial = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:staff n="1">
+                    <mei:layer n="1">
+                        <mei:tupletSpan
+                            endid="#tuplet-rest-3"
+                            num="3"
+                            numbase="2"
+                            plist="#tuplet-rest-1 #tuplet-rest-2 #tuplet-rest-3"
+                            startid="#tuplet-rest-1"
+                        />
+                        <!-- m.1 -->
+                        <mei:rest dur="2" xml:id="tuplet-rest-1"/>
+                        <mei:rest dur="2" xml:id="tuplet-rest-2"/>
+                        <mei:rest dur="2" xml:id="tuplet-rest-3"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="1"/>
+                    </mei:layer>
+                </mei:staff>
+            </mei:section>
+            ''')
+        expected = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:measure n="1">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:tupletSpan
+                                endid="#tuplet-rest-3"
+                                num="3"
+                                numbase="2"
+                                plist="#tuplet-rest-1 #tuplet-rest-2 #tuplet-rest-3"
+                                startid="#tuplet-rest-1"
+                            />
+                            <mei:rest dur="2" xml:id="tuplet-rest-1"/>
+                            <mei:rest dur="2" xml:id="tuplet-rest-2"/>
+                            <mei:rest dur="2" xml:id="tuplet-rest-3"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="2">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+            </mei:section>
+            ''')
+
+        actual = lmei_to_mei.create_measures(initial)
+        etree.dump(actual)
+
+        assert_elements_equal(expected, actual)
+
+    def test_tuplets_2(self):
+        """one measure, two tuplets, 3/4 time"""
+        initial = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="3" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:staff n="1">
+                    <mei:layer n="1">
+                        <!-- m.1 -->
+                        <mei:tupletSpan
+                            endid="#tuplet-rest-3"
+                            num="3"
+                            numbase="2"
+                            plist="#tuplet-rest-1 #tuplet-rest-2 #tuplet-rest-3"
+                            startid="#tuplet-rest-1"
+                        />
+                        <mei:rest dur="8" xml:id="tuplet-rest-1"/>
+                        <mei:rest dur="8" xml:id="tuplet-rest-2"/>
+                        <mei:rest dur="8" xml:id="tuplet-rest-3"/>
+                        <mei:rest dur="4"/>
+                        <mei:tupletSpan
+                            endid="#tuplet-rest-6"
+                            num="3"
+                            numbase="2"
+                            plist="#tuplet-rest-4 #tuplet-rest-5 #tuplet-rest-6"
+                            startid="#tuplet-rest-4"
+                        />
+                        <mei:rest dur="8" xml:id="tuplet-rest-4"/>
+                        <mei:rest dur="8" xml:id="tuplet-rest-5"/>
+                        <mei:rest dur="8" xml:id="tuplet-rest-6"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="1"/>
+                    </mei:layer>
+                </mei:staff>
+            </mei:section>
+            ''')
+        expected = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="3" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:measure n="1">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:tupletSpan
+                                endid="#tuplet-rest-3"
+                                num="3"
+                                numbase="2"
+                                plist="#tuplet-rest-1 #tuplet-rest-2 #tuplet-rest-3"
+                                startid="#tuplet-rest-1"
+                            />
+                            <mei:rest dur="8" xml:id="tuplet-rest-1"/>
+                            <mei:rest dur="8" xml:id="tuplet-rest-2"/>
+                            <mei:rest dur="8" xml:id="tuplet-rest-3"/>
+                            <mei:rest dur="4"/>
+                            <mei:tupletSpan
+                                endid="#tuplet-rest-6"
+                                num="3"
+                                numbase="2"
+                                plist="#tuplet-rest-4 #tuplet-rest-5 #tuplet-rest-6"
+                                startid="#tuplet-rest-4"
+                            />
+                            <mei:rest dur="8" xml:id="tuplet-rest-4"/>
+                            <mei:rest dur="8" xml:id="tuplet-rest-5"/>
+                            <mei:rest dur="8" xml:id="tuplet-rest-6"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="2">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+            </mei:section>
+            ''')
+
+        actual = lmei_to_mei.create_measures(initial)
+        etree.dump(actual)
+
+        assert_elements_equal(expected, actual)
+
+    def test_tuplets_3(self):
+        """one measure, one-level nested tuplets, 3/4 time"""
+        initial = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="3" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:staff n="1">
+                    <mei:layer n="1">
+                        <!-- m.1 -->
+                        <mei:tupletSpan
+                            endid="#tuplet-rest-5"
+                            num="3"
+                            numbase="2"
+                            plist="#tuplet-rest-1 #tuplet-rest-2 #tuplet-rest-3 #tuplet-rest-4 #tuplet-rest-5"
+                            startid="#tuplet-rest-1"
+                        />
+                        <mei:tupletSpan
+                            endid="#tuplet-rest-5"
+                            num="3"
+                            numbase="2"
+                            plist="#tuplet-rest-3 #tuplet-rest-4 #tuplet-rest-5"
+                            startid="#tuplet-rest-3"
+                        />
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="8" xml:id="tuplet-rest-1"/>
+                        <mei:rest dur="8" xml:id="tuplet-rest-2"/>
+                        <mei:rest dur="8" xml:id="tuplet-rest-3"/>
+                        <mei:rest dur="8" xml:id="tuplet-rest-4"/>
+                        <mei:rest dur="8" xml:id="tuplet-rest-5"/>
+                        <mei:rest dur="4"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="1"/>
+                    </mei:layer>
+                </mei:staff>
+            </mei:section>
+            ''')
+        expected = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="3" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:measure n="1">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:tupletSpan
+                                endid="#tuplet-rest-5"
+                                num="3"
+                                numbase="2"
+                                plist="#tuplet-rest-1 #tuplet-rest-2 #tuplet-rest-3 #tuplet-rest-4 #tuplet-rest-5"
+                                startid="#tuplet-rest-1"
+                            />
+                            <mei:tupletSpan
+                                endid="#tuplet-rest-5"
+                                num="3"
+                                numbase="2"
+                                plist="#tuplet-rest-3 #tuplet-rest-4 #tuplet-rest-5"
+                                startid="#tuplet-rest-3"
+                            />
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="8" xml:id="tuplet-rest-1"/>
+                            <mei:rest dur="8" xml:id="tuplet-rest-2"/>
+                            <mei:rest dur="8" xml:id="tuplet-rest-3"/>
+                            <mei:rest dur="8" xml:id="tuplet-rest-4"/>
+                            <mei:rest dur="8" xml:id="tuplet-rest-5"/>
+                            <mei:rest dur="4"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="2">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+            </mei:section>
+            ''')
+
+        actual = lmei_to_mei.create_measures(initial)
+        etree.dump(actual)
+
+        assert_elements_equal(expected, actual)
+
 
 class TestToVerovio:
 

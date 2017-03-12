@@ -28,7 +28,6 @@ Tests for "lmei_to_mei.py" and "verovio.py"
 
 from lxml import etree
 import pytest
-import six
 
 try:
     from unittest import mock
@@ -38,7 +37,6 @@ except ImportError:
 from lychee.converters.outbound import verovio, mei as lmei_to_mei
 from lychee import exceptions
 from lychee.namespaces import mei
-from lychee.signals import outbound
 
 
 def assert_elements_equal(first, second):
@@ -61,7 +59,7 @@ def assert_elements_equal(first, second):
             raise
 
 
-class TestToMei:
+class TestToMei(object):
 
     def test_wrap_section_element(self):
         '''
@@ -1155,42 +1153,7 @@ class TestToVerovio(object):
         assert isinstance(actual, unicode)
 
 
-@pytest.fixture
-def signals_fixture(request):
-    '''
-    This fixture sets up Mock functions as the slots to the outbound.CONVERSION_STARTED,
-    CONVERSION_FINISH, and CONVERSION_ERROR signals. The mocks are returned in that order, and
-    automatically disconnected from the signals at the end of the test.
-    '''
-
-    # set up some slots for the three signals called by lmei_to_mei.convert()
-    started_mock = mock.Mock()
-    finish_mock = mock.Mock()
-    error_mock = mock.Mock()
-    def started_slot(**kwargs):
-        started_mock(**kwargs)
-    def finish_slot(**kwargs):
-        finish_mock(**kwargs)
-    def error_slot(**kwargs):
-        error_mock(**kwargs)
-
-    # connect the slots to the signals
-    outbound.CONVERSION_STARTED.connect(started_slot)
-    outbound.CONVERSION_FINISH.connect(finish_slot)
-    outbound.CONVERSION_ERROR.connect(error_slot)
-
-    def finalizer():
-        # disconnect the slots
-        outbound.CONVERSION_STARTED.disconnect(started_slot)
-        outbound.CONVERSION_FINISH.disconnect(finish_slot)
-        outbound.CONVERSION_ERROR.disconnect(error_slot)
-
-    request.addfinalizer(finalizer)
-
-    return started_mock, finish_mock, error_mock
-
-
-class TestIntegration:
+class TestIntegration(object):
     '''
     Integration tests.
     '''
@@ -1198,24 +1161,95 @@ class TestIntegration:
     def test_integration_to_mei_1(self):
         '''
         An integration test for the LMEI to MEI converter.
+
+        Same XML document as TestMeasureCreation.test_1().
         '''
-        # NOTE: this is the same input document as for test_change_measure_hierarchy_1
-        initial = ('<mei:section xml:id="lol" xmlns:mei="http://www.music-encoding.org/ns/mei"><mei:scoreDef/>'
-                   '<mei:staff n="1"><mei:measure n="1"/><mei:measure n="2"/></mei:staff>'
-                   '<mei:staff n="2"><mei:measure n="1"/><mei:measure n="2"/></mei:staff>'
-                   '</mei:section>'
-                  )
-        expected = ('<mei:mei xmlns:mei="http://www.music-encoding.org/ns/mei"><mei:music><mei:body>'
-                    '<mei:mdiv><mei:score><mei:section xml:id="lol"><mei:scoreDef/><mei:measure n="1">'
-                    '<mei:staff n="1"/><mei:staff n="2"/></mei:measure><mei:measure n="2">'
-                    '<mei:staff n="1"/><mei:staff n="2"/></mei:measure></mei:section></mei:score>'
-                    '</mei:mdiv></mei:body></mei:music></mei:mei>'
-                   )
-        document = etree.fromstring(initial)
+        initial = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:staff n="1">
+                    <mei:layer n="1">
+                        <!-- m.1 -->
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="4"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="1"/>
+                        <!-- m.3 -->
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="4"/>
+                        <!-- m.4 -->
+                        <mei:rest dur="1"/>
+                    </mei:layer>
+                </mei:staff>
+            </mei:section>
+            ''')
+        expected = etree.fromstring('''
+            <mei:mei xmlns:mei="http://www.music-encoding.org/ns/mei">
+            <mei:music>
+            <mei:body>
+            <mei:mdiv>
+            <mei:score>
+            <mei:section>
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:measure n="1">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="4"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="2">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="3">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="2"/>
+                            <mei:rest dur="4"/>
+                            <mei:rest dur="4"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+                <mei:measure n="4">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+            </mei:section>
+            </mei:score>
+            </mei:mdiv>
+            </mei:body>
+            </mei:music>
+            </mei:mei>
+            ''')
 
-        actual = lmei_to_mei.convert(document, method='c14n')
+        actual = lmei_to_mei.convert(initial)
 
-        assert expected == etree.tostring(actual)
+        assert_elements_equal(expected, actual)
+
+
 
     def test_integration_to_mei_2(self):
         '''
@@ -1237,25 +1271,96 @@ class TestIntegration:
 
     def test_integration_to_verovio_1(self):
         '''
-        An integration test for the LMEI to Verovio converer.
+        An integration test for the LMEI to Verovio converter.
+
+        Same XML document as TestMeasureCreation.test_1().
         '''
-        # NOTE: this is the same input document as for test_change_measure_hierarchy_1
-        initial = ('<mei:section xmlns:mei="http://www.music-encoding.org/ns/mei"><mei:scoreDef/>'
-                   '<mei:staff n="1"><mei:measure n="1"/><mei:measure n="2"/></mei:staff>'
-                   '<mei:staff n="2"><mei:measure n="1"/><mei:measure n="2"/></mei:staff>'
-                   '</mei:section>'
-                  )
-        expected = ('<?xml version="1.0" encoding="UTF-8"?>'
-                    '<mei xmlns:mei="http://www.music-encoding.org/ns/mei"><music><body><mdiv><score>'
-                    '<section><scoreDef/><measure n="1"><staff n="1"/><staff n="2"/></measure>'
-                    '<measure n="2"><staff n="1"/><staff n="2"/></measure></section></score>'
-                    '</mdiv></body></music></mei>'
-                   )
-        document = etree.fromstring(initial)
+        initial = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:staff n="1">
+                    <mei:layer n="1">
+                        <!-- m.1 -->
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="4"/>
+                        <!-- m.2 -->
+                        <mei:rest dur="1"/>
+                        <!-- m.3 -->
+                        <mei:rest dur="2"/>
+                        <mei:rest dur="4"/>
+                        <mei:rest dur="4"/>
+                        <!-- m.4 -->
+                        <mei:rest dur="1"/>
+                    </mei:layer>
+                </mei:staff>
+            </mei:section>
+            ''')
+        expected = etree.fromstring('''<?xml version="1.0" encoding="UTF-8"?>
+            <mei xmlns:mei="http://www.music-encoding.org/ns/mei">
+            <music>
+            <body>
+            <mdiv>
+            <score>
+            <section>
+                <scoreDef>
+                    <staffGrp symbol="none">
+                        <staffGrp symbol="bracket">
+                            <staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </staffGrp>
+                    </staffGrp>
+                </scoreDef>
+                <measure n="1">
+                    <staff n="1">
+                        <layer n="1">
+                            <rest dur="4"/>
+                            <rest dur="2"/>
+                            <rest dur="4"/>
+                        </layer>
+                    </staff>
+                </measure>
+                <measure n="2">
+                    <staff n="1">
+                        <layer n="1">
+                            <rest dur="1"/>
+                        </layer>
+                    </staff>
+                </measure>
+                <measure n="3">
+                    <staff n="1">
+                        <layer n="1">
+                            <rest dur="2"/>
+                            <rest dur="4"/>
+                            <rest dur="4"/>
+                        </layer>
+                    </staff>
+                </measure>
+                <measure n="4">
+                    <staff n="1">
+                        <layer n="1">
+                            <rest dur="1"/>
+                        </layer>
+                    </staff>
+                </measure>
+            </section>
+            </score>
+            </mdiv>
+            </body>
+            </music>
+            </mei>
+            ''')
 
-        actual = verovio.convert(document)
+        actual = verovio.convert(initial)
 
-        assert expected == actual
+        assert isinstance(actual, unicode)
+        # lxml doesn't want to parse a unicode
+        assert_elements_equal(expected, etree.fromstring(bytes(actual)))
 
     def test_integration_to_verovio_2(self):
         '''

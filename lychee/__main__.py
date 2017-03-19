@@ -29,7 +29,8 @@ Module that runs Lychee as a program.
 import json
 import subprocess
 
-import lychee
+import lychee.signals
+import lychee.workflow.session
 signals = lychee.signals
 outbound = lychee.signals.outbound
 # NB: it's weird, but this guarantees we won't accidentally reinitialize any of the signals
@@ -39,7 +40,7 @@ test_which_format = 'lilypond'
 # test_which_format = 'abjad'
 
 
-session = lychee.InteractiveSession()
+session = lychee.workflow.session.InteractiveSession(vcs='mercurial')
 session.set_repo_dir('testrepo')
 
 
@@ -59,7 +60,13 @@ def mei_through_verovio(dtype, placement, document, **kwargs):
     with open(output_filename, 'w') as the_file:
         the_file.write(document)
 
-    subprocess.call(['verovio', '--all-pages', '-f', 'mei', '-o', '{}/verovio_output'.format(repodir), output_filename])
+    subprocess.call([
+        'verovio',
+        '--all-pages',
+        '-f', 'mei',
+        '-o', '{}/verovio_output'.format(repodir),
+        output_filename,
+        ])
 
 
 def print_outbound_json(dtype, placement, document, **kwargs):

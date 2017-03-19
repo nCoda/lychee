@@ -39,14 +39,16 @@ Convert a Lychee-MEI document to a standard MEI document.
     :mod:`lychee.signals.outbound` module for more information.
 '''
 
+from fractions import Fraction
+
 from lxml import etree
 
-import lychee
 from lychee import exceptions
 from lychee.namespaces import mei, xml
-from lychee.signals import outbound
 
 _ERR_INPUT_NOT_SECTION = 'LMEI-to-MEI did not receive a <section>'
+
+_DURATION_HAVING_ELEMENTS = (mei.CHORD, mei.NOTE, mei.REST, mei.SPACE)
 
 
 def convert(document, **kwargs):
@@ -60,7 +62,7 @@ def convert(document, **kwargs):
     :raises: :exc:`lychee.exceptions.OutboundConversionError` when there is a forseeable error.
     '''
     if isinstance(document, etree._Element) and mei.SECTION == document.tag:
-        return wrap_section_element(change_measure_hierarchy(document))
+        return wrap_section_element(create_measures(document))
     else:
         raise exceptions.OutboundConversionError(_ERR_INPUT_NOT_SECTION)
 
@@ -89,43 +91,145 @@ def wrap_section_element(section):
     return post
 
 
-def change_measure_hierarchy(lmei_section):
+def create_measures(lmei_section):
     '''
-    Convert a <section> with measure-within-staff hierarchy to staff-within-measure hierarchy. That
-    represents a conversion from Lychee-MEI to standard MEI.
+    Convert a Lychee-MEI <section> without <measure> elements into an MEI section by adding
+    <measure> elements at the expected place in the standard MEI hierarchy.
 
     :param lmei_section: The <section> to convert.
     :type lmei_section: :class:`xml.etree.ElementTree.Element`
     :returns: A converted <section>.
     :rtype: :class:`xml.etree.ElementTree.Element`
+
+    .. note:: During conversion, the LMEI <section> is not modified.
+
+    **Known Limitations**
+
+    - Does not process tuplets.
+    - Uses one meter signature for all staves.
+    - Uses one meter signature for the whole <section> (cannot change).
+    - Assumes 4/4 meter unless indicated otherwise with @meter.count and @meter.unit
+      on the *first* <staffDef>.
     '''
 
-    section = etree.Element(mei.SECTION)
-    sect_id = lmei_section.get(xml.ID)
-    if sect_id:
-        section.set(xml.ID, sect_id)
-    scoreDef = lmei_section.find('.//{}'.format(mei.SCORE_DEF))
-    if scoreDef is not None:
-        section.append(scoreDef)
-    measure_num = 0
-    still_have_measures = True
+    # 0.) The poor man's deep copy.
+    #     This allows us to reuse LMEI elements in the MEI output, rather than deep copying later.
+    l_section = etree.fromstring(etree.tostring(lmei_section))
 
-    while still_have_measures:
-        measure_num += 1
-        xpath_query = './/{tag}[@n="{n}"]'.format(tag=mei.MEASURE, n=measure_num)
-        staffs = lmei_section.findall(xpath_query)
+    # 1.) Assume or find a time signature.
+    #     Limitation: one time signature for all <staff>.
+    #     Limitation: one time signature for the whole <section>.
+    #     Limitation: metre must be indicated with @meter.count and @meter.unit on <staffDef>.
+    first_staff_def = l_section.find('.//{tag}'.format(tag=mei.STAFF_DEF))
+    meter_count = float(first_staff_def.get('meter.count', 4))
+    meter_unit = float(first_staff_def.get('meter.unit', 4))
+    # NB: the "meter count factor" is the beat count we actually need in every measure
+    meter_count_factor = meter_count / meter_unit
 
-        if 0 == len(staffs):
-            still_have_measures = False
-            continue
+    # 1.a.) Make sure all the first <staffDef> knows the metre (in case we assumed it).
+    first_staff_def.set('meter.count', str(int(meter_count)))
+    first_staff_def.set('meter.unit', str(int(meter_unit)))
 
-        measure = etree.Element(mei.MEASURE, n=str(measure_num))
+    # 2.) Set up the <section> and copy the <scoreDef> from LMEI to MEI.
+    m_section = etree.Element(mei.SECTION)
+    m_section.append(l_section.find(mei.SCORE_DEF))
 
-        for i, each in enumerate(staffs):
-            each.tag = mei.STAFF
-            each.set('n', str(i+1))
-            measure.append(each)
+    # 3.) For each LMEI <staff>
+    m_measures = {}  # NB: in this dict, keys are measure number as int
+    meas_nums = {}  # NB: in this dict, keys are staff[@n] and values are the measure number most
+                    #     recently processed for that <staff>
+    for l_staff in l_section.iterfind(mei.STAFF):
+        # in case we already had a <staff> with this @n, measure numbers don't start at 1
+        previous_measures = meas_nums.get(l_staff.get('n'), 0)
+        highest_meas_num_in_this_staff = previous_measures
 
-        section.append(measure)
+        # 4.) For each LMEI <layer>
+        for l_layer in l_staff.iterfind(mei.LAYER):
+            # 5.) Find enough stuff for an MEI <measure> and stick it in.
+            #     Limitation: does not handle tuplets.
+            meas_num = previous_measures + 1
+            beat_count = 0.0
+            # We can't use beat_count to tell us when we're at the start of a <measure> (and should
+            # therefore make new <measure> and <layer> elements) because there may be elements
+            # without duration at the start of a <measure>.
+            things_in_this_measure = 0
 
-    return section
+            # Hold information about tuplets.
+            # Keys are @xml:id of affected chord/note/rest/spacer (without leading #).
+            # Value is a list of tuplet ratios as Fraction instances. When you multiply the @dur
+            # of a note in a tuplet by these Fraction instances, you get the note's "beat count."
+            # To save memory, remove values from the dictionary once the note is converted.
+            tuplets = {}
+
+            for l_elem in l_layer.iterfind('*'):
+                if things_in_this_measure == 0:
+                    # create a new measure, or find it from a previous <staff>
+                    if meas_num in m_measures:
+                        m_meas = m_measures[meas_num]
+                    else:
+                        m_meas = etree.SubElement(m_section, mei.MEASURE, n=str(meas_num))
+                        m_measures[meas_num] = m_meas
+
+                    # try to find this <staff> from a previous <layer>
+                    m_staff = m_meas.find('{tag}[@n="{n}"]'.format(tag=mei.STAFF, n=l_staff.get('n')))
+                    if m_staff is None:
+                        m_staff = etree.SubElement(m_meas, mei.STAFF, n=l_staff.get('n'))
+                    m_layer = etree.SubElement(m_staff, mei.LAYER, n=l_layer.get('n'))
+
+                # count the duration of this element (if relevant)
+                if l_elem.tag not in _DURATION_HAVING_ELEMENTS:
+                    pass
+                elif (beat_count == 0.0 and
+                      l_elem.get('dur') == '1' and
+                      l_elem.get(xml.ID) not in tuplets):
+                    # whole note as first thing in measure will always take the whole measure
+                    beat_count = meter_count_factor
+                else:
+                    # It's "scaled" according to the meter-count factor.
+                    # Use float() so the division works properly.
+                    scaled_dur = 1.0 / float(l_elem.get('dur'))
+
+                    if l_elem.get('dots'):
+                        last_value_added = scaled_dur
+                        for _ in range(int(l_elem.get('dots'))):
+                            last_value_added /= 2.0
+                            scaled_dur += last_value_added
+
+                    if l_elem.get(xml.ID) in tuplets:
+                        for each_tuplet in tuplets[l_elem.get(xml.ID)]:
+                            scaled_dur = scaled_dur * each_tuplet
+
+                        del tuplets[l_elem.get(xml.ID)]
+
+                    beat_count += scaled_dur
+
+                # set up a <tupletSpan>
+                if l_elem.tag == mei.TUPLET_SPAN:
+                    plist = l_elem.get('plist', '')
+                    plist = plist.replace('#', '')
+                    if plist != '':
+                        plist = plist.split(' ')
+                        tuplet_ratio = Fraction(
+                            int(l_elem.get('numbase', 0)),
+                            int(l_elem.get('num', 0))
+                        )
+                        for each_xmlid in plist:
+                            if each_xmlid in tuplets:
+                                tuplets[each_xmlid].append(tuplet_ratio)
+                            else:
+                                tuplets[each_xmlid] = [tuplet_ratio]
+
+                m_layer.append(l_elem)
+                things_in_this_measure += 1
+
+                if beat_count >= meter_count_factor:
+                    highest_meas_num_in_this_staff = max(highest_meas_num_in_this_staff, meas_num)
+                    beat_count = 0.0
+                    meas_num += 1
+                    things_in_this_measure = 0
+
+        # update "meas_nums" for next time we hit a <staff> with this @n
+        meas_nums[l_staff.get('n')] = highest_meas_num_in_this_staff
+
+
+    return m_section

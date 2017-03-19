@@ -1,0 +1,2 @@
+include versioneer.py
+include lychee/_version.py

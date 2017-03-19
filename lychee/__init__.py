@@ -7,7 +7,7 @@
 # Filename:               lychee/__init__.py
 # Purpose:                Initialize Lychee.
 #
-# Copyright (C) 2016 Christopher Antila
+# Copyright (C) 2016, 2017 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,18 +27,23 @@ Initialize Lychee.
 """
 
 
-# we'll keep PyPI metadata here so they can be used by Sphinx in the API too
-__metadata__ = {
-    'author': 'Christopher Antila',
-    'author_email': 'christopher.antila@ncodamusic.org',
-    'copyright': u'2016 nCoda and others',  # only used in the API
-    'description': 'An engine for MEI document management and converion.',
-    'license': 'GPLv3+',
-    'name': 'Lychee',
-    'url': 'https://lychee.ncodamusic.org/',
-    'version': '0.5.3',
-}
+__version__ = 'TODO'
+__all__ = [
+    'converters',
+    'document',
+    'exceptions',
+    'logs',
+    'namespaces',
+    'signals',
+    'tui',
+    'workflow',
+    'vcs',
+    'views',
+    ]
 
-__version__ = __metadata__['version']
-__all__ = ['converters', 'document', 'exceptions', 'logs', 'namespaces', 'signals', 'tui',
-    'workflow', 'vcs', 'views']
+
+from lychee import *
+
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions

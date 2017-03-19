@@ -7,7 +7,7 @@
 # Filename:               lychee/converters/lmei_to_verovio.py
 # Purpose:                Converts a Lychee-MEI document to special MEI that Verovio will accept.
 #
-# Copyright (C) 2016 Christopher Antila
+# Copyright (C) 2016, 2017 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

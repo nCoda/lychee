@@ -114,6 +114,25 @@ def tie(m_thing):
     return ''
 
 
+def slur(m_thing):
+    '''
+    Find the LilyPond slur string of an MEI object.
+    '''
+    slur_attribute = m_thing.get('slur')
+    if slur_attribute is None:
+        return ''
+
+    # MEI slurs consist of a letter (i/m/t) and a numerical
+    # slur ID. We only want the letter here since overlapping
+    # slurs are not yet supported.
+    slur_letter = slur_attribute.strip()[0]
+    if slur_letter == 'i':
+        return '('
+    elif slur_letter == 't':
+        return ')'
+    return ''
+
+
 @log.wrap('debug', 'convert note')
 def note(m_note):
     '''
@@ -127,6 +146,7 @@ def note(m_note):
         post += '!'
     post += duration(m_note)
     post += tie(m_note)
+    post += slur(m_note)
     return post
 
 
@@ -145,12 +165,15 @@ def chord(m_chord):
     '''
     '''
     check_tag(m_chord, mei.CHORD)
-    l_chord = []
+    l_notes = []
     for m_note in m_chord.iter(tag=mei.NOTE):
-        l_chord.append(note(m_note))
+        l_notes.append(note(m_note))
 
-    l_chord = '<{0}>{1}{2}'.format(' '.join(l_chord), duration(m_chord), tie(m_chord))
+    post = duration(m_chord)
+    post += tie(m_chord)
+    post += slur(m_chord)
 
+    l_chord = '<{0}>{1}'.format(' '.join(l_notes), post)
     return l_chord
 
 

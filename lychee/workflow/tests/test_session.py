@@ -82,6 +82,7 @@ class TestGeneral(TestInteractiveSession):
         assert actual._temp_dir is False
         assert actual._repo_dir is None
         assert isinstance(actual._registrar, registrar.Registrar)
+        assert actual._registrar is actual.registrar
         assert signals.outbound.REGISTER_FORMAT.is_connected(actual._registrar.register)
         assert signals.outbound.UNREGISTER_FORMAT.is_connected(actual._registrar.unregister)
         assert signals.vcs.START.is_connected(steps._vcs_driver)

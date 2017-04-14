@@ -121,6 +121,13 @@ class InteractiveSession(object):
         '''
         return self._vcs is not None
 
+    @property
+    def registrar(self):
+        '''
+        Return the active :class:`~lychee.workflow.registrar.Registrar` instance.
+        '''
+        return self._registrar
+
     def __del__(self):
         '''
         If this session is using a temporary directory, delete it.

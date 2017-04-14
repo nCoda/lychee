@@ -87,8 +87,8 @@ class TestGeneral(TestInteractiveSession):
         assert signals.outbound.REGISTER_FORMAT.is_connected(actual._registrar.register)
         assert signals.outbound.UNREGISTER_FORMAT.is_connected(actual._registrar.unregister)
         assert signals.vcs.START.is_connected(steps._vcs_driver)
-        assert signals.inbound.CONVERSION_FINISH.is_connected(actual.inbound_conversion_finish)
-        assert signals.inbound.VIEWS_FINISH.is_connected(actual.inbound_views_finish)
+        assert signals.inbound.CONVERSION_FINISH.is_connected(actual._inbound_conversion_finish)
+        assert signals.inbound.VIEWS_FINISH.is_connected(actual._inbound_views_finish)
 
         # things cleaned up for every action
         assert actual._inbound_converted is None
@@ -370,7 +370,7 @@ class TestInbound(TestInteractiveSession):
         finished_slot = make_slot_mock()
         signals.inbound.CONVERSION_FINISHED.connect(finished_slot)
         try:
-            self.session.inbound_conversion_finish(converted='lol')
+            self.session._inbound_conversion_finish(converted='lol')
             assert 'lol' == self.session._inbound_converted
             finished_slot.assert_called_once_with()
         finally:
@@ -381,7 +381,7 @@ class TestInbound(TestInteractiveSession):
         finished_slot = make_slot_mock()
         signals.inbound.VIEWS_FINISHED.connect(finished_slot)
         try:
-            self.session.inbound_views_finish(views_info='lol')
+            self.session._inbound_views_finish(views_info='lol')
             assert 'lol' == self.session._inbound_views_info
             finished_slot.assert_called_once_with()
         finally:

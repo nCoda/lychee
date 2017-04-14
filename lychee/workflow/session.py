@@ -93,8 +93,8 @@ class InteractiveSession(object):
         signals.outbound.UNREGISTER_FORMAT.connect(self._registrar.unregister)
         signals.ACTION_START.connect(self._action_start)  # NOTE: this connection isn't tested
         signals.vcs.START.connect(steps._vcs_driver)
-        signals.inbound.CONVERSION_FINISH.connect(self.inbound_conversion_finish)
-        signals.inbound.VIEWS_FINISH.connect(self.inbound_views_finish)
+        signals.inbound.CONVERSION_FINISH.connect(self._inbound_conversion_finish)
+        signals.inbound.VIEWS_FINISH.connect(self._inbound_views_finish)
 
         # thse should be cleared for each action
         self._inbound_converted = None
@@ -359,10 +359,9 @@ class InteractiveSession(object):
         steps.flush_inbound_converters()
         steps.flush_inbound_views()
 
-    def inbound_conversion_finish(self, converted, **kwargs):
+    def _inbound_conversion_finish(self, converted, **kwargs):
         '''
-        .. deprecated:: 0.4.0
-            This method will be removed as described in `T114 <https://goldman.ncodamusic.org/T114>`_.
+        NOTE: this method will be removed in T113
 
         Accept the data emitted by an inbound converter. Slot for :const:`inbound.CONVERSION_FINISH`.
 
@@ -372,10 +371,9 @@ class InteractiveSession(object):
         self._inbound_converted = converted
         signals.inbound.CONVERSION_FINISHED.emit()
 
-    def inbound_views_finish(self, views_info, **kwargs):
+    def _inbound_views_finish(self, views_info, **kwargs):
         '''
-        .. deprecated:: 0.4.0
-            This method will be removed as described in `T114 <https://goldman.ncodamusic.org/T114>`_.
+        NOTE: this method will be removed in T113
 
         Accept the views data from an inbound views processor. Slot for :const:`inbound.VIEWS_FINISH`.
 

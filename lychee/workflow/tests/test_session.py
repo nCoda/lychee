@@ -7,7 +7,7 @@
 # Filename:               lychee/workflow/tests/test_session.py
 # Purpose:                Tests for the lychee.workflow.session module.
 #
-# Copyright (C) 2016 Christopher Antila
+# Copyright (C) 2016, 2017 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -329,33 +329,33 @@ class TestDocument(TestInteractiveSession):
     Tests for InteractiveSession's management of Document instances.
     '''
 
-    def test_get_document_1(self):
+    def test_document_1(self):
         '''
         When self._doc is already set.
         '''
         self.session._doc = 5
-        assert 5 == self.session.get_document()
+        assert 5 == self.session.document
 
-    def test_get_document_2(self):
+    def test_document_2(self):
         '''
         When self._doc is not set but repo_dir is.
         '''
         repo_dir = self.session.set_repo_dir('')
-        actual = self.session.get_document()
+        actual = self.session.document
         assert repo_dir == actual._repo_path
 
-    def test_get_document_3(self):
+    def test_document_3(self):
         '''
         When self._doc and repo_dir are both unset.
         '''
-        actual = self.session.get_document()
+        actual = self.session.document
         assert self.session._repo_dir == actual._repo_path
 
     def test_unset_repo_dir(self):
         '''
         Cross-check that the document instance is deleted when the repo_dir is changed.
         '''
-        self.session.get_document()
+        self.session.document
         self.session.set_repo_dir('')
         assert self.session._doc is None
 

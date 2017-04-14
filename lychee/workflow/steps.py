@@ -154,7 +154,7 @@ def do_document(session, converted, views_info):
     '''
     score = etree.Element(mei.SCORE)
     score.append(converted)
-    doc = session.get_document()
+    doc = session.document
     doc.put_score(score)
     document_pathnames = doc.save_everything()
 

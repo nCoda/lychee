@@ -7,7 +7,7 @@
 # Filename:               lychee/workflow/session.py
 # Purpose:                Manage a document editing session through several workflow actions.
 #
-# Copyright (C) 2016 Christopher Antila
+# Copyright (C) 2016, 2017 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -122,18 +122,9 @@ class InteractiveSession(object):
         '''
         return self._vcs is not None
 
-    def __del__(self):
+    @property
+    def document(self):
         '''
-        If this session is using a temporary directory, delete it.
-        '''
-        self.unset_repo_dir()
-
-    def get_document(self):
-        '''
-        .. deprecated:: 0.4.0
-            This method will be replaced with an attribute as described in
-            `T114 <https://goldman.ncodamusic.org/T114>`_.
-
         Get a :class:`~lychee.document.Document` for this session's repository.
 
         :returns: The :class:`Document` for this session.
@@ -154,6 +145,12 @@ class InteractiveSession(object):
 
         self._doc = document.Document(self._repo_dir)
         return self._doc
+
+    def __del__(self):
+        '''
+        If this session is using a temporary directory, delete it.
+        '''
+        self.unset_repo_dir()
 
     @log.wrap('info', 'set the repository directory')
     def set_repo_dir(self, path, run_outbound=False):

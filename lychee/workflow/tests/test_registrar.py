@@ -4,10 +4,10 @@
 # Program Name:           Lychee
 # Program Description:    MEI document manager for formalized document control
 #
-# Filename:               lychee/converters/test/test_registrar.py
+# Filename:               lychee/workflow/test/test_registrar.py
 # Purpose:                Tests for the "registrar" module.
 #
-# Copyright (C) 2016 Christopher Antila
+# Copyright (C) 2016, 2017 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ try:
 except ImportError:
     import mock
 
-from lychee.converters import registrar
+from lychee.workflow import registrar
 
 
 class TestSingleDtypeWithoutWho(object):
@@ -469,7 +469,7 @@ class TestRegisterOutbound(object):
     Make sure the register() method's "outbound" argument works as advertised.
     '''
 
-    @mock.patch('lychee.converters.registrar.signals')
+    @mock.patch('lychee.workflow.registrar.signals')
     def test_true(self, mock_signals):
         '''
         When the "outbound" argument is True, emit the ACTION_START signal.
@@ -478,7 +478,7 @@ class TestRegisterOutbound(object):
         reg.register('mei', '111', True)
         mock_signals.ACTION_START.emit.assert_called_with()
 
-    @mock.patch('lychee.converters.registrar.signals')
+    @mock.patch('lychee.workflow.registrar.signals')
     def test_false(self, mock_signals):
         '''
         When the "outbound" argument is False, do not emit the ACTION_START signal.
@@ -487,7 +487,7 @@ class TestRegisterOutbound(object):
         reg.register('mei', '111', False)
         assert mock_signals.ACTION_START.emit.call_count == 0
 
-    @mock.patch('lychee.converters.registrar.signals')
+    @mock.patch('lychee.workflow.registrar.signals')
     def test_registration_fails(self, mock_signals):
         '''
         When the "outbound" argument is True but the "dtype" does not exist, registration will fail

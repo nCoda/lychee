@@ -7,7 +7,7 @@
 # Filename:               lychee/converters/__init__.py
 # Purpose:                Initialization for converters module.
 #
-# Copyright (C) 2016 Christopher Antila
+# Copyright (C) 2016, 2017 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 
 # Jeff: "Well, a universal converter is, by definition, a pretty slutty thing."
 
-from lychee.converters import inbound, outbound, registrar
+from lychee.converters import inbound, outbound
 
 
 # NOTE: please keep the keys in lowercase

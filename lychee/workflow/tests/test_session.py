@@ -7,7 +7,7 @@
 # Filename:               lychee/workflow/tests/test_session.py
 # Purpose:                Tests for the lychee.workflow.session module.
 #
-# Copyright (C) 2016 Christopher Antila
+# Copyright (C) 2016, 2017 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,11 +42,9 @@ from mercurial import error as hg_error
 import pytest
 import signalslot
 
-from lychee.converters import registrar
 from lychee import exceptions
 from lychee import signals
-from lychee.workflow import session
-from lychee.workflow import steps
+from lychee.workflow import registrar, session, steps
 
 
 def make_slot_mock():

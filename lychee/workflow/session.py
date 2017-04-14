@@ -7,7 +7,7 @@
 # Filename:               lychee/workflow/session.py
 # Purpose:                Manage a document editing session through several workflow actions.
 #
-# Copyright (C) 2016 Christopher Antila
+# Copyright (C) 2016, 2017 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,12 +36,11 @@ from lxml import etree
 from mercurial import error as hg_error
 import hug
 
-from lychee.converters import registrar
 from lychee.document import document
 from lychee import exceptions
 from lychee.logs import SESSION_LOG as log
 from lychee import signals
-from lychee.workflow import steps
+from lychee.workflow import registrar, steps
 
 
 _CANNOT_SAFELY_HG_INIT = 'Could not safely initialize the repository'

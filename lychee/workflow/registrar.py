@@ -25,8 +25,7 @@
 '''
 Registrar: an object to manage registrations of outbound data formats.
 
-The runtime instance is created when Lychee is imported, stored in the :mod:`lychee.__init__`
-module.
+Every :class:`InteractiveSession` instance uses its own :class:`Registrar` instance.
 '''
 
 import six

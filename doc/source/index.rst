@@ -21,7 +21,6 @@ If you do not know what *Lychee* is, please start with the :ref:`basic` section.
     workflow
     lychee_mei
     converters
-    converters-registrar
     document
     views
     vcs

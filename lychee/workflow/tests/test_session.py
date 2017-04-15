@@ -564,7 +564,7 @@ class TestRunWorkflow(TestInteractiveSession):
 
         self.session.run_inbound.assert_called_once_with(dtype, doc, None)
         self.session.run_outbound.assert_called_once_with(views_info='IBV')
-        assert self.session._cleanup_for_new_action.call_count == 2
+        assert self.session._cleanup_for_new_action.called
 
     def test_existing_section_unit(self):
         '''
@@ -582,7 +582,7 @@ class TestRunWorkflow(TestInteractiveSession):
 
         self.session.run_outbound.assert_called_once_with(views_info='IBV')
         self.session.run_inbound.assert_called_once_with(dtype, doc, sect_id)
-        assert self.session._cleanup_for_new_action.call_count == 2
+        assert self.session._cleanup_for_new_action.called
 
     def test_when_inbound_fails(self):
         '''
@@ -603,7 +603,7 @@ class TestRunWorkflow(TestInteractiveSession):
         self.session.run_workflow(dtype=dtype, doc=doc)
 
         self.session.run_inbound.assert_called_once_with(dtype, doc, None)
-        assert self.session._cleanup_for_new_action.call_count == 2
+        assert self.session._cleanup_for_new_action.called
         assert self.session.run_outbound.call_count == 0
 
     def test_new_section(self):
@@ -764,16 +764,16 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         doc = 'document'
         views_info = 'Section XMLID'
 
-        with pytest.raises(exceptions.InboundConversionError) as exc:
+        with pytest.raises(exceptions.InboundConversionError):
             self.session.run_inbound(dtype, doc, views_info)
 
         mock_conv.assert_called_once_with(
             session=self.session,
             dtype=dtype,
             document=doc)
-        assert 0 == mock_views.call_count
-        assert 0 == mock_doc.call_count
-        assert 0 == mock_vcs.call_count
+        assert not mock_views.called
+        assert not mock_doc.called
+        assert not mock_vcs.called
 
     @mock.patch('lychee.workflow.steps.do_inbound_conversion')
     def test_run_inbound_unit_1b(self, mock_conv):
@@ -788,7 +788,7 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         views_info = 'Section XMLID'
         self.session._inbound_converted = 'this is not an LMEI document'
 
-        with pytest.raises(exceptions.InboundConversionError) as exc:
+        with pytest.raises(exceptions.InboundConversionError):
             self.session.run_inbound(dtype, doc, views_info)
 
         mock_conv.assert_called_once_with(
@@ -811,20 +811,23 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         dtype = 'meh'
         doc = 'document'
         views_info = 'Section XMLID'
-        self.session._inbound_converted = etree.Element('whatever')
+        def mock_conv_side_effect(**kwargs):
+            """Assign the conversion result."""
+            kwargs['session']._inbound_converted = etree.Element('whatever')
+        mock_conv.side_effect = mock_conv_side_effect
 
-        with pytest.raises(exceptions.InboundConversionError) as exc:
+        with pytest.raises(exceptions.InboundConversionError):
             self.session.run_inbound(dtype, doc, views_info)
 
-        assert 1 == mock_conv.call_count
+        assert mock_conv.called
         mock_views.assert_called_once_with(
             session=self.session,
             dtype=dtype,
             document=doc,
             converted=self.session._inbound_converted,
             views_info=views_info)
-        assert 0 == mock_doc.call_count
-        assert 0 == mock_vcs.call_count
+        assert not mock_doc.called
+        assert not mock_vcs.called
 
     @mock.patch('lychee.workflow.steps.do_inbound_conversion')
     @mock.patch('lychee.workflow.steps.do_inbound_views')
@@ -838,13 +841,19 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         dtype = 'meh'
         doc = 'document'
         views_info = 'Section XMLID'
-        self.session._inbound_converted = etree.Element('whatever')
-        self.session._inbound_views_info = 4  # expecting str
+        def mock_conv_side_effect(**kwargs):
+            """Assign the conversion result."""
+            kwargs['session']._inbound_converted = etree.Element('whatever')
+        mock_conv.side_effect = mock_conv_side_effect
+        def mock_views_side_effect(**kwargs):
+            """Assign the views result."""
+            kwargs['session']._inbound_views_info = 4  # expecting str
+        mock_views.side_effect = mock_views_side_effect
 
-        with pytest.raises(exceptions.InboundConversionError) as exc:
+        with pytest.raises(exceptions.InboundConversionError):
             self.session.run_inbound(dtype, doc, views_info)
 
-        assert 1 == mock_conv.call_count
+        assert mock_conv.called
         mock_views.assert_called_once_with(
             session=self.session,
             dtype=dtype,
@@ -866,14 +875,20 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         dtype = 'meh'
         doc = 'document'
         views_info = 'Section XMLID'
-        self.session._inbound_converted = etree.Element('whatever')
-        self.session._inbound_views_info = 'something'
+        def mock_conv_side_effect(**kwargs):
+            """Assign the conversion result."""
+            kwargs['session']._inbound_converted = etree.Element('whatever')
+        mock_conv.side_effect = mock_conv_side_effect
+        def mock_views_side_effect(**kwargs):
+            """Assign the views result."""
+            kwargs['session']._inbound_views_info = 'something'
+        mock_views.side_effect = mock_views_side_effect
         mock_doc.return_value = ['pathnames!']
 
         self.session.run_inbound(dtype, doc, views_info)
 
-        assert 1 == mock_conv.call_count
-        assert 1 == mock_views.call_count
+        assert mock_conv.called
+        assert mock_views.called
         mock_doc.assert_called_once_with(
             converted=self.session._inbound_converted,
             session=self.session,

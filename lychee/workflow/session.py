@@ -302,8 +302,6 @@ class InteractiveSession(object):
         Emits the :const:`lychee.signals.outbound.CONVERSION_FINISHED` signal on completion. May
         also cause a bunch of different error signals if there's a problem.
         '''
-        self._cleanup_for_new_action()
-
         try:
             try:
                 self.run_inbound(dtype, doc, sect_id)
@@ -315,6 +313,7 @@ class InteractiveSession(object):
 
         finally:
             self._cleanup_for_new_action()
+
 
     @log.wrap('critical', 'run inbound workflow step')
     def run_inbound(self, dtype, doc, sect_id=None):
@@ -330,6 +329,8 @@ class InteractiveSession(object):
         :raises: :exc:`lychee.exceptions.InboundConversionError` when the conversion or views
             processing steps fail.
         '''
+        self._cleanup_for_new_action()
+
         steps.do_inbound_conversion(
             session=self,
             dtype=dtype,
@@ -360,23 +361,27 @@ class InteractiveSession(object):
 
         :param str views_info: As per :func:`lychee.workflow.steps.do_outbound_steps`
         '''
-        changeset = ''
-        if self._vcs == 'mercurial':
-            summary = self._hug.summary()
-            if 'tag' in summary:
-                changeset = summary['tag']
-            else:
-                changeset = summary['parent']
+        try:
+            changeset = ''
+            if self._vcs == 'mercurial':
+                summary = self._hug.summary()
+                if 'tag' in summary:
+                    changeset = summary['tag']
+                else:
+                    changeset = summary['parent']
 
-        signals.outbound.STARTED.emit()
-        repo_dir = self.get_repo_dir()
-        for outbound_dtype in self._registrar.get_registered_formats():
-            post = steps.do_outbound_steps(repo_dir, views_info, outbound_dtype)
-            signals.outbound.CONVERSION_FINISHED.emit(
-                dtype=outbound_dtype,
-                placement=post['placement'],
-                document=post['document'],
-                changeset=changeset)
+            signals.outbound.STARTED.emit()
+            repo_dir = self.get_repo_dir()
+            for outbound_dtype in self._registrar.get_registered_formats():
+                post = steps.do_outbound_steps(repo_dir, views_info, outbound_dtype)
+                signals.outbound.CONVERSION_FINISHED.emit(
+                    dtype=outbound_dtype,
+                    placement=post['placement'],
+                    document=post['document'],
+                    changeset=changeset)
+
+        finally:
+            self._cleanup_for_new_action()
 
     def _cleanup_for_new_action(self):
         '''

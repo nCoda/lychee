@@ -286,6 +286,36 @@ class InteractiveSession(object):
             if initial_revision:
                 self._hug.update(initial_revision)
 
+    @log.wrap('critical', 'run full workflow', 'action')
+    def run_workflow(self, dtype, doc, sect_id=None, action=None):
+        '''
+        Run a full *Lychee* workflow, including the inbound, document, VCS (if enabled), and
+        outbund steps.
+
+        :param str dtype: The format (data type) of the inbound musical document. This must
+            correspond to the name of a converter module in :mod:`lychee.converters.inbound`.
+        :param object doc: The inbound musical document. The required type is determined by each
+            converter module itself.
+        :param str sect_id: The Lychee-MEI @xml:id attribute of the ``<section>`` contained in
+            the "doc" argument. If omitted, "converted" will become a new ``<section>``.
+
+        Emits the :const:`lychee.signals.outbound.CONVERSION_FINISHED` signal on completion. May
+        also cause a bunch of different error signals if there's a problem.
+        '''
+        self._cleanup_for_new_action()
+
+        try:
+            try:
+                self.run_inbound(dtype, doc, sect_id)
+            except exceptions.InboundConversionError:
+                action.failure(_FAILURE_DURING_INBOUND)
+                return
+
+            self.run_outbound(views_info=self._inbound_views_info)
+
+        finally:
+            self._cleanup_for_new_action()
+
     @log.wrap('critical', 'run inbound workflow step')
     def run_inbound(self, dtype, doc, sect_id=None):
         '''
@@ -295,7 +325,7 @@ class InteractiveSession(object):
             correspond to the name of a converter module in :mod:`lychee.converters.inbound`.
         :param object doc: The inbound musical document. The required type is determined by each
             converter module itself.
-        :param str views_info: The Lychee-MEI @xml:id attribute of the ``<section>`` contained in
+        :param str sect_id: The Lychee-MEI @xml:id attribute of the ``<section>`` contained in
             the "doc" argument. If omitted, "converted" will become a new ``<section>``.
         :raises: :exc:`lychee.exceptions.InboundConversionError` when the conversion or views
             processing steps fail.

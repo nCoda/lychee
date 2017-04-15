@@ -26,6 +26,8 @@
 Tests for the :mod:`lychee.workflow.session` module.
 '''
 
+# pylint: disable=protected-access
+
 import os.path
 import shutil
 import sys
@@ -540,6 +542,98 @@ class TestActionStart(TestInteractiveSession):
             signals.outbound.CONVERSION_FINISHED.disconnect(finish_mock)
 
         assert os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
+
+
+class TestRunWorkflow(TestInteractiveSession):
+    '''
+    Tests for InteractiveSession.run_workflow().
+    '''
+
+    def test_new_section_unit(self):
+        '''
+        A unit test (fully mocked) where everything works and a new section is created.
+        '''
+        dtype = 'silly format'
+        doc = '<silly/>'
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session._inbound_views_info = 'IBV'
+        self.session.run_inbound = mock.Mock()
+        self.session.run_outbound = mock.Mock()
+
+        self.session.run_workflow(dtype=dtype, doc=doc)
+
+        self.session.run_inbound.assert_called_once_with(dtype, doc, None)
+        self.session.run_outbound.assert_called_once_with(views_info='IBV')
+        assert self.session._cleanup_for_new_action.call_count == 2
+
+    def test_existing_section_unit(self):
+        '''
+        A unit test (fully mocked) where everything works and an existing section is modified.
+        '''
+        dtype = 'silly format'
+        doc = '<silly/>'
+        sect_id = 'Section XMLID'
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session._inbound_views_info = 'IBV'
+        self.session.run_inbound = mock.Mock()
+        self.session.run_outbound = mock.Mock()
+
+        self.session.run_workflow(dtype=dtype, doc=doc, sect_id=sect_id)
+
+        self.session.run_outbound.assert_called_once_with(views_info='IBV')
+        self.session.run_inbound.assert_called_once_with(dtype, doc, sect_id)
+        assert self.session._cleanup_for_new_action.call_count == 2
+
+    def test_when_inbound_fails(self):
+        '''
+        A unit test (fully mocked) for when the inbound step fails.
+
+        The "views_info" kwarg is omitted.
+
+        We need to assert that the later steps do not happen. Not only would running the later
+        steps be unnecessary and take extra time, but it may also cause new errors.
+        '''
+        dtype = 'silly format'
+        doc = '<silly/>'
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session.run_inbound = mock.Mock()
+        self.session.run_inbound.side_effect = exceptions.InboundConversionError
+        self.session.run_outbound = mock.Mock()
+
+        self.session.run_workflow(dtype=dtype, doc=doc)
+
+        self.session.run_inbound.assert_called_once_with(dtype, doc, None)
+        assert self.session._cleanup_for_new_action.call_count == 2
+        assert self.session.run_outbound.call_count == 0
+
+    def test_new_section(self):
+        '''
+        An integration test (no mocks) for when everything works and a new <section> is created.
+        '''
+        self.session = session.InteractiveSession(vcs='mercurial')
+        input_ly = """\\clef "treble" a''4 b'16 c''2  | \\clef "bass" d?2 e!2  | f,,2 fis,2  |"""
+        # pre-condition
+        assert not os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
+        # unfortunately we need a mock for this, so we can be sure it was called
+        finish_mock = make_slot_mock()
+        def finish_side_effect(dtype, placement, document, **kwargs):
+            assert dtype == 'mei'
+            assert isinstance(document, etree._Element)
+            assert os.path.exists(
+                os.path.join(self.session.get_repo_dir(), '{}.mei'.format(placement))
+                )
+        finish_mock.side_effect = finish_side_effect
+
+        signals.outbound.REGISTER_FORMAT.emit(dtype='mei', who='test_everything_works_unmocked')
+        signals.outbound.CONVERSION_FINISHED.connect(finish_mock)
+        try:
+            self.session.run_workflow(dtype='LilyPond', doc=input_ly)
+        finally:
+            signals.outbound.UNREGISTER_FORMAT.emit(dtype='mei', who='test_everything_works_unmocked')
+            signals.outbound.CONVERSION_FINISHED.disconnect(finish_mock)
+
+        assert os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
+        assert finish_mock.called
 
 
 class TestRunOutbound(TestInteractiveSession):

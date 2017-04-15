@@ -203,7 +203,7 @@ class InteractiveSession(object):
                 raise exceptions.RepositoryError(_CANNOT_SAFELY_HG_INIT)
 
         if run_outbound:
-            self._run_outbound()
+            self.run_outbound()
 
         return self._repo_dir
 
@@ -279,7 +279,7 @@ class InteractiveSession(object):
                         action.failure(_UNKNOWN_REVISION)
                         return
 
-            self._run_outbound()
+            self.run_outbound(views_info=self._inbound_views_info)
 
         finally:
             self._cleanup_for_new_action()
@@ -323,9 +323,12 @@ class InteractiveSession(object):
 
         steps.do_vcs(session=self, pathnames=document_pathnames)
 
-    def _run_outbound(self):
+    @log.wrap('critical', 'run outbound workflow step')
+    def run_outbound(self, views_info=None):
         '''
-        Run the outbound conversions.
+        Run the outbound workflow steps (views and conversion).
+
+        :param str views_info: As per :func:`lychee.workflow.steps.do_outbound_steps`
         '''
         changeset = ''
         if self._vcs == 'mercurial':
@@ -336,11 +339,9 @@ class InteractiveSession(object):
                 changeset = summary['parent']
 
         signals.outbound.STARTED.emit()
+        repo_dir = self.get_repo_dir()
         for outbound_dtype in self._registrar.get_registered_formats():
-            post = steps.do_outbound_steps(
-                self.get_repo_dir(),
-                self._inbound_views_info,  # might be None, but that's okay
-                outbound_dtype)
+            post = steps.do_outbound_steps(repo_dir, views_info, outbound_dtype)
             signals.outbound.CONVERSION_FINISHED.emit(
                 dtype=outbound_dtype,
                 placement=post['placement'],

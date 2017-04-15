@@ -223,7 +223,7 @@ class TestRepository(TestInteractiveSession):
         When "path" is '', it makes a temp dir and initializes a new Hg repo.
         '''
         sess = self.session
-        sess._run_outbound = mock.Mock()
+        sess.run_outbound = mock.Mock()
         actual = sess.set_repo_dir('', run_outbound=True)
         if sys.platform == 'linux2':
             assert actual.startswith('/tmp/')
@@ -232,7 +232,7 @@ class TestRepository(TestInteractiveSession):
         else:
             raise NotImplementedError("This test isn't yet implemented on this platform.")
         assert os.path.exists(os.path.join(actual, '.hg'))
-        assert sess._run_outbound.call_count == 1
+        assert sess.run_outbound.call_count == 1
 
     def test_set_repo_dir_1b(self):
         '''
@@ -240,9 +240,9 @@ class TestRepository(TestInteractiveSession):
         '''
         # only test what's different from 1b
         sess = self.session
-        sess._run_outbound = mock.Mock()
+        sess.run_outbound = mock.Mock()
         actual = sess.set_repo_dir('', run_outbound=False)
-        assert sess._run_outbound.call_count == 0
+        assert sess.run_outbound.call_count == 0
 
     @mock.patch('lychee.workflow.session.hug')
     def test_set_repo_dir_2(self, mock_hug):
@@ -250,14 +250,14 @@ class TestRepository(TestInteractiveSession):
         When it makes a temp dir but can't initialize a new Hg repo.
         '''
         sess = self.session
-        sess._run_outbound = mock.Mock()
+        sess.run_outbound = mock.Mock()
         mock_hug.Hug.side_effect = hg_error.RepoError
         with pytest.raises(exceptions.RepositoryError) as exc:
             sess.set_repo_dir('', run_outbound=True)
         assert session._CANNOT_SAFELY_HG_INIT == exc.value.args[0]
         # the _repo_dir still must have been set, so unset_repo_dir() can delete it on __del__()
         assert sess._repo_dir is not None
-        assert sess._run_outbound.call_count == 0
+        assert sess.run_outbound.call_count == 0
 
     @mock.patch('lychee.workflow.session.hug')
     def test_set_repo_dir_3(self, mock_hug):
@@ -265,13 +265,13 @@ class TestRepository(TestInteractiveSession):
         When the path exists, and it initializes fine.
         '''
         sess = self.session
-        sess._run_outbound = mock.Mock()
+        sess.run_outbound = mock.Mock()
         actual = sess.set_repo_dir('../tests', run_outbound=True)
         assert actual.endswith('tests')
         assert sess._hug is not None
         assert sess._temp_dir is False
         assert sess._repo_dir == actual
-        assert sess._run_outbound.call_count == 1
+        assert sess.run_outbound.call_count == 1
 
     @mock.patch('lychee.workflow.session.hug')
     def test_set_repo_dir_4(self, mock_hug):
@@ -280,25 +280,25 @@ class TestRepository(TestInteractiveSession):
         '''
         assert not os.path.exists('zests')  # for the test to work, this dir must not already exist
         sess = self.session
-        sess._run_outbound = mock.Mock()
+        sess.run_outbound = mock.Mock()
         try:
             actual = sess.set_repo_dir('zests', run_outbound=True)
         finally:
             assert actual.endswith('zests')
             assert os.path.exists(actual)
             shutil.rmtree(actual)
-        assert sess._run_outbound.call_count == 1
+        assert sess.run_outbound.call_count == 1
 
     def test_set_repo_dir_5(self):
         '''
         When the path must be created, but it can't be.
         '''
         sess = self.session
-        sess._run_outbound = mock.Mock()
+        sess.run_outbound = mock.Mock()
         with pytest.raises(exceptions.RepositoryError) as exc:
             sess.set_repo_dir('/bin/delete_me', run_outbound=True)
         assert session._CANNOT_MAKE_HG_DIR == exc.value.args[0]
-        assert sess._run_outbound.call_count == 0
+        assert sess.run_outbound.call_count == 0
 
     def test_set_repo_dir_6(self):
         '''
@@ -401,12 +401,13 @@ class TestActionStart(TestInteractiveSession):
         doc = '<silly/>'
         views_info = 'Section XMLID'  # given to ACTION_START
         self.session._cleanup_for_new_action = mock.Mock()
+        self.session._inbound_views_info = 'IBV'
         self.session.run_inbound = mock.Mock()
-        self.session._run_outbound = mock.Mock()
+        self.session.run_outbound = mock.Mock()
 
         self.session._action_start(dtype=dtype, doc=doc, views_info=views_info)
 
-        self.session._run_outbound.assert_called_once_with()
+        self.session.run_outbound.assert_called_once_with(views_info='IBV')
         self.session.run_inbound.assert_called_once_with(dtype, doc, views_info)
         assert 2 == self.session._cleanup_for_new_action.call_count
 
@@ -417,13 +418,13 @@ class TestActionStart(TestInteractiveSession):
         self.session._cleanup_for_new_action = mock.Mock()
         self.session.run_inbound = mock.Mock()
         views_info = 'IBV'
-        self.session._run_outbound = mock.Mock()
+        self.session.run_outbound = mock.Mock()
 
         self.session._action_start(views_info=views_info)
 
         assert self.session._inbound_views_info == 'IBV'
         assert not self.session.run_inbound.called
-        self.session._run_outbound.assert_called_once_with()
+        self.session.run_outbound.assert_called_once_with(views_info=views_info)
         assert self.session._cleanup_for_new_action.callled
 
     def test_when_inbound_fails(self):
@@ -440,13 +441,13 @@ class TestActionStart(TestInteractiveSession):
         self.session._cleanup_for_new_action = mock.Mock()
         self.session.run_inbound = mock.Mock()
         self.session.run_inbound.side_effect = exceptions.InboundConversionError
-        self.session._run_outbound = mock.Mock()
+        self.session.run_outbound = mock.Mock()
 
         self.session._action_start(dtype=dtype, doc=doc)
 
         self.session.run_inbound.assert_called_once_with(dtype, doc, None)
         assert self.session._cleanup_for_new_action.call_count == 2
-        assert self.session._run_outbound.call_count == 0
+        assert self.session.run_outbound.call_count == 0
 
     def test_when_hg_update_works(self):
         '''
@@ -457,14 +458,15 @@ class TestActionStart(TestInteractiveSession):
         parent_revision = '99:801774903828 tip'
         target_revision = '40:964b28acc4ee'
         self.session._cleanup_for_new_action = mock.Mock()
-        self.session._run_outbound = mock.Mock()
+        self.session.run_outbound = mock.Mock()
         self.session._hug = mock.Mock()
         self.session._hug.summary = mock.Mock(return_value={'parent': parent_revision})
         self.session._hug.update = mock.Mock()
+        self.session._inbound_views_info = 'IBV'
 
         self.session._action_start(revision=target_revision)
 
-        self.session._run_outbound.assert_called_with()
+        self.session.run_outbound.assert_called_with(views_info='IBV')
         assert self.session._cleanup_for_new_action.call_count == 2
         assert self.session._hug.update.call_count == 2
         self.session._hug.update.assert_any_call(target_revision)
@@ -480,7 +482,7 @@ class TestActionStart(TestInteractiveSession):
         parent_revision = '99:801774903828'
         target_revision = '44444444444444444'
         self.session._cleanup_for_new_action = mock.Mock()
-        self.session._run_outbound = mock.Mock()
+        self.session.run_outbound = mock.Mock()
         self.session._hug = mock.Mock()
         self.session._hug.summary = mock.Mock(return_value={'parent': parent_revision})
         # we need a complicated mock here so one call to update() fails, but the 2nd, in the finally
@@ -488,12 +490,12 @@ class TestActionStart(TestInteractiveSession):
         def update_effect(revision):
             "side-effect for Hug.update()"
             if revision != parent_revision:
-                    raise RuntimeError('=^.^=  meow')
+                raise RuntimeError('=^.^=  meow')
         self.session._hug.update = mock.Mock(side_effect=update_effect)
 
         self.session._action_start(revision=target_revision)
 
-        assert self.session._run_outbound.call_count == 0
+        assert self.session.run_outbound.call_count == 0
         assert self.session._cleanup_for_new_action.call_count == 2
         assert self.session._hug.update.call_count == 2
         self.session._hug.update.assert_any_call(target_revision)
@@ -506,11 +508,12 @@ class TestActionStart(TestInteractiveSession):
         '''
         target_revision = '40:964b28acc4ee'
         self.session._cleanup_for_new_action = mock.Mock()
-        self.session._run_outbound = mock.Mock()
+        self.session.run_outbound = mock.Mock()
+        self.session._inbound_views_info = 'IBV'
 
         self.session._action_start(revision=target_revision)
 
-        self.session._run_outbound.assert_called_with()
+        self.session.run_outbound.assert_called_with(views_info='IBV')
         assert self.session._cleanup_for_new_action.call_count == 2
 
     def test_everything_works_unmocked(self):
@@ -541,7 +544,7 @@ class TestActionStart(TestInteractiveSession):
 
 class TestRunOutbound(TestInteractiveSession):
     '''
-    Tests for InteractiveSession._run_outbound().
+    Tests for InteractiveSession.run_outbound().
     '''
 
     @mock.patch('lychee.signals.outbound.CONVERSION_FINISHED')
@@ -551,7 +554,7 @@ class TestRunOutbound(TestInteractiveSession):
         No formats are registered for outbound conversion.
         '''
         self.session.set_repo_dir('')  # tempdir
-        self.session._run_outbound()
+        self.session.run_outbound()
         mock_out_started.emit.assert_called_once_with()
         assert mock_out_finished.emit.call_count == 0
 
@@ -565,14 +568,13 @@ class TestRunOutbound(TestInteractiveSession):
         self.session = session.InteractiveSession(vcs='mercurial')
         outbound_dtype = 'mei'
         views_info = 'IBV'
-        self.session._inbound_views_info = views_info
         self.session._hug = mock.Mock()
         self.session._hug.summary = mock.Mock(return_value={'tag': 'tip'})
         mock_do_out.return_value = {'placement': None, 'document': None}
 
         signals.outbound.REGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_single_format')
         try:
-            self.session._run_outbound()
+            self.session.run_outbound(views_info)
         finally:
             signals.outbound.UNREGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_single_format')
 
@@ -597,7 +599,6 @@ class TestRunOutbound(TestInteractiveSession):
         self.session = session.InteractiveSession(vcs='mercurial')
         outbound_dtypes = ['document', 'mei', 'vcs']
         views_info = 'IBV'
-        self.session._inbound_views_info = views_info
         self.session._hug = mock.Mock()
         self.session._hug.summary = mock.Mock(return_value={'parent': '16:96eb6fba2374'})
         mock_do_out.return_value = {'placement': None, 'document': None}
@@ -605,7 +606,7 @@ class TestRunOutbound(TestInteractiveSession):
         for dtype in outbound_dtypes:
             signals.outbound.REGISTER_FORMAT.emit(dtype=dtype, who='test_single_format')
         try:
-            self.session._run_outbound()
+            self.session.run_outbound(views_info)
         finally:
             for dtype in outbound_dtypes:
                 signals.outbound.UNREGISTER_FORMAT.emit(dtype=dtype, who='test_single_format')
@@ -628,12 +629,11 @@ class TestRunOutbound(TestInteractiveSession):
         '''
         outbound_dtype = 'mei'
         views_info = 'IBV'
-        self.session._inbound_views_info = views_info
         mock_do_out.return_value = {'placement': None, 'document': None}
 
         signals.outbound.REGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_single_format')
         try:
-            self.session._run_outbound()
+            self.session.run_outbound(views_info)
         finally:
             signals.outbound.UNREGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_single_format')
 

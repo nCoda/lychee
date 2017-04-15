@@ -263,7 +263,7 @@ class InteractiveSession(object):
                 if 'views_info' not in kwargs:
                     kwargs['views_info'] = None
                 try:
-                    self._run_inbound_doc_vcs(kwargs['dtype'], kwargs['doc'], kwargs['views_info'])
+                    self.run_inbound(kwargs['dtype'], kwargs['doc'], kwargs['views_info'])
                 except exceptions.InboundConversionError:
                     action.failure(_FAILURE_DURING_INBOUND)
                     return
@@ -286,19 +286,19 @@ class InteractiveSession(object):
             if initial_revision:
                 self._hug.update(initial_revision)
 
-    def _run_inbound_doc_vcs(self, dtype, doc, views_info):
+    @log.wrap('critical', 'run inbound workflow step')
+    def run_inbound(self, dtype, doc, sect_id=None):
         '''
-        Helper method for :meth:`_action_start`.
+        Run the inbound (conversion and views), document, and (if enabled) VCS workflow steps.
 
-        :param str dtype: From the :const:`~lychee.signals.ACTION_START` signal.
-        :param ??? doc: From the :const:`~lychee.signals.ACTION_START` signal.
-        :param str views_info: For :const:`lychee.signals.inbound.VIEWS_START`.
+        :param str dtype: The format (data type) of the inbound musical document. This must
+            correspond to the name of a converter module in :mod:`lychee.converters.inbound`.
+        :param object doc: The inbound musical document. The required type is determined by each
+            converter module itself.
+        :param str views_info: The Lychee-MEI @xml:id attribute of the ``<section>`` contained in
+            the "doc" argument. If omitted, "converted" will become a new ``<section>``.
         :raises: :exc:`lychee.exceptions.InboundConversionError` when the conversion or views
             processing steps fail.
-
-        When there is an incoming change, :meth:`_action_start` uses this method to run the inbound
-        conversion and views processing, document, and VCS steps. The functionality is held in this
-        helper method to ease testing and error-handling.
         '''
         steps.do_inbound_conversion(
             session=self,
@@ -312,7 +312,7 @@ class InteractiveSession(object):
             dtype=dtype,
             document=doc,
             converted=self._inbound_converted,
-            views_info=views_info)
+            views_info=sect_id)
         if not isinstance(self._inbound_views_info, str):
             raise exceptions.InboundConversionError()
 

@@ -401,13 +401,13 @@ class TestActionStart(TestInteractiveSession):
         doc = '<silly/>'
         views_info = 'Section XMLID'  # given to ACTION_START
         self.session._cleanup_for_new_action = mock.Mock()
-        self.session._run_inbound_doc_vcs = mock.Mock()
+        self.session.run_inbound = mock.Mock()
         self.session._run_outbound = mock.Mock()
 
         self.session._action_start(dtype=dtype, doc=doc, views_info=views_info)
 
         self.session._run_outbound.assert_called_once_with()
-        self.session._run_inbound_doc_vcs.assert_called_once_with(dtype, doc, views_info)
+        self.session.run_inbound.assert_called_once_with(dtype, doc, views_info)
         assert 2 == self.session._cleanup_for_new_action.call_count
 
     def test_set_views_unit(self):
@@ -415,14 +415,14 @@ class TestActionStart(TestInteractiveSession):
         A unit test (fully mocked) for when ACTION_START receives views_info and not dtype or doc.
         '''
         self.session._cleanup_for_new_action = mock.Mock()
-        self.session._run_inbound_doc_vcs = mock.Mock()
+        self.session.run_inbound = mock.Mock()
         views_info = 'IBV'
         self.session._run_outbound = mock.Mock()
 
         self.session._action_start(views_info=views_info)
 
         assert self.session._inbound_views_info == 'IBV'
-        assert not self.session._run_inbound_doc_vcs.called
+        assert not self.session.run_inbound.called
         self.session._run_outbound.assert_called_once_with()
         assert self.session._cleanup_for_new_action.callled
 
@@ -438,13 +438,13 @@ class TestActionStart(TestInteractiveSession):
         dtype = 'silly format'
         doc = '<silly/>'
         self.session._cleanup_for_new_action = mock.Mock()
-        self.session._run_inbound_doc_vcs = mock.Mock()
-        self.session._run_inbound_doc_vcs.side_effect = exceptions.InboundConversionError
+        self.session.run_inbound = mock.Mock()
+        self.session.run_inbound.side_effect = exceptions.InboundConversionError
         self.session._run_outbound = mock.Mock()
 
         self.session._action_start(dtype=dtype, doc=doc)
 
-        self.session._run_inbound_doc_vcs.assert_called_once_with(dtype, doc, None)
+        self.session.run_inbound.assert_called_once_with(dtype, doc, None)
         assert self.session._cleanup_for_new_action.call_count == 2
         assert self.session._run_outbound.call_count == 0
 
@@ -651,7 +651,7 @@ class TestRunOutbound(TestInteractiveSession):
 
 class TestRunInboundDocVcs(TestInteractiveSession):
     '''
-    Tests for _run_inbound_doc_vcs(), a helper method for _action_start().
+    Tests for run_inbound(), a helper method for _action_start().
     '''
 
     @mock.patch('lychee.workflow.steps.do_inbound_conversion')
@@ -660,7 +660,7 @@ class TestRunInboundDocVcs(TestInteractiveSession):
     @mock.patch('lychee.workflow.steps.do_vcs')
     def test_run_inbound_unit_1a(self, mock_vcs, mock_doc, mock_views, mock_conv):
         '''
-        Unit test for _run_inbound_doc_vcs().
+        Unit test for run_inbound().
 
         - do_inbound_conversion() is called correctly
         - do_inbound_conversion() fails so there's an early return
@@ -671,7 +671,7 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         views_info = 'Section XMLID'
 
         with pytest.raises(exceptions.InboundConversionError) as exc:
-            self.session._run_inbound_doc_vcs(dtype, doc, views_info)
+            self.session.run_inbound(dtype, doc, views_info)
 
         mock_conv.assert_called_once_with(
             session=self.session,
@@ -684,7 +684,7 @@ class TestRunInboundDocVcs(TestInteractiveSession):
     @mock.patch('lychee.workflow.steps.do_inbound_conversion')
     def test_run_inbound_unit_1b(self, mock_conv):
         '''
-        Unit test for _run_inbound_doc_vcs().
+        Unit test for run_inbound().
 
         - do_inbound_conversion() is called correctly
         - do_inbound_conversion() returns an incorrect value so there's an early return
@@ -695,7 +695,7 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         self.session._inbound_converted = 'this is not an LMEI document'
 
         with pytest.raises(exceptions.InboundConversionError) as exc:
-            self.session._run_inbound_doc_vcs(dtype, doc, views_info)
+            self.session.run_inbound(dtype, doc, views_info)
 
         mock_conv.assert_called_once_with(
             session=self.session,
@@ -708,7 +708,7 @@ class TestRunInboundDocVcs(TestInteractiveSession):
     @mock.patch('lychee.workflow.steps.do_vcs')
     def test_run_inbound_unit_2a(self, mock_vcs, mock_doc, mock_views, mock_conv):
         '''
-        Unit test for _run_inbound_doc_vcs().
+        Unit test for run_inbound().
 
         - do_inbound_views() is called correctly
         - do_inbound_views() fails so there's an early return
@@ -720,7 +720,7 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         self.session._inbound_converted = etree.Element('whatever')
 
         with pytest.raises(exceptions.InboundConversionError) as exc:
-            self.session._run_inbound_doc_vcs(dtype, doc, views_info)
+            self.session.run_inbound(dtype, doc, views_info)
 
         assert 1 == mock_conv.call_count
         mock_views.assert_called_once_with(
@@ -736,7 +736,7 @@ class TestRunInboundDocVcs(TestInteractiveSession):
     @mock.patch('lychee.workflow.steps.do_inbound_views')
     def test_run_inbound_unit_2b(self, mock_views, mock_conv):
         '''
-        Unit test for _run_inbound_doc_vcs().
+        Unit test for run_inbound().
 
         - do_inbound_views() is called correctly
         - do_inbound_views() returns an incorrect value so there's an early return
@@ -748,7 +748,7 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         self.session._inbound_views_info = 4  # expecting str
 
         with pytest.raises(exceptions.InboundConversionError) as exc:
-            self.session._run_inbound_doc_vcs(dtype, doc, views_info)
+            self.session.run_inbound(dtype, doc, views_info)
 
         assert 1 == mock_conv.call_count
         mock_views.assert_called_once_with(
@@ -764,7 +764,7 @@ class TestRunInboundDocVcs(TestInteractiveSession):
     @mock.patch('lychee.workflow.steps.do_vcs')
     def test_run_inbound_unit_3(self, mock_vcs, mock_doc, mock_views, mock_conv):
         '''
-        Unit test for _run_inbound_doc_vcs().
+        Unit test for run_inbound().
 
         - do_document() is called correctly
         - do_vcs() is called correctly
@@ -776,7 +776,7 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         self.session._inbound_views_info = 'something'
         mock_doc.return_value = ['pathnames!']
 
-        self.session._run_inbound_doc_vcs(dtype, doc, views_info)
+        self.session.run_inbound(dtype, doc, views_info)
 
         assert 1 == mock_conv.call_count
         assert 1 == mock_views.call_count

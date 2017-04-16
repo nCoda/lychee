@@ -7,7 +7,7 @@
 # Filename:               lychee/workflow/__init__.py
 # Purpose:                Lychee's workflow management module.
 #
-# Copyright (C) 2016 Christopher Antila
+# Copyright (C) 2016, 2017 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,5 +23,6 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 #--------------------------------------------------------------------------------------------------
 
+from . import registrar
 from . import session
 from . import steps

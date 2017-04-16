@@ -4,10 +4,10 @@
 # Program Name:           Lychee
 # Program Description:    MEI document manager for formalized document control
 #
-# Filename:               lychee/converters/registrar.py
+# Filename:               lychee/workflow/registrar.py
 # Purpose:                An object to manage registrations of outbound data formats.
 #
-# Copyright (C) 2016 Christopher Antila
+# Copyright (C) 2016, 2017 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,8 +25,7 @@
 '''
 Registrar: an object to manage registrations of outbound data formats.
 
-The runtime instance is created when Lychee is imported, stored in the :mod:`lychee.__init__`
-module.
+Every :class:`InteractiveSession` instance uses its own :class:`Registrar` instance.
 '''
 
 import six

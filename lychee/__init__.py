@@ -26,8 +26,6 @@
 Initialize Lychee.
 """
 
-
-__version__ = 'TODO'
 __all__ = [
     'converters',
     'document',
@@ -40,7 +38,6 @@ __all__ = [
     'vcs',
     'views',
     ]
-
 
 from lychee import *
 

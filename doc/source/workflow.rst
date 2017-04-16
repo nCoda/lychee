@@ -12,6 +12,7 @@ workflows.
 .. toctree::
     :maxdepth: 2
 
+    workflow-registrar
     workflow-session
     workflow-steps
 

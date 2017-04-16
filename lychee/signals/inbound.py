@@ -31,6 +31,10 @@ from . import signal
 
 CONVERSION_START = signal.Signal(args=['document'], name='inbound.CONVERSION_START')
 '''
+.. danger::
+    .. deprecated:: 0.5.4
+        No replacement.
+
 Emitted when the inbound conversion will start (i.e., this signal is emitted to cause a converter
 module to start the conversion).
 
@@ -40,12 +44,20 @@ module to start the conversion).
 
 CONVERSION_STARTED = signal.Signal(name='inbound.CONVERSION_STARTED')
 '''
+.. danger::
+    .. deprecated:: 0.5.4
+        No replacement.
+
 Emitted as soon as the inbound conversion has started (i.e., as soon as the converter module has
 begun to process data).
 '''
 
 CONVERSION_FINISH = signal.Signal(args=['converted'], name='inbound.CONVERSION_FINISH')
 '''
+.. danger::
+    .. deprecated:: 0.5.4
+        No replacement.
+
 Emitted just before the inbound conversion finishes (i.e., emitting this signal is the last action
 of an inbound conversion module).
 
@@ -55,11 +67,19 @@ of an inbound conversion module).
 
 CONVERSION_FINISHED = signal.Signal(name='inbound.CONVERSION_FINISHED')
 '''
+.. warning::
+    .. deprecated:: 0.5.4
+        May be retained.
+
 Emitted when the inbound conversion is finished, before any "views" information is processed.
 '''
 
 CONVERSION_ERROR = signal.Signal(args=['msg'], name='inbound.CONVERSION_ERROR')
 '''
+.. danger::
+    .. deprecated:: 0.5.4
+        Will become part of CONVERSION_FINISHED, if it is retained.
+
 Emitted when there's an error during the in bound conversion step.
 
 :kwarg str msg: A descriptive error message for the log file.
@@ -70,6 +90,10 @@ VIEWS_START = signal.Signal(
     name='inbound.VIEWS_START'
 )
 '''
+.. danger::
+    .. deprecated:: 0.5.4
+        No replacement.
+
 Emit this signal to start the inbound views processing step.
 
 :param converted: The incoming (partial) document, already converted.
@@ -93,22 +117,38 @@ documentation.
 
 VIEWS_STARTED = signal.Signal(name='inbound.VIEWS_STARTED')
 '''
+.. danger::
+    .. deprecated:: 0.5.4
+        No replacement.
+
 Emitted by the inbound views processing module as soon as it gains control, thereby confirming that
 an inbound views processor was correctly chosen.
 '''
 
 VIEWS_FINISH = signal.Signal(args=['views_info'], name='inbound.VIEWS_FINISH')
 '''
+.. danger::
+    .. deprecated:: 0.5.4
+        No replacement.
+
 Emitted by the inbound views processing module to return views information to its caller.
 '''
 
 VIEWS_FINISHED = signal.Signal(name='inbound.VIEWS_FINISHED')
 '''
+.. warning::
+    .. deprecated:: 0.5.4
+        May be retained.
+
 Emitted after inbound views processing by the module running the workflow.
 '''
 
 VIEWS_ERROR = signal.Signal(args=['msg'], name='inbound.VIEWS_ERROR')
 '''
+.. danger::
+    .. deprecated:: 0.5.4
+        Will become part of VIEWS_FINISHED, if it is retained.
+
 Emitted by the inbound views processing module, or the module running the workflow, to indicate that
 an error has occurred while generating views information. The error may be recoverable, or may cause
 the entire views step to fail, but *Lychee* may be able to continue the workflow.

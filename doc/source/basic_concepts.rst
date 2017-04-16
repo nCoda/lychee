@@ -54,7 +54,8 @@ example shows one way to get started with *Lychee*.
 .. sourcecode:: python
     :linenos:
 
-    import lychee
+    import lychee.signals
+    import lychee.workflow
 
     def print_converted(document, **kwargs):
         print(str(document))
@@ -62,26 +63,30 @@ example shows one way to get started with *Lychee*.
     sess = lychee.workflow.session.InteractiveSession()
     lychee.signals.outbound.REGISTER_FORMAT.emit(dtype='verovio')
     lychee.signals.outbound.CONVERSION_FINISHED.connect(print_converted)
-    lychee.signals.ACTION_START.emit(dtype='lilypond', doc=r"\score{\new Staff{d''2}}")
+    sess.run_workflow(dtype='lilypond', doc="d''2")
 
-Line 6: create an :class:`~lychee.workflow.session.InteractiveSession` instance so *Lychee* sets up
+Line 7: create an :class:`~lychee.workflow.session.InteractiveSession` instance so *Lychee* sets up
 the workflow.
 
-Line 7: use :const:`~lychee.signals.outbound.REGISTER_FORMAT` to ask *Lychee* to produce
+Line 8: use :const:`~lychee.signals.outbound.REGISTER_FORMAT` to ask *Lychee* to produce
 output suitable for *Verovio*.
 
-Line 8: connect :func:`print_converted` so it is called when *Lychee* finishes outbound conversion.
+Line 9: connect :func:`print_converted` so it is called when *Lychee* finishes outbound conversion.
 
-Line 9: use :const:`~lychee.signals.ACTION_START` to submit a small LilyPond document to
-*Lychee*. You should see :func:`print_converted` print out an MEI document ready for *Verovio*!
+Line 10: call :meth:`~lychee.workflow.session.InteractiveSession.run_workflow` on your
+:class:`~lychee.workflow.session.InteractiveSession` instance to give *Lychee* your LilyPond
+document (just a D half note in this case).
 
-.. note::
-    Even this simple example shows our inconsistent use of the observer pattern (that is, the
-    signals). We are gradually replacing this pattern with the :mod:`~lychee.workflow.session`
-    module. While the observer pattern is well-suited for many potential real-world uses of *Lychee*,
-    we originally used it at the wrong level of abstraction. Therefore, the signals are moving into
-    user interface glue layers like `Fujian <https://fujian.ncodamusic.org/>`_ and the future
-    :mod:`lychee.tui` module.
+If you run this example in an interactive Python shell, you should see :func:`print_converted`
+print out an MEI document that can be used as input to `Verovio <http://www.verovio.org>`_.
+You will also see several log messages (note that CRITICAL indicates the importance of a
+message--remember to read the full message to see whether it indicates a success or failure!)
+
+In the future, the :const:`REGISTER_FORMAT` signal will be replaced by a method of the
+:class:`InteractiveSession` class. However, :const:`~lychee.signals.outbound.CONVERSION_FINISHED`
+will survive as the only means by which *Lychee* outputs data after running a workflow. While this
+is admittedly clumsy when using *Lychee* in an interactive Python shell, it's very useful for
+*Lychee*'s intended use cases.
 
 
 Program Modules

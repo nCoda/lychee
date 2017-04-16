@@ -51,44 +51,30 @@ def simple_log_outputter(level, logger, message, time, **kwargs):
 
 ACTION_START = signal.Signal(args=['dtype', 'doc', 'views_info', 'revision'], name='ACTION_START')
 """
+.. danger::
+    .. deprecated:: 0.5.4
+        Use :class:`lychee.workflow.session.InteractiveSession.run_workflow`,
+        :class:`~lychee.workflow.session.InteractiveSession.run_inbound`, and
+        :class:`~lychee.workflow.session.InteractiveSession.run_outbound` instead.
+
 Emit this signal to start an "action" through Lychee.
 
-:kwarg str dtype: The format (data type) of the inbound musical document. LilyPond, Abjad, etc.
-:kwarg object doc: The inbound musical document. The required type is determined by each converter
-    module individually.
-:kwarg str views_info: Information for "views processing," being the @xml:id of the relevant
-    ``<section>`` element. If the ``doc`` argument is also provided, this value *overrides* an
-    @xml:id that may be assigned in ``doc``, which is assumed to correspond to the external format.
-    If the ``doc`` argument is omitted, ``views_info`` is used for an outbound-only workflow.
-:kwarg str revision: For use with an outbound-only workflow. Causes the outputted data to be taken
-    from a changeset other than the most recent. This may be a revision number, but we recommend
-    using the changeset hash when possible.
-
-**Outbound-only Workflow**
-
-You can trigger the outbound steps for all registered outbound formats by emitting this signal
-without the ``dtype`` or ``doc`` arguments. You may request only (a portion of) a ``<section>`` for
-outbound conversion by providing the @xml:id attribute of that element. You may also request data
-from a changeset that is not the most recent by including the revision identifier as the ``revision``
-argument.
-
-For example:
-
->>> signals.ACTION_START.emit()
-
-This causes the full score to be converted for all registered outbound data types. On the other hand:
-
->>> signals.ACTION_START.emit(views_info='Sme-s-m-l-e1182873')
-
-This causes only the ``<section>`` with ``@xml:id="Sme-s-m-l-e1182873"`` to be sent for outbound
-conversion.
-
-.. note:: You should provide ``dtype`` and ``doc``, or ``views_info`` by itself.
+:kwarg str dtype: As per :class:`~lychee.workflow.session.InteractiveSession.run_workflow` and
+    :class:`~lychee.workflow.session.InteractiveSession.run_inbound`.
+:kwarg object doc: As per :class:`~lychee.workflow.session.InteractiveSession.run_workflow` and
+    :class:`~lychee.workflow.session.InteractiveSession.run_inbound`.
+:kwarg str views_info: As per :class:`~lychee.workflow.session.InteractiveSession.run_workflow`,
+    :class:`~lychee.workflow.session.InteractiveSession.run_inbound`, or
+    :class:`~lychee.workflow.session.InteractiveSession.run_outbound`.
+:kwarg str revision: As per :class:`~lychee.workflow.session.InteractiveSession.run_outbound`.
 """
 
 
 LOG_MESSAGE = signal.Signal(args=['level', 'logger', 'message', 'status', 'time'], name='LOG_MESSAGE')
 """
+.. note::
+    This signal will *not* be removed.
+
 Connect to this signal to receive log messages from Lychee. DO NOT use this signal to emit log
 messages; instead, use one of the loggers in :mod:`lychee.logs`.
 

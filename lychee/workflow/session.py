@@ -242,15 +242,9 @@ class InteractiveSession(object):
     @log.wrap('critical', 'run a Lychee action', 'action')
     def _action_start(self, action, **kwargs):
         '''
-        Slot for the ACTION_START signal.
+        THIS METHOD IS DEPRECATED
 
-        :kwarg dtype: As the :const:`lychee.signals.ACTION_START` signal.
-        :kwarg doc: As the :const:`lychee.signals.ACTION_START` signal.
-        :kwarg views_info: As the :const:`lychee.signals.ACTION_START` signal.
-        :kwarg revision: As the :const:`lychee.signals.ACTION_START` signal.
-
-        Emits the :const:`lychee.signals.outbound.CONVERSION_FINISHED` signal on completion. May
-        also cause a bunch of different error signals if there's a problem.
+        Use run_workflow(), run_inbound(), and run_outbound() instead.
         '''
         self._cleanup_for_new_action()
         initial_revision = None

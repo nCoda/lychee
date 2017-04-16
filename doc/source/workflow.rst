@@ -38,7 +38,7 @@ Signal Definitions
 ------------------
 
 .. automodule:: lychee.signals
-    :members: ACTION_START
+    :members: ACTION_START, LOG_MESSAGE
 
 
 Inbound Step

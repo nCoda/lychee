@@ -36,6 +36,10 @@ from . import signal
 
 REGISTER_FORMAT = signal.Signal(args=['dtype', 'who', 'outbound'], name='outbound.REGISTER_FORMAT')
 '''
+.. danger::
+    .. deprecated:: 0.5.4
+        To be replaced by methods on :class:`InteractiveSession` that are not yet implemented.
+
 To request that Lychee produce output data in a given format, call this signal before calling
 :const:`ACTION_START`.
 
@@ -60,6 +64,10 @@ long-running applications use a "who" argument.
 
 UNREGISTER_FORMAT = signal.Signal(args=['dtype', 'who'], name='outbound.UNREGISTER_FORMAT')
 '''
+.. danger::
+    .. deprecated:: 0.5.4
+        To be replaced by methods on :class:`InteractiveSession` that are not yet implemented.
+
 Tell Lychee that an interface component is no longer expecting output for a specific "dtype".
 
 :kwarg str dtype: The data type to produce ('abjad', 'lilypond', 'mei', 'verovio').
@@ -71,6 +79,10 @@ Refer to the discussion above for :const:`REGISTER_FORMAT`.
 
 STARTED = signal.Signal(name='outbound.STARTED')
 '''
+.. danger::
+    .. deprecated:: 0.5.4
+        No replacement.
+
 Emitted when outbound steps begin, before any of the views processing or conversion modules have
 begun processing, and only once for all registered outbound formats.
 '''
@@ -79,6 +91,9 @@ begun processing, and only once for all registered outbound formats.
 CONVERSION_FINISHED = signal.Signal(args=['dtype', 'placement', 'document', 'changeset'],
                                     name='outbound.CONVERSION_FINISHED')
 '''
+.. note::
+    This signal will *not* be removed.
+
 Emitted when one of the registered data types has finished outbound processing.
 
 Depending on the environmental factors, the function that emits this signals
@@ -105,6 +120,10 @@ as the conversions finish.
 
 ERROR = signal.Signal(args=['msg'], name='outbound.ERROR')
 '''
+.. danger::
+    .. deprecated:: 0.5.4
+        This signal will be replaced by CONVERSION_FINISHED.
+
 Emitted when there's an error during the outbound step.
 
 :kwarg str msg: A descriptive error message for the log file.

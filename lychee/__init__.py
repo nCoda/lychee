@@ -31,12 +31,12 @@ Initialize Lychee.
 __metadata__ = {
     'author': 'Christopher Antila',
     'author_email': 'christopher.antila@ncodamusic.org',
-    'copyright': u'2016 nCoda and others',  # only used in the API
+    'copyright': u'2016, 2017 nCoda and others',  # only used in the API
     'description': 'An engine for MEI document management and converion.',
     'license': 'GPLv3+',
     'name': 'Lychee',
     'url': 'https://lychee.ncodamusic.org/',
-    'version': '0.5.3',
+    'version': '0.5.4-quater',
 }
 
 __version__ = __metadata__['version']

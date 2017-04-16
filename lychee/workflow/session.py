@@ -354,14 +354,55 @@ class InteractiveSession(object):
 
         steps.do_vcs(session=self, pathnames=document_pathnames)
 
-    @log.wrap('critical', 'run outbound workflow step')
-    def run_outbound(self, views_info=None):
+    @log.wrap('critical', 'run outbound workflow step', 'action')
+    def run_outbound(self, views_info=None, revision=None, action=None):
         '''
         Run the outbound workflow steps (views and conversion).
 
         :param str views_info: As per :func:`lychee.workflow.steps.do_outbound_steps`
+        :param str revision: Checkout a specific changeset before running the outbound steps.
+            This may be a revision number, but we recommend using the changeset hash when possible.
+            This argument is ignored when version control is not enabled.
+
+        You may request only (a portion of) a ``<section>`` for outbound conversion by providing
+        the @xml:id attribute of that element. You may also request data from an arbitrary
+        changeset that is by including the revision identifier as the ``revision`` argument.
+
+        For example:
+
+        >>> session.run_outbound()
+
+        This causes the most recent version of the full score to be converted for all registered
+        outbound data types. On the other hand:
+
+        >>> session.run_outbound(views_info='Sme-s-m-l-e1182873')
+
+        This causes only the ``<section>`` with ``@xml:id="Sme-s-m-l-e1182873"`` to be sent for
+        outbound conversion. And:
+
+        >>> session.run_outbound(revision='40:964b28acc4ee')
+
+        This will checkout changeset r40, output the full score, then checkout the most recent
+        changeset again. Finally:
+
+        >>> session.run_outbound(views_info='Sme-s-m-l-e1182873', revision='40:964b28acc4ee')
+
+        This will checkout changeset r40, output only the ``<section>`` with
+        ``@xml:id="Sme-s-m-l-e1182873"``, then checkout the most recent changeset.
         '''
         try:
+            # check out another revision, if possible/necessary
+            initial_revision = None
+            if self._vcs == 'mercurial' and revision:
+                initial_revision = self._hug.summary()['parent'].split(' ')[0]
+                try:
+                    self._hug.update(revision)
+                except RuntimeError:
+                    # raised when the revision is invalid
+                    action.failure(_UNKNOWN_REVISION)
+                    return
+
+            # gather data for the outbound converters
             changeset = ''
             if self._vcs == 'mercurial':
                 summary = self._hug.summary()
@@ -370,6 +411,7 @@ class InteractiveSession(object):
                 else:
                     changeset = summary['parent']
 
+            # run the outbound conversions
             signals.outbound.STARTED.emit()
             repo_dir = self.get_repo_dir()
             for outbound_dtype in self._registrar.get_registered_formats():
@@ -382,6 +424,8 @@ class InteractiveSession(object):
 
         finally:
             self._cleanup_for_new_action()
+            if initial_revision:
+                self._hug.update(initial_revision)
 
     def _cleanup_for_new_action(self):
         '''

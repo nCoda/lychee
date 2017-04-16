@@ -742,6 +742,77 @@ class TestRunOutbound(TestInteractiveSession):
             document=mock_do_out.return_value['document'],
             changeset='')
 
+    @mock.patch('lychee.workflow.steps.do_outbound_steps')
+    def test_when_hg_update_works(self, mock_do_out):
+        '''
+        A unit test (fully mocked) for when running Hug.update() works.
+        Initial revision is on a tag.
+        '''
+        self.session = session.InteractiveSession(vcs='mercurial')
+        parent_revision = '99:801774903828 tip'
+        target_revision = '40:964b28acc4ee'
+        self.session._registrar.register('mei')
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session._hug = mock.Mock()
+        self.session._hug.summary = mock.Mock(return_value={'parent': parent_revision})
+        self.session._hug.update = mock.Mock()
+        self.session._repo_dir = '/path/to/repo'
+        views_info = 'IBV'
+
+        self.session.run_outbound(views_info=views_info, revision=target_revision)
+
+        mock_do_out.assert_called_with('/path/to/repo', views_info, 'mei')
+        assert self.session._cleanup_for_new_action.called
+        assert self.session._hug.update.call_count == 2
+        self.session._hug.update.assert_any_call(target_revision)
+        # the tag name (the "tip" part) should be removed
+        self.session._hug.update.assert_called_with(parent_revision[:-4])  # final call
+
+    @mock.patch('lychee.workflow.steps.do_outbound_steps')
+    def test_when_hg_update_fails(self, mock_do_out):
+        '''
+        A unit test (fully mocked) for when running Hug.update() fails.
+        Initial revision is not on a tag.
+        '''
+        self.session = session.InteractiveSession(vcs='mercurial')
+        parent_revision = '99:801774903828'
+        target_revision = '44444444444444444'
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session._hug = mock.Mock()
+        self.session._hug.summary = mock.Mock(return_value={'parent': parent_revision})
+        # we need a complicated mock here so one call to update() fails, but the 2nd, in the finally
+        # suite, won't fail
+        def update_effect(revision):
+            "side-effect for Hug.update()"
+            if revision != parent_revision:
+                raise RuntimeError('=^.^=  meow')
+        self.session._hug.update = mock.Mock(side_effect=update_effect)
+        self.session._repo_dir = '/path/to/repo'
+
+        self.session.run_outbound(revision=target_revision)
+
+        assert not mock_do_out.called
+        assert self.session._cleanup_for_new_action.called
+        assert self.session._hug.update.call_count == 2
+        self.session._hug.update.assert_any_call(target_revision)
+        self.session._hug.update.assert_called_with(parent_revision)  # final call
+
+    @mock.patch('lychee.workflow.steps.do_outbound_steps')
+    def test_revision_ignored(self, mock_do_out):
+        '''
+        A unit test (fully mocked) to check the "revision" argument is ignored if VCS is disabled.
+        NB: there would be an AttributeError if the VCS isn't enabled
+        '''
+        target_revision = '40:964b28acc4ee'
+        self.session._registrar.register('mei')
+        self.session._cleanup_for_new_action = mock.Mock()
+        views_info = 'IBV'
+
+        self.session.run_outbound(views_info=views_info, revision=target_revision)
+
+        mock_do_out.assert_called_with(self.session.get_repo_dir(), views_info, 'mei')
+        assert self.session._cleanup_for_new_action.called
+
 
 class TestRunInboundDocVcs(TestInteractiveSession):
     '''

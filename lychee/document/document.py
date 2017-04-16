@@ -7,7 +7,7 @@
 # Filename:               lychee/document/document.py
 # Purpose:                Contains an object representing an MEI document.
 #
-# Copyright (C) 2016 Christopher Antila
+# Copyright (C) 2016, 2017 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -417,42 +417,6 @@ def _init_sections_dict(all_files):
 
     return post
 
-def _move_section_to(xmlid, position):  # TODO: this function is untested
-    '''
-    Slot for the "document.MOVE_SECTION_TO" signal.
-
-    :arg string xmlid: The @xml:id attribute of the ``<section>`` to move. The section may or may
-        not already be in the active score, but it must already be part of the document.
-    :arg int position: The requested new index of the section in the active score.
-
-    Note that this isn't the slot itself. After the work for MOVE_SECTION_TO is completed by this
-    function, an "outbound" conversion must run. That must be done by whichever function calls this.
-    '''
-    position = int(position)
-
-    doc = Document(repository_path=lychee.get_repo_dir())
-    if xmlid not in doc.get_section_ids(all_sections=True):
-        # TODO: panic
-        pass
-
-    score_order = doc.get_section_ids()
-
-    if xmlid in score_order:
-        curr_pos = score_order.index(xmlid)
-        if curr_pos < position:
-            position -= 1
-        del score_order[curr_pos]
-
-    score_order.insert(position, xmlid)
-
-    new_score = etree.Element(mei.SCORE)
-    for section in score_order:
-        new_score.append(doc.get_section(section))
-
-    doc.put_score(new_score)
-    doc.save_everything()
-
-
 
 class Document(object):
     '''
@@ -858,20 +822,15 @@ class Document(object):
         '''
         Move a ``<section>`` to another position in the score.
 
-        Slot for the "document.MOVE_SECTION_TO" signal.
-
-        :arg string xmlid: The @xml:id attribute of the ``<section>`` to move. The section may or may
-            not already be in the active score, but it must already be part of the document.
+        :arg string xmlid: The @xml:id attribute of the ``<section>`` to move. The section may or
+            may not already be in the active score, but it must already be part of the document.
         :arg int position: The requested new index of the section in the active score.
         :raises: :exc:`~lychee.exceptions.SectionNotFoundError` if the ``<section>`` to move is not
             found in the repository.
 
-        Note that this isn't the slot itself. After the work for MOVE_SECTION_TO is completed by this
-        function, an "outbound" conversion must run. That must be done by whichever function calls this.
-
-        .. warning::
-            This method will be changed when the MOVE_SECTION_TO signal is removed.
-            Refer to `T108 <https://goldman.ncodamusic.org/T108>`_ for more information.
+        Note that this function simply moves the indicated section to the requested position, but
+        does not save the :class:`Document` instance or anything else (e.g., does not cause an
+        outbound conversion that would update code external to *Lychee*).
         '''
         position = int(position)
 

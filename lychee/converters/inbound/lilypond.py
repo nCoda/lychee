@@ -461,6 +461,32 @@ def fix_ties_in_layer(m_layer, action):
                 _fix_tie_target(note, pitch_map)
 
 
+@log.wrap('debug', 'fix slurs', 'action')
+def fix_slurs_in_layer(m_layer, action):
+    '''
+    Fix @slur attribute values in an LMEI <layer> element.
+    '''
+
+    current_slur = False
+    for node in m_layer:
+        if node.tag in (mei.NOTE, mei.CHORD):
+            slur_attrib = node.get('slur')
+            if current_slur:
+                # If there is an ongoing tie, set all @ties to medial
+                # until a terminal @tie shows up.
+                if slur_attrib == 't1':
+                    current_slur = False
+                else:
+                    node.attrib['slur'] = 'm1'
+            else:
+                # If there is no ongoing tie, unset all @ties until
+                # an initial @tie shows up.
+                if slur_attrib == 'i1':
+                    current_slur = True
+                elif 'slur' in node.attrib:
+                    del node.attrib['slur']
+
+
 @log.wrap('debug', 'convert voice/layer', 'action')
 def do_layer(l_layer, m_container, layer_n, action):
     '''
@@ -500,6 +526,7 @@ def do_layer(l_layer, m_container, layer_n, action):
                 action.failure('unknown node type: {ly_type}', ly_type=obj['ly_type'])
 
     fix_ties_in_layer(m_layer)
+    fix_slurs_in_layer(m_layer)
 
     return m_layer
 
@@ -607,16 +634,44 @@ def process_dots(l_node, attrib, action):
     return attrib
 
 
-@log.wrap('debug', 'process tie')
-def process_tie(l_thing, attrib):
+@log.wrap('debug', 'has tie')
+def has_tie(l_thing):
     '''
-    Given a parsed LilyPond note/chord and the "attrib" dictionary for its yet-to-be-created
-    MEI element, set the tie attribute if required.
+    Given a parsed LilyPond note/chord, determine whether it has a tie.
     '''
-    if l_thing.get('tie') is not None:
-        attrib['tie'] = 'i'
+    post_events = l_thing.get('post_events', [])
+    return any([post_event.get('ly_type') == 'tie' for post_event in post_events])
 
-    return attrib
+
+@log.wrap('debug', 'add tie')
+def add_tie(attrib):
+    '''
+    Given an attribute dictionary for an LMEI element, add a tie to it.
+
+    All tie attributes are initial at this stage of conversion. Medial and final tie attributes
+    are fixed at the layer level.
+    '''
+    attrib['tie'] = 'i'
+
+
+@log.wrap('debug', 'process slur')
+def process_slur(l_thing, attrib):
+    '''
+    Handle the @slur attribute for LilyPond nodes. Only emits initial
+    and final slur attributes (medial is handled later), and does not
+    process overlapping slurs.
+    '''
+    post_events = l_thing.get('post_events', [])
+    # Find the first slur post event
+    for post_event in post_events:
+        if post_event.get('ly_type') == 'slur':
+            slur = post_event.get('slur')
+            if slur == '(':
+                attrib['slur'] = 'i1'
+                break
+            elif slur == ')':
+                attrib['slur'] = 't1'
+                break
 
 
 @log.wrap('debug', 'convert chord', 'action')
@@ -635,8 +690,9 @@ def do_chord(l_chord, m_layer, action):
 
     attrib = {'dur': l_chord['dur']}
     process_dots(l_chord, attrib)
+    process_slur(l_chord, attrib)
 
-    chord_has_tie = l_chord.get('tie') is not None
+    chord_has_tie = has_tie(l_chord)
 
     m_chord = etree.SubElement(m_layer, mei.CHORD, attrib)
 
@@ -648,10 +704,8 @@ def do_chord(l_chord, m_layer, action):
 
         process_accidental(l_note['accid'], attrib)
         process_forced_accid(l_note, attrib)
-        process_tie(l_note, attrib)
-
-        if chord_has_tie:
-            attrib['tie'] = 'i'
+        if chord_has_tie or has_tie(l_note):
+            add_tie(attrib)
 
         m_note = etree.SubElement(m_chord, mei.NOTE, attrib)
 
@@ -683,7 +737,9 @@ def do_note(l_note, m_layer, action):
     process_accidental(l_note['accid'], attrib)
     process_forced_accid(l_note, attrib)
     process_dots(l_note, attrib)
-    process_tie(l_note, attrib)
+    if has_tie(l_note):
+        add_tie(attrib)
+    process_slur(l_note, attrib)
 
     m_note = etree.SubElement(m_layer, mei.NOTE, attrib)
 

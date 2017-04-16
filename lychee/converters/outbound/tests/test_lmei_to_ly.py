@@ -182,6 +182,21 @@ class TestTie(object):
         assert lilypond.layer(m_layer) == '%{ l.1 %} <c~ g> <c g>'
 
 
+class TestSlur(object):
+    def test_slur_1(self):
+        '''
+        Four notes slurred.
+        '''
+        m_layer = etree.fromstring(
+        '''<mei:layer n="1" xmlns:mei="http://www.music-encoding.org/ns/mei">
+            <mei:note dur="4" oct="3" pname="c" slur="i1" />
+            <mei:note dur="4" oct="3" pname="d" slur="m1" />
+            <mei:note dur="4" oct="3" pname="e" slur="m1" />
+            <mei:note dur="4" oct="3" pname="f" slur="t1" />
+        </mei:layer>''')
+        assert lilypond.layer(m_layer) == '%{ l.1 %} c4( d4 e4 f4)'
+
+
 class TestLayerMeasure(object):
     def test_layer_1(self):
         m_layer = etree.fromstring(

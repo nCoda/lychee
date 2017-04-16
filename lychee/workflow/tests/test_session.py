@@ -524,13 +524,16 @@ class TestActionStart(TestInteractiveSession):
         '''
         self.session = session.InteractiveSession(vcs='mercurial')
         input_ly = """\\clef "treble" a''4 b'16 c''2  | \\clef "bass" d?2 e!2  | f,,2 fis,2  |"""
-        assert not os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))  # pre-condition
+        # pre-condition
+        assert not os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
         # unfortunately we need a mock for this, so we can be sure it was called
         finish_mock = make_slot_mock()
         def finish_side_effect(dtype, placement, document, **kwargs):
-            called = True
             assert 'mei' == dtype
             assert isinstance(document, etree._Element)
+            assert os.path.exists(
+                os.path.join(self.session.get_repo_dir(), '{}.mei'.format(placement))
+                )
         finish_mock.side_effect = finish_side_effect
 
         signals.outbound.REGISTER_FORMAT.emit(dtype='mei', who='test_everything_works_unmocked')
@@ -542,6 +545,7 @@ class TestActionStart(TestInteractiveSession):
             signals.outbound.CONVERSION_FINISHED.disconnect(finish_mock)
 
         assert os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
+        assert finish_mock.called
 
 
 class TestRunWorkflow(TestInteractiveSession):

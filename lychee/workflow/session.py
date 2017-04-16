@@ -150,7 +150,10 @@ class InteractiveSession(object):
         '''
         If this session is using a temporary directory, delete it.
         '''
-        self.unset_repo_dir()
+        try:
+            self.unset_repo_dir()
+        except AttributeError:
+            pass
 
     @log.wrap('info', 'set the repository directory')
     def set_repo_dir(self, path, run_outbound=False):

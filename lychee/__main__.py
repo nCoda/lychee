@@ -7,7 +7,7 @@
 # Filename:               lychee/__main__.py
 # Purpose:                Module the runs Lychee as a program.
 #
-# Copyright (C) 2016 Christopher Antila
+# Copyright (C) 2016, 2017 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -220,7 +220,7 @@ if 'lilypond' == test_which_format:
         \\layout { }
     }
     """
-    signals.ACTION_START.emit(dtype='LilyPond', doc=input_ly, views_info='Sme-s-m-l-e5811068')
+    session.run_workflow(dtype='LilyPond', doc=input_ly, sect_id='Sme-s-m-l-e5811068')
 elif 'abjad' == test_which_format:
     print('(starting to make Abjad score)')
     from abjad import *
@@ -322,9 +322,9 @@ elif 'abjad' == test_which_format:
 
     score = Score([violins_1_1, violins_1_2, violins_2_1, violins_2_2, alti_1, alti_2, celli_1, celli_2, bassi])
     print('(finished making Abjad score)')
-    signals.ACTION_START.emit(dtype='abjad', doc=score, views_info='Sme-s-m-l-e8151068')
+    session.run_workflow(dtype='abjad', doc=score, sect_id='Sme-s-m-l-e8151068')
 elif 'outbound only' == test_which_format:
-    signals.ACTION_START.emit()
+    session.run_outbound()
 else:
     raise RuntimeError('you must choose a format in lychee.__main__')
 

@@ -92,8 +92,8 @@ class InteractiveSession(object):
         signals.outbound.UNREGISTER_FORMAT.connect(self._registrar.unregister)
         signals.ACTION_START.connect(self._action_start)  # NOTE: this connection isn't tested
         signals.vcs.START.connect(steps._vcs_driver)
-        signals.inbound.CONVERSION_FINISH.connect(self.inbound_conversion_finish)
-        signals.inbound.VIEWS_FINISH.connect(self.inbound_views_finish)
+        signals.inbound.CONVERSION_FINISH.connect(self._inbound_conversion_finish)
+        signals.inbound.VIEWS_FINISH.connect(self._inbound_views_finish)
 
         # thse should be cleared for each action
         self._inbound_converted = None
@@ -134,12 +134,9 @@ class InteractiveSession(object):
         '''
         self.unset_repo_dir()
 
-    def get_document(self):
+    @property
+    def document(self):
         '''
-        .. deprecated:: 0.4.0
-            This method will be replaced with an attribute as described in
-            `T114 <https://goldman.ncodamusic.org/T114>`_.
-
         Get a :class:`~lychee.document.Document` for this session's repository.
 
         :returns: The :class:`Document` for this session.
@@ -160,6 +157,15 @@ class InteractiveSession(object):
 
         self._doc = document.Document(self._repo_dir)
         return self._doc
+
+    def __del__(self):
+        '''
+        If this session is using a temporary directory, delete it.
+        '''
+        try:
+            self.unset_repo_dir()
+        except AttributeError:
+            pass
 
     @log.wrap('info', 'set the repository directory')
     def set_repo_dir(self, path, run_outbound=False):
@@ -212,7 +218,7 @@ class InteractiveSession(object):
                 raise exceptions.RepositoryError(_CANNOT_SAFELY_HG_INIT)
 
         if run_outbound:
-            self._run_outbound()
+            self.run_outbound()
 
         return self._repo_dir
 
@@ -251,15 +257,9 @@ class InteractiveSession(object):
     @log.wrap('critical', 'run a Lychee action', 'action')
     def _action_start(self, action, **kwargs):
         '''
-        Slot for the ACTION_START signal.
+        THIS METHOD IS DEPRECATED
 
-        :kwarg dtype: As the :const:`lychee.signals.ACTION_START` signal.
-        :kwarg doc: As the :const:`lychee.signals.ACTION_START` signal.
-        :kwarg views_info: As the :const:`lychee.signals.ACTION_START` signal.
-        :kwarg revision: As the :const:`lychee.signals.ACTION_START` signal.
-
-        Emits the :const:`lychee.signals.outbound.CONVERSION_FINISHED` signal on completion. May
-        also cause a bunch of different error signals if there's a problem.
+        Use run_workflow(), run_inbound(), and run_outbound() instead.
         '''
         self._cleanup_for_new_action()
         initial_revision = None
@@ -272,7 +272,7 @@ class InteractiveSession(object):
                 if 'views_info' not in kwargs:
                     kwargs['views_info'] = None
                 try:
-                    self._run_inbound_doc_vcs(kwargs['dtype'], kwargs['doc'], kwargs['views_info'])
+                    self.run_inbound(kwargs['dtype'], kwargs['doc'], kwargs['views_info'])
                 except exceptions.InboundConversionError:
                     action.failure(_FAILURE_DURING_INBOUND)
                     return
@@ -288,27 +288,58 @@ class InteractiveSession(object):
                         action.failure(_UNKNOWN_REVISION)
                         return
 
-            self._run_outbound()
+            self.run_outbound(views_info=self._inbound_views_info)
 
         finally:
             self._cleanup_for_new_action()
             if initial_revision:
                 self._hug.update(initial_revision)
 
-    def _run_inbound_doc_vcs(self, dtype, doc, views_info):
+    @log.wrap('critical', 'run full workflow', 'action')
+    def run_workflow(self, dtype, doc, sect_id=None, action=None):
         '''
-        Helper method for :meth:`_action_start`.
+        Run a full *Lychee* workflow, including the inbound, document, VCS (if enabled), and
+        outbund steps.
 
-        :param str dtype: From the :const:`~lychee.signals.ACTION_START` signal.
-        :param ??? doc: From the :const:`~lychee.signals.ACTION_START` signal.
-        :param str views_info: For :const:`lychee.signals.inbound.VIEWS_START`.
+        :param str dtype: The format (data type) of the inbound musical document. This must
+            correspond to the name of a converter module in :mod:`lychee.converters.inbound`.
+        :param object doc: The inbound musical document. The required type is determined by each
+            converter module itself.
+        :param str sect_id: The Lychee-MEI @xml:id attribute of the ``<section>`` contained in
+            the "doc" argument. If omitted, "converted" will become a new ``<section>``.
+
+        Emits the :const:`lychee.signals.outbound.CONVERSION_FINISHED` signal on completion. May
+        also cause a bunch of different error signals if there's a problem.
+        '''
+        try:
+            try:
+                self.run_inbound(dtype, doc, sect_id)
+            except exceptions.InboundConversionError:
+                action.failure(_FAILURE_DURING_INBOUND)
+                return
+
+            self.run_outbound(views_info=self._inbound_views_info)
+
+        finally:
+            self._cleanup_for_new_action()
+
+
+    @log.wrap('critical', 'run inbound workflow step')
+    def run_inbound(self, dtype, doc, sect_id=None):
+        '''
+        Run the inbound (conversion and views), document, and (if enabled) VCS workflow steps.
+
+        :param str dtype: The format (data type) of the inbound musical document. This must
+            correspond to the name of a converter module in :mod:`lychee.converters.inbound`.
+        :param object doc: The inbound musical document. The required type is determined by each
+            converter module itself.
+        :param str sect_id: The Lychee-MEI @xml:id attribute of the ``<section>`` contained in
+            the "doc" argument. If omitted, "converted" will become a new ``<section>``.
         :raises: :exc:`lychee.exceptions.InboundConversionError` when the conversion or views
             processing steps fail.
-
-        When there is an incoming change, :meth:`_action_start` uses this method to run the inbound
-        conversion and views processing, document, and VCS steps. The functionality is held in this
-        helper method to ease testing and error-handling.
         '''
+        self._cleanup_for_new_action()
+
         steps.do_inbound_conversion(
             session=self,
             dtype=dtype,
@@ -321,7 +352,7 @@ class InteractiveSession(object):
             dtype=dtype,
             document=doc,
             converted=self._inbound_converted,
-            views_info=views_info)
+            views_info=sect_id)
         if not isinstance(self._inbound_views_info, str):
             raise exceptions.InboundConversionError()
 
@@ -332,29 +363,78 @@ class InteractiveSession(object):
 
         steps.do_vcs(session=self, pathnames=document_pathnames)
 
-    def _run_outbound(self):
+    @log.wrap('critical', 'run outbound workflow step', 'action')
+    def run_outbound(self, views_info=None, revision=None, action=None):
         '''
-        Run the outbound conversions.
-        '''
-        changeset = ''
-        if self._vcs == 'mercurial':
-            summary = self._hug.summary()
-            if 'tag' in summary:
-                changeset = summary['tag']
-            else:
-                changeset = summary['parent']
+        Run the outbound workflow steps (views and conversion).
 
-        signals.outbound.STARTED.emit()
-        for outbound_dtype in self._registrar.get_registered_formats():
-            post = steps.do_outbound_steps(
-                self.get_repo_dir(),
-                self._inbound_views_info,  # might be None, but that's okay
-                outbound_dtype)
-            signals.outbound.CONVERSION_FINISHED.emit(
-                dtype=outbound_dtype,
-                placement=post['placement'],
-                document=post['document'],
-                changeset=changeset)
+        :param str views_info: As per :func:`lychee.workflow.steps.do_outbound_steps`
+        :param str revision: Checkout a specific changeset before running the outbound steps.
+            This may be a revision number, but we recommend using the changeset hash when possible.
+            This argument is ignored when version control is not enabled.
+
+        You may request only (a portion of) a ``<section>`` for outbound conversion by providing
+        the @xml:id attribute of that element. You may also request data from an arbitrary
+        changeset that is by including the revision identifier as the ``revision`` argument.
+
+        For example:
+
+        >>> session.run_outbound()
+
+        This causes the most recent version of the full score to be converted for all registered
+        outbound data types. On the other hand:
+
+        >>> session.run_outbound(views_info='Sme-s-m-l-e1182873')
+
+        This causes only the ``<section>`` with ``@xml:id="Sme-s-m-l-e1182873"`` to be sent for
+        outbound conversion. And:
+
+        >>> session.run_outbound(revision='40:964b28acc4ee')
+
+        This will checkout changeset r40, output the full score, then checkout the most recent
+        changeset again. Finally:
+
+        >>> session.run_outbound(views_info='Sme-s-m-l-e1182873', revision='40:964b28acc4ee')
+
+        This will checkout changeset r40, output only the ``<section>`` with
+        ``@xml:id="Sme-s-m-l-e1182873"``, then checkout the most recent changeset.
+        '''
+        try:
+            # check out another revision, if possible/necessary
+            initial_revision = None
+            if self._vcs == 'mercurial' and revision:
+                initial_revision = self._hug.summary()['parent'].split(' ')[0]
+                try:
+                    self._hug.update(revision)
+                except RuntimeError:
+                    # raised when the revision is invalid
+                    action.failure(_UNKNOWN_REVISION)
+                    return
+
+            # gather data for the outbound converters
+            changeset = ''
+            if self._vcs == 'mercurial':
+                summary = self._hug.summary()
+                if 'tag' in summary:
+                    changeset = summary['tag']
+                else:
+                    changeset = summary['parent']
+
+            # run the outbound conversions
+            signals.outbound.STARTED.emit()
+            repo_dir = self.get_repo_dir()
+            for outbound_dtype in self._registrar.get_registered_formats():
+                post = steps.do_outbound_steps(repo_dir, views_info, outbound_dtype)
+                signals.outbound.CONVERSION_FINISHED.emit(
+                    dtype=outbound_dtype,
+                    placement=post['placement'],
+                    document=post['document'],
+                    changeset=changeset)
+
+        finally:
+            self._cleanup_for_new_action()
+            if initial_revision:
+                self._hug.update(initial_revision)
 
     def _cleanup_for_new_action(self):
         '''
@@ -368,10 +448,9 @@ class InteractiveSession(object):
         steps.flush_inbound_converters()
         steps.flush_inbound_views()
 
-    def inbound_conversion_finish(self, converted, **kwargs):
+    def _inbound_conversion_finish(self, converted, **kwargs):
         '''
-        .. deprecated:: 0.4.0
-            This method will be removed as described in `T114 <https://goldman.ncodamusic.org/T114>`_.
+        NOTE: this method will be removed in T113
 
         Accept the data emitted by an inbound converter. Slot for :const:`inbound.CONVERSION_FINISH`.
 
@@ -381,10 +460,9 @@ class InteractiveSession(object):
         self._inbound_converted = converted
         signals.inbound.CONVERSION_FINISHED.emit()
 
-    def inbound_views_finish(self, views_info, **kwargs):
+    def _inbound_views_finish(self, views_info, **kwargs):
         '''
-        .. deprecated:: 0.4.0
-            This method will be removed as described in `T114 <https://goldman.ncodamusic.org/T114>`_.
+        NOTE: this method will be removed in T113
 
         Accept the views data from an inbound views processor. Slot for :const:`inbound.VIEWS_FINISH`.
 

@@ -99,7 +99,7 @@ class TestDocumentStep(TestInteractiveSession):
         pathnames = steps.do_document(self.session, converted, 'views info')
 
         assert section_pathname in pathnames
-        doc = self.session.get_document()
+        doc = self.session.document
         assert [xmlid] == doc.get_section_ids()
         assert [xmlid] == doc.get_section_ids(all_sections=True)
         assert os.path.exists(section_pathname)

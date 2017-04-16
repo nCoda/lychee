@@ -91,7 +91,7 @@ class DocumentTestCase(unittest.TestCase):
         self.addTypeEqualityFunc(etree._ElementTree, self.assertElementsEqual)
         self._session = session.InteractiveSession()
         self.repo_dir = self._session.set_repo_dir('')
-        self.doc = self._session.get_document()
+        self.doc = self._session.document
 
     def tearDown(self):
         '''

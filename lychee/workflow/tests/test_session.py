@@ -26,6 +26,8 @@
 Tests for the :mod:`lychee.workflow.session` module.
 '''
 
+# pylint: disable=protected-access
+
 import os.path
 import shutil
 import sys
@@ -86,8 +88,8 @@ class TestGeneral(TestInteractiveSession):
         assert signals.outbound.REGISTER_FORMAT.is_connected(actual._registrar.register)
         assert signals.outbound.UNREGISTER_FORMAT.is_connected(actual._registrar.unregister)
         assert signals.vcs.START.is_connected(steps._vcs_driver)
-        assert signals.inbound.CONVERSION_FINISH.is_connected(actual.inbound_conversion_finish)
-        assert signals.inbound.VIEWS_FINISH.is_connected(actual.inbound_views_finish)
+        assert signals.inbound.CONVERSION_FINISH.is_connected(actual._inbound_conversion_finish)
+        assert signals.inbound.VIEWS_FINISH.is_connected(actual._inbound_views_finish)
 
         # things cleaned up for every action
         assert actual._inbound_converted is None
@@ -222,7 +224,7 @@ class TestRepository(TestInteractiveSession):
         When "path" is '', it makes a temp dir and initializes a new Hg repo.
         '''
         sess = self.session
-        sess._run_outbound = mock.Mock()
+        sess.run_outbound = mock.Mock()
         actual = sess.set_repo_dir('', run_outbound=True)
         if sys.platform == 'linux2':
             assert actual.startswith('/tmp/')
@@ -231,7 +233,7 @@ class TestRepository(TestInteractiveSession):
         else:
             raise NotImplementedError("This test isn't yet implemented on this platform.")
         assert os.path.exists(os.path.join(actual, '.hg'))
-        assert sess._run_outbound.call_count == 1
+        assert sess.run_outbound.call_count == 1
 
     def test_set_repo_dir_1b(self):
         '''
@@ -239,9 +241,9 @@ class TestRepository(TestInteractiveSession):
         '''
         # only test what's different from 1b
         sess = self.session
-        sess._run_outbound = mock.Mock()
+        sess.run_outbound = mock.Mock()
         actual = sess.set_repo_dir('', run_outbound=False)
-        assert sess._run_outbound.call_count == 0
+        assert sess.run_outbound.call_count == 0
 
     @mock.patch('lychee.workflow.session.hug')
     def test_set_repo_dir_2(self, mock_hug):
@@ -249,14 +251,14 @@ class TestRepository(TestInteractiveSession):
         When it makes a temp dir but can't initialize a new Hg repo.
         '''
         sess = self.session
-        sess._run_outbound = mock.Mock()
+        sess.run_outbound = mock.Mock()
         mock_hug.Hug.side_effect = hg_error.RepoError
         with pytest.raises(exceptions.RepositoryError) as exc:
             sess.set_repo_dir('', run_outbound=True)
         assert session._CANNOT_SAFELY_HG_INIT == exc.value.args[0]
         # the _repo_dir still must have been set, so unset_repo_dir() can delete it on __del__()
         assert sess._repo_dir is not None
-        assert sess._run_outbound.call_count == 0
+        assert sess.run_outbound.call_count == 0
 
     @mock.patch('lychee.workflow.session.hug')
     def test_set_repo_dir_3(self, mock_hug):
@@ -264,13 +266,13 @@ class TestRepository(TestInteractiveSession):
         When the path exists, and it initializes fine.
         '''
         sess = self.session
-        sess._run_outbound = mock.Mock()
+        sess.run_outbound = mock.Mock()
         actual = sess.set_repo_dir('../tests', run_outbound=True)
         assert actual.endswith('tests')
         assert sess._hug is not None
         assert sess._temp_dir is False
         assert sess._repo_dir == actual
-        assert sess._run_outbound.call_count == 1
+        assert sess.run_outbound.call_count == 1
 
     @mock.patch('lychee.workflow.session.hug')
     def test_set_repo_dir_4(self, mock_hug):
@@ -279,25 +281,25 @@ class TestRepository(TestInteractiveSession):
         '''
         assert not os.path.exists('zests')  # for the test to work, this dir must not already exist
         sess = self.session
-        sess._run_outbound = mock.Mock()
+        sess.run_outbound = mock.Mock()
         try:
             actual = sess.set_repo_dir('zests', run_outbound=True)
         finally:
             assert actual.endswith('zests')
             assert os.path.exists(actual)
             shutil.rmtree(actual)
-        assert sess._run_outbound.call_count == 1
+        assert sess.run_outbound.call_count == 1
 
     def test_set_repo_dir_5(self):
         '''
         When the path must be created, but it can't be.
         '''
         sess = self.session
-        sess._run_outbound = mock.Mock()
+        sess.run_outbound = mock.Mock()
         with pytest.raises(exceptions.RepositoryError) as exc:
             sess.set_repo_dir('/bin/delete_me', run_outbound=True)
         assert session._CANNOT_MAKE_HG_DIR == exc.value.args[0]
-        assert sess._run_outbound.call_count == 0
+        assert sess.run_outbound.call_count == 0
 
     def test_set_repo_dir_6(self):
         '''
@@ -328,33 +330,33 @@ class TestDocument(TestInteractiveSession):
     Tests for InteractiveSession's management of Document instances.
     '''
 
-    def test_get_document_1(self):
+    def test_document_1(self):
         '''
         When self._doc is already set.
         '''
         self.session._doc = 5
-        assert 5 == self.session.get_document()
+        assert 5 == self.session.document
 
-    def test_get_document_2(self):
+    def test_document_2(self):
         '''
         When self._doc is not set but repo_dir is.
         '''
         repo_dir = self.session.set_repo_dir('')
-        actual = self.session.get_document()
+        actual = self.session.document
         assert repo_dir == actual._repo_path
 
-    def test_get_document_3(self):
+    def test_document_3(self):
         '''
         When self._doc and repo_dir are both unset.
         '''
-        actual = self.session.get_document()
+        actual = self.session.document
         assert self.session._repo_dir == actual._repo_path
 
     def test_unset_repo_dir(self):
         '''
         Cross-check that the document instance is deleted when the repo_dir is changed.
         '''
-        self.session.get_document()
+        self.session.document
         self.session.set_repo_dir('')
         assert self.session._doc is None
 
@@ -369,7 +371,7 @@ class TestInbound(TestInteractiveSession):
         finished_slot = make_slot_mock()
         signals.inbound.CONVERSION_FINISHED.connect(finished_slot)
         try:
-            self.session.inbound_conversion_finish(converted='lol')
+            self.session._inbound_conversion_finish(converted='lol')
             assert 'lol' == self.session._inbound_converted
             finished_slot.assert_called_once_with()
         finally:
@@ -380,7 +382,7 @@ class TestInbound(TestInteractiveSession):
         finished_slot = make_slot_mock()
         signals.inbound.VIEWS_FINISHED.connect(finished_slot)
         try:
-            self.session.inbound_views_finish(views_info='lol')
+            self.session._inbound_views_finish(views_info='lol')
             assert 'lol' == self.session._inbound_views_info
             finished_slot.assert_called_once_with()
         finally:
@@ -400,13 +402,14 @@ class TestActionStart(TestInteractiveSession):
         doc = '<silly/>'
         views_info = 'Section XMLID'  # given to ACTION_START
         self.session._cleanup_for_new_action = mock.Mock()
-        self.session._run_inbound_doc_vcs = mock.Mock()
-        self.session._run_outbound = mock.Mock()
+        self.session._inbound_views_info = 'IBV'
+        self.session.run_inbound = mock.Mock()
+        self.session.run_outbound = mock.Mock()
 
         self.session._action_start(dtype=dtype, doc=doc, views_info=views_info)
 
-        self.session._run_outbound.assert_called_once_with()
-        self.session._run_inbound_doc_vcs.assert_called_once_with(dtype, doc, views_info)
+        self.session.run_outbound.assert_called_once_with(views_info='IBV')
+        self.session.run_inbound.assert_called_once_with(dtype, doc, views_info)
         assert 2 == self.session._cleanup_for_new_action.call_count
 
     def test_set_views_unit(self):
@@ -414,15 +417,15 @@ class TestActionStart(TestInteractiveSession):
         A unit test (fully mocked) for when ACTION_START receives views_info and not dtype or doc.
         '''
         self.session._cleanup_for_new_action = mock.Mock()
-        self.session._run_inbound_doc_vcs = mock.Mock()
+        self.session.run_inbound = mock.Mock()
         views_info = 'IBV'
-        self.session._run_outbound = mock.Mock()
+        self.session.run_outbound = mock.Mock()
 
         self.session._action_start(views_info=views_info)
 
         assert self.session._inbound_views_info == 'IBV'
-        assert not self.session._run_inbound_doc_vcs.called
-        self.session._run_outbound.assert_called_once_with()
+        assert not self.session.run_inbound.called
+        self.session.run_outbound.assert_called_once_with(views_info=views_info)
         assert self.session._cleanup_for_new_action.callled
 
     def test_when_inbound_fails(self):
@@ -437,15 +440,15 @@ class TestActionStart(TestInteractiveSession):
         dtype = 'silly format'
         doc = '<silly/>'
         self.session._cleanup_for_new_action = mock.Mock()
-        self.session._run_inbound_doc_vcs = mock.Mock()
-        self.session._run_inbound_doc_vcs.side_effect = exceptions.InboundConversionError
-        self.session._run_outbound = mock.Mock()
+        self.session.run_inbound = mock.Mock()
+        self.session.run_inbound.side_effect = exceptions.InboundConversionError
+        self.session.run_outbound = mock.Mock()
 
         self.session._action_start(dtype=dtype, doc=doc)
 
-        self.session._run_inbound_doc_vcs.assert_called_once_with(dtype, doc, None)
+        self.session.run_inbound.assert_called_once_with(dtype, doc, None)
         assert self.session._cleanup_for_new_action.call_count == 2
-        assert self.session._run_outbound.call_count == 0
+        assert self.session.run_outbound.call_count == 0
 
     def test_when_hg_update_works(self):
         '''
@@ -456,14 +459,15 @@ class TestActionStart(TestInteractiveSession):
         parent_revision = '99:801774903828 tip'
         target_revision = '40:964b28acc4ee'
         self.session._cleanup_for_new_action = mock.Mock()
-        self.session._run_outbound = mock.Mock()
+        self.session.run_outbound = mock.Mock()
         self.session._hug = mock.Mock()
         self.session._hug.summary = mock.Mock(return_value={'parent': parent_revision})
         self.session._hug.update = mock.Mock()
+        self.session._inbound_views_info = 'IBV'
 
         self.session._action_start(revision=target_revision)
 
-        self.session._run_outbound.assert_called_with()
+        self.session.run_outbound.assert_called_with(views_info='IBV')
         assert self.session._cleanup_for_new_action.call_count == 2
         assert self.session._hug.update.call_count == 2
         self.session._hug.update.assert_any_call(target_revision)
@@ -479,7 +483,7 @@ class TestActionStart(TestInteractiveSession):
         parent_revision = '99:801774903828'
         target_revision = '44444444444444444'
         self.session._cleanup_for_new_action = mock.Mock()
-        self.session._run_outbound = mock.Mock()
+        self.session.run_outbound = mock.Mock()
         self.session._hug = mock.Mock()
         self.session._hug.summary = mock.Mock(return_value={'parent': parent_revision})
         # we need a complicated mock here so one call to update() fails, but the 2nd, in the finally
@@ -487,12 +491,12 @@ class TestActionStart(TestInteractiveSession):
         def update_effect(revision):
             "side-effect for Hug.update()"
             if revision != parent_revision:
-                    raise RuntimeError('=^.^=  meow')
+                raise RuntimeError('=^.^=  meow')
         self.session._hug.update = mock.Mock(side_effect=update_effect)
 
         self.session._action_start(revision=target_revision)
 
-        assert self.session._run_outbound.call_count == 0
+        assert self.session.run_outbound.call_count == 0
         assert self.session._cleanup_for_new_action.call_count == 2
         assert self.session._hug.update.call_count == 2
         self.session._hug.update.assert_any_call(target_revision)
@@ -505,11 +509,12 @@ class TestActionStart(TestInteractiveSession):
         '''
         target_revision = '40:964b28acc4ee'
         self.session._cleanup_for_new_action = mock.Mock()
-        self.session._run_outbound = mock.Mock()
+        self.session.run_outbound = mock.Mock()
+        self.session._inbound_views_info = 'IBV'
 
         self.session._action_start(revision=target_revision)
 
-        self.session._run_outbound.assert_called_with()
+        self.session.run_outbound.assert_called_with(views_info='IBV')
         assert self.session._cleanup_for_new_action.call_count == 2
 
     def test_everything_works_unmocked(self):
@@ -518,13 +523,16 @@ class TestActionStart(TestInteractiveSession):
         '''
         self.session = session.InteractiveSession(vcs='mercurial')
         input_ly = """\\clef "treble" a''4 b'16 c''2  | \\clef "bass" d?2 e!2  | f,,2 fis,2  |"""
-        assert not os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))  # pre-condition
+        # pre-condition
+        assert not os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
         # unfortunately we need a mock for this, so we can be sure it was called
         finish_mock = make_slot_mock()
         def finish_side_effect(dtype, placement, document, **kwargs):
-            called = True
             assert 'mei' == dtype
             assert isinstance(document, etree._Element)
+            assert os.path.exists(
+                os.path.join(self.session.get_repo_dir(), '{}.mei'.format(placement))
+                )
         finish_mock.side_effect = finish_side_effect
 
         signals.outbound.REGISTER_FORMAT.emit(dtype='mei', who='test_everything_works_unmocked')
@@ -536,11 +544,104 @@ class TestActionStart(TestInteractiveSession):
             signals.outbound.CONVERSION_FINISHED.disconnect(finish_mock)
 
         assert os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
+        assert finish_mock.called
+
+
+class TestRunWorkflow(TestInteractiveSession):
+    '''
+    Tests for InteractiveSession.run_workflow().
+    '''
+
+    def test_new_section_unit(self):
+        '''
+        A unit test (fully mocked) where everything works and a new section is created.
+        '''
+        dtype = 'silly format'
+        doc = '<silly/>'
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session._inbound_views_info = 'IBV'
+        self.session.run_inbound = mock.Mock()
+        self.session.run_outbound = mock.Mock()
+
+        self.session.run_workflow(dtype=dtype, doc=doc)
+
+        self.session.run_inbound.assert_called_once_with(dtype, doc, None)
+        self.session.run_outbound.assert_called_once_with(views_info='IBV')
+        assert self.session._cleanup_for_new_action.called
+
+    def test_existing_section_unit(self):
+        '''
+        A unit test (fully mocked) where everything works and an existing section is modified.
+        '''
+        dtype = 'silly format'
+        doc = '<silly/>'
+        sect_id = 'Section XMLID'
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session._inbound_views_info = 'IBV'
+        self.session.run_inbound = mock.Mock()
+        self.session.run_outbound = mock.Mock()
+
+        self.session.run_workflow(dtype=dtype, doc=doc, sect_id=sect_id)
+
+        self.session.run_outbound.assert_called_once_with(views_info='IBV')
+        self.session.run_inbound.assert_called_once_with(dtype, doc, sect_id)
+        assert self.session._cleanup_for_new_action.called
+
+    def test_when_inbound_fails(self):
+        '''
+        A unit test (fully mocked) for when the inbound step fails.
+
+        The "views_info" kwarg is omitted.
+
+        We need to assert that the later steps do not happen. Not only would running the later
+        steps be unnecessary and take extra time, but it may also cause new errors.
+        '''
+        dtype = 'silly format'
+        doc = '<silly/>'
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session.run_inbound = mock.Mock()
+        self.session.run_inbound.side_effect = exceptions.InboundConversionError
+        self.session.run_outbound = mock.Mock()
+
+        self.session.run_workflow(dtype=dtype, doc=doc)
+
+        self.session.run_inbound.assert_called_once_with(dtype, doc, None)
+        assert self.session._cleanup_for_new_action.called
+        assert self.session.run_outbound.call_count == 0
+
+    def test_new_section(self):
+        '''
+        An integration test (no mocks) for when everything works and a new <section> is created.
+        '''
+        self.session = session.InteractiveSession(vcs='mercurial')
+        input_ly = """\\clef "treble" a''4 b'16 c''2  | \\clef "bass" d?2 e!2  | f,,2 fis,2  |"""
+        # pre-condition
+        assert not os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
+        # unfortunately we need a mock for this, so we can be sure it was called
+        finish_mock = make_slot_mock()
+        def finish_side_effect(dtype, placement, document, **kwargs):
+            assert dtype == 'mei'
+            assert isinstance(document, etree._Element)
+            assert os.path.exists(
+                os.path.join(self.session.get_repo_dir(), '{}.mei'.format(placement))
+                )
+        finish_mock.side_effect = finish_side_effect
+
+        signals.outbound.REGISTER_FORMAT.emit(dtype='mei', who='test_everything_works_unmocked')
+        signals.outbound.CONVERSION_FINISHED.connect(finish_mock)
+        try:
+            self.session.run_workflow(dtype='LilyPond', doc=input_ly)
+        finally:
+            signals.outbound.UNREGISTER_FORMAT.emit(dtype='mei', who='test_everything_works_unmocked')
+            signals.outbound.CONVERSION_FINISHED.disconnect(finish_mock)
+
+        assert os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
+        assert finish_mock.called
 
 
 class TestRunOutbound(TestInteractiveSession):
     '''
-    Tests for InteractiveSession._run_outbound().
+    Tests for InteractiveSession.run_outbound().
     '''
 
     @mock.patch('lychee.signals.outbound.CONVERSION_FINISHED')
@@ -550,7 +651,7 @@ class TestRunOutbound(TestInteractiveSession):
         No formats are registered for outbound conversion.
         '''
         self.session.set_repo_dir('')  # tempdir
-        self.session._run_outbound()
+        self.session.run_outbound()
         mock_out_started.emit.assert_called_once_with()
         assert mock_out_finished.emit.call_count == 0
 
@@ -564,14 +665,13 @@ class TestRunOutbound(TestInteractiveSession):
         self.session = session.InteractiveSession(vcs='mercurial')
         outbound_dtype = 'mei'
         views_info = 'IBV'
-        self.session._inbound_views_info = views_info
         self.session._hug = mock.Mock()
         self.session._hug.summary = mock.Mock(return_value={'tag': 'tip'})
         mock_do_out.return_value = {'placement': None, 'document': None}
 
         signals.outbound.REGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_single_format')
         try:
-            self.session._run_outbound()
+            self.session.run_outbound(views_info)
         finally:
             signals.outbound.UNREGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_single_format')
 
@@ -596,7 +696,6 @@ class TestRunOutbound(TestInteractiveSession):
         self.session = session.InteractiveSession(vcs='mercurial')
         outbound_dtypes = ['document', 'mei', 'vcs']
         views_info = 'IBV'
-        self.session._inbound_views_info = views_info
         self.session._hug = mock.Mock()
         self.session._hug.summary = mock.Mock(return_value={'parent': '16:96eb6fba2374'})
         mock_do_out.return_value = {'placement': None, 'document': None}
@@ -604,7 +703,7 @@ class TestRunOutbound(TestInteractiveSession):
         for dtype in outbound_dtypes:
             signals.outbound.REGISTER_FORMAT.emit(dtype=dtype, who='test_single_format')
         try:
-            self.session._run_outbound()
+            self.session.run_outbound(views_info)
         finally:
             for dtype in outbound_dtypes:
                 signals.outbound.UNREGISTER_FORMAT.emit(dtype=dtype, who='test_single_format')
@@ -627,12 +726,11 @@ class TestRunOutbound(TestInteractiveSession):
         '''
         outbound_dtype = 'mei'
         views_info = 'IBV'
-        self.session._inbound_views_info = views_info
         mock_do_out.return_value = {'placement': None, 'document': None}
 
         signals.outbound.REGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_single_format')
         try:
-            self.session._run_outbound()
+            self.session.run_outbound(views_info)
         finally:
             signals.outbound.UNREGISTER_FORMAT.emit(dtype=outbound_dtype, who='test_single_format')
 
@@ -647,10 +745,81 @@ class TestRunOutbound(TestInteractiveSession):
             document=mock_do_out.return_value['document'],
             changeset='')
 
+    @mock.patch('lychee.workflow.steps.do_outbound_steps')
+    def test_when_hg_update_works(self, mock_do_out):
+        '''
+        A unit test (fully mocked) for when running Hug.update() works.
+        Initial revision is on a tag.
+        '''
+        self.session = session.InteractiveSession(vcs='mercurial')
+        parent_revision = '99:801774903828 tip'
+        target_revision = '40:964b28acc4ee'
+        self.session._registrar.register('mei')
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session._hug = mock.Mock()
+        self.session._hug.summary = mock.Mock(return_value={'parent': parent_revision})
+        self.session._hug.update = mock.Mock()
+        self.session._repo_dir = '/path/to/repo'
+        views_info = 'IBV'
+
+        self.session.run_outbound(views_info=views_info, revision=target_revision)
+
+        mock_do_out.assert_called_with('/path/to/repo', views_info, 'mei')
+        assert self.session._cleanup_for_new_action.called
+        assert self.session._hug.update.call_count == 2
+        self.session._hug.update.assert_any_call(target_revision)
+        # the tag name (the "tip" part) should be removed
+        self.session._hug.update.assert_called_with(parent_revision[:-4])  # final call
+
+    @mock.patch('lychee.workflow.steps.do_outbound_steps')
+    def test_when_hg_update_fails(self, mock_do_out):
+        '''
+        A unit test (fully mocked) for when running Hug.update() fails.
+        Initial revision is not on a tag.
+        '''
+        self.session = session.InteractiveSession(vcs='mercurial')
+        parent_revision = '99:801774903828'
+        target_revision = '44444444444444444'
+        self.session._cleanup_for_new_action = mock.Mock()
+        self.session._hug = mock.Mock()
+        self.session._hug.summary = mock.Mock(return_value={'parent': parent_revision})
+        # we need a complicated mock here so one call to update() fails, but the 2nd, in the finally
+        # suite, won't fail
+        def update_effect(revision):
+            "side-effect for Hug.update()"
+            if revision != parent_revision:
+                raise RuntimeError('=^.^=  meow')
+        self.session._hug.update = mock.Mock(side_effect=update_effect)
+        self.session._repo_dir = '/path/to/repo'
+
+        self.session.run_outbound(revision=target_revision)
+
+        assert not mock_do_out.called
+        assert self.session._cleanup_for_new_action.called
+        assert self.session._hug.update.call_count == 2
+        self.session._hug.update.assert_any_call(target_revision)
+        self.session._hug.update.assert_called_with(parent_revision)  # final call
+
+    @mock.patch('lychee.workflow.steps.do_outbound_steps')
+    def test_revision_ignored(self, mock_do_out):
+        '''
+        A unit test (fully mocked) to check the "revision" argument is ignored if VCS is disabled.
+        NB: there would be an AttributeError if the VCS isn't enabled
+        '''
+        target_revision = '40:964b28acc4ee'
+        self.session._registrar.register('mei')
+        self.session._cleanup_for_new_action = mock.Mock()
+        views_info = 'IBV'
+
+        self.session.run_outbound(views_info=views_info, revision=target_revision)
+
+        mock_do_out.assert_called_with(self.session.get_repo_dir(), views_info, 'mei')
+        assert self.session._cleanup_for_new_action.called
+
 
 class TestRunInboundDocVcs(TestInteractiveSession):
     '''
-    Tests for _run_inbound_doc_vcs(), a helper method for _action_start().
+    Tests for run_inbound(), a helper method for _action_start().
     '''
 
     @mock.patch('lychee.workflow.steps.do_inbound_conversion')
@@ -659,7 +828,7 @@ class TestRunInboundDocVcs(TestInteractiveSession):
     @mock.patch('lychee.workflow.steps.do_vcs')
     def test_run_inbound_unit_1a(self, mock_vcs, mock_doc, mock_views, mock_conv):
         '''
-        Unit test for _run_inbound_doc_vcs().
+        Unit test for run_inbound().
 
         - do_inbound_conversion() is called correctly
         - do_inbound_conversion() fails so there's an early return
@@ -669,21 +838,21 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         doc = 'document'
         views_info = 'Section XMLID'
 
-        with pytest.raises(exceptions.InboundConversionError) as exc:
-            self.session._run_inbound_doc_vcs(dtype, doc, views_info)
+        with pytest.raises(exceptions.InboundConversionError):
+            self.session.run_inbound(dtype, doc, views_info)
 
         mock_conv.assert_called_once_with(
             session=self.session,
             dtype=dtype,
             document=doc)
-        assert 0 == mock_views.call_count
-        assert 0 == mock_doc.call_count
-        assert 0 == mock_vcs.call_count
+        assert not mock_views.called
+        assert not mock_doc.called
+        assert not mock_vcs.called
 
     @mock.patch('lychee.workflow.steps.do_inbound_conversion')
     def test_run_inbound_unit_1b(self, mock_conv):
         '''
-        Unit test for _run_inbound_doc_vcs().
+        Unit test for run_inbound().
 
         - do_inbound_conversion() is called correctly
         - do_inbound_conversion() returns an incorrect value so there's an early return
@@ -693,8 +862,8 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         views_info = 'Section XMLID'
         self.session._inbound_converted = 'this is not an LMEI document'
 
-        with pytest.raises(exceptions.InboundConversionError) as exc:
-            self.session._run_inbound_doc_vcs(dtype, doc, views_info)
+        with pytest.raises(exceptions.InboundConversionError):
+            self.session.run_inbound(dtype, doc, views_info)
 
         mock_conv.assert_called_once_with(
             session=self.session,
@@ -707,7 +876,7 @@ class TestRunInboundDocVcs(TestInteractiveSession):
     @mock.patch('lychee.workflow.steps.do_vcs')
     def test_run_inbound_unit_2a(self, mock_vcs, mock_doc, mock_views, mock_conv):
         '''
-        Unit test for _run_inbound_doc_vcs().
+        Unit test for run_inbound().
 
         - do_inbound_views() is called correctly
         - do_inbound_views() fails so there's an early return
@@ -716,26 +885,29 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         dtype = 'meh'
         doc = 'document'
         views_info = 'Section XMLID'
-        self.session._inbound_converted = etree.Element('whatever')
+        def mock_conv_side_effect(**kwargs):
+            """Assign the conversion result."""
+            kwargs['session']._inbound_converted = etree.Element('whatever')
+        mock_conv.side_effect = mock_conv_side_effect
 
-        with pytest.raises(exceptions.InboundConversionError) as exc:
-            self.session._run_inbound_doc_vcs(dtype, doc, views_info)
+        with pytest.raises(exceptions.InboundConversionError):
+            self.session.run_inbound(dtype, doc, views_info)
 
-        assert 1 == mock_conv.call_count
+        assert mock_conv.called
         mock_views.assert_called_once_with(
             session=self.session,
             dtype=dtype,
             document=doc,
             converted=self.session._inbound_converted,
             views_info=views_info)
-        assert 0 == mock_doc.call_count
-        assert 0 == mock_vcs.call_count
+        assert not mock_doc.called
+        assert not mock_vcs.called
 
     @mock.patch('lychee.workflow.steps.do_inbound_conversion')
     @mock.patch('lychee.workflow.steps.do_inbound_views')
     def test_run_inbound_unit_2b(self, mock_views, mock_conv):
         '''
-        Unit test for _run_inbound_doc_vcs().
+        Unit test for run_inbound().
 
         - do_inbound_views() is called correctly
         - do_inbound_views() returns an incorrect value so there's an early return
@@ -743,13 +915,19 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         dtype = 'meh'
         doc = 'document'
         views_info = 'Section XMLID'
-        self.session._inbound_converted = etree.Element('whatever')
-        self.session._inbound_views_info = 4  # expecting str
+        def mock_conv_side_effect(**kwargs):
+            """Assign the conversion result."""
+            kwargs['session']._inbound_converted = etree.Element('whatever')
+        mock_conv.side_effect = mock_conv_side_effect
+        def mock_views_side_effect(**kwargs):
+            """Assign the views result."""
+            kwargs['session']._inbound_views_info = 4  # expecting str
+        mock_views.side_effect = mock_views_side_effect
 
-        with pytest.raises(exceptions.InboundConversionError) as exc:
-            self.session._run_inbound_doc_vcs(dtype, doc, views_info)
+        with pytest.raises(exceptions.InboundConversionError):
+            self.session.run_inbound(dtype, doc, views_info)
 
-        assert 1 == mock_conv.call_count
+        assert mock_conv.called
         mock_views.assert_called_once_with(
             session=self.session,
             dtype=dtype,
@@ -763,7 +941,7 @@ class TestRunInboundDocVcs(TestInteractiveSession):
     @mock.patch('lychee.workflow.steps.do_vcs')
     def test_run_inbound_unit_3(self, mock_vcs, mock_doc, mock_views, mock_conv):
         '''
-        Unit test for _run_inbound_doc_vcs().
+        Unit test for run_inbound().
 
         - do_document() is called correctly
         - do_vcs() is called correctly
@@ -771,14 +949,20 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         dtype = 'meh'
         doc = 'document'
         views_info = 'Section XMLID'
-        self.session._inbound_converted = etree.Element('whatever')
-        self.session._inbound_views_info = 'something'
+        def mock_conv_side_effect(**kwargs):
+            """Assign the conversion result."""
+            kwargs['session']._inbound_converted = etree.Element('whatever')
+        mock_conv.side_effect = mock_conv_side_effect
+        def mock_views_side_effect(**kwargs):
+            """Assign the views result."""
+            kwargs['session']._inbound_views_info = 'something'
+        mock_views.side_effect = mock_views_side_effect
         mock_doc.return_value = ['pathnames!']
 
-        self.session._run_inbound_doc_vcs(dtype, doc, views_info)
+        self.session.run_inbound(dtype, doc, views_info)
 
-        assert 1 == mock_conv.call_count
-        assert 1 == mock_views.call_count
+        assert mock_conv.called
+        assert mock_views.called
         mock_doc.assert_called_once_with(
             converted=self.session._inbound_converted,
             session=self.session,

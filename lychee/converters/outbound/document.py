@@ -166,14 +166,11 @@ The ``'last_changeset'`` member holds the changeset ID of the most recent change
 ``<section>`` was modified.
 '''
 
-from lxml import etree
-
 from lychee.converters.outbound import vcs
 from lychee import document
 from lychee import exceptions
 from lychee.logs import OUTBOUND_LOG as log
 from lychee.namespaces import mei, xml
-from lychee.signals import outbound
 
 
 # translatable strings
@@ -378,7 +375,7 @@ def find_last_changeset(section_id, revlog):
 
     If the file is not found in a changeset, an empty string is returned.
     '''
-    for cset in reversed(revlog['history']):
+    for cset in reversed(revlog.get('history', [])):
         if section_id in revlog['changesets'][cset]['files']:
             return cset
 

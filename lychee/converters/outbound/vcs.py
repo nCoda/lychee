@@ -77,7 +77,7 @@ Here is a sample of the data outputted from this module.
 
 import datetime
 
-from mercurial import ui, hg
+from mercurial import error, ui, hg
 
 import lychee
 from lychee.signals import outbound
@@ -119,9 +119,16 @@ def convert_helper(repo_dir):
     :param str repo_dir: Absolute pathname to the Mercurial repository's directory.
     :returns: Information from the Version Control System in the format described above.
     :rtype: dict
+
+    .. note::
+        If the repository fails to initialize for any reason, this function returns an empty
+        dictionary rather than raising an exception.
     '''
     myui = ui.ui()
-    repo = hg.repository(myui, repo_dir)
+    try:
+        repo = hg.repository(myui, repo_dir)
+    except error.RepoError:
+        return {}
 
     post = {'history': [], 'users': {}, 'changesets': {}}
 

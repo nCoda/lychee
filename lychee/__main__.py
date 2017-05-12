@@ -40,7 +40,7 @@ test_which_format = 'lilypond'
 # test_which_format = 'abjad'
 
 
-session = lychee.workflow.session.InteractiveSession(vcs='mercurial')
+session = lychee.workflow.session.InteractiveSession()
 session.set_repo_dir('testrepo')
 
 

@@ -77,7 +77,7 @@ Here is a sample of the data outputted from this module.
 
 import datetime
 
-from mercurial import error, ui, hg
+# from mercurial import error, ui, hg
 
 import lychee
 from lychee.signals import outbound

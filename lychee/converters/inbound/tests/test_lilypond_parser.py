@@ -569,29 +569,29 @@ class TestVersionStatement(object):
     def test_version_statement_1(self):
         """Given a real version, it does fine."""
         content = r'\version "2.18.0"'
-        expected = ['2', '18', '0']
-        actual = parser.parse(content, rule_name='version_stmt')
+        expected = {'ly_type': 'version', 'version': ['2', '18', '0']}
+        actual = parser.parse(content, rule_name='version_statement')
         assert expected == actual
 
     def test_version_statement_2(self):
         """LilyPond fills in the rest with zeroes."""
         content = r'\version "2"'
-        expected = ['2']
-        actual = parser.parse(content, rule_name='version_stmt')
+        expected = {'ly_type': 'version', 'version': ['2']}
+        actual = parser.parse(content, rule_name='version_statement')
         assert expected == actual
 
     def test_version_statement_3(self):
         """LilyPond doesn't mind this either."""
         content = r'\version ""'
-        expected = ['']
-        actual = parser.parse(content, rule_name='version_stmt')
+        expected = {'ly_type': 'version', 'version': ['']}
+        actual = parser.parse(content, rule_name='version_statement')
         assert expected == actual
 
     def test_version_statement_4(self):
         """LilyPond doesn't mind this either."""
         content = r'\version "123.234.3.432444.52"'
-        expected = ['123', '234', '3', '432444', '52']
-        actual = parser.parse(content, rule_name='version_stmt')
+        expected = {'ly_type': 'version', 'version': ['123', '234', '3', '432444', '52']}
+        actual = parser.parse(content, rule_name='version_statement')
         assert expected == actual
 
 
@@ -693,7 +693,6 @@ class TestStaffAndMusicBlock(object):
         """With an initial setting and monophonic stuff."""
         content = r'\time 3/4  s2 s4 | s2'
         expected = {
-            'ly_type': 'staff',
             'initial_settings': [{'ly_type': 'time', 'count': '3', 'unit': '4'}],
             'content': [{'layers': [[
                 {'dur': '2', 'dots': [], 'ly_type': 'spacer', 'post_events': []},
@@ -709,7 +708,6 @@ class TestStaffAndMusicBlock(object):
         """Without an initial setting, one chunk of polyphonic stuff."""
         content = r'<< { s2 s4 } \\ { r2 r4 } >>'
         expected = {
-            'ly_type': 'staff',
             'initial_settings': [],
             'content': [{'layers': [
                 [
@@ -729,7 +727,6 @@ class TestStaffAndMusicBlock(object):
         """With two initial settings, a chunk of polyphonic stuff, then a monophonic chunk."""
         content = r"""\time 3/4 \clef "bass" << { s2 s4 } \\ { r2 r4 } >> bes,128"""
         expected = {
-            'ly_type': 'staff',
             'initial_settings': [
                 {'ly_type': 'time', 'count': '3', 'unit': '4'},
                 {'ly_type': 'clef', 'type': 'bass'},

@@ -36,13 +36,19 @@
 @@parseinfo :: False
 
 
-start = score | staff | staff_content ;
+start = {top_level_expression}*;
 
 
 # Document
 ##########
-version_stmt =
-    '\\version' '"' @:'.'.{ /[0-9]*/ } '"'
+version_statement =
+    ly_type:`version`
+    '\\version' '"' version:'.'.{ /[0-9]*/ } '"'
+    ;
+
+language_statement =
+    ly_type:`language`
+    '\\language' '"' language:/[^"]*/ '"'
     ;
 
 
@@ -189,7 +195,6 @@ brace_l = '{' ;
 brace_r = '}' ;
 
 staff_content =
-    ly_type:`staff`
     initial_settings:{staff_setting}*
     content:{( monophonic_layers | polyphonic_layers )}+
     ;
@@ -197,6 +202,7 @@ staff_content =
 token_new = '\\new' ;
 token_staff = 'Staff' ;
 staff =
+    ly_type:`staff`
     token_new token_staff brace_l
         >staff_content
     brace_r
@@ -214,12 +220,23 @@ score_staff_content = simul_l ~ @:{staff}+ simul_r ;
 
 layout_block = "\\layout" brace_l brace_r ;
 
-token_score = '\\score' ;
+token_score =
+    '\\score'
+    | '\\new' 'Score'
+    ;
+
 score =
     ly_type:`score`
-    version:[version_stmt]
+    version:[version_statement]
     token_score brace_l
         staves:score_staff_content
         [layout_block:layout_block]
     brace_r
+    ;
+
+top_level_expression =
+    version_statement
+    | language_statement
+    | score
+    | staff
     ;

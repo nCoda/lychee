@@ -522,7 +522,7 @@ class TestActionStart(TestInteractiveSession):
         An integration test (no mocks) for when everything works and all code paths are excuted.
         '''
         self.session = session.InteractiveSession(vcs='mercurial')
-        input_ly = """\\clef "treble" a''4 b'16 c''2  | \\clef "bass" d?2 e!2  | f,,2 fis,2  |"""
+        input_ly = r"""\new Staff { \clef "treble" a''4 b'16 c''2  | \clef "bass" d?2 e!2  | f,,2 fis,2  | }"""
         # pre-condition
         assert not os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
         # unfortunately we need a mock for this, so we can be sure it was called
@@ -614,7 +614,7 @@ class TestRunWorkflow(TestInteractiveSession):
         An integration test (no mocks) for when everything works and a new <section> is created.
         '''
         self.session = session.InteractiveSession(vcs='mercurial')
-        input_ly = """\\clef "treble" a''4 b'16 c''2  | \\clef "bass" d?2 e!2  | f,,2 fis,2  |"""
+        input_ly = r"""\new Staff { \clef "treble" a''4 b'16 c''2  | \clef "bass" d?2 e!2  | f,,2 fis,2  | }"""
         # pre-condition
         assert not os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
         # unfortunately we need a mock for this, so we can be sure it was called

@@ -172,30 +172,45 @@ def convert_no_signals(document):
         parsed = parser.parse(document, filename='file', trace=False)
 
     with log.info('convert LilyPond') as action:
-        if parsed['ly_type'] == 'score':
-            check_version(parsed)
-        elif parsed['ly_type'] == 'staff':
-            parsed = {'ly_type': 'score', 'staves': [parsed]}
-        else:
-            raise RuntimeError('need score, staff, or measures for the top-level thing')
-
-        converted = do_score(parsed)
+        converted = do_document(parsed)
 
     return converted
 
 
+@log.wrap('info', 'process document')
+def do_document(l_document):
+    l_score = None
+    for l_top_level_element in l_document:
+        ly_type = l_top_level_element['ly_type']
+        if ly_type == 'version':
+            check_version(l_top_level_element)
+        elif ly_type == 'language':
+            # TODO: handle language
+            pass
+        elif ly_type == 'score':
+            l_score = l_top_level_element
+        elif ly_type == 'staff':
+            l_score = {'ly_type': 'score', 'staves': [l_top_level_element]}
+
+    if l_score == None:
+        raise exceptions.LilyPondError('Empty document')
+
+    converted = do_score(l_score)
+    return converted
+
+
 @log.wrap('info', 'check syntax version', 'action')
-def check_version(parsed, action):
+def check_version(ly_version, action):
     '''
     Guarantees the version is at least somewhat compatible.
 
     If the major version is not '2', raises.
     If the minor version is other than '18', warns.
     '''
-    if parsed['version']:
-        if parsed['version'][0] != '2':
+    if ly_version['version']:
+        if ly_version['version'][0] != '2':
             raise RuntimeError('inbound LilyPond parser expects version 2.18.x')
-        elif parsed['version'][1] != '18':
+        elif ly_version['version'][1] != '18':
             action.failure('inbound LilyPond parser expects version 2.18.x')
     else:
         action.failure('missing version info')

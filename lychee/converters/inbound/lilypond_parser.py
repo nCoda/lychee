@@ -18,7 +18,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2017, 2, 5, 18, 19, 40, 6)
+__version__ = (2017, 5, 12, 21, 50, 21, 4)
 
 __all__ = [
     'LilyPondParser',
@@ -83,28 +83,44 @@ class LilyPondParser(Parser):
 
     @graken()
     def _start_(self):
-        with self._choice():
-            with self._option():
-                self._score_()
-            with self._option():
-                self._staff_()
-            with self._option():
-                self._staff_content_()
-            self._error('no available options')
+
+        def block0():
+            self._top_level_expression_()
+        self._closure(block0)
 
     @graken()
-    def _version_stmt_(self):
+    def _version_statement_(self):
+        self._constant('version')
+        self.name_last_node('ly_type')
         self._token('\\version')
         self._token('"')
 
-        def sep1():
+        def sep2():
             self._token('.')
 
-        def block1():
+        def block2():
             self._pattern(r'[0-9]*')
-        self._closure(block1, sep=sep1)
-        self.name_last_node('@')
+        self._closure(block2, sep=sep2)
+        self.name_last_node('version')
         self._token('"')
+        self.ast._define(
+            ['ly_type', 'version'],
+            []
+        )
+
+    @graken()
+    def _language_statement_(self):
+        self._constant('language')
+        self.name_last_node('ly_type')
+        self._token('\\language')
+        self._token('"')
+        self._pattern(r'[^"]*')
+        self.name_last_node('language')
+        self._token('"')
+        self.ast._define(
+            ['language', 'ly_type'],
+            []
+        )
 
     @graken()
     def _instr_name_(self):
@@ -723,15 +739,13 @@ class LilyPondParser(Parser):
 
     @graken()
     def _staff_content_(self):
-        self._constant('staff')
-        self.name_last_node('ly_type')
 
-        def block2():
+        def block1():
             self._staff_setting_()
-        self._closure(block2)
+        self._closure(block1)
         self.name_last_node('initial_settings')
 
-        def block4():
+        def block3():
             with self._group():
                 with self._choice():
                     with self._option():
@@ -739,10 +753,10 @@ class LilyPondParser(Parser):
                     with self._option():
                         self._polyphonic_layers_()
                     self._error('no available options')
-        self._positive_closure(block4)
+        self._positive_closure(block3)
         self.name_last_node('content')
         self.ast._define(
-            ['content', 'initial_settings', 'ly_type'],
+            ['content', 'initial_settings'],
             []
         )
 
@@ -756,11 +770,11 @@ class LilyPondParser(Parser):
 
     @graken()
     def _staff_(self):
+        self._constant('staff')
+        self.name_last_node('ly_type')
         self._token_new_()
         self._token_staff_()
         self._brace_l_()
-        self._constant('staff')
-        self.name_last_node('ly_type')
 
         def block2():
             self._staff_setting_()
@@ -811,14 +825,20 @@ class LilyPondParser(Parser):
 
     @graken()
     def _token_score_(self):
-        self._token('\\score')
+        with self._choice():
+            with self._option():
+                self._token('\\score')
+            with self._option():
+                self._token('\\new')
+                self._token('Score')
+            self._error('expecting one of: \\new \\score')
 
     @graken()
     def _score_(self):
         self._constant('score')
         self.name_last_node('ly_type')
         with self._optional():
-            self._version_stmt_()
+            self._version_statement_()
         self.name_last_node('version')
         self._token_score_()
         self._brace_l_()
@@ -833,12 +853,28 @@ class LilyPondParser(Parser):
             []
         )
 
+    @graken()
+    def _top_level_expression_(self):
+        with self._choice():
+            with self._option():
+                self._version_statement_()
+            with self._option():
+                self._language_statement_()
+            with self._option():
+                self._score_()
+            with self._option():
+                self._staff_()
+            self._error('no available options')
+
 
 class LilyPondSemantics(object):
     def start(self, ast):
         return ast
 
-    def version_stmt(self, ast):
+    def version_statement(self, ast):
+        return ast
+
+    def language_statement(self, ast):
         return ast
 
     def instr_name(self, ast):
@@ -971,6 +1007,9 @@ class LilyPondSemantics(object):
         return ast
 
     def score(self, ast):
+        return ast
+
+    def top_level_expression(self, ast):
         return ast
 
 

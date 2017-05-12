@@ -18,7 +18,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2017, 5, 12, 21, 50, 21, 4)
+__version__ = (2017, 5, 12, 22, 13, 3, 4)
 
 __all__ = [
     'LilyPondParser',
@@ -841,13 +841,20 @@ class LilyPondParser(Parser):
             self._version_statement_()
         self.name_last_node('version')
         self._token_score_()
-        self._brace_l_()
-        self._score_staff_content_()
-        self.name_last_node('staves')
-        with self._optional():
-            self._layout_block_()
-            self.name_last_node('layout_block')
-        self._brace_r_()
+        with self._group():
+            with self._choice():
+                with self._option():
+                    self._brace_l_()
+                    self._score_staff_content_()
+                    self.name_last_node('staves')
+                    with self._optional():
+                        self._layout_block_()
+                        self.name_last_node('layout_block')
+                    self._brace_r_()
+                with self._option():
+                    self._score_staff_content_()
+                    self.name_last_node('staves')
+                self._error('no available options')
         self.ast._define(
             ['layout_block', 'ly_type', 'staves', 'version'],
             []

@@ -210,7 +210,6 @@ staff =
 
 
 # Score and Layout
-# TODO: these rules are untested; probably need to be rewritten
 ##################
 
 simul_l = '<<' ;
@@ -228,10 +227,15 @@ token_score =
 score =
     ly_type:`score`
     version:[version_statement]
-    token_score brace_l
+    token_score
+    (
+        brace_l
+            staves:score_staff_content
+            [layout_block:layout_block]
+        brace_r
+        |
         staves:score_staff_content
-        [layout_block:layout_block]
-    brace_r
+    )
     ;
 
 top_level_expression =

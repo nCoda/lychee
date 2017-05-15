@@ -67,7 +67,7 @@ class TestScore(object):
             'staves': [{
                 'ly_type': 'staff',
                 'initial_settings': [{'ly_type': 'instr_name', 'name': 'Woo'}],
-                'content': [{'layers': [[{'pname': 'b', 'accid': ['es'], 'oct': ',',
+                'content': [{'layers': [[{'pitch_name': 'bes', 'oct': ',',
                              'accid_force': None, 'dur': '128', 'dots': [], 'ly_type': 'note'}]]}],
             }]
         }
@@ -90,19 +90,19 @@ class TestScore(object):
                 {
                     'ly_type': 'staff',
                     'initial_settings': [{'ly_type': 'instr_name', 'name': 'Riin'}],
-                    'content': [{'layers': [[{'pname': 'b', 'accid': ['es'], 'oct': ',',
+                    'content': [{'layers': [[{'pitch_name': 'bes', 'oct': ',',
                                  'accid_force': None, 'dur': '128', 'dots': [], 'ly_type': 'note'}]]}],
                 },
                 {
                     'ly_type': 'staff',
                     'initial_settings': [{'ly_type': 'instr_name', 'name': '蛋'}],
-                    'content': [{'layers': [[{'pname': 'b', 'accid': ['es'], 'oct': ',',
+                    'content': [{'layers': [[{'pitch_name': 'bes', 'oct': ',',
                                  'accid_force': None, 'dur': '128', 'dots': [], 'ly_type': 'note'}]]}],
                 },
                 {
                     'ly_type': 'staff',
                     'initial_settings': [{'ly_type': 'instr_name', 'name': 'Jungle'}],
-                    'content': [{'layers': [[{'pname': 'b', 'accid': ['es'], 'oct': ',',
+                    'content': [{'layers': [[{'pitch_name': 'bes', 'oct': ',',
                                  'accid_force': None, 'dur': '128', 'dots': [], 'ly_type': 'note'}]]}],
                 },
             ]
@@ -444,7 +444,7 @@ class TestStaves(object):
                         {'dur': '4', 'dots': [], 'ly_type': 'rest'},
                     ],
                 ]},
-                {'layers': [[{'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': None,
+                {'layers': [[{'pitch_name': 'bes', 'oct': ',', 'accid_force': None,
                              'dur': '128', 'dots': [], 'ly_type': 'note'}]],
                 },
             ],
@@ -509,12 +509,12 @@ class TestLayers(object):
             {'ly_type': 'rest', 'dur': '2', 'dots': []},
             {'ly_type': 'spacer', 'dur': '2', 'dots': []},
             {'ly_type': '白菜'},
-            {'ly_type': 'note', 'pname': 'f', 'accid': [], 'oct': "''", 'accid_force': None,
+            {'ly_type': 'note', 'pitch_name': 'f', 'oct': "''", 'accid_force': None,
              'dur': '256', 'dots': []},
             {'ly_type': 'chord', 'dur': '2', 'dots': ['.'], 'notes': [
-                {'pname': 'd', 'oct': ',,', 'accid': ['es'], 'accid_force': '!'},
-                {'pname': 'f', 'oct': ',,', 'accid': ['is'], 'accid_force': None},
-                {'pname': 'a', 'oct': ',,', 'accid': [], 'accid_force': None},
+                {'pitch_name': 'des', 'oct': ',,', 'accid_force': '!'},
+                {'pitch_name': 'fis', 'oct': ',,', 'accid_force': None},
+                {'pitch_name': 'a', 'oct': ',,', 'accid_force': None},
             ]},
         ]
         m_container = etree.Element(mei.STAFF)
@@ -547,42 +547,42 @@ class TestProcessOctave(object):
         assert lilypond.process_octave(None) == lilypond.process_octave('celery')
 
 
-class TestAccidentals(object):
+class TestPitchName(object):
     """
-    For regular accidental handling.
+    For pitch name handling.
     """
 
     def test_no_accid(self):
         """When there is no accidental."""
-        l_accid = []
+        l_pitch_name = "c"
         attrib = {}
-        expected = {}
-        actual = lilypond.process_accidental(l_accid, attrib)
+        expected = {"pname": "c"}
+        actual = lilypond.process_pitch_name(l_pitch_name, attrib)
         assert expected == actual
 
     def test_double_sharp(self):
         """Double sharp."""
-        l_accid = ['is', 'is']
+        l_pitch_name = "cisis"
         attrib = {}
-        expected = {'accid.ges': 'ss'}
-        actual = lilypond.process_accidental(l_accid, attrib)
+        expected = {"pname": "c", "accid.ges": "ss"}
+        actual = lilypond.process_pitch_name(l_pitch_name, attrib)
         assert expected == actual
 
     def test_single_flat(self):
         """Single flat."""
-        l_accid = ['es']
+        l_pitch_name = "ees"
         attrib = {}
-        expected = {'accid.ges': 'f'}
-        actual = lilypond.process_accidental(l_accid, attrib)
+        expected = {"pname": "e", "accid.ges": "f"}
+        actual = lilypond.process_pitch_name(l_pitch_name, attrib)
         assert expected == actual
 
     def test_sharpflat(self):
         """Sharpflat (invalid accidental)."""
-        l_accid = ['is', 'es']
+        l_pitch_name = "cises"
         attrib = {}
-        expected = {}
-        actual = lilypond.process_accidental(l_accid, attrib)
-        assert expected == actual
+        expected = {"pname": "c"}
+        with pytest.raises(KeyError):
+            lilypond.process_pitch_name(l_pitch_name, attrib)
 
 
 class TestForcedAccidentals(object):
@@ -711,7 +711,7 @@ class TestChord(object):
     def test_one_notehead(self):
         """When the chord has one notehead, with a cautionary accidental."""
         l_chord = {'ly_type': 'chord', 'dur': '2', 'dots': ['.'], 'notes': [
-            {'pname': 'd', 'oct': ',,', 'accid': ['es'], 'accid_force': '?'},
+            {'pitch_name': 'des', 'oct': ',,', 'accid_force': '?'},
         ]}
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_chord(l_chord, m_layer)
@@ -726,9 +726,9 @@ class TestChord(object):
     def test_three_noteheads(self):
         """When the chord has three noteheads, the first with a forced accidental."""
         l_chord = {'ly_type': 'chord', 'dur': '2', 'dots': ['.'], 'notes': [
-            {'pname': 'd', 'oct': ',,', 'accid': ['es'], 'accid_force': '!'},
-            {'pname': 'f', 'oct': ',,', 'accid': ['is'], 'accid_force': None},
-            {'pname': 'a', 'oct': ',,', 'accid': [], 'accid_force': None},
+            {'pitch_name': 'des', 'oct': ',,', 'accid_force': '!'},
+            {'pitch_name': 'fis', 'oct': ',,', 'accid_force': None},
+            {'pitch_name': 'a', 'oct': ',,', 'accid_force': None},
         ]}
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_chord(l_chord, m_layer)
@@ -765,7 +765,7 @@ class TestNote(object):
 
     def test_basic_attribs(self):
         """Note only has @pname, @oct, and @dur."""
-        l_note = {'ly_type': 'note', 'pname': 'f', 'accid': [], 'oct': "''", 'accid_force': None,
+        l_note = {'ly_type': 'note', 'pitch_name': 'f', 'oct': "''", 'accid_force': None,
             'dur': '256', 'dots': []}
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_note(l_note, m_layer)
@@ -778,7 +778,7 @@ class TestNote(object):
 
     def test_external_attribs(self):
         """Note has attributes handled by process_x() functions before Element creation."""
-        l_note = {'ly_type': 'note', 'pname': 'f', 'accid': ['is'], 'oct': "''", 'accid_force': '!',
+        l_note = {'ly_type': 'note', 'pitch_name': 'fis', 'oct': "''", 'accid_force': '!',
             'dur': '256', 'dots': ['.', '.']}
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_note(l_note, m_layer)
@@ -789,7 +789,7 @@ class TestNote(object):
 
     def test_children(self):
         """Note has sub-elements added by process_x() functions after Element creation."""
-        l_note = {'ly_type': 'note', 'pname': 'f', 'accid': ['is'], 'oct': "''", 'accid_force': '?',
+        l_note = {'ly_type': 'note', 'pitch_name': 'fis', 'oct': "''", 'accid_force': '?',
             'dur': '256', 'dots': []}
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_note(l_note, m_layer)
@@ -908,15 +908,15 @@ class TestTie(object):
         - Untied note before untied note
         '''
         l_layer = [
-            {'ly_type': 'note', 'pname': 'c', 'oct': '', 'dur': '4', 'accid': [],
+            {'ly_type': 'note', 'pitch_name': 'c', 'oct': '', 'dur': '4',
                 'accid_force': None, 'dots': [], 'post_events': []},
-            {'ly_type': 'note', 'pname': 'c', 'oct': '', 'dur': '4', 'accid': [],
+            {'ly_type': 'note', 'pitch_name': 'c', 'oct': '', 'dur': '4',
                 'accid_force': None, 'dots': [], 'post_events': [{'ly_type': 'tie'}]},
-            {'ly_type': 'note', 'pname': 'c', 'oct': '', 'dur': '4', 'accid': [],
+            {'ly_type': 'note', 'pitch_name': 'c', 'oct': '', 'dur': '4',
                 'accid_force': None, 'dots': [], 'post_events': [{'ly_type': 'tie'}]},
-            {'ly_type': 'note', 'pname': 'c', 'oct': '', 'dur': '4', 'accid': [],
+            {'ly_type': 'note', 'pitch_name': 'c', 'oct': '', 'dur': '4',
                 'accid_force': None, 'dots': [], 'post_events': []},
-            {'ly_type': 'note', 'pname': 'c', 'oct': '', 'dur': '4', 'accid': [],
+            {'ly_type': 'note', 'pitch_name': 'c', 'oct': '', 'dur': '4',
                 'accid_force': None, 'dots': [], 'post_events': []}
         ]
         m_layer = etree.Element(mei.LAYER)
@@ -932,15 +932,15 @@ class TestSlur(object):
         Test the equivalent of the LilyPond code "c c( c c) c"
         '''
         l_layer = [
-            {'ly_type': 'note', 'pname': 'c', 'oct': '', 'dur': '4', 'accid': [],
+            {'ly_type': 'note', 'pitch_name': 'c', 'oct': '', 'dur': '4',
                 'accid_force': None, 'dots': [], 'post_events': []},
-            {'ly_type': 'note', 'pname': 'c', 'oct': '', 'dur': '4', 'accid': [],
+            {'ly_type': 'note', 'pitch_name': 'c', 'oct': '', 'dur': '4',
                 'accid_force': None, 'dots': [], 'post_events': [{'ly_type': 'slur', 'slur': '('}]},
-            {'ly_type': 'note', 'pname': 'c', 'oct': '', 'dur': '4', 'accid': [],
+            {'ly_type': 'note', 'pitch_name': 'c', 'oct': '', 'dur': '4',
                 'accid_force': None, 'dots': [], 'post_events': []},
-            {'ly_type': 'note', 'pname': 'c', 'oct': '', 'dur': '4', 'accid': [],
+            {'ly_type': 'note', 'pitch_name': 'c', 'oct': '', 'dur': '4',
                 'accid_force': None, 'dots': [], 'post_events': [{'ly_type': 'slur', 'slur': ')'}]},
-            {'ly_type': 'note', 'pname': 'c', 'oct': '', 'dur': '4', 'accid': [],
+            {'ly_type': 'note', 'pitch_name': 'c', 'oct': '', 'dur': '4',
                 'accid_force': None, 'dots': [], 'post_events': []}
         ]
         m_layer = etree.Element(mei.LAYER)

@@ -18,7 +18,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2017, 5, 12, 22, 13, 3, 4)
+__version__ = (2017, 5, 15, 1, 45, 4, 0)
 
 __all__ = [
     'LilyPondParser',
@@ -172,9 +172,6 @@ class LilyPondParser(Parser):
         self._cut()
         self._pitch_name_()
         self.name_last_node('keynote')
-        with self._optional():
-            self._accidental_symbol_()
-        self.name_last_node('accid')
         self._token('\\')
         with self._group():
             with self._choice():
@@ -185,7 +182,7 @@ class LilyPondParser(Parser):
                 self._error('expecting one of: major minor')
         self.name_last_node('mode')
         self.ast._define(
-            ['accid', 'keynote', 'ly_type', 'mode'],
+            ['keynote', 'ly_type', 'mode'],
             []
         )
 
@@ -224,7 +221,12 @@ class LilyPondParser(Parser):
 
     @graken()
     def _pitch_name_(self):
-        self._pattern(r'[a-g]')
+        with self._choice():
+            with self._option():
+                self._pattern(r'[a-z]{2,}')
+            with self._option():
+                self._pattern(r'[a-pt-z]')
+            self._error('expecting one of: [a-pt-z] [a-z]{2,}')
 
     @graken()
     def _octave_(self):
@@ -244,17 +246,6 @@ class LilyPondParser(Parser):
             with self._option():
                 self._token("'")
             self._error("expecting one of: ' '' ''' '''' ''''' , ,,")
-
-    @graken()
-    def _accidental_symbol_(self):
-        self._pattern(r'[ei]s')
-
-    @graken()
-    def _accidental_(self):
-
-        def block0():
-            self._accidental_symbol_()
-        self._closure(block0)
 
     @graken()
     def _accidental_force_(self):
@@ -366,10 +357,8 @@ class LilyPondParser(Parser):
     @graken()
     def _notehead_(self):
         self._pitch_name_()
-        self.name_last_node('pname')
+        self.name_last_node('pitch_name')
         self._cut()
-        self._accidental_()
-        self.name_last_node('accid')
         with self._optional():
             self._octave_()
             self.name_last_node('oct')
@@ -377,7 +366,7 @@ class LilyPondParser(Parser):
             self._accidental_force_()
             self.name_last_node('accid_force')
         self.ast._define(
-            ['accid', 'accid_force', 'oct', 'pname'],
+            ['accid_force', 'oct', 'pitch_name'],
             []
         )
 
@@ -386,10 +375,8 @@ class LilyPondParser(Parser):
         self._constant('note')
         self.name_last_node('ly_type')
         self._pitch_name_()
-        self.name_last_node('pname')
+        self.name_last_node('pitch_name')
         self._cut()
-        self._accidental_()
-        self.name_last_node('accid')
         with self._optional():
             self._octave_()
             self.name_last_node('oct')
@@ -403,10 +390,10 @@ class LilyPondParser(Parser):
                     self._duration_number_()
                     self.name_last_node('dur')
 
-                    def block6():
+                    def block5():
                         self._duration_dots_()
                         self.name_last_node('dots')
-                    self._positive_closure(block6)
+                    self._positive_closure(block5)
             with self._option():
                 with self._group():
                     self._duration_number_()
@@ -422,22 +409,20 @@ class LilyPondParser(Parser):
             self._error('no available options')
 
 
-        def block14():
+        def block13():
             self._post_event_()
-        self._closure(block14)
+        self._closure(block13)
         self.name_last_node('post_events')
         self.ast._define(
-            ['accid', 'accid_force', 'dots', 'dur', 'ly_type', 'oct', 'pname', 'post_events'],
+            ['accid_force', 'dots', 'dur', 'ly_type', 'oct', 'pitch_name', 'post_events'],
             []
         )
 
     @graken()
     def _chord_note_(self):
         self._pitch_name_()
-        self.name_last_node('pname')
+        self.name_last_node('pitch_name')
         self._cut()
-        self._accidental_()
-        self.name_last_node('accid')
         with self._optional():
             self._octave_()
             self.name_last_node('oct')
@@ -446,12 +431,12 @@ class LilyPondParser(Parser):
             self.name_last_node('accid_force')
 
 
-        def block5():
+        def block4():
             self._post_event_()
-        self._closure(block5)
+        self._closure(block4)
         self.name_last_node('post_events')
         self.ast._define(
-            ['accid', 'accid_force', 'oct', 'pname', 'post_events'],
+            ['accid_force', 'oct', 'pitch_name', 'post_events'],
             []
         )
 
@@ -623,15 +608,15 @@ class LilyPondParser(Parser):
     def _node_(self):
         with self._choice():
             with self._option():
-                self._note_()
-            with self._option():
                 self._rest_()
+            with self._option():
+                self._spacer_()
+            with self._option():
+                self._note_()
             with self._option():
                 self._measure_rest_()
             with self._option():
                 self._chord_()
-            with self._option():
-                self._spacer_()
             with self._option():
                 self._staff_setting_()
             self._error('no available options')
@@ -650,13 +635,13 @@ class LilyPondParser(Parser):
     def _music_node_(self):
         with self._choice():
             with self._option():
-                self._note_()
-            with self._option():
                 self._rest_()
             with self._option():
-                self._chord_()
-            with self._option():
                 self._spacer_()
+            with self._option():
+                self._note_()
+            with self._option():
+                self._chord_()
             self._error('no available options')
 
     @graken()
@@ -667,13 +652,13 @@ class LilyPondParser(Parser):
                 with self._option():
                     with self._choice():
                         with self._option():
-                            self._note_()
-                        with self._option():
                             self._rest_()
                         with self._option():
-                            self._chord_()
-                        with self._option():
                             self._spacer_()
+                        with self._option():
+                            self._note_()
+                        with self._option():
+                            self._chord_()
                         self._error('no available options')
                 with self._option():
                     with self._choice():
@@ -906,12 +891,6 @@ class LilyPondSemantics(object):
         return ast
 
     def octave(self, ast):
-        return ast
-
-    def accidental_symbol(self, ast):
-        return ast
-
-    def accidental(self, ast):
         return ast
 
     def accidental_force(self, ast):

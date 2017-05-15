@@ -50,18 +50,13 @@ from lxml import etree
 
 from lychee import exceptions
 from lychee.converters.inbound import lilypond_parser
+from lychee.converters.inbound import lilypond_pitch_names
 from lychee import exceptions
 from lychee.logs import INBOUND_LOG as log
 from lychee.namespaces import mei
 from lychee.signals import inbound
 
 
-_ACCIDENTAL_MAPPING = {
-    'eses': 'ff',
-    'es': 'f',
-    'is': 's',
-    'isis': 'ss',
-}
 _OCTAVE_MAPPING = {
     ",,": '1',
     ",": '2',
@@ -185,7 +180,6 @@ def do_document(l_document):
         if ly_type == 'version':
             check_version(l_top_level_element)
         elif ly_type == 'language':
-            # TODO: handle language
             pass
         elif ly_type == 'score':
             l_score = l_top_level_element
@@ -546,6 +540,27 @@ def do_layer(l_layer, m_container, layer_n, action):
     return m_layer
 
 
+@log.wrap('debug', 'process pitch name')
+def process_pitch_name(l_pitch_name, attrib):
+    '''
+    Set the pitch of an LMEI note.
+
+    :param l_pitch_name: The LilyPond pitch name as provided by Grako.
+    :type l_pitch_name: str
+    :param dict attrib: The attributes for the MEI <note/> element *before* creation.
+    :returns: The ``attrib`` argument.
+
+    If the accidental is not recognized, :func:`process_pitch_name` emits a failure log message and
+    returns the ``attrib`` argument unchanged.
+    '''
+    pname, accid = lilypond_pitch_names.parse_pitch_name(l_pitch_name)
+    attrib['pname'] = pname
+    if accid:
+        attrib['accid.ges'] = accid
+
+    return attrib
+
+
 @log.wrap('debug', 'add octave', 'action')
 def process_octave(l_oct, action):
     '''
@@ -563,29 +578,6 @@ def process_octave(l_oct, action):
     else:
         action.failure('unknown octave: {octave}', octave=l_oct)
         return _OCTAVE_MAPPING[None]
-
-
-@log.wrap('debug', 'add accidental', 'action')
-def process_accidental(l_accid, attrib, action):
-    '''
-    Add an accidental to the LMEI note, if required.
-
-    :param l_accid: The LilyPond accidental as provided by Grako.
-    :type l_accid: list of str
-    :param dict attrib: The attributes for the MEI <note/> element *before* creation.
-    :returns: The ``attrib`` argument.
-
-    If the accidental is not recognized, :func:`process_accidental` emits a failure log message and
-    returns the ``attrib`` argument unchanged.
-    '''
-    if l_accid:
-        l_accid = ''.join(l_accid)
-        if l_accid in _ACCIDENTAL_MAPPING:
-            attrib['accid.ges'] = _ACCIDENTAL_MAPPING[l_accid]
-        else:
-            action.failure('unknown accidental: {accid}', accid=l_accid)
-
-    return attrib
 
 
 @log.wrap('debug', 'add forced accidental', 'action')
@@ -712,12 +704,9 @@ def do_chord(l_chord, m_layer, action):
     m_chord = etree.SubElement(m_layer, mei.CHORD, attrib)
 
     for l_note in l_chord['notes']:
-        attrib = {
-            'pname': l_note['pname'],
-            'oct': process_octave(l_note['oct']),
-        }
-
-        process_accidental(l_note['accid'], attrib)
+        attrib = {}
+        process_pitch_name(l_note['pitch_name'], attrib)
+        attrib['oct'] = process_octave(l_note['oct'])
         process_forced_accid(l_note, attrib)
         if chord_has_tie or has_tie(l_note):
             add_tie(attrib)
@@ -744,12 +733,10 @@ def do_note(l_note, m_layer, action):
     check(l_note['ly_type'] == 'note', 'did not receive a note')
 
     attrib = {
-        'pname': l_note['pname'],
-        'dur': l_note['dur'],
-        'oct': process_octave(l_note['oct']),
+        'dur': l_note['dur']
     }
-
-    process_accidental(l_note['accid'], attrib)
+    process_pitch_name(l_note['pitch_name'], attrib)
+    attrib['oct'] = process_octave(l_note['oct'])
     process_forced_accid(l_note, attrib)
     process_dots(l_note, attrib)
     if has_tie(l_note):

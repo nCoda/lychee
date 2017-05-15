@@ -64,7 +64,7 @@ clef =
     ;
 
 key =
-    ly_type:`key` '\\key' ~ keynote:pitch_name accid:[accidental_symbol] '\\' mode:( "major" | "minor" )
+    ly_type:`key` '\\key' ~ keynote:pitch_name '\\' mode:( "major" | "minor" )
     ;
 
 time_numerator = /[1-9][0-9]?/ ;
@@ -80,16 +80,15 @@ staff_setting =
 # Nodes: notes, rests, chords, spacers
 ######################################
 
+# Matches all strings comprised of lowercase letters except "q", "r", and "s".
 pitch_name =
-    /[a-g]/
+    /[a-z]{2,}/
+    | /[a-pt-z]/
     ;
 
 octave =
     ",," | "," | "'''''" | "''''" | "'''" | "''" | "'"
     ;
-
-accidental_symbol = /[ei]s/ ;
-accidental = {accidental_symbol}* ;
 
 accidental_force =
     '?' | '!'
@@ -124,8 +123,7 @@ post_event =
     ;
 
 notehead =
-    pname:pitch_name ~
-    accid:accidental
+    pitch_name:pitch_name ~
     [oct:octave]
     [accid_force:accidental_force]
     ;
@@ -163,10 +161,10 @@ spacer =
     ly_type:`spacer` /s/ >duration post_events:{post_event}*
     ;
 
-node = note | rest | measure_rest | chord | spacer | staff_setting ;
+node = rest | spacer | note | measure_rest | chord | staff_setting ;
 barcheck = ly_type:`barcheck` '|' ;
 
-music_node = note | rest | chord | spacer ;
+music_node = rest | spacer | note | chord ;
 nodes = { >music_node | >staff_setting | barcheck }+ ;
 
 

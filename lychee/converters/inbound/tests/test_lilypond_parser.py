@@ -50,8 +50,8 @@ class TestNotehead(object):
 
     def test_notehead_1(self):
         """With a valid pitch name."""
-        content = 'a'
-        expected = {'pname': 'a', 'accid': [], 'oct': None, 'accid_force': None}
+        content = 'aes'
+        expected = {'pitch_name': 'aes', 'oct': None, 'accid_force': None}
         actual = parser.parse(content, rule_name='notehead')
         assert expected == actual
 
@@ -62,75 +62,23 @@ class TestNotehead(object):
             parser.parse(content, rule_name='notehead')
 
     def test_notehead_3(self):
-        """One accidental"""
-        content = 'bes'
-        expected = {'pname': 'b', 'accid': ['es'], 'oct': None, 'accid_force': None}
+        """With an octave."""
+        content = 'a,'
+        expected = {'pitch_name': 'a', 'oct': ',', 'accid_force': None}
         actual = parser.parse(content, rule_name='notehead')
         assert expected == actual
 
     def test_notehead_4(self):
-        """Double accidental"""
-        content = 'fisis'
-        expected = {'pname': 'f', 'accid': ['is', 'is'], 'oct': None, 'accid_force': None}
+        """With an octave and forced accidental."""
+        content = 'b,?'
+        expected = {'pitch_name': 'b', 'oct': ',', 'accid_force': '?'}
         actual = parser.parse(content, rule_name='notehead')
         assert expected == actual
 
     def test_notehead_5(self):
-        """Okay if the accidental doesn't make sense"""
-        content = 'cesis'
-        expected = {'pname': 'c', 'accid': ['es', 'is'], 'oct': None, 'accid_force': None}
-        actual = parser.parse(content, rule_name='notehead')
-        assert expected == actual
-
-    def test_notehead_6(self):
-        """
-        But the accidental needs to have the right letters.
-        NB: it doesn't fail because this rule by itself needn't consume all the text
-        """
-        content = 'am'
-        expected = {'pname': 'a', 'accid': [], 'oct': None, 'accid_force': None}
-        actual = parser.parse(content, rule_name='notehead')
-        assert expected == dict(actual)
-
-    def test_notehead_7(self):
-        """With an octave."""
-        content = 'des,'
-        expected = {'pname': 'd', 'accid': ['es'], 'oct': ',', 'accid_force': None}
-        actual = parser.parse(content, rule_name='notehead')
-        assert expected == actual
-
-    def test_notehead_8(self):
-        """With ? forced accidental."""
-        content = "eisis''?"
-        expected = {'pname': 'e', 'accid': ['is', 'is'], 'oct': "''", 'accid_force': '?'}
-        actual = parser.parse(content, rule_name='notehead')
-        assert expected == actual
-
-    def test_notehead_9(self):
-        """With ! forced accidental."""
-        content = 'gis,,!'
-        expected = {'pname': 'g', 'accid': ['is'], 'oct': ',,', 'accid_force': '!'}
-        actual = parser.parse(content, rule_name='notehead')
-        assert expected == actual
-
-    def test_notehead_10(self):
-        """With an octave but no accidental."""
-        content = 'a,'
-        expected = {'pname': 'a', 'accid': [], 'oct': ',', 'accid_force': None}
-        actual = parser.parse(content, rule_name='notehead')
-        assert expected == actual
-
-    def test_notehead_11(self):
-        """With an octave, forced accidental, but no accidental."""
-        content = 'b,?'
-        expected = {'pname': 'b', 'accid': [], 'oct': ',', 'accid_force': '?'}
-        actual = parser.parse(content, rule_name='notehead')
-        assert expected == actual
-
-    def test_notehead_12(self):
-        """With a forced accidental but no octave or accidental."""
+        """With a forced accidental but no octave."""
         content = 'c!'
-        expected = {'pname': 'c', 'accid': [], 'oct': None, 'accid_force': '!'}
+        expected = {'pitch_name': 'c', 'oct': None, 'accid_force': '!'}
         actual = parser.parse(content, rule_name='notehead')
         assert expected == actual
 
@@ -181,7 +129,7 @@ class TestNoteChordRestSpacer(object):
     def test_note_1(self):
         """Works as expected."""
         content = 'bes,!256..'
-        expected = {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': '!', 'dur': '256',
+        expected = {'pitch_name': 'bes', 'oct': ',', 'accid_force': '!', 'dur': '256',
             'dots': ['.', '.'], 'ly_type': 'note', 'post_events': []}
         actual = parser.parse(content, rule_name='note')
         assert expected == actual
@@ -192,7 +140,7 @@ class TestNoteChordRestSpacer(object):
         NB: it doesn't fail; the ! isn't consumed, and will cause a failure later
         """
         content = 'c4!'
-        expected = {'pname': 'c', 'accid': [], 'oct': None, 'accid_force': None, 'dur': '4',
+        expected = {'pitch_name': 'c', 'oct': None, 'accid_force': None, 'dur': '4',
             'dots': [], 'ly_type': 'note', 'post_events': []}
         actual = parser.parse(content, rule_name='note')
         assert expected == actual
@@ -200,7 +148,7 @@ class TestNoteChordRestSpacer(object):
     def test_note_3(self):
         """Works without duration."""
         content = 'bes,'
-        expected = {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': None, 'dur': None,
+        expected = {'pitch_name': 'bes', 'oct': ',', 'accid_force': None, 'dur': None,
             'dots': [], 'ly_type': 'note', 'post_events': []}
         actual = parser.parse(content, rule_name='note')
         assert expected == actual
@@ -210,8 +158,8 @@ class TestNoteChordRestSpacer(object):
         content = '<bes,! ees,?>256..'
         expected = {
             'notes': [
-                {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': '!', 'post_events': []},
-                {'pname': 'e', 'accid': ['es'], 'oct': ',', 'accid_force': '?', 'post_events': []},
+                {'pitch_name': 'bes', 'oct': ',', 'accid_force': '!', 'post_events': []},
+                {'pitch_name': 'ees', 'oct': ',', 'accid_force': '?', 'post_events': []},
             ],
             'dur': '256',
             'dots': ['.', '.'],
@@ -229,7 +177,7 @@ class TestNoteChordRestSpacer(object):
         content = '<bes,!>256..'
         expected = {
             'notes': [
-                {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': '!', 'post_events': []},
+                {'pitch_name': 'bes', 'oct': ',', 'accid_force': '!', 'post_events': []},
             ],
             'dur': '256',
             'dots': ['.', '.'],
@@ -260,9 +208,9 @@ class TestNoteChordRestSpacer(object):
         content = "<bes,! ees,? g'>"
         expected = {
             'notes': [
-                {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': '!', 'post_events': []},
-                {'pname': 'e', 'accid': ['es'], 'oct': ',', 'accid_force': '?', 'post_events': []},
-                {'pname': 'g', 'accid': [], 'oct': "'", 'accid_force': None, 'post_events': []},
+                {'pitch_name': 'bes', 'oct': ',', 'accid_force': '!', 'post_events': []},
+                {'pitch_name': 'ees', 'oct': ',', 'accid_force': '?', 'post_events': []},
+                {'pitch_name': 'g', 'oct': "'", 'accid_force': None, 'post_events': []},
             ],
             'dur': None,
             'dots': [],
@@ -326,7 +274,7 @@ class TestNoteChordRestSpacer(object):
     def test_music_node_1(self):
         """music_node: note"""
         content = 'bes,!256..'
-        expected = {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': '!', 'dur': '256',
+        expected = {'pitch_name': 'bes', 'oct': ',', 'accid_force': '!', 'dur': '256',
             'dots': ['.', '.'], 'ly_type': 'note', 'post_events': []}
         actual = parser.parse(content, rule_name='music_node')
         assert expected == actual
@@ -336,8 +284,8 @@ class TestNoteChordRestSpacer(object):
         content = '<bes,! ees,?>256..'
         expected = {
             'notes': [
-                {'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': '!', 'post_events': []},
-                {'pname': 'e', 'accid': ['es'], 'oct': ',', 'accid_force': '?', 'post_events': []},
+                {'pitch_name': 'bes', 'oct': ',', 'accid_force': '!', 'post_events': []},
+                {'pitch_name': 'ees', 'oct': ',', 'accid_force': '?', 'post_events': []},
             ],
             'dur': '256',
             'dots': ['.', '.'],
@@ -372,8 +320,7 @@ class TestPostEvents(object):
         content = 'c4~'
         expected = {
             'ly_type': 'note',
-            'pname': 'c',
-            'accid': [],
+            'pitch_name': 'c',
             'oct': None,
             'dur': '4',
             'accid_force': None,
@@ -388,8 +335,7 @@ class TestPostEvents(object):
         content = 'c4('
         expected = {
             'ly_type': 'note',
-            'pname': 'c',
-            'accid': [],
+            'pitch_name': 'c',
             'oct': None,
             'dur': '4',
             'accid_force': None,
@@ -404,8 +350,7 @@ class TestPostEvents(object):
         content = 'c4)'
         expected = {
             'ly_type': 'note',
-            'pname': 'c',
-            'accid': [],
+            'pitch_name': 'c',
             'oct': None,
             'dur': '4',
             'accid_force': None,
@@ -420,8 +365,7 @@ class TestPostEvents(object):
         content = 'c4~('
         expected = {
             'ly_type': 'note',
-            'pname': 'c',
-            'accid': [],
+            'pitch_name': 'c',
             'oct': None,
             'dur': '4',
             'accid_force': None,
@@ -436,8 +380,7 @@ class TestPostEvents(object):
         content = 'c4(~'
         expected = {
             'ly_type': 'note',
-            'pname': 'c',
-            'accid': [],
+            'pitch_name': 'c',
             'oct': None,
             'dur': '4',
             'accid_force': None,
@@ -624,14 +567,14 @@ class TestStaffSettings(object):
     def test_key_1(self):
         """Key, major without accidental."""
         content = r'\key f \major'
-        expected = {'ly_type': 'key', 'keynote': 'f', 'accid': None, 'mode': 'major'}
+        expected = {'ly_type': 'key', 'keynote': 'f', 'mode': 'major'}
         actual = parser.parse(content, rule_name='key')
         assert expected == actual
 
     def test_key_2(self):
         """Key, minor with accidental."""
         content = r'\key fis \minor'
-        expected = {'ly_type': 'key', 'keynote': 'f', 'accid': 'is', 'mode': 'minor'}
+        expected = {'ly_type': 'key', 'keynote': 'fis', 'mode': 'minor'}
         actual = parser.parse(content, rule_name='key')
         assert expected == actual
 
@@ -672,7 +615,7 @@ class TestStaffSettings(object):
     def test_staff_setting_3(self):
         """Key with the "staff_setting" rule."""
         content = r'\key fis \minor'
-        expected = {'ly_type': 'key', 'keynote': 'f', 'accid': 'is', 'mode': 'minor'}
+        expected = {'ly_type': 'key', 'keynote': 'fis', 'mode': 'minor'}
         actual = parser.parse(content, rule_name='staff_setting')
         assert expected == actual
 
@@ -742,7 +685,7 @@ class TestStaffAndMusicBlock(object):
                         {'dur': '4', 'dots': [], 'ly_type': 'rest', 'post_events': []},
                     ],
                 ]},
-                {'layers': [[{'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': None,
+                {'layers': [[{'pitch_name': 'bes', 'oct': ',', 'accid_force': None,
                              'dur': '128', 'dots': [], 'ly_type': 'note', 'post_events': []}]],
                 },
             ],
@@ -806,7 +749,7 @@ class TestStaffAndMusicBlock(object):
                         {'dur': '4', 'dots': [], 'ly_type': 'rest', 'post_events': []},
                     ],
                 ]},
-                {'layers': [[{'pname': 'b', 'accid': ['es'], 'oct': ',', 'accid_force': None,
+                {'layers': [[{'pitch_name': 'bes', 'oct': ',', 'accid_force': None,
                              'dur': '128', 'dots': [], 'ly_type': 'note', 'post_events': []}]],
                 },
             ],

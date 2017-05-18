@@ -30,7 +30,7 @@
 # $ python -m grako -c -o lilypond_parser.py lilypond.ebnf
 
 @@comments :: /\%\{.*?\%\}/
-# @@eol_comments :: /%.*?$/  # TODO: negative lookahead assertion for %{
+@@eol_comments :: /%(|[^{].*?)$/
 @@grammar :: LilyPond
 @@left_recursion :: False
 @@parseinfo :: False

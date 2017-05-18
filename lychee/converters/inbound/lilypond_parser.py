@@ -18,7 +18,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2017, 5, 18, 5, 10, 12, 3)
+__version__ = (2017, 5, 18, 5, 41, 31, 3)
 
 __all__ = [
     'LilyPondParser',
@@ -35,7 +35,7 @@ class LilyPondBuffer(Buffer):
                  whitespace=None,
                  nameguard=None,
                  comments_re='\\%\\{.*?\\%\\}',
-                 eol_comments_re=None,
+                 eol_comments_re='%(|[^\\{].*?)$',
                  ignorecase=None,
                  namechars='',
                  **kwargs):
@@ -56,7 +56,7 @@ class LilyPondParser(Parser):
                  whitespace=None,
                  nameguard=None,
                  comments_re='\\%\\{.*?\\%\\}',
-                 eol_comments_re=None,
+                 eol_comments_re='%(|[^\\{].*?)$',
                  ignorecase=None,
                  left_recursion=False,
                  parseinfo=False,
@@ -1031,7 +1031,7 @@ def main(
         whitespace=None,
         nameguard=None,
         comments_re='\\%\\{.*?\\%\\}',
-        eol_comments_re=None,
+        eol_comments_re='%(|[^\\{].*?)$',
         ignorecase=None,
         left_recursion=False,
         parseinfo=False,

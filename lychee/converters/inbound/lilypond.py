@@ -179,15 +179,16 @@ def do_document(l_document):
         'language': 'nederlands'
     }
     for l_top_level_element in l_document:
-        ly_type = l_top_level_element['ly_type']
-        if ly_type == 'version':
-            check_version(l_top_level_element)
-        elif ly_type == 'language':
-            context['language'] = l_top_level_element['language']
-        elif ly_type == 'score':
-            l_score = l_top_level_element
-        elif ly_type == 'staff':
-            l_score = {'ly_type': 'score', 'staves': [l_top_level_element]}
+        if type(l_top_level_element) != list:
+            ly_type = l_top_level_element['ly_type']
+            if ly_type == 'version':
+                check_version(l_top_level_element)
+            elif ly_type == 'language':
+                context['language'] = l_top_level_element['language']
+            elif ly_type == 'score':
+                l_score = l_top_level_element
+            elif ly_type == 'staff':
+                l_score = {'ly_type': 'score', 'staves': [l_top_level_element]}
 
     if l_score == None:
         raise exceptions.LilyPondError('Empty document')

@@ -36,7 +36,7 @@
 @@parseinfo :: False
 
 
-start = {top_level_expression}*;
+start = {top_level_expression}* $;
 
 
 # Document
@@ -215,7 +215,11 @@ simul_r = '>>' ;
 
 score_staff_content = simul_l ~ @:{staff}+ simul_r ;
 
+header_block = "\\header" brace_l brace_r ;
+
 layout_block = "\\layout" brace_l brace_r ;
+
+paper_block = "\\paper" brace_l brace_r ;
 
 token_score =
     '\\score'
@@ -239,6 +243,9 @@ score =
 top_level_expression =
     version_statement
     | language_statement
+    | header_block
+    | layout_block
+    | paper_block
     | score
     | staff
     ;

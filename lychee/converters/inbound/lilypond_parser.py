@@ -18,7 +18,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2017, 5, 15, 1, 45, 4, 0)
+__version__ = (2017, 5, 18, 5, 10, 12, 3)
 
 __all__ = [
     'LilyPondParser',
@@ -87,6 +87,7 @@ class LilyPondParser(Parser):
         def block0():
             self._top_level_expression_()
         self._closure(block0)
+        self._check_eof()
 
     @graken()
     def _version_statement_(self):
@@ -803,8 +804,20 @@ class LilyPondParser(Parser):
         self._simul_r_()
 
     @graken()
+    def _header_block_(self):
+        self._token('\\header')
+        self._brace_l_()
+        self._brace_r_()
+
+    @graken()
     def _layout_block_(self):
         self._token('\\layout')
+        self._brace_l_()
+        self._brace_r_()
+
+    @graken()
+    def _paper_block_(self):
+        self._token('\\paper')
         self._brace_l_()
         self._brace_r_()
 
@@ -852,6 +865,12 @@ class LilyPondParser(Parser):
                 self._version_statement_()
             with self._option():
                 self._language_statement_()
+            with self._option():
+                self._header_block_()
+            with self._option():
+                self._layout_block_()
+            with self._option():
+                self._paper_block_()
             with self._option():
                 self._score_()
             with self._option():
@@ -986,7 +1005,13 @@ class LilyPondSemantics(object):
     def score_staff_content(self, ast):
         return ast
 
+    def header_block(self, ast):
+        return ast
+
     def layout_block(self, ast):
+        return ast
+
+    def paper_block(self, ast):
         return ast
 
     def token_score(self, ast):

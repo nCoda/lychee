@@ -69,12 +69,12 @@ _OCTAVE_MAPPING = {
 }
 _KEY_MAPPING = {
     'major': {
-        'ces': '7f',
-        'ges': '6f',
-        'des': '5f',
-        'aes': '4f',
-        'ees': '3f',
-        'bes': '2f',
+        'cf': '7f',
+        'gf': '6f',
+        'df': '5f',
+        'af': '4f',
+        'ef': '3f',
+        'bf': '2f',
         'f': '1f',
         'c': '0',
         'g': '1s',
@@ -82,13 +82,13 @@ _KEY_MAPPING = {
         'a': '3s',
         'e': '4s',
         'b': '5s',
-        'fis': '6s',
-        'cis': '7s',
+        'fs': '6s',
+        'cs': '7s',
     },
     'minor': {
-        'aes': '7f',
-        'ees': '6f',
-        'bes': '5f',
+        'af': '7f',
+        'ef': '6f',
+        'bf': '5f',
         'f': '4f',
         'c': '3f',
         'g': '2f',
@@ -96,11 +96,11 @@ _KEY_MAPPING = {
         'a': '0',
         'e': '1s',
         'b': '2s',
-        'fis': '3s',
-        'cis': '4s',
-        'gis': '5s',
-        'dis': '6s',
-        'ais': '7s',
+        'fs': '3s',
+        'cs': '4s',
+        'gs': '5s',
+        'ds': '6s',
+        'as': '7s',
     },
 }
 ClefSpec = collections.namedtuple('ClefSpec', ('shape', 'line'))
@@ -285,10 +285,13 @@ def set_initial_key(l_key, m_staffdef, context=None):
     '''
     check(l_key['ly_type'] == 'key', 'did not receive a key specification')
 
-    if l_key['accid']:
-        keynote = l_key['keynote'] + l_key['accid']
-    else:
-        keynote = l_key['keynote']
+    keynote = l_key['keynote']
+
+    language = 'nederlands'
+    if context and 'language' in context:
+        language = context['language']
+    pitch_and_accidental = lilypond_pitch_names.parse_pitch_name(keynote, language)
+    keynote = "".join(pitch_and_accidental)
 
     m_staffdef.set('key.sig', _KEY_MAPPING[l_key['mode']][keynote])
 
@@ -713,7 +716,7 @@ def do_chord(l_chord, m_layer, context=None, action=None):
 
     for l_note in l_chord['notes']:
         attrib = {}
-        process_pitch_name(l_note['pitch_name'], attrib)
+        process_pitch_name(l_note['pitch_name'], attrib, context=context)
         attrib['oct'] = process_octave(l_note['oct'])
         process_forced_accid(l_note, attrib)
         if chord_has_tie or has_tie(l_note):

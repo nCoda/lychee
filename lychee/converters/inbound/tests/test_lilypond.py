@@ -130,6 +130,21 @@ class TestScore(object):
         assert actual[3].tag == mei.STAFF
         assert actual[3].get('n') == '3'
 
+    def test_language(self):
+        """At a distance, make sure that language gets correctly passed down
+        all the way to the pitch name converter."""
+        l_score = {'ly_type': 'score',
+            'staves': [{
+                'ly_type': 'staff',
+                'initial_settings': [{'ly_type': 'instr_name', 'name': 'Woo'}],
+                'content': [{'layers': [[{'pitch_name': 'css', 'oct': ',',
+                             'accid_force': None, 'dur': '4', 'dots': [], 'ly_type': 'note'}]]}],
+            }]
+        }
+        actual = lilypond.do_score(l_score, context={'language': 'english'})
+        note = actual.find('.//{}'.format(mei.NOTE))
+        assert note.attrib.get('accid.ges') == 'ss'
+
 
 class TestClef(object):
     """
@@ -231,17 +246,24 @@ class TestKeySignature(object):
 
     def test_major_key(self):
         """Major key."""
-        l_key = {'ly_type': 'key', 'keynote': 'd', 'accid': 'es', 'mode': 'major'}
+        l_key = {'ly_type': 'key', 'keynote': 'des', 'mode': 'major'}
         m_staffdef = etree.Element(mei.STAFF_DEF)
         lilypond.set_initial_key(l_key, m_staffdef)
         assert m_staffdef.get('key.sig') == '5f'
 
     def test_minor_key(self):
         """Minor key."""
-        l_key = {'ly_type': 'key', 'keynote': 'a', 'accid': '', 'mode': 'minor'}
+        l_key = {'ly_type': 'key', 'keynote': 'a', 'mode': 'minor'}
         m_staffdef = etree.Element(mei.STAFF_DEF)
         lilypond.set_initial_key(l_key, m_staffdef)
         assert m_staffdef.get('key.sig') == '0'
+
+    def test_language(self):
+        """English language."""
+        l_key = {'ly_type': 'key', 'keynote': 'ds', 'mode': 'minor'}
+        m_staffdef = etree.Element(mei.STAFF_DEF)
+        lilypond.set_initial_key(l_key, m_staffdef, context={'language': 'english'})
+        assert m_staffdef.get('key.sig') == '6s'
 
     def test_change(self):
         """Key change in the context of a staff. The @n should match."""
@@ -342,7 +364,7 @@ class TestStaves(object):
             'initial_settings': [
                 {'ly_type': 'time', 'count': '3', 'unit': '4'},
                 {'ly_type': 'clef', 'type': 'bass'},
-                {'ly_type': 'key', 'keynote': 'd', 'accid': 'es', 'mode': 'major'},
+                {'ly_type': 'key', 'keynote': 'des', 'mode': 'major'},
                 {'ly_type': 'instr_name', 'name': 'Broccoliphone'},
             ],
             'content': [],
@@ -576,6 +598,15 @@ class TestPitchName(object):
         actual = lilypond.process_pitch_name(l_pitch_name, attrib)
         assert expected == actual
 
+    def test_language(self):
+        """German."""
+        l_pitch_name = "h"
+        attrib = {}
+        context = {"language": "deutsch"}
+        expected = {"pname": "b", "accid.ges": "f"}
+        actual = lilypond.process_pitch_name(l_pitch_name, attrib, context)
+        assert expected == actual
+
     def test_sharpflat(self):
         """Sharpflat (invalid accidental)."""
         l_pitch_name = "cises"
@@ -747,6 +778,34 @@ class TestChord(object):
         assert actual[2].get('pname') == 'a'
         assert actual[2].get('oct') == '1'
         assert actual[2].get('accid.ges') is None
+        assert actual[2].get('accid') is None
+
+    def test_language(self):
+        """Italiano."""
+        l_chord = {'ly_type': 'chord', 'dur': '2', 'dots': [], 'notes': [
+            {'pitch_name': 'do', 'oct': '', 'accid_force': '!'},
+            {'pitch_name': 'red', 'oct': '', 'accid_force': None},
+            {'pitch_name': 'mibb', 'oct': '', 'accid_force': None},
+        ]}
+        m_layer = etree.Element(mei.LAYER)
+        context = {'language': 'italiano'}
+        actual = lilypond.do_chord(l_chord, m_layer, context)
+
+        assert len(actual) == 3
+        #
+        assert actual[0].get('pname') == 'c'
+        assert actual[0].get('oct') == '3'
+        assert actual[0].get('accid.ges') is None
+        assert actual[0].get('accid') == 'n'
+        #
+        assert actual[1].get('pname') == 'd'
+        assert actual[1].get('oct') == '3'
+        assert actual[1].get('accid.ges') == 's'
+        assert actual[1].get('accid') is None
+        #
+        assert actual[2].get('pname') == 'e'
+        assert actual[2].get('oct') == '3'
+        assert actual[2].get('accid.ges') == 'ff'
         assert actual[2].get('accid') is None
 
 

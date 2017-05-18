@@ -580,8 +580,7 @@ class TestPitchName(object):
         """Sharpflat (invalid accidental)."""
         l_pitch_name = "cises"
         attrib = {}
-        expected = {"pname": "c"}
-        with pytest.raises(KeyError):
+        with pytest.raises(exceptions.LilyPondError):
             lilypond.process_pitch_name(l_pitch_name, attrib)
 
 

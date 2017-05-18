@@ -175,12 +175,15 @@ def convert_no_signals(document):
 @log.wrap('info', 'process document')
 def do_document(l_document):
     l_score = None
+    context = {
+        'language': 'nederlands'
+    }
     for l_top_level_element in l_document:
         ly_type = l_top_level_element['ly_type']
         if ly_type == 'version':
             check_version(l_top_level_element)
         elif ly_type == 'language':
-            pass
+            context['language'] = l_top_level_element['language']
         elif ly_type == 'score':
             l_score = l_top_level_element
         elif ly_type == 'staff':
@@ -189,7 +192,7 @@ def do_document(l_document):
     if l_score == None:
         raise exceptions.LilyPondError('Empty document')
 
-    converted = do_score(l_score)
+    converted = do_score(l_score, context=context)
     return converted
 
 
@@ -211,10 +214,11 @@ def check_version(ly_version, action):
 
 
 @log.wrap('info', 'convert score')
-def do_score(l_score):
+def do_score(l_score, context=None):
     '''
     Convert a LilyPond score to an LMEI <section>.
 
+    :param dict context: Contains document-wide information such as language.
     :param dict l_score: The LilyPond score as parsed by Grako.
     :returns: A converted Lychee-MEI <section> element.
     :rtype: :class:`lxml.etree.Element`
@@ -228,13 +232,13 @@ def do_score(l_score):
     for staff_n, l_staff in enumerate(l_score['staves']):
         # we have to add one to staff_n or else the @n attributes would start at zero!
         m_staffdef = etree.SubElement(m_staffgrp, mei.STAFF_DEF, {'n': str(staff_n + 1), 'lines': '5'})
-        do_staff(l_staff, m_section, m_staffdef)
+        do_staff(l_staff, m_section, m_staffdef, context=context)
 
     return m_section
 
 
 @log.wrap('debug', 'set clef', 'action')
-def set_initial_clef(l_clef, m_staffdef, action):
+def set_initial_clef(l_clef, m_staffdef, context=None, action=None):
     '''
     Set the clef for a staff.
 
@@ -255,7 +259,7 @@ def set_initial_clef(l_clef, m_staffdef, action):
 
 
 @log.wrap('debug', 'set time signature')
-def set_initial_time(l_time, m_staffdef):
+def set_initial_time(l_time, m_staffdef, context=None):
     '''
     Set the time signature for a staff.
 
@@ -270,7 +274,7 @@ def set_initial_time(l_time, m_staffdef):
 
 
 @log.wrap('debug', 'set key signature')
-def set_initial_key(l_key, m_staffdef):
+def set_initial_key(l_key, m_staffdef, context=None):
     '''
     Set the key signature for a staff.
 
@@ -290,7 +294,7 @@ def set_initial_key(l_key, m_staffdef):
 
 
 @log.wrap('debug', 'set instrument name')
-def set_instrument_name(l_name, m_staffdef):
+def set_instrument_name(l_name, m_staffdef, context=None):
     """
     Set the instrument name for a staff.
 
@@ -316,7 +320,7 @@ def postprocess_staff(m_staff):
 
 
 @log.wrap('info', 'convert staff', 'action')
-def do_staff(l_staff, m_section, m_staffdef, action):
+def do_staff(l_staff, m_section, m_staffdef, context=None, action=None):
     '''
     :param dict l_staff: The LilyPond Staff context from Grako.
     :param m_section: The LMEI <section> that will hold the staff.
@@ -355,7 +359,8 @@ def do_staff(l_staff, m_section, m_staffdef, action):
     for l_setting in l_staff['initial_settings']:
         with log.debug('handle staff setting') as action:
             if l_setting['ly_type'] in _STAFF_SETTINGS_FUNCTIONS:
-                _STAFF_SETTINGS_FUNCTIONS[l_setting['ly_type']](l_setting, m_staffdef)
+                _STAFF_SETTINGS_FUNCTIONS[l_setting['ly_type']](
+                    l_setting, m_staffdef, context=context)
                 action.success('converted {ly_type}', ly_type=l_setting['ly_type'])
             else:
                 action.failure('unknown staff setting: {ly_type}', ly_type=l_setting['ly_type'])
@@ -365,7 +370,7 @@ def do_staff(l_staff, m_section, m_staffdef, action):
             m_each_staff = etree.SubElement(m_section, mei.STAFF, {'n': m_staffdef.get('n')})
             for layer_n, l_layer in enumerate(l_each_staff['layers']):
                 # we must add 1 to layer_n or else the @n would start at 0, not 1
-                do_layer(l_layer, m_each_staff, layer_n + 1)
+                do_layer(l_layer, m_each_staff, layer_n + 1, context=context)
             postprocess_staff(m_each_staff)
 
 
@@ -497,7 +502,7 @@ def fix_slurs_in_layer(m_layer, action):
 
 
 @log.wrap('debug', 'convert voice/layer', 'action')
-def do_layer(l_layer, m_container, layer_n, action):
+def do_layer(l_layer, m_container, layer_n, context=None, action=None):
     '''
     Convert a LilyPond Voice context into an LMEI <layer> element.
 
@@ -525,7 +530,7 @@ def do_layer(l_layer, m_container, layer_n, action):
     for obj in l_layer:
         with log.debug('node conversion') as action:
             if obj['ly_type'] in node_converters:
-                node_converters[obj['ly_type']](obj, m_layer)
+                node_converters[obj['ly_type']](obj, m_layer, context=context)
                 action.success('converted {ly_type}', ly_type=obj['ly_type'])
             elif obj['ly_type'] in _STAFF_SETTINGS_FUNCTIONS:
                 m_staffdef = etree.SubElement(m_layer, mei.STAFF_DEF)
@@ -541,7 +546,7 @@ def do_layer(l_layer, m_container, layer_n, action):
 
 
 @log.wrap('debug', 'process pitch name')
-def process_pitch_name(l_pitch_name, attrib):
+def process_pitch_name(l_pitch_name, attrib, context=None):
     '''
     Set the pitch of an LMEI note.
 
@@ -553,7 +558,10 @@ def process_pitch_name(l_pitch_name, attrib):
     If the accidental is not recognized, :func:`process_pitch_name` emits a failure log message and
     returns the ``attrib`` argument unchanged.
     '''
-    pname, accid = lilypond_pitch_names.parse_pitch_name(l_pitch_name)
+    language = 'nederlands'
+    if context and 'language' in context:
+        language = context['language']
+    pname, accid = lilypond_pitch_names.parse_pitch_name(l_pitch_name, language)
     attrib['pname'] = pname
     if accid:
         attrib['accid.ges'] = accid
@@ -682,7 +690,7 @@ def process_slur(l_thing, attrib):
 
 
 @log.wrap('debug', 'convert chord', 'action')
-def do_chord(l_chord, m_layer, action):
+def do_chord(l_chord, m_layer, context=None, action=None):
     """
     Convert a LilyPond chord to an LMEI <chord/>.
 
@@ -719,7 +727,7 @@ def do_chord(l_chord, m_layer, action):
 
 
 @log.wrap('debug', 'convert note', 'action')
-def do_note(l_note, m_layer, action):
+def do_note(l_note, m_layer, context=None, action=None):
     """
     Convert a LilyPond note to an LMEI <note/>.
 
@@ -735,7 +743,7 @@ def do_note(l_note, m_layer, action):
     attrib = {
         'dur': l_note['dur']
     }
-    process_pitch_name(l_note['pitch_name'], attrib)
+    process_pitch_name(l_note['pitch_name'], attrib, context=context)
     attrib['oct'] = process_octave(l_note['oct'])
     process_forced_accid(l_note, attrib)
     process_dots(l_note, attrib)
@@ -751,7 +759,7 @@ def do_note(l_note, m_layer, action):
 
 
 @log.wrap('debug', 'convert rest', 'action')
-def do_rest(l_rest, m_layer, action):
+def do_rest(l_rest, m_layer, context=None, action=None):
     """
     Convert a LilyPond rest to an LMEI <rest/>.
 
@@ -776,7 +784,7 @@ def do_rest(l_rest, m_layer, action):
 
 
 @log.wrap('debug', 'convert measure rest')
-def do_measure_rest(l_measure_rest, m_layer):
+def do_measure_rest(l_measure_rest, m_layer, context=None):
     check(l_measure_rest['ly_type'] == 'measure_rest', 'did not receive a measure rest')
 
     attrib = {
@@ -791,7 +799,7 @@ def do_measure_rest(l_measure_rest, m_layer):
 
 
 @log.wrap('debug', 'convert spacer', 'action')
-def do_spacer(l_spacer, m_layer, action):
+def do_spacer(l_spacer, m_layer, context=None, action=None):
     """
     Convert a LilyPond spacer rest to an LMEI <space/>.
 

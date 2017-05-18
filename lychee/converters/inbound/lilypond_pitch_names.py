@@ -25,6 +25,7 @@
 '''
 Contain utilities for international conversion of pitch names in LilyPond.
 '''
+from lychee import exceptions
 from collections import OrderedDict
 
 B_FLAT_INDEX = 6
@@ -37,7 +38,7 @@ romance_pitch_tuples = [('do', 'c'), ('re', 'd'), ('mi', 'e'), ('fa', 'f'), ('so
 
 # convert ordered tuples to a dictionary of OrderedDicts
 # (so we can keep track of pesky old B-flat in the penultimate spot)
-inbound_pitch_name_dicts = {
+pitch_name_dicts = {
     'nederlands': OrderedDict(dutch_pitch_tuples),
     'catalan': OrderedDict(romance_pitch_tuples),
     'deutsch': OrderedDict(german_pitch_tuples),
@@ -63,7 +64,7 @@ norwegian_accid_dict = {'iss': 's', 'is': 's', 'ess': 'f', 'es': 'f', 'ississ': 
 portuguese_accid_dict = {'s': 's', 'b': 'b', 'ss': 'ss', 'bb': 'bb', '': ''}
 swedish_accid_dict = {'iss': 's', 'es': 'f', 'isis': 'ss', 'eses': 'ff', '': ''}
 flemish_accid_dict = {'k': 's', 'b': 'b', 'kk': 'ss', 'bb': 'bb', '': ''}
-inbound_accidentals_dicts = {
+accidentals_dicts = {
     'nederlands': dutch_accid_dict,
     'catalan': catalan_accid_dict,
     'deutsch': german_accid_dict,
@@ -80,17 +81,27 @@ inbound_accidentals_dicts = {
     }
 
 
-def parse_pitch_name(inbound_pitch_name, inbound_language="nederlands"):
-    inbound_pitch_name_dict = inbound_pitch_name_dicts[inbound_language]
-    inbound_accidentals_dict = inbound_accidentals_dicts[inbound_language]
-    if inbound_pitch_name in inbound_pitch_name_dict.items()[B_FLAT_INDEX]:
+def parse_pitch_name(pitch_name, language="nederlands"):
+    if language not in pitch_name_dicts:
+        raise exceptions.LilyPondError("Unrecognized language: '{}'".format(language))
+
+    pitch_name_dict = pitch_name_dicts[language]
+    accidentals_dict = accidentals_dicts[language]
+
+    if pitch_name in pitch_name_dict.items()[B_FLAT_INDEX]:
         return ("b", "f")
     else:
         counter = 0
-        comparator = inbound_pitch_name[:counter]
-        while comparator not in inbound_pitch_name_dict:
+        comparator = pitch_name[:counter]
+        while comparator not in pitch_name_dict:
             counter += 1
-            comparator = inbound_pitch_name[:counter]
-        pitch_name_string = inbound_pitch_name[:counter]
-        accidental_string = inbound_pitch_name[counter:]
-        return (inbound_pitch_name_dict[pitch_name_string], inbound_accidentals_dict[accidental_string])
+            comparator = pitch_name[:counter]
+        pitch_name_string = pitch_name[:counter]
+        accidental_string = pitch_name[counter:]
+
+        try:
+            pitch_pair = (pitch_name_dict[pitch_name_string], accidentals_dict[accidental_string])
+        except KeyError:
+            raise exceptions.LilyPondError("Pitch name '{}' is not valid in language '{}'"
+                    .format(pitch_name, language))
+        return pitch_pair

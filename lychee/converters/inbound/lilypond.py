@@ -230,7 +230,15 @@ def do_score(l_score, context=None):
     m_scoredef = etree.SubElement(m_section, mei.SCORE_DEF)
     m_staffgrp = etree.SubElement(m_scoredef, mei.STAFF_GRP)
 
-    for staff_n, l_staff in enumerate(l_score['staves']):
+    # Sometimes we only get one staff instead of simultaneous staves.
+    staves = l_score['staves']
+    try:
+        if staves['ly_type'] == 'staff':
+            staves = [staves]
+    except TypeError:
+        pass
+
+    for staff_n, l_staff in enumerate(staves):
         # we have to add one to staff_n or else the @n attributes would start at zero!
         m_staffdef = etree.SubElement(m_staffgrp, mei.STAFF_DEF, {'n': str(staff_n + 1), 'lines': '5'})
         do_staff(l_staff, m_section, m_staffdef, context=context)

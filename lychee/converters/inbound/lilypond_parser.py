@@ -18,7 +18,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2017, 5, 18, 5, 41, 31, 3)
+__version__ = (2017, 5, 18, 6, 10, 56, 3)
 
 __all__ = [
     'LilyPondParser',
@@ -35,7 +35,7 @@ class LilyPondBuffer(Buffer):
                  whitespace=None,
                  nameguard=None,
                  comments_re='\\%\\{.*?\\%\\}',
-                 eol_comments_re='%(|[^\\{].*?)$',
+                 eol_comments_re='%(|[^{].*?)$',
                  ignorecase=None,
                  namechars='',
                  **kwargs):
@@ -56,7 +56,7 @@ class LilyPondParser(Parser):
                  whitespace=None,
                  nameguard=None,
                  comments_re='\\%\\{.*?\\%\\}',
-                 eol_comments_re='%(|[^\\{].*?)$',
+                 eol_comments_re='%(|[^{].*?)$',
                  ignorecase=None,
                  left_recursion=False,
                  parseinfo=False,
@@ -794,14 +794,20 @@ class LilyPondParser(Parser):
 
     @graken()
     def _score_staff_content_(self):
-        self._simul_l_()
-        self._cut()
+        with self._choice():
+            with self._option():
+                self._simul_l_()
+                self._cut()
 
-        def block1():
-            self._staff_()
-        self._positive_closure(block1)
-        self.name_last_node('@')
-        self._simul_r_()
+                def block1():
+                    self._staff_()
+                self._positive_closure(block1)
+                self.name_last_node('@')
+                self._simul_r_()
+            with self._option():
+                self._staff_()
+                self.name_last_node('@')
+            self._error('no available options')
 
     @graken()
     def _header_block_(self):
@@ -1031,7 +1037,7 @@ def main(
         whitespace=None,
         nameguard=None,
         comments_re='\\%\\{.*?\\%\\}',
-        eol_comments_re='%(|[^\\{].*?)$',
+        eol_comments_re='%(|[^{].*?)$',
         ignorecase=None,
         left_recursion=False,
         parseinfo=False,

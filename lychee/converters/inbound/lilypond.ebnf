@@ -213,7 +213,10 @@ staff =
 simul_l = '<<' ;
 simul_r = '>>' ;
 
-score_staff_content = simul_l ~ @:{staff}+ simul_r ;
+score_staff_content =
+    simul_l ~ @:{staff}+ simul_r
+    | @:staff
+    ;
 
 header_block = "\\header" brace_l brace_r ;
 

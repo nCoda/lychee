@@ -55,15 +55,15 @@ pitch_name_dicts = {
     }
 
 # make a dictionary of (unordered) accidental dictionaries
-catalan_accid_dict = {'d': 's', 's': 's', 'b': 'b', 'dd': 'ss', 'ss': 'ss', 'bb': 'bb', '': ''}
+catalan_accid_dict = {'d': 's', 's': 's', 'b': 'f', 'dd': 'ss', 'ss': 'ss', 'bb': 'ff', '': ''}
 dutch_accid_dict = finnish_accid_dict = german_accid_dict = {'es': 'f', 'is': 's', 'eses': 'ff', 'isis': 'ss', '': ''}
 english_accid_dict = {'f': 'f', 's': 's', 'ff': 'ff', 'ss': 'ss', 'x': 'ss', '': ''}
 spanish_accid_dict = {'s': 's', 'b': 'f', 'ss': 'ss', 'x': 'ss', 'bb': 'ff'}
-italian_accid_dict = french_accid_dict = {'d': 's', 'b': 'b', 'dd': 'ss', 'bb': 'bb', '': ''}
+italian_accid_dict = french_accid_dict = {'d': 's', 'b': 'f', 'dd': 'ss', 'bb': 'ff', '': ''}
 norwegian_accid_dict = {'iss': 's', 'is': 's', 'ess': 'f', 'es': 'f', 'ississ': 'ss', 'isis': 'ss', 'essess': 'ff', 'eses': 'ff', '': ''}
-portuguese_accid_dict = {'s': 's', 'b': 'b', 'ss': 'ss', 'bb': 'bb', '': ''}
+portuguese_accid_dict = {'s': 's', 'b': 'f', 'ss': 'ss', 'bb': 'ff', '': ''}
 swedish_accid_dict = {'iss': 's', 'es': 'f', 'isis': 'ss', 'eses': 'ff', '': ''}
-flemish_accid_dict = {'k': 's', 'b': 'b', 'kk': 'ss', 'bb': 'bb', '': ''}
+flemish_accid_dict = {'k': 's', 'b': 'f', 'kk': 'ss', 'bb': 'ff', '': ''}
 accidentals_dicts = {
     'nederlands': dutch_accid_dict,
     'catalan': catalan_accid_dict,
@@ -102,6 +102,6 @@ def parse_pitch_name(pitch_name, language="nederlands"):
         try:
             pitch_pair = (pitch_name_dict[pitch_name_string], accidentals_dict[accidental_string])
         except KeyError:
-            raise exceptions.LilyPondError("Pitch name '{}' is not valid in language '{}'"
-                    .format(pitch_name, language))
+            raise exceptions.LilyPondError(
+                "Pitch name '{}' is not valid in language '{}'".format(pitch_name, language))
         return pitch_pair

@@ -203,13 +203,13 @@ def check_version(ly_version, action):
     Guarantees the version is at least somewhat compatible.
 
     If the major version is not '2', raises.
-    If the minor version is other than '18', warns.
+    If the minor version is other than '18' or '19', warns.
     '''
     if ly_version['version']:
         if ly_version['version'][0] != '2':
-            raise RuntimeError('inbound LilyPond parser expects version 2.18.x')
-        elif ly_version['version'][1] != '18':
-            action.failure('inbound LilyPond parser expects version 2.18.x')
+            raise RuntimeError('inbound LilyPond parser expects version 2.18.x or 2.19.x')
+        elif ly_version['version'][1] not in ('18', '19'):
+            action.failure('inbound LilyPond parser expects version 2.18.x or 2.19.x')
     else:
         action.failure('missing version info')
 

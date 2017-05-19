@@ -365,6 +365,10 @@ def do_staff(l_staff, m_section, m_staffdef, context=None, action=None):
     check(l_staff['ly_type'] == 'staff', 'did not receive a staff')
     check(m_staffdef.get('n') is not None, '<staffDef> is missing @n')
 
+    # Set the initial clef to treble -- LilyPond defaults to treble clef, but this is not
+    # necessarily true of MEI.
+    set_clef({'ly_type': 'clef', 'type': 'treble'}, m_staffdef, context=context)
+
     for l_setting in l_staff['initial_settings']:
         with log.debug('handle staff setting') as action:
             if l_setting['ly_type'] in _STAFF_SETTINGS_FUNCTIONS:

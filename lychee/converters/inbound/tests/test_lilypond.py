@@ -338,7 +338,11 @@ class TestStaves(object):
         m_staffdef = etree.Element(mei.STAFF_DEF, {'n': '8'})
         lilypond.do_staff(l_staff, m_section, m_staffdef)
 
-        assert m_staffdef.attrib == {'n': '8'}
+        assert m_staffdef.attrib == {
+            'n': '8',
+            'clef.shape': 'G',
+            'clef.line': '2',
+            }
 
     def test_settings_2(self):
         """
@@ -353,7 +357,13 @@ class TestStaves(object):
         m_staffdef = etree.Element(mei.STAFF_DEF, {'n': '8'})
         lilypond.do_staff(l_staff, m_section, m_staffdef)
 
-        assert m_staffdef.attrib == {'n': '8', 'meter.count': '3', 'meter.unit': '4'}
+        assert m_staffdef.attrib == {
+            'n': '8',
+            'clef.shape': 'G',
+            'clef.line': '2',
+            'meter.count': '3',
+            'meter.unit': '4',
+            }
 
     def test_settings_3(self):
         """

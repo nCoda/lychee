@@ -244,7 +244,7 @@ def do_score(l_score, context=None):
 
 
 @log.wrap('debug', 'set clef', 'action')
-def set_initial_clef(l_clef, m_staffdef, context=None, action=None):
+def set_clef(l_clef, m_staffdef, context=None, action=None):
     '''
     Set the clef for a staff.
 
@@ -265,7 +265,7 @@ def set_initial_clef(l_clef, m_staffdef, context=None, action=None):
 
 
 @log.wrap('debug', 'set time signature')
-def set_initial_time(l_time, m_staffdef, context=None):
+def set_time(l_time, m_staffdef, context=None):
     '''
     Set the time signature for a staff.
 
@@ -280,7 +280,7 @@ def set_initial_time(l_time, m_staffdef, context=None):
 
 
 @log.wrap('debug', 'set key signature')
-def set_initial_key(l_key, m_staffdef, context=None):
+def set_key(l_key, m_staffdef, context=None):
     '''
     Set the key signature for a staff.
 
@@ -834,8 +834,8 @@ def do_spacer(l_spacer, m_layer, context=None, action=None):
 
 # this is at the bottom so the functions will already be defined
 _STAFF_SETTINGS_FUNCTIONS = {
-    'clef': set_initial_clef,
-    'key': set_initial_key,
+    'clef': set_clef,
+    'key': set_key,
     'instr_name': set_instrument_name,
-    'time': set_initial_time,
+    'time': set_time,
 }

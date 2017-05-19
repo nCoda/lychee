@@ -156,13 +156,13 @@ class TestClef(object):
         l_time = {'ly_type': '', 'type': ''}
         m_staffdef = etree.Element(mei.STAFF_DEF)
         with pytest.raises(exceptions.LilyPondError):
-            lilypond.set_initial_clef(l_time, m_staffdef)
+            lilypond.set_clef(l_time, m_staffdef)
 
     def test_nonexistent_clef(self):
         """The clef type doesn't exist."""
         l_time = {'ly_type': 'clef', 'type': 'bullshit'}
         m_staffdef = etree.Element(mei.STAFF_DEF)
-        lilypond.set_initial_clef(l_time, m_staffdef)
+        lilypond.set_clef(l_time, m_staffdef)
         assert m_staffdef.get('clef.shape') is None
         assert m_staffdef.get('clef.line') is None
 
@@ -170,7 +170,7 @@ class TestClef(object):
         """It works."""
         l_time = {'ly_type': 'clef', 'type': 'bass'}
         m_staffdef = etree.Element(mei.STAFF_DEF)
-        lilypond.set_initial_clef(l_time, m_staffdef)
+        lilypond.set_clef(l_time, m_staffdef)
         assert m_staffdef.get('clef.shape') == 'F'
         assert m_staffdef.get('clef.line') == '4'
 
@@ -203,13 +203,13 @@ class TestTime(object):
         l_time = {'ly_type': 'intro', 'count': '23', 'unit': '64'}
         m_staffdef = etree.Element(mei.STAFF_DEF)
         with pytest.raises(exceptions.LilyPondError):
-            lilypond.set_initial_time(l_time, m_staffdef)
+            lilypond.set_time(l_time, m_staffdef)
 
     def test_works(self):
         """You know..."""
         l_time = {'ly_type': 'time', 'count': '23', 'unit': '64'}
         m_staffdef = etree.Element(mei.STAFF_DEF)
-        lilypond.set_initial_time(l_time, m_staffdef)
+        lilypond.set_time(l_time, m_staffdef)
         assert m_staffdef.get('meter.count') == '23'
         assert m_staffdef.get('meter.unit') == '64'
 
@@ -242,27 +242,27 @@ class TestKeySignature(object):
         l_key = {'ly_type': 'rawr', 'keynote': '', 'accid': '', 'mode': ''}
         m_staffdef = etree.Element(mei.STAFF_DEF)
         with pytest.raises(exceptions.LilyPondError):
-            lilypond.set_initial_key(l_key, m_staffdef)
+            lilypond.set_key(l_key, m_staffdef)
 
     def test_major_key(self):
         """Major key."""
         l_key = {'ly_type': 'key', 'keynote': 'des', 'mode': 'major'}
         m_staffdef = etree.Element(mei.STAFF_DEF)
-        lilypond.set_initial_key(l_key, m_staffdef)
+        lilypond.set_key(l_key, m_staffdef)
         assert m_staffdef.get('key.sig') == '5f'
 
     def test_minor_key(self):
         """Minor key."""
         l_key = {'ly_type': 'key', 'keynote': 'a', 'mode': 'minor'}
         m_staffdef = etree.Element(mei.STAFF_DEF)
-        lilypond.set_initial_key(l_key, m_staffdef)
+        lilypond.set_key(l_key, m_staffdef)
         assert m_staffdef.get('key.sig') == '0'
 
     def test_language(self):
         """English language."""
         l_key = {'ly_type': 'key', 'keynote': 'ds', 'mode': 'minor'}
         m_staffdef = etree.Element(mei.STAFF_DEF)
-        lilypond.set_initial_key(l_key, m_staffdef, context={'language': 'english'})
+        lilypond.set_key(l_key, m_staffdef, context={'language': 'english'})
         assert m_staffdef.get('key.sig') == '6s'
 
     def test_change(self):

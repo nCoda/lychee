@@ -232,11 +232,8 @@ def do_score(l_score, context=None):
 
     # Sometimes we only get one staff instead of simultaneous staves.
     staves = l_score['staves']
-    try:
-        if staves['ly_type'] == 'staff':
-            staves = [staves]
-    except TypeError:
-        pass
+    if isinstance(staves, dict):
+        staves = [staves]
 
     for staff_n, l_staff in enumerate(staves):
         # we have to add one to staff_n or else the @n attributes would start at zero!

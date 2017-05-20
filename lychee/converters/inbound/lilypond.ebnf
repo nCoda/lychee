@@ -234,12 +234,17 @@ score =
     version:[version_statement]
     token_score
     (
+        staves:score_staff_content
+        |
         brace_l
             staves:score_staff_content
             [layout_block:layout_block]
         brace_r
         |
-        staves:score_staff_content
+        brace_l
+            token_score
+            staves:score_staff_content
+        brace_r
     )
     ;
 

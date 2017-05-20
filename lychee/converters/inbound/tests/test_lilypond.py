@@ -342,6 +342,8 @@ class TestStaves(object):
             'n': '8',
             'clef.shape': 'G',
             'clef.line': '2',
+            'meter.count': '4',
+            'meter.unit': '4',
             }
 
     def test_settings_2(self):

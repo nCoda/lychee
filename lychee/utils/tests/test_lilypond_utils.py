@@ -36,12 +36,11 @@ class TestParsePitchName:
         """
         Dutch.
         """
-        pitch_name = "ees"
+        pitch_name = "eses"
         language = "nederlands"
-        expected = ("e", "f")
+        expected = ("e", "ff")
         actual = lilypond_utils.parse_pitch_name(pitch_name, language)
         assert expected == actual
-
 
     def test_parse_pitch_name_2(self):
         """
@@ -49,10 +48,9 @@ class TestParsePitchName:
         """
         pitch_name = "h"
         language = "deutsch"
-        expected = ("b", "f")
+        expected = ("b", "")
         actual = lilypond_utils.parse_pitch_name(pitch_name, language)
         assert expected == actual
-
 
     def test_parse_pitch_name_error(self):
         """
@@ -73,7 +71,7 @@ class TestTranslatePitchName:
         pitch_name = "e"
         accidental = "f"
         language = "nederlands"
-        expected = "ees"
+        expected = "es"
         actual = lilypond_utils.translate_pitch_name(pitch_name, accidental, language)
         assert expected == actual
 
@@ -82,7 +80,7 @@ class TestTranslatePitchName:
         German.
         """
         pitch_name = "b"
-        accidental = "f"
+        accidental = ""
         language = "deutsch"
         expected = "h"
         actual = lilypond_utils.translate_pitch_name(pitch_name, accidental, language)

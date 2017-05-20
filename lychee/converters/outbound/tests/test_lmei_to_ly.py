@@ -48,7 +48,7 @@ class TestConvert(object):
     def test_convert_1(self):
         mei_thing = etree.fromstring(
             '<mei:note dur="4" oct="4" pname="d" xmlns:mei="http://www.music-encoding.org/ns/mei"/>')
-        assert isinstance(lilypond.convert(mei_thing), str)
+        assert type(lilypond.convert(mei_thing)) == unicode
 
     def test_convert_2(self):
         mei_thing = etree.fromstring('<mei:joke xmlns:mei="http://www.music-encoding.org/ns/mei"/>')
@@ -86,7 +86,7 @@ class TestNoteRest(object):
         m_note.set('accid', 'f')
         m_note.set('oct', '6')
         m_note.set('dur', '2')
-        assert lilypond.note(m_note) == "ees'''!2"
+        assert lilypond.note(m_note) == "es'''!2"
 
     def test_note_2(self):
         m_note = etree.Element(mei.NOTE)
@@ -303,7 +303,7 @@ class TestStaffClefAndKey(object):
         # 3 flats
         m_staffdef = etree.fromstring(
             '''<mei:staffDef key.sig="3f" xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')
-        assert lilypond.key(m_staffdef) == '\\key ees \\major'
+        assert lilypond.key(m_staffdef) == '\\key es \\major'
         # 3 sharps
         m_staffdef = etree.fromstring(
             '''<mei:staffDef key.sig="3s" xmlns:mei="http://www.music-encoding.org/ns/mei"/>''')

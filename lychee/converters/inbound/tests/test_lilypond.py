@@ -143,7 +143,7 @@ class TestScore(object):
         }
         actual = lilypond.do_score(l_score, context={'language': 'english'})
         note = actual.find('.//{}'.format(mei.NOTE))
-        assert note.attrib.get('accid.ges') == 'ss'
+        assert note.attrib.get('accid.ges') == 'x'
 
 
 class TestClef(object):
@@ -598,7 +598,7 @@ class TestPitchName(object):
         """Double sharp."""
         l_pitch_name = "cisis"
         attrib = {}
-        expected = {"pname": "c", "accid.ges": "ss"}
+        expected = {"pname": "c", "accid.ges": "x"}
         actual = lilypond.process_pitch_name(l_pitch_name, attrib)
         assert expected == actual
 
@@ -615,7 +615,7 @@ class TestPitchName(object):
         l_pitch_name = "h"
         attrib = {}
         context = {"language": "deutsch"}
-        expected = {"pname": "b", "accid.ges": "f"}
+        expected = {"pname": "b"}
         actual = lilypond.process_pitch_name(l_pitch_name, attrib, context)
         assert expected == actual
 

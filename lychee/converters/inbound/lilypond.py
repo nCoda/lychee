@@ -50,7 +50,7 @@ from lxml import etree
 
 from lychee import exceptions
 from lychee.converters.inbound import lilypond_parser
-from lychee.converters.inbound import lilypond_pitch_names
+from lychee.utils import lilypond_utils
 from lychee import exceptions
 from lychee.logs import INBOUND_LOG as log
 from lychee.namespaces import mei
@@ -296,7 +296,7 @@ def set_key(l_key, m_staffdef, context=None):
     language = 'nederlands'
     if context and 'language' in context:
         language = context['language']
-    pitch_and_accidental = lilypond_pitch_names.parse_pitch_name(keynote, language)
+    pitch_and_accidental = lilypond_utils.parse_pitch_name(keynote, language)
     keynote = "".join(pitch_and_accidental)
 
     m_staffdef.set('key.sig', _KEY_MAPPING[l_key['mode']][keynote])
@@ -574,7 +574,7 @@ def process_pitch_name(l_pitch_name, attrib, context=None):
     language = 'nederlands'
     if context and 'language' in context:
         language = context['language']
-    pname, accid = lilypond_pitch_names.parse_pitch_name(l_pitch_name, language)
+    pname, accid = lilypond_utils.parse_pitch_name(l_pitch_name, language)
     attrib['pname'] = pname
     if accid:
         attrib['accid.ges'] = accid

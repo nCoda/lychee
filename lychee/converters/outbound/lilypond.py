@@ -37,6 +37,7 @@ Converts an MEI document to a LilyPond document.
 from lychee import exceptions
 from lychee.logs import OUTBOUND_LOG as log
 from lychee.namespaces import mei
+from lychee.utils import lilypond_utils
 
 
 def check_tag(m_thing, tag_name):
@@ -133,14 +134,18 @@ def slur(m_thing):
     return ''
 
 
+@log.wrap('debug', 'convert pitch name')
+def pitch_name(m_thing):
+    return lilypond_utils.translate_pitch_name(
+        m_thing.get('pname'), m_thing.get('accid.ges', ''))
+
+
 @log.wrap('debug', 'convert note')
 def note(m_note):
     '''
     '''
     check_tag(m_note, mei.NOTE)
-    post = m_note.get('pname')
-    if m_note.get('accid.ges'):
-        post += _VALID_ACCIDENTALS[m_note.get('accid.ges')]
+    post = pitch_name(m_note)
     post += _OCTAVE_TO_MARK[m_note.get('oct')]
     if m_note.get('accid'):
         post += '!'

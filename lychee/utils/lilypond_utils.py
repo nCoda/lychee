@@ -4,8 +4,8 @@
 # Program Name:           Lychee
 # Program Description:    MEI document manager for formalized document control
 #
-# Filename:               lychee/converters/lilypond_pitch_names.py
-# Purpose:                b;a
+# Filename:               lychee/utils/lilypond.py
+# Purpose:                LilyPond utility functions
 #
 # Copyright (C) 2017 Nathan Ho and Jeffrey Treviño
 #
@@ -80,8 +80,29 @@ accidentals_dicts = {
     'vlaams': flemish_accid_dict,
     }
 
+# Reverse all the dicts to get outbound dicts.
+
+
+def _reverse_dict(frontwards_dict):
+    return dict((v, k) for k, v in frontwards_dict.iteritems())
+
+
+def _reverse_dict_of_dicts(dict_of_dicts):
+    reversed_dict_of_dicts = {}
+    for item in dict_of_dicts.iteritems():
+        key = item[0]
+        reversed_dict = _reverse_dict(item[1])
+        reversed_dict_of_dicts[key] = reversed_dict
+    return reversed_dict_of_dicts
+
+outbound_pitch_name_dicts = _reverse_dict_of_dicts(pitch_name_dicts)
+outbound_accidentals_dicts = _reverse_dict_of_dicts(accidentals_dicts)
+
 
 def parse_pitch_name(pitch_name, language="nederlands"):
+    """
+    Convert a pitch name in another language to an English pair (name, accidental).
+    """
     if language not in pitch_name_dicts:
         raise exceptions.LilyPondError("Unrecognized language: '{}'".format(language))
 
@@ -105,3 +126,20 @@ def parse_pitch_name(pitch_name, language="nederlands"):
             raise exceptions.LilyPondError(
                 "Pitch name '{}' is not valid in language '{}'".format(pitch_name, language))
         return pitch_pair
+
+
+def translate_pitch_name(pitch_name, accidental, language="nederlands"):
+    """
+    Convert the English pair (name, accidental) to a pitch name in another language.
+    """
+    if language not in pitch_name_dicts:
+        raise exceptions.LilyPondError("Unrecognized language: '{}'".format(language))
+    pitch_string = pitch_name + accidental
+    outbound_pitch_name_dict = outbound_pitch_name_dicts[language]
+    outbound_accidentals_dict = outbound_accidentals_dicts[language]
+    if pitch_string in outbound_pitch_name_dict:
+        return outbound_pitch_name_dict[pitch_string]
+    else:
+        outbound_pitch_name = outbound_pitch_name_dict[pitch_name]
+        outbound_accidental = outbound_accidentals_dict[accidental]
+        return outbound_pitch_name + outbound_accidental

@@ -297,26 +297,28 @@ def key(m_staffdef):
     '''
     check_tag(m_staffdef, mei.STAFF_DEF)
     CONV = {
-        '7f': 'ces',
-        '6f': 'ges',
-        '5f': 'des',
-        '4f': 'aes',
-        '3f': 'ees',
-        '2f': 'bes',
-        '1f': 'f',
-        '0': 'c',
-        '1s': 'g',
-        '2s': 'd',
-        '3s': 'a',
-        '4s': 'e',
-        '5s': 'b',
-        '6s': 'fis',
-        '7s': 'cis',
+        '7f': ('c', 'f'),
+        '6f': ('g', 'f'),
+        '5f': ('d', 'f'),
+        '4f': ('a', 'f'),
+        '3f': ('e', 'f'),
+        '2f': ('b', 'f'),
+        '1f': ('f', ''),
+        '0': ('c', ''),
+        '1s': ('g', ''),
+        '2s': ('d', ''),
+        '3s': ('a', ''),
+        '4s': ('e', ''),
+        '5s': ('b', ''),
+        '6s': ('f', 's'),
+        '7s': ('c', 's'),
     }
     if m_staffdef.get('key.sig'):
         if m_staffdef.get('key.sig') in CONV:
-            post = CONV[m_staffdef.get('key.sig')]
-            post = '\\key {0} \\major'.format(post)
+            pitch_name, accidental = CONV[m_staffdef.get('key.sig')]
+            post = '\\key {0} \\major'.format(
+                lilypond_utils.translate_pitch_name(
+                    pitch_name, accidental))
             return post
 
         else:

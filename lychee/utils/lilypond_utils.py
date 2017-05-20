@@ -28,6 +28,22 @@ Contain utilities for international conversion of pitch names in LilyPond.
 from lychee import exceptions
 from collections import OrderedDict
 
+# Reverse all the dicts to get outbound dicts.
+
+
+def _reverse_dict(frontwards_dict):
+    return dict((v, k) for k, v in frontwards_dict.iteritems())
+
+
+def _reverse_dict_of_dicts(dict_of_dicts):
+    reversed_dict_of_dicts = {}
+    for item in dict_of_dicts.iteritems():
+        key = item[0]
+        reversed_dict = _reverse_dict(item[1])
+        reversed_dict_of_dicts[key] = reversed_dict
+    return reversed_dict_of_dicts
+
+
 B_FLAT_INDEX = 6
 
 # for pitch class conversion, start with lists of ordered tuples
@@ -79,21 +95,6 @@ accidentals_dicts = {
     'svenska': swedish_accid_dict,
     'vlaams': flemish_accid_dict,
     }
-
-# Reverse all the dicts to get outbound dicts.
-
-
-def _reverse_dict(frontwards_dict):
-    return dict((v, k) for k, v in frontwards_dict.iteritems())
-
-
-def _reverse_dict_of_dicts(dict_of_dicts):
-    reversed_dict_of_dicts = {}
-    for item in dict_of_dicts.iteritems():
-        key = item[0]
-        reversed_dict = _reverse_dict(item[1])
-        reversed_dict_of_dicts[key] = reversed_dict
-    return reversed_dict_of_dicts
 
 outbound_pitch_name_dicts = _reverse_dict_of_dicts(pitch_name_dicts)
 outbound_accidentals_dicts = _reverse_dict_of_dicts(accidentals_dicts)

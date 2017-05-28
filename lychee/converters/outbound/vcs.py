@@ -106,10 +106,18 @@ def convert(repo_dir, **kwargs):
     :param str repo_dir: The absolute pathname to the repository for which to produce data.
     :raises: :exc:`lychee.exceptions.OutboundConversionError` when there is a forseeable error.
     '''
-    return convert_helper(repo_dir)
+    # return convert_helper(repo_dir)
+    return {}
 
 
 def convert_helper(repo_dir):
+    '''
+    Dummy replacement for convert_helper while VCS is disabled.
+    '''
+    return {}
+
+
+def convert_helper_disabled(repo_dir):
     # TODO: migrate this functionality to the "mercurial-hug" library
     '''
     Do the actual work for :func:`convert`. This helper function exists so that the

@@ -424,6 +424,13 @@ class TestLayers(object):
         actual = parser.parse(content, rule_name='unmarked_layer')
         assert expected == actual
 
+    def test_unmarked_layer_4(self):
+        """With one music node."""
+        content = 's32...'
+        expected = [{'dur': '32', 'dots': ['.', '.', '.'], 'ly_type': 'spacer', 'post_events': []}]
+        actual = parser.parse(content, rule_name='unmarked_layer')
+        assert expected == actual
+
     def test_marked_layer_1(self):
         """With one music node."""
         content = '{s256..}'

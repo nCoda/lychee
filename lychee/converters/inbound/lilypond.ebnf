@@ -103,8 +103,7 @@ duration_dots =
     ;
 
 duration =
-    ( dur:duration_number {dots:duration_dots}+ ) |
-    ( dur:duration_number dots:{} ) |
+    ( dur:duration_number dots:duration_dots ) |
     ( dur:() dots:{} )
     ;
 

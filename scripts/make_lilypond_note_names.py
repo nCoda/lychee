@@ -109,19 +109,21 @@ def pretty_print(dictionary, stream, indent="    "):
         stream.write(",\n")
     stream.write(indent + "}")
 
-parser = argparse.ArgumentParser()
-parser.add_argument("infile", type=str, help="A copy of scm/define-note-names.scm from the LilyPond source.")
-parser.add_argument("outfile", type=str)
 
-args = parser.parse_args()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("infile", type=str, help="A copy of scm/define-note-names.scm from the LilyPond source.")
+    parser.add_argument("outfile", type=str)
 
-with open(args.infile, 'r') as input_file:
-    with open(args.outfile, 'w') as output_file:
-        output_file.write(preamble)
+    args = parser.parse_args()
 
-        inbound_languages, outbound_languages = parse_languages(input_file)
-        output_file.write("inbound = ")
-        pretty_print(inbound_languages, output_file)
-        output_file.write("\n\noutbound = ")
-        pretty_print(outbound_languages, output_file)
-        output_file.write("\n")
+    with open(args.infile, 'r') as input_file:
+        with open(args.outfile, 'w') as output_file:
+            output_file.write(preamble)
+
+            inbound_languages, outbound_languages = parse_languages(input_file)
+            output_file.write("inbound = ")
+            pretty_print(inbound_languages, output_file)
+            output_file.write("\n\noutbound = ")
+            pretty_print(outbound_languages, output_file)
+            output_file.write("\n")

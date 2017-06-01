@@ -77,7 +77,7 @@ Here is a sample of the data outputted from this module.
 
 import datetime
 
-from mercurial import error, ui, hg
+# from mercurial import error, ui, hg
 
 import lychee
 from lychee.signals import outbound
@@ -110,6 +110,13 @@ def convert(repo_dir, **kwargs):
 
 
 def convert_helper(repo_dir):
+    '''
+    Dummy replacement for convert_helper while VCS is disabled.
+    '''
+    return {}
+
+
+def convert_helper_disabled(repo_dir):
     # TODO: migrate this functionality to the "mercurial-hug" library
     '''
     Do the actual work for :func:`convert`. This helper function exists so that the

@@ -33,8 +33,9 @@ import tempfile
 
 from lxml import etree
 
-from mercurial import error as hg_error
-import hug
+# Mercurial and mercurial-hug are disabled for now.
+# from mercurial import error as hg_error
+# import hug
 
 from lychee.document import document
 from lychee import exceptions
@@ -47,7 +48,7 @@ _CANNOT_SAFELY_HG_INIT = 'Could not safely initialize the repository'
 _CANNOT_MAKE_HG_DIR = 'Could not create repository directory'
 _FAILURE_DURING_INBOUND = 'Action failed during the inbound steps'
 _UNKNOWN_REVISION = "ACTION_START requested a revision that doesn't exist"
-_UNSUPPORTED_VCS = 'Unsupported VCS'
+_VCS_UNSUPPORTED = 'VCS is unsupported'
 
 
 @log.wrap('info', 'error signal', 'action')
@@ -102,10 +103,8 @@ class InteractiveSession(object):
         # handle VCS enablement
         self._vcs = None
         if 'vcs' in kwargs and kwargs['vcs']:
-            if kwargs['vcs'] == 'mercurial':
-                self._vcs = 'mercurial'
-            else:
-                raise exceptions.RepositoryError(_UNSUPPORTED_VCS)
+            # VCS is not supported currently.
+            raise exceptions.RepositoryError(_VCS_UNSUPPORTED)
 
     @property
     def hug(self):

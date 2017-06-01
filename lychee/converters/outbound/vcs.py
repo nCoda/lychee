@@ -106,8 +106,7 @@ def convert(repo_dir, **kwargs):
     :param str repo_dir: The absolute pathname to the repository for which to produce data.
     :raises: :exc:`lychee.exceptions.OutboundConversionError` when there is a forseeable error.
     '''
-    # return convert_helper(repo_dir)
-    return {}
+    return convert_helper(repo_dir)
 
 
 def convert_helper(repo_dir):

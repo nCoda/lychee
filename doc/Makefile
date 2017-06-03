@@ -2,6 +2,7 @@
 #
 
 AMAZEUI_DIR=$(CURDIR)/ncoda_sphinx_theme/amazeui
+AMAZEUI_GULP=$(AMAZEUI_DIR)/node_modules/.bin/gulp
 AMAZEUI_TASKS_DIR=$(AMAZEUI_DIR)/tools/tasks
 
 # You can set these variables from the command line.
@@ -22,7 +23,7 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) sou
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
-.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest coverage gettext amazeui
+.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest coverage gettext amazeui install-amazeui build-for-netlify
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -194,9 +195,15 @@ pseudoxml:
 	@echo
 	@echo "Build finished. The pseudo-XML files are in $(BUILDDIR)/pseudoxml."
 
+install-amazeui:
+	@echo "Installing AmazeUI dependencies."
+	cd $(AMAZEUI_DIR) && npm install
+
 amazeui:
 	@echo "Recompiling the amazeUI theme."
 	rm -f $(AMAZEUI_TASKS_DIR)/config.json
 	ln -s $(AMAZEUI_TASKS_DIR)/config-sphinx.json $(AMAZEUI_TASKS_DIR)/config.json
-	cd $(AMAZEUI_DIR) && gulp customize
+	cd $(AMAZEUI_DIR) && $(AMAZEUI_GULP) customize
 	rm $(AMAZEUI_TASKS_DIR)/config.json
+
+build-for-netlify: install-amazeui amazeui html

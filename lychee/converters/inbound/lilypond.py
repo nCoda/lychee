@@ -190,7 +190,7 @@ def do_document(l_document):
             elif ly_type == 'staff':
                 l_score = {'ly_type': 'score', 'staves': [l_top_level_element]}
 
-    if l_score == None:
+    if l_score is None:
         raise exceptions.LilyPondError('Empty document')
 
     converted = do_score(l_score, context=context)

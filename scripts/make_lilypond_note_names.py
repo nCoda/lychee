@@ -24,9 +24,9 @@
 #--------------------------------------------------------------------------------------------------
 '''
 '''
+from __future__ import unicode_literals
+import codecs
 import argparse
-import copy
-import sys
 import re
 
 re_language_line = re.compile(r'    \((.*) . \($')
@@ -47,14 +47,17 @@ scheme_to_mei_accidentals = {
 pitch_names = ['c', 'd', 'e', 'f', 'g', 'a', 'b']
 
 
-preamble = """
-# -*- coding: utf-8 -*-
+preamble = """# -*- coding: utf-8 -*-
 '''
 Contains dictionaries for translating LilyPond pitch names to
 MEI pitch names and back in all languages. This file is generated
 by lychee/scripts/make_lilypond_note_names.py.
 '''
-"""[1:]
+from __future__ import unicode_literals
+"""
+footer = '''inbound['español'] = inbound['espanol']
+outbound['español'] = outbound['espanol']
+'''
 
 
 def parse_languages(lines):
@@ -85,10 +88,6 @@ def parse_languages(lines):
             if (mei_pitch_string not in outbound_language or
                     len(outbound_language[mei_pitch_string]) > len(lilypond_pitch)):
                 outbound_language[mei_pitch_string] = lilypond_pitch
-    inbound_languages[u"español"] = copy.deepcopy(
-        inbound_languages[u"espanol"])
-    outbound_languages[u"español"] = copy.deepcopy(
-        outbound_languages[u"espanol"])
     return inbound_languages, outbound_languages
 
 
@@ -118,12 +117,16 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     with open(args.infile, 'r') as input_file:
-        with open(args.outfile, 'w') as output_file:
+        with codecs.open(args.outfile, 'w', encoding='utf-8') as output_file:
             output_file.write(preamble)
 
             inbound_languages, outbound_languages = parse_languages(input_file)
             output_file.write("inbound = ")
             pretty_print(inbound_languages, output_file)
-            output_file.write("\n\noutbound = ")
+            output_file.write("\n\n")
+
+            output_file.write("outbound = ")
             pretty_print(outbound_languages, output_file)
             output_file.write("\n")
+
+            output_file.write(footer)

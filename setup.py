@@ -14,8 +14,6 @@ setup(
         'grako>=3.14,<3.15',
         'lithoxyl==0.4',
         'lxml>3,<4',
-        'mercurial<3.5',
-        'mercurial-hug>0.4',
         'signalslot',
     ),
     extras_require={

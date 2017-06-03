@@ -18,7 +18,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2017, 5, 20, 1, 59, 2, 5)
+__version__ = (2017, 5, 28, 21, 15, 50, 6)
 
 __all__ = [
     'LilyPondParser',
@@ -296,16 +296,7 @@ class LilyPondParser(Parser):
                 with self._group():
                     self._duration_number_()
                     self.name_last_node('dur')
-
-                    def block1():
-                        self._duration_dots_()
-                        self.name_last_node('dots')
-                    self._positive_closure(block1)
-            with self._option():
-                with self._group():
-                    self._duration_number_()
-                    self.name_last_node('dur')
-                    self._empty_closure()
+                    self._duration_dots_()
                     self.name_last_node('dots')
             with self._option():
                 with self._group():
@@ -390,16 +381,7 @@ class LilyPondParser(Parser):
                 with self._group():
                     self._duration_number_()
                     self.name_last_node('dur')
-
-                    def block5():
-                        self._duration_dots_()
-                        self.name_last_node('dots')
-                    self._positive_closure(block5)
-            with self._option():
-                with self._group():
-                    self._duration_number_()
-                    self.name_last_node('dur')
-                    self._empty_closure()
+                    self._duration_dots_()
                     self.name_last_node('dots')
             with self._option():
                 with self._group():
@@ -410,9 +392,9 @@ class LilyPondParser(Parser):
             self._error('no available options')
 
 
-        def block13():
+        def block10():
             self._post_event_()
-        self._closure(block13)
+        self._closure(block10)
         self.name_last_node('post_events')
         self.ast._define(
             ['accid_force', 'dots', 'dur', 'ly_type', 'oct', 'pitch_name', 'post_events'],
@@ -459,16 +441,7 @@ class LilyPondParser(Parser):
                 with self._group():
                     self._duration_number_()
                     self.name_last_node('dur')
-
-                    def block4():
-                        self._duration_dots_()
-                        self.name_last_node('dots')
-                    self._positive_closure(block4)
-            with self._option():
-                with self._group():
-                    self._duration_number_()
-                    self.name_last_node('dur')
-                    self._empty_closure()
+                    self._duration_dots_()
                     self.name_last_node('dots')
             with self._option():
                 with self._group():
@@ -479,9 +452,9 @@ class LilyPondParser(Parser):
             self._error('no available options')
 
 
-        def block12():
+        def block9():
             self._post_event_()
-        self._closure(block12)
+        self._closure(block9)
         self.name_last_node('post_events')
         self.ast._define(
             ['dots', 'dur', 'ly_type', 'notes', 'post_events'],
@@ -498,16 +471,7 @@ class LilyPondParser(Parser):
                 with self._group():
                     self._duration_number_()
                     self.name_last_node('dur')
-
-                    def block2():
-                        self._duration_dots_()
-                        self.name_last_node('dots')
-                    self._positive_closure(block2)
-            with self._option():
-                with self._group():
-                    self._duration_number_()
-                    self.name_last_node('dur')
-                    self._empty_closure()
+                    self._duration_dots_()
                     self.name_last_node('dots')
             with self._option():
                 with self._group():
@@ -518,9 +482,9 @@ class LilyPondParser(Parser):
             self._error('no available options')
 
 
-        def block10():
+        def block7():
             self._post_event_()
-        self._closure(block10)
+        self._closure(block7)
         self.name_last_node('post_events')
         self.ast._define(
             ['dots', 'dur', 'ly_type', 'post_events'],
@@ -537,16 +501,7 @@ class LilyPondParser(Parser):
                 with self._group():
                     self._duration_number_()
                     self.name_last_node('dur')
-
-                    def block2():
-                        self._duration_dots_()
-                        self.name_last_node('dots')
-                    self._positive_closure(block2)
-            with self._option():
-                with self._group():
-                    self._duration_number_()
-                    self.name_last_node('dur')
-                    self._empty_closure()
+                    self._duration_dots_()
                     self.name_last_node('dots')
             with self._option():
                 with self._group():
@@ -557,9 +512,9 @@ class LilyPondParser(Parser):
             self._error('no available options')
 
 
-        def block10():
+        def block7():
             self._post_event_()
-        self._closure(block10)
+        self._closure(block7)
         self.name_last_node('post_events')
         self.ast._define(
             ['dots', 'dur', 'ly_type', 'post_events'],
@@ -576,16 +531,7 @@ class LilyPondParser(Parser):
                 with self._group():
                     self._duration_number_()
                     self.name_last_node('dur')
-
-                    def block2():
-                        self._duration_dots_()
-                        self.name_last_node('dots')
-                    self._positive_closure(block2)
-            with self._option():
-                with self._group():
-                    self._duration_number_()
-                    self.name_last_node('dur')
-                    self._empty_closure()
+                    self._duration_dots_()
                     self.name_last_node('dots')
             with self._option():
                 with self._group():
@@ -596,9 +542,9 @@ class LilyPondParser(Parser):
             self._error('no available options')
 
 
-        def block10():
+        def block7():
             self._post_event_()
-        self._closure(block10)
+        self._closure(block7)
         self.name_last_node('post_events')
         self.ast._define(
             ['dots', 'dur', 'ly_type', 'post_events'],

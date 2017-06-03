@@ -197,6 +197,7 @@ pseudoxml:
 
 install-amazeui:
 	@echo "Installing AmazeUI dependencies."
+	cd ncoda_sphinx_theme && git submodule init && git submodule update
 	cd $(AMAZEUI_DIR) && npm install
 
 amazeui:

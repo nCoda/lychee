@@ -92,35 +92,35 @@ def test_emit_without_fujian_2():
 
 def test_emit_with_fujian_1():
     '''
-    When we have Fujian, the Signal should call write_message() and behave like a regular
+    When we have Fujian, the Signal should call signal() and behave like a regular
     signal (no args).
     '''
     mock_fujian = mock.Mock()
-    mock_fujian.write_message = mock.Mock()
+    mock_fujian.signal = mock.Mock()
     signal._module_fujian = mock_fujian
     slot_mock = mock.Mock()
     def slot(**kwargs):
         slot_mock(**kwargs)
-    sig_name = 'TestSignal'
+    sig_name = signal.FUJIAN_INTERESTED_SIGNALS[0]
     sig = signal.Signal(name=sig_name)
     sig.connect(slot)
 
     sig.emit()
 
     assert sig_name == sig.name
-    mock_fujian.write_message.assert_called_once_with({'signal': sig_name})
+    mock_fujian.signal.assert_called_once_with(sig_name)
     slot_mock.assert_called_once_with()
 
 def test_emit_with_fujian_2():
     '''
-    When we have Fujian with write_message() isn't there, the Signal should not explod when it tries
-    calling write_message(), and then should behave like a regular signal (no args).
+    When we have Fujian with signal() isn't there, the Signal should not explod when it tries
+    calling signal(), and then should behave like a regular signal (no args).
     '''
-    mock_fujian = 5  # doesn't have a write_message() method
+    mock_fujian = 5  # doesn't have a signal() method
     slot_mock = mock.Mock()
     def slot(**kwargs):
         slot_mock(**kwargs)
-    sig_name = 'TestSignal'
+    sig_name = signal.FUJIAN_INTERESTED_SIGNALS[0]
     sig = signal.Signal(name=sig_name)
     sig.connect(slot)
 
@@ -131,67 +131,43 @@ def test_emit_with_fujian_2():
 
 def test_emit_with_fujian_3():
     '''
-    When we have Fujian, the Signal should call write_message() and behave like a regular
-    signal (with args, no lxml Element).
+    When we have Fujian, the Signal should call signal() and behave like a regular
+    signal (with args).
     '''
     mock_fujian = mock.Mock()
-    mock_fujian.write_message = mock.Mock()
+    mock_fujian.signal = mock.Mock()
     signal._module_fujian = mock_fujian
     slot_mock = mock.Mock()
     def slot(**kwargs):
         slot_mock(**kwargs)
-    sig_name = 'TestSignal'
+    sig_name = signal.FUJIAN_INTERESTED_SIGNALS[0]
     sig = signal.Signal(name=sig_name, args=['a', 'b'])
     sig.connect(slot)
 
     sig.emit(a=1, b=2)
 
     assert sig_name == sig.name
-    mock_fujian.write_message.assert_called_once_with({'signal': sig_name, 'a': '1', 'b': '2'})
+    mock_fujian.signal.assert_called_once_with(sig_name, a=1, b=2)
     slot_mock.assert_called_once_with(a=1, b=2)
 
 def test_emit_with_fujian_4():
     '''
-    When we have Fujian, the Signal should call write_message() and behave like a regular
-    signal (with an lxml Element arg, and one missing arg).
+    When we have Fujian but it's not interested in this signal, the Signal should not call signal()
+    but should behave like a regular signal.
     '''
     mock_fujian = mock.Mock()
-    mock_fujian.write_message = mock.Mock()
+    mock_fujian.signal = mock.Mock()
     signal._module_fujian = mock_fujian
     slot_mock = mock.Mock()
     def slot(**kwargs):
         slot_mock(**kwargs)
-    sig_name = 'TestSignal'
+    sig_name = 'beep beep honk honk'
     sig = signal.Signal(name=sig_name, args=['a', 'b'])
     sig.connect(slot)
     elem = etree.Element('note')
-    exp_elem = etree.tostring(elem)
 
     sig.emit(a=elem)
 
     assert sig_name == sig.name
-    mock_fujian.write_message.assert_called_once_with({'signal': sig_name, 'a': exp_elem})
+    assert mock_fujian.signal.call_count == 0
     slot_mock.assert_called_once_with(a=elem)
-
-def test_emit_with_fujian_5():
-    '''
-    When we have Fujian, the Signal should call write_message() and behave like a regular
-    signal (with a dict).
-    '''
-    mock_fujian = mock.Mock()
-    mock_fujian.write_message = mock.Mock()
-    signal._module_fujian = mock_fujian
-    slot_mock = mock.Mock()
-    def slot(**kwargs):
-        slot_mock(**kwargs)
-    sig_name = 'TestSignal'
-    sig = signal.Signal(name=sig_name, args=['a'])
-    sig.connect(slot)
-    the_dict = {'number': 42}
-    exp_dict = '{"number": 42}'
-
-    sig.emit(a=the_dict)
-
-    assert sig_name == sig.name
-    mock_fujian.write_message.assert_called_once_with({'signal': sig_name, 'a': exp_dict})
-    slot_mock.assert_called_once_with(a=the_dict)

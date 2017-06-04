@@ -26,13 +26,13 @@
 Lychee-specific Signal class.
 '''
 
-import json
-
-from lxml import etree
 import signalslot
-import six
 
 from lychee.logs import SESSION_LOG as log
+
+
+# These are the signals that Fujian wants to know about, if we're being run by Fujian.
+FUJIAN_INTERESTED_SIGNALS = ('outbound.CONVERSION_FINISHED', 'outbound.ERROR', 'LOG_MESSAGE')
 
 
 # This is a module-level FujianWebSocketHandler instance. The Signal class uses it to emit signals
@@ -68,27 +68,9 @@ class Signal(signalslot.Signal):
         '''
         global _module_fujian
         if _module_fujian is not None:
-            with log.debug('emitting {signal} signal', signal=self.name) as action:
-                payload = {'signal': self.name}
-                for arg in self.args:
-                    with log.debug('preparing {argname} argument', argname=arg) as action:
-                        if arg in kwargs:
-                            if isinstance(kwargs[arg], etree._Element):
-                                payload[arg] = etree.tostring(kwargs[arg])
-                            elif isinstance(kwargs[arg], dict):
-                                payload[arg] = json.dumps(kwargs[arg], allow_nan=False, indent=None)
-                            else:
-                                payload[arg] = six.text_type(kwargs[arg])
-                        else:
-                            action.failure(
-                                '"{signal}" signal is missing "{argname}" argument',
-                                signal=self.name,
-                                argname=arg)
-
-                try:
-                    _module_fujian.write_message(payload)
-                except AttributeError:
-                    action.failure('Fujian seems to be missing the write_message() method')
+            with log.debug('emitting {signal} signal', signal=self.name):
+                if self.name in FUJIAN_INTERESTED_SIGNALS:
+                    _module_fujian.signal(self.name, **kwargs)
 
         # NOTE: the "stringified" args are only sent through Fujian; here we keep Python objects
         signalslot.Signal.emit(self, **kwargs)

@@ -158,8 +158,8 @@ class TestNoteChordRestSpacer(object):
         content = '<bes,! ees,?>256..'
         expected = {
             'notes': [
-                {'pitch_name': 'bes', 'oct': ',', 'accid_force': '!', 'post_events': []},
-                {'pitch_name': 'ees', 'oct': ',', 'accid_force': '?', 'post_events': []},
+                {'ly_type': 'note', 'pitch_name': 'bes', 'oct': ',', 'accid_force': '!', 'post_events': []},
+                {'ly_type': 'note', 'pitch_name': 'ees', 'oct': ',', 'accid_force': '?', 'post_events': []},
             ],
             'dur': '256',
             'dots': ['.', '.'],
@@ -177,7 +177,7 @@ class TestNoteChordRestSpacer(object):
         content = '<bes,!>256..'
         expected = {
             'notes': [
-                {'pitch_name': 'bes', 'oct': ',', 'accid_force': '!', 'post_events': []},
+                {'ly_type': 'note', 'pitch_name': 'bes', 'oct': ',', 'accid_force': '!', 'post_events': []}
             ],
             'dur': '256',
             'dots': ['.', '.'],
@@ -208,9 +208,9 @@ class TestNoteChordRestSpacer(object):
         content = "<bes,! ees,? g'>"
         expected = {
             'notes': [
-                {'pitch_name': 'bes', 'oct': ',', 'accid_force': '!', 'post_events': []},
-                {'pitch_name': 'ees', 'oct': ',', 'accid_force': '?', 'post_events': []},
-                {'pitch_name': 'g', 'oct': "'", 'accid_force': None, 'post_events': []},
+                {'ly_type': 'note', 'pitch_name': 'bes', 'oct': ',', 'accid_force': '!', 'post_events': []},
+                {'ly_type': 'note', 'pitch_name': 'ees', 'oct': ',', 'accid_force': '?', 'post_events': []},
+                {'ly_type': 'note', 'pitch_name': 'g', 'oct': "'", 'accid_force': None, 'post_events': []},
             ],
             'dur': None,
             'dots': [],
@@ -284,8 +284,8 @@ class TestNoteChordRestSpacer(object):
         content = '<bes,! ees,?>256..'
         expected = {
             'notes': [
-                {'pitch_name': 'bes', 'oct': ',', 'accid_force': '!', 'post_events': []},
-                {'pitch_name': 'ees', 'oct': ',', 'accid_force': '?', 'post_events': []},
+                {'ly_type': 'note', 'pitch_name': 'bes', 'oct': ',', 'accid_force': '!', 'post_events': []},
+                {'ly_type': 'note', 'pitch_name': 'ees', 'oct': ',', 'accid_force': '?', 'post_events': []},
             ],
             'dur': '256',
             'dots': ['.', '.'],

@@ -388,11 +388,20 @@ def do_staff(l_staff, m_section, m_staffdef, context=None, action=None):
             postprocess_staff(m_each_staff)
 
 
+def fix_accidentals_in_layer(m_layer):
+    '''
+    Using a model of LilyPond's accidental rendering, fix the temporary @accid.force attributes in
+    the layer.
+    '''
+    pass
+
+
 def note_pitch(m_note):
     '''
     Return a tuple uniquely identifying the pitch of an LMEI node.
     '''
-    return (m_note.get('oct'), m_note.get('pname'), m_note.get('accid.ges', 'n'))
+    m_accid = m_note[0]
+    return (m_note.get('oct'), m_note.get('pname'), m_accid.get('accid.ges', 'n'))
 
 
 @log.wrap('debug', 'remove unterminated tie', 'action')
@@ -406,7 +415,7 @@ def _maybe_remove_unterminated_tie(note, target_pitches, action):
     unterminated, remove it. If it's terminated, make sure it is set
     to initial.
     '''
-    if note.attrib.get('tie', None) in ('i', 'm'):
+    if note.get('tie') in ('i', 'm'):
         pitch = note_pitch(note)
         if pitch not in target_pitches:
             action.failure('unterminated tie')
@@ -424,10 +433,10 @@ def _fix_tie_target(note, pitch_map):
     If the note begins or continues a tie, find the note that
     it is tied to and set its @tie to either 'm' or 't'.
     '''
-    if note.attrib.get('tie', None) in ('i', 'm'):
+    if note.get('tie') in ('i', 'm'):
         pitch = note_pitch(note)
         target_node = pitch_map[pitch]
-        if target_node.attrib.get('tie', None) in ('i', 'm'):
+        if target_node.get('tie') in ('i', 'm'):
             target_node.attrib['tie'] = 'm'
         else:
             target_node.attrib['tie'] = 't'
@@ -555,32 +564,36 @@ def do_layer(l_layer, m_container, layer_n, context=None, action=None):
 
     fix_ties_in_layer(m_layer)
     fix_slurs_in_layer(m_layer)
+    fix_accidentals_in_layer(m_layer)
 
     return m_layer
 
 
-@log.wrap('debug', 'process pitch name')
-def process_pitch_name(l_pitch_name, attrib, context=None):
+@log.wrap('debug', 'process pitch')
+def process_pitch(l_note, note_attrib, accid_attrib, context=None):
     '''
     Set the pitch of an LMEI note.
 
-    :param l_pitch_name: The LilyPond pitch name as provided by Grako.
-    :type l_pitch_name: str
-    :param dict attrib: The attributes for the MEI <note/> element *before* creation.
-    :returns: The ``attrib`` argument.
-
-    If the accidental is not recognized, :func:`process_pitch_name` emits a failure log message and
-    returns the ``attrib`` argument unchanged.
+    :param l_note: The LilyPond note as provided by Grako. This function reads the keys 'pitch_name'
+    and 'accid_force'.
+    :type l_note: dict
+    :param dict note_attrib: The attributes for the MEI <note/> element *before* creation.
+    :param dict accid_attrib: The attributes for the MEI <accid/> element *before* creation.
+    :returns A tuple of the new note_attrib and accid_attrib.
     '''
     language = 'nederlands'
     if context and 'language' in context:
         language = context['language']
-    pname, accid = lilypond_utils.parse_pitch_name(l_pitch_name, language)
-    attrib['pname'] = pname
+    pname, accid = lilypond_utils.parse_pitch_name(l_note['pitch_name'], language)
+    note_attrib['pname'] = pname
     if accid:
-        attrib['accid.ges'] = accid
+        accid_attrib['accid.ges'] = accid
 
-    return attrib
+    if l_note.get('accid_force'):
+        # This attribute is not valid MEI or LMEI, but it will be fixed in a post-processing step.
+        accid_attrib['accid.force'] = l_note['accid_force']
+
+    return (note_attrib, accid_attrib)
 
 
 @log.wrap('debug', 'add octave', 'action')
@@ -600,46 +613,6 @@ def process_octave(l_oct, action):
     else:
         action.failure('unknown octave: {octave}', octave=l_oct)
         return _OCTAVE_MAPPING[None]
-
-
-@log.wrap('debug', 'add forced accidental', 'action')
-def process_forced_accid(l_note, attrib, action):
-    '''
-    Add a forced accidental to the LMEI note, if required.
-
-    :param dict l_note: The LilyPond note from Grako.
-    :param dict attrib: The attributes for the MEI <note/> element *before* creation.
-    :returns: The ``attrib`` argument.
-    '''
-    if l_note['accid_force'] == '!':
-        if 'accid.ges' in attrib:
-            attrib['accid'] = attrib['accid.ges']
-        else:
-            # show a natural
-            attrib['accid'] = 'n'
-
-    return attrib
-
-
-@log.wrap('debug', 'add cautionary accidental', 'action')
-def process_caut_accid(l_note, m_note, action):
-    '''
-    Add a cautionary accidental to the LMEI note, if required.
-
-    :param dict l_note: The LilyPond note from Grako.
-    :param m_note: The MEI <note/> element.
-    :type m_note: :class:`lxml.etree.Element`
-    :returns: The ``m_note`` argument.
-    '''
-    if l_note['accid_force'] == '?':
-        if m_note.get('accid.ges') is not None:
-            attribs = {'accid': m_note.get('accid.ges'), 'func': 'caution'}
-        else:
-            # show a natural
-            attribs = {'accid': 'n', 'func': 'caution'}
-        etree.SubElement(m_note, mei.ACCID, attribs)
-
-    return m_note
 
 
 @log.wrap('debug', 'process dots', 'action')
@@ -726,48 +699,47 @@ def do_chord(l_chord, m_layer, context=None, action=None):
     m_chord = etree.SubElement(m_layer, mei.CHORD, attrib)
 
     for l_note in l_chord['notes']:
-        attrib = {}
-        process_pitch_name(l_note['pitch_name'], attrib, context=context)
-        attrib['oct'] = process_octave(l_note['oct'])
-        process_forced_accid(l_note, attrib)
-        if chord_has_tie or has_tie(l_note):
-            add_tie(attrib)
-
-        m_note = etree.SubElement(m_chord, mei.NOTE, attrib)
-
-        process_caut_accid(l_note, m_note)
+        do_note(l_note, m_chord, context=context)
 
     return m_chord
 
 
 @log.wrap('debug', 'convert note', 'action')
-def do_note(l_note, m_layer, context=None, action=None):
+def do_note(l_note, m_parent, context=None, action=None):
     """
     Convert a LilyPond note to an LMEI <note/>.
 
     :param dict l_note: The LilyPond note from Grako.
-    :param m_layer: The MEI <layer> that will hold the note.
-    :type m_layer: :class:`lxml.etree.Element`
+    :param m_parent: The parent element that will hold the note, either a <layer/> or a <chord/>.
+    :type m_parent: :class:`lxml.etree.Element`
     :returns: The new <note/> element.
     :rtype: :class:`lxml.etree.Element`
     :raises: :exc:`exceptions.LilyPondError` if ``l_note`` does not contain a Grako note
     """
     check(l_note['ly_type'] == 'note', 'did not receive a note')
 
-    attrib = {
-        'dur': l_note['dur']
-    }
-    process_pitch_name(l_note['pitch_name'], attrib, context=context)
+    attrib = {}
+    accid_attrib = {}
+
+    # This function is used for both notes in chords and standalone notes, so @dur may or may not
+    # be present.
+    if 'dur' in l_note:
+        attrib['dur'] = l_note['dur']
+
+    process_pitch(l_note, attrib, accid_attrib, context=context)
     attrib['oct'] = process_octave(l_note['oct'])
-    process_forced_accid(l_note, attrib)
     process_dots(l_note, attrib)
     if has_tie(l_note):
         add_tie(attrib)
     process_slur(l_note, attrib)
 
-    m_note = etree.SubElement(m_layer, mei.NOTE, attrib)
+    m_note = etree.SubElement(m_parent, mei.NOTE, attrib)
 
-    process_caut_accid(l_note, m_note)
+    # NOTE: At least in this stage of conversion, <accid/> must always exist, and it must always be
+    # the first child of the <note>. That way a note's accidental element can be retrieved as
+    # m_note[0] rather than trying to search for the <accid/> element every time we need it. This
+    # probably gives some efficiency savings, and more importantly, it's also easier to program.
+    m_accid = etree.SubElement(m_note, mei.ACCID, accid_attrib)
 
     return m_note
 

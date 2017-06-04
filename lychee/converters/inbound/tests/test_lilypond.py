@@ -138,7 +138,8 @@ class TestScore(object):
     def test_language(self):
         """At a distance, make sure that language gets correctly passed down
         all the way to the pitch name converter."""
-        l_score = {'ly_type': 'score',
+        l_score = {
+            'ly_type': 'score',
             'staves': [{
                 'ly_type': 'staff',
                 'initial_settings': [{'ly_type': 'instr_name', 'name': 'Woo'}],
@@ -147,8 +148,8 @@ class TestScore(object):
             }]
         }
         actual = lilypond.do_score(l_score, context={'language': 'english'})
-        note = actual.find('.//{}'.format(mei.ACCID))
-        assert note.attrib.get('accid') == 'x'
+        accid = actual.find('.//{}'.format(mei.ACCID))
+        assert accid.attrib.get('accid') == 'x'
 
 
 class TestClef(object):

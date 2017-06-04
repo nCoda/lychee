@@ -196,7 +196,7 @@ class InteractiveSession(object):
         '''
         self.unset_repo_dir()
 
-        if '' == path:
+        if path == '':
             self._repo_dir = tempfile.mkdtemp()
             self._temp_dir = True
 

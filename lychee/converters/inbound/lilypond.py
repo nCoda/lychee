@@ -51,6 +51,7 @@ from lxml import etree
 from lychee import exceptions
 from lychee.converters.inbound import lilypond_parser
 from lychee.utils import lilypond_utils
+from lychee.utils import timing
 from lychee import exceptions
 from lychee.logs import INBOUND_LOG as log
 from lychee.namespaces import mei
@@ -388,20 +389,107 @@ def do_staff(l_staff, m_section, m_staffdef, context=None, action=None):
             postprocess_staff(m_each_staff)
 
 
-def fix_accidentals_in_layer(m_layer):
-    '''
-    Using a model of LilyPond's accidental rendering, fix the temporary @accid.force attributes in
-    the layer.
-    '''
-    pass
-
-
 def note_pitch(m_note):
     '''
     Return a tuple uniquely identifying the pitch of an LMEI node.
     '''
     m_accid = m_note[0]
     return (m_note.get('oct'), m_note.get('pname'), m_accid.get('accid.ges', 'n'))
+
+
+def _show_accidental(m_note):
+    '''
+    Modify the <note> and <accid> elements to force the display of an accidental.
+    '''
+    m_accid = m_note[0]
+    accid = m_accid.get('accid.ges', 'n')
+    m_accid.attrib['accid'] = accid
+    if m_accid.get('accid.force') == '?':
+        m_accid.attrib['func'] = 'caution'
+    m_accid.attrib.pop('accid.ges', None)
+    m_accid.attrib.pop('accid.force', None)
+
+
+def _hide_accidental(m_note):
+    '''
+    Modify the <note> and <accid> elements to hide the accidental, but store the semantics in
+    the note's @accid.ges.
+    '''
+    m_accid = m_note[0]
+    accid_ges = m_accid.attrib.pop('accid.ges', None)
+    if accid_ges is not None:
+        m_note.attrib['accid.ges'] = accid_ges
+    m_note.remove(m_accid)
+
+
+def _render_accidental(m_note, accidentals):
+    '''
+    Given a note and the persistent accidentals in the current layer, show or hide the accidental
+    depending on factors such as pitch, accidental forcing, and ties.
+    '''
+    pitch = note_pitch(m_note)
+    pitch_name_and_octave = (pitch[0], pitch[1])
+    accidental = pitch[2]
+    m_accid = m_note[0]
+
+    force_next = False
+
+    # Always display an accidental if it is forced or cautionary.
+    if m_accid.get('accid.force'):
+        _show_accidental(m_note)
+
+    # If we are in the middle or end of a tie, hide the accidental.
+    elif m_note.get('tie') in ('m', 't'):
+        _hide_accidental(m_note)
+
+        # If we are at the end of a non-natural tie that has persisted across a barline, set the
+        # accidental to a nonsense value so that the next note on this same staff line/space is
+        # forced to display its accidental.
+        if (m_note.get('tie') == 't' and
+                accidental != 'n' and
+                pitch_name_and_octave not in accidentals):
+            force_next = True
+
+    # If the accidental does not match the current state of the accidentals in this measure
+    # and key signature, then display it.
+    elif accidentals.get(pitch_name_and_octave, 'n') != accidental:
+        _show_accidental(m_note)
+
+    # Otherwise, hide it.
+    else:
+        _hide_accidental(m_note)
+
+    if force_next:
+        accidentals[pitch_name_and_octave] = "*** FORCE ***"
+    else:
+        accidentals[pitch_name_and_octave] = accidental
+
+
+def fix_accidentals_in_layer(m_layer):
+    '''
+    Using a model of LilyPond's accidental rendering, fix the @accid/@accid.ges attributes and the
+    temporary @accid.force attributes.
+
+    Limitations: only supports C major and 4/4 time. Two different accidentals on the same note
+    in the same chord may not be rendered correctly.
+    '''
+    accidentals = {}
+    measure_length = 1
+    phase = 0
+    for m_node in m_layer:
+        # For all elements that occupy time, add their duration to the phase.
+        if m_node.get('dur'):
+            # If we have spilled over to a new measure, fix the phase, and reset the accidentals.
+            if phase >= measure_length:
+                accidentals = {}
+                phase = phase % measure_length
+            phase += timing.duration(m_node)
+
+        if m_node.tag == mei.NOTE:
+            _render_accidental(m_node, accidentals)
+        elif m_node.tag == mei.CHORD:
+            for m_note in m_node:
+                _render_accidental(m_note, accidentals)
 
 
 @log.wrap('debug', 'remove unterminated tie', 'action')

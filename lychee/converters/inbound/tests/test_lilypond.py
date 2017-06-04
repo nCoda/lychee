@@ -27,6 +27,8 @@ Tests for the "lilypond" module.
 
 The tests in this file are only for the translator, not the parser. In other words, these tests are
 for the code that translated Grako's parse into Lychee-MEI.
+
+A few of the more complicated tests do use the LilyPond parser to improve readability.
 """
 
 from __future__ import unicode_literals
@@ -35,8 +37,11 @@ from lxml import etree
 import pytest
 
 from lychee.converters.inbound import lilypond
+from lychee.converters.inbound import lilypond_parser
 from lychee import exceptions
 from lychee.namespaces import mei
+
+parser = lilypond_parser.LilyPondParser()
 
 
 class TestScore(object):
@@ -143,7 +148,7 @@ class TestScore(object):
         }
         actual = lilypond.do_score(l_score, context={'language': 'english'})
         note = actual.find('.//{}'.format(mei.ACCID))
-        assert note.attrib.get('accid.ges') == 'x'
+        assert note.attrib.get('accid') == 'x'
 
 
 class TestClef(object):
@@ -953,3 +958,217 @@ class TestSlur(object):
         actual = lilypond.do_layer(l_layer, m_layer, 1)
         slur_attributes = [node.get('slur') for node in actual]
         assert slur_attributes == [None, 'i1', 'm1', 't1', None]
+
+
+class TestAccidentalRendering(object):
+
+    def test_basic(self):
+        '''
+        Within a bar, there are four basic cases to consider with accidentals:
+
+        1. C C - non-accidental note followed by a non-accidental note. No accidentals should be
+        produced at all.
+
+        2. C C# - Non-accidental note followed by an accidental note. The second note should produce
+        an accidental, but not the first.
+
+        3. C# C - Accidental note followed by a non-accidental note. The second note should produce
+        a natural.
+
+        4. C# C# - Accidental note followed by the same accidental note. The second note should not
+        display an accidental.
+
+        4. C# Cb - Accidental note followed by a different accidental note. Both notes should
+        display accidentals.
+
+        These five cases multiply even further when combined with considerations of chords, ties
+        accidental forcing, and key signature and time signature changes. Not all possible cases are
+        tested here...
+        '''
+        lilypond_source = '''
+            c2 c2
+            d2 dis2
+            es2 e2
+            fis2 fis2
+            geses2 gis2
+        '''
+        l_layer = parser.parse(lilypond_source, rule_name='unmarked_layer')
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_layer(l_layer, m_layer, 1)
+
+        assert actual[0].find(mei.ACCID) is None
+        assert actual[1].find(mei.ACCID) is None
+
+        assert actual[2].find(mei.ACCID) is None
+        assert actual[3].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[4].find(mei.ACCID).get('accid') == 'f'
+        assert actual[5].find(mei.ACCID).get('accid') == 'n'
+
+        assert actual[6].find(mei.ACCID).get('accid') == 's'
+        assert actual[7].find(mei.ACCID) is None
+
+        assert actual[8].find(mei.ACCID).get('accid') == 'ff'
+        assert actual[9].find(mei.ACCID).get('accid') == 's'
+
+    def test_measure(self):
+        '''
+        The same five cases above, but with a barline between each pair of notes.
+        '''
+        lilypond_source = '''
+            c1 c1
+            d1 dis1
+            es1 e1
+            fis1 fis1
+            geses1 gis1
+        '''
+        l_layer = parser.parse(lilypond_source, rule_name='unmarked_layer')
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_layer(l_layer, m_layer, 1)
+
+        assert actual[0].find(mei.ACCID) is None
+        assert actual[1].find(mei.ACCID) is None
+
+        assert actual[2].find(mei.ACCID) is None
+        assert actual[3].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[4].find(mei.ACCID).get('accid') == 'f'
+        assert actual[5].find(mei.ACCID) is None
+
+        assert actual[6].find(mei.ACCID).get('accid') == 's'
+        assert actual[7].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[8].find(mei.ACCID).get('accid') == 'ff'
+        assert actual[9].find(mei.ACCID).get('accid') == 's'
+
+    def test_chords(self):
+        '''
+        The same five cases above, but each note in a chord.
+        '''
+        lilypond_source = '''
+            <c f>2 <c g b>2
+            <d as>2 <dis e>2
+            <es g>2 <e f>2
+            <fis a>2 <fis g>2
+            <geses c'>2 <gis d>2
+        '''
+        l_layer = parser.parse(lilypond_source, rule_name='unmarked_layer')
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_layer(l_layer, m_layer, 1)
+
+        assert actual[0][0].find(mei.ACCID) is None
+        assert actual[1][0].find(mei.ACCID) is None
+
+        assert actual[2][0].find(mei.ACCID) is None
+        assert actual[3][0].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[4][0].find(mei.ACCID).get('accid') == 'f'
+        assert actual[5][0].find(mei.ACCID).get('accid') == 'n'
+
+        assert actual[6][0].find(mei.ACCID).get('accid') == 's'
+        assert actual[7][0].find(mei.ACCID) is None
+
+        assert actual[8][0].find(mei.ACCID).get('accid') == 'ff'
+        assert actual[9][0].find(mei.ACCID).get('accid') == 's'
+
+    def test_interruption(self):
+        '''
+        The same five cases above, but with another object in between each pair of notes.
+
+        This ensures that rests, spacers, and other notes don't interfere with other notes.
+        '''
+        lilypond_source = '''
+            c4 r4 c2
+            d4 e4 dis2
+            es4 c4 e2
+            fis4 s4 fis2
+            geses4 a4 gis2
+        '''
+        l_layer = parser.parse(lilypond_source, rule_name='unmarked_layer')
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_layer(l_layer, m_layer, 1)
+
+        assert actual[0].find(mei.ACCID) is None
+        assert actual[2].find(mei.ACCID) is None
+
+        assert actual[3].find(mei.ACCID) is None
+        assert actual[5].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[6].find(mei.ACCID).get('accid') == 'f'
+        assert actual[8].find(mei.ACCID).get('accid') == 'n'
+
+        assert actual[9].find(mei.ACCID).get('accid') == 's'
+        assert actual[11].find(mei.ACCID) is None
+
+        assert actual[12].find(mei.ACCID).get('accid') == 'ff'
+        assert actual[14].find(mei.ACCID).get('accid') == 's'
+
+    def test_force(self):
+        '''
+        The same five cases above, but the second accidental in each measure is forced.
+        '''
+        lilypond_source = '''
+            c2 c!2
+            d2 dis!2
+            es2 e!2
+            fis2 fis!2
+            geses2 gis!2
+        '''
+        l_layer = parser.parse(lilypond_source, rule_name='unmarked_layer')
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_layer(l_layer, m_layer, 1)
+
+        assert actual[0].find(mei.ACCID) is None
+        assert actual[1].find(mei.ACCID).get('accid') == 'n'
+
+        assert actual[2].find(mei.ACCID) is None
+        assert actual[3].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[4].find(mei.ACCID).get('accid') == 'f'
+        assert actual[5].find(mei.ACCID).get('accid') == 'n'
+
+        assert actual[6].find(mei.ACCID).get('accid') == 's'
+        assert actual[7].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[8].find(mei.ACCID).get('accid') == 'ff'
+        assert actual[9].find(mei.ACCID).get('accid') == 's'
+
+    def test_tie_across_barline(self):
+        '''
+        The same five cases above, but with the first note tying across a barline. In all five
+        cases, the tied-in note should display no accidental, but it should affect other notes in
+        its bar.
+
+        The exception is case 4, where the note should force an accidental for the next note in the
+        bar.
+        '''
+        lilypond_source = '''
+            c1~ c2 c2
+            d1~ d2 dis2
+            es1~ es2 e2
+            fis1~ fis2 fis2
+            geses1~ geses2 gis2
+        '''
+        l_layer = parser.parse(lilypond_source, rule_name='unmarked_layer')
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_layer(l_layer, m_layer, 1)
+
+        assert actual[0].find(mei.ACCID) is None
+        assert actual[1].find(mei.ACCID) is None
+        assert actual[2].find(mei.ACCID) is None
+
+        assert actual[3].find(mei.ACCID) is None
+        assert actual[4].find(mei.ACCID) is None
+        assert actual[5].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[6].find(mei.ACCID).get('accid') == 'f'
+        assert actual[7].find(mei.ACCID) is None
+        assert actual[8].find(mei.ACCID).get('accid') == 'n'
+
+        assert actual[9].find(mei.ACCID).get('accid') == 's'
+        assert actual[10].find(mei.ACCID) is None
+        assert actual[11].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[12].find(mei.ACCID).get('accid') == 'ff'
+        assert actual[13].find(mei.ACCID) is None
+        assert actual[14].find(mei.ACCID).get('accid') == 's'

@@ -62,7 +62,8 @@ def convert(document, **kwargs):
     :raises: :exc:`lychee.exceptions.OutboundConversionError` when there is a forseeable error.
     '''
     if isinstance(document, etree._Element) and mei.SECTION == document.tag:
-        return wrap_section_element(create_measures(document))
+        document = create_measures(document)
+        return wrap_section_element(document)
     else:
         raise exceptions.OutboundConversionError(_ERR_INPUT_NOT_SECTION)
 

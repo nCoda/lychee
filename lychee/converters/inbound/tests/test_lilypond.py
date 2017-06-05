@@ -68,7 +68,8 @@ class TestScore(object):
 
     def test_one_staff(self):
         """One staff."""
-        l_score = {'ly_type': 'score',
+        l_score = {
+            'ly_type': 'score',
             'staves': [{
                 'ly_type': 'staff',
                 'initial_settings': [{'ly_type': 'instr_name', 'name': 'Woo'}],
@@ -90,7 +91,8 @@ class TestScore(object):
     def test_three_staves(self):
         """Three staves."""
         # shout-out to 女孩与机器人
-        l_score = {'ly_type': 'score',
+        l_score = {
+            'ly_type': 'score',
             'staves': [
                 {
                     'ly_type': 'staff',
@@ -484,8 +486,13 @@ class TestStaves(object):
                         {'dur': '4', 'dots': [], 'ly_type': 'rest'},
                     ],
                 ]},
-                {'layers': [[{'pitch_name': 'bes', 'oct': ',', 'accid_force': None,
-                             'dur': '128', 'dots': [], 'ly_type': 'note'}]],
+                {
+                    'layers': [
+                        [
+                            {'pitch_name': 'bes', 'oct': ',', 'accid_force': None,
+                                'dur': '128', 'dots': [], 'ly_type': 'note'}
+                        ]
+                    ]
                 },
             ],
         }
@@ -777,7 +784,7 @@ class TestNote(object):
     def test_basic_attribs(self):
         """Note only has @pname, @oct, and @dur."""
         l_note = {'ly_type': 'note', 'pitch_name': 'f', 'oct': "''", 'accid_force': None,
-            'dur': '256', 'dots': []}
+                  'dur': '256', 'dots': []}
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_note(l_note, m_layer)
 
@@ -790,7 +797,7 @@ class TestNote(object):
     def test_external_attribs(self):
         """Note has attributes handled by process_x() functions before Element creation."""
         l_note = {'ly_type': 'note', 'pitch_name': 'fis', 'oct': "''", 'accid_force': '!',
-            'dur': '256', 'dots': ['.', '.']}
+                  'dur': '256', 'dots': ['.', '.']}
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_note(l_note, m_layer)
 
@@ -802,7 +809,7 @@ class TestNote(object):
     def test_children(self):
         """Note has sub-elements added by process_x() functions after Element creation."""
         l_note = {'ly_type': 'note', 'pitch_name': 'fis', 'oct': "''", 'accid_force': '?',
-            'dur': '256', 'dots': []}
+                  'dur': '256', 'dots': []}
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_note(l_note, m_layer)
 
@@ -965,7 +972,7 @@ class TestAccidentalRendering(object):
 
     def test_basic(self):
         '''
-        Within a bar, there are four basic cases to consider with accidentals:
+        Within a bar, there are five basic cases to consider with accidentals:
 
         1. C C - non-accidental note followed by a non-accidental note. No accidentals should be
         produced at all.

@@ -85,7 +85,7 @@ class TestNoteRest(object):
         m_note.set('oct', '6')
         m_note.set('dur', '2')
         m_accid = etree.SubElement(m_note, mei.ACCID)
-        m_accid.set('accid.ges', 'f')
+        m_accid.set('accid', 'f')
         assert lilypond.note(m_note) == "es'''2"
 
     def test_note_2(self):
@@ -377,10 +377,10 @@ class TestStaffClefAndKey(object):
             <mei:measure n="11">
                 <mei:layer n="1">
                     <mei:note dur="2" oct="2" pname="f">
-                        <mei:accid accid.ges="s"/>
+                        <mei:accid accid="s"/>
                     </mei:note>
                     <mei:note dur="2" oct="2" pname="f">
-                        <mei:accid accid.ges="s"/>
+                        <mei:accid accid="s"/>
                     </mei:note>
                 </mei:layer>
             </mei:measure>

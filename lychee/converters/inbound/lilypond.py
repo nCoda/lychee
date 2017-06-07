@@ -489,8 +489,15 @@ def fix_accidentals_in_layer(m_layer, m_staffdef):
     Using a model of LilyPond's accidental rendering, fix the @accid/@accid.ges attributes and the
     temporary @accid.force attributes.
 
-    Limitations: doesn't support key and clef changes. Two different accidentals on the same note in
+    Limitations: doesn't support key and time changes. Two different accidentals on the same note in
     the same chord may not be rendered correctly.
+
+    :param m_layer: The LMEI <layer> object to fix.
+    :type m_layer: :class:`lxml.etree.Element`
+    :param m_staffdef: The initial <staffDef> settings for the containing staff. This is necessary
+    to propoerly handle initial settings of key signatures and time signatures.
+    :type m_layer: :class:`lxml.etree.Element`
+    :returns: ``None``
     '''
     if m_staffdef is None:
         m_staffdef = {}

@@ -142,7 +142,7 @@ def note(m_note):
     m_accid = m_note.find(mei.ACCID)
     accid = m_note.get('accid.ges', '')
     if m_accid is not None:
-        accid = m_accid.get('accid.ges', '')
+        accid = m_accid.get('accid', '')
     post = lilypond_utils.translate_pitch_name(m_note.get('pname'), accid)
     post += _OCTAVE_TO_MARK[m_note.get('oct')]
     post += duration(m_note)

@@ -51,7 +51,7 @@ from lxml import etree
 from lychee import exceptions
 from lychee.converters.inbound import lilypond_parser
 from lychee.utils import lilypond_utils
-from lychee.utils import timing
+from lychee.utils import music_utils
 from lychee import exceptions
 from lychee.logs import INBOUND_LOG as log
 from lychee.namespaces import mei
@@ -385,7 +385,7 @@ def do_staff(l_staff, m_section, m_staffdef, context=None, action=None):
             m_each_staff = etree.SubElement(m_section, mei.STAFF, {'n': m_staffdef.get('n')})
             for layer_n, l_layer in enumerate(l_each_staff['layers']):
                 # we must add 1 to layer_n or else the @n would start at 0, not 1
-                do_layer(l_layer, m_each_staff, layer_n + 1, context=context)
+                do_layer(l_layer, m_each_staff, layer_n + 1, m_staffdef=m_staffdef, context=context)
             postprocess_staff(m_each_staff)
 
 
@@ -422,16 +422,33 @@ def _hide_accidental(m_note):
     m_note.remove(m_accid)
 
 
-def _render_accidental(m_note, accidentals):
+def _render_accidental(m_note, accidentals, key_signature):
     '''
-    Given a note and the persistent accidentals in the current layer, show or hide the accidental
-    depending on factors such as pitch, accidental forcing, and ties.
+    Decide whether to display or hide a note's accidental based on context.
+
+    :param m_note: The LMEI <note> object to modify. It must contain an <accid> as its first child.
+    :type m_note: :class:`lxml.etree.Element`
+    :param dict accidentals: A map from tuples of the form (octave, pitch_name) to accidental
+    values like 's' or 'ff', representing the current set of persistent accidentals in this measure
+    but not including accidentals that are tied in from a previous measure.
+    :param dict key_signature: A map from pitch names to accidental values like 's' or 'ff',
+    representing the accidental settings specified by the current key signature.
+    :returns: ``None``
     '''
+    # Get some basic properties on the note pitch.
     pitch = note_pitch(m_note)
+    pitch_name = pitch[1]
     pitch_name_and_octave = (pitch[0], pitch[1])
     accidental = pitch[2]
+
+    # The accidental value that the key signature sets as default.
+    key_signature_accidental = key_signature[pitch_name]
+
+    # The accidental MEI element.
     m_accid = m_note[0]
 
+    # If this is set to true, then the next note on this same staff line/space will be forced to
+    # display an accidental.
     force_next = False
 
     # Always display an accidental if it is forced or cautionary.
@@ -442,17 +459,19 @@ def _render_accidental(m_note, accidentals):
     elif m_note.get('tie') in ('m', 't'):
         _hide_accidental(m_note)
 
-        # If we are at the end of a non-natural tie that has persisted across a barline, set the
-        # accidental to a nonsense value so that the next note on this same staff line/space is
-        # forced to display its accidental.
+        # Hoo boy. If we're at the end of a tie, we check to see whether there is a discrepancy
+        # between our accidental and the current accidental setting in this measure. If so, that
+        # means that accidental in the tie we're ending has persisted from a previous measure, and
+        # has gone stale. So we set the accidental to a nonsense value so that the accidental for
+        # the next note in this measure needs to be disambiguated.
         if (m_note.get('tie') == 't' and
-                accidental != 'n' and
+                accidental != key_signature_accidental and
                 pitch_name_and_octave not in accidentals):
             force_next = True
 
     # If the accidental does not match the current state of the accidentals in this measure
     # and key signature, then display it.
-    elif accidentals.get(pitch_name_and_octave, 'n') != accidental:
+    elif accidentals.get(pitch_name_and_octave, key_signature_accidental) != accidental:
         _show_accidental(m_note)
 
     # Otherwise, hide it.
@@ -465,16 +484,26 @@ def _render_accidental(m_note, accidentals):
         accidentals[pitch_name_and_octave] = accidental
 
 
-def fix_accidentals_in_layer(m_layer):
+def fix_accidentals_in_layer(m_layer, m_staffdef):
     '''
     Using a model of LilyPond's accidental rendering, fix the @accid/@accid.ges attributes and the
     temporary @accid.force attributes.
 
-    Limitations: only supports C major and 4/4 time. Two different accidentals on the same note
-    in the same chord may not be rendered correctly.
+    Limitations: doesn't support key and time changes. Two different accidentals on the same note in
+    the same chord may not be rendered correctly.
+
+    :param m_layer: The LMEI <layer> object to fix.
+    :type m_layer: :class:`lxml.etree.Element`
+    :param m_staffdef: The initial <staffDef> settings for the containing staff. This is necessary
+    to propoerly handle initial settings of key signatures and time signatures.
+    :type m_layer: :class:`lxml.etree.Element`
+    :returns: ``None``
     '''
+    if m_staffdef is None:
+        m_staffdef = {}
+    key_signature = music_utils.KEY_SIGNATURES[m_staffdef.get("key.sig", "0")]
     accidentals = {}
-    measure_length = 1
+    measure_length = music_utils.measure_duration(m_staffdef)
     phase = 0
     for m_node in m_layer:
         # For all elements that occupy time, add their duration to the phase.
@@ -483,13 +512,13 @@ def fix_accidentals_in_layer(m_layer):
             if phase >= measure_length:
                 accidentals = {}
                 phase = phase % measure_length
-            phase += timing.duration(m_node)
+            phase += music_utils.duration(m_node)
 
         if m_node.tag == mei.NOTE:
-            _render_accidental(m_node, accidentals)
+            _render_accidental(m_node, accidentals, key_signature)
         elif m_node.tag == mei.CHORD:
             for m_note in m_node:
-                _render_accidental(m_note, accidentals)
+                _render_accidental(m_note, accidentals, key_signature)
 
 
 @log.wrap('debug', 'remove unterminated tie', 'action')
@@ -613,22 +642,25 @@ def fix_slurs_in_layer(m_layer, action):
 
 
 @log.wrap('debug', 'convert voice/layer', 'action')
-def do_layer(l_layer, m_container, layer_n, context=None, action=None):
+def do_layer(l_layer, m_staff, layer_n, m_staffdef=None, context=None, action=None):
     '''
     Convert a LilyPond Voice context into an LMEI <layer> element.
 
     :param l_layer: The LilyPond Voice context from Grako.
     :type l_layer: list of dict
-    :param m_container: The MEI <measure> or <staff> that will hold the layer.
-    :type m_container: :class:`lxml.etree.Element`
+    :param m_staff: The MEI <staff> that will hold the layer.
+    :type m_staff: :class:`lxml.etree.Element`
+    :param int layer_n: The @n attribute value for this <layer>.
+    :param m_staffdef: The initial <staffDef> for the containing staff. This is necessary to
+    correctly handle key and time signatures.
+
     :returns: The new <layer> element.
     :rtype: :class:`lxml.etree.Element`
-    :param int layer_n: The @n attribute value for this <layer>.
 
     If the Voice context contains an unknown node type, :func:`do_layer` emits a failure log message
     and continues processing the following nodes in the Voice context.
     '''
-    m_layer = etree.SubElement(m_container, mei.LAYER, {'n': str(layer_n)})
+    m_layer = etree.SubElement(m_staff, mei.LAYER, {'n': str(layer_n)})
 
     node_converters = {
         'chord': do_chord,
@@ -652,7 +684,7 @@ def do_layer(l_layer, m_container, layer_n, context=None, action=None):
 
     fix_ties_in_layer(m_layer)
     fix_slurs_in_layer(m_layer)
-    fix_accidentals_in_layer(m_layer)
+    fix_accidentals_in_layer(m_layer, m_staffdef)
 
     return m_layer
 

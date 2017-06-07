@@ -49,8 +49,10 @@ def translate_pitch_name(pitch_name, accidental, language="nederlands"):
     if language not in lilypond_note_names.outbound:
         raise exceptions.LilyPondError("Unrecognized language: '{}'".format(language))
     language_dict = lilypond_note_names.outbound[language]
+    if accidental == 'n':
+        accidental = ''
     pitch_string = pitch_name + accidental
     if pitch_string not in language_dict:
         raise exceptions.LilyPondError(
-            "Pitch name '{}' is not valid in language '{}'".format(pitch_name, language))
+            "Pitch name '{}' is not valid in language '{}'".format(pitch_string, language))
     return language_dict[pitch_string]

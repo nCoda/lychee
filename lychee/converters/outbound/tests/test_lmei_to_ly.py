@@ -94,6 +94,16 @@ class TestNoteRest(object):
         m_note.set('oct', '2')
         assert lilypond.note(m_note) == "e,"
 
+    def test_note_language(self):
+        m_note = etree.Element(mei.NOTE)
+        m_note.set('pname', 'g')
+        m_note.set('oct', '4')
+        m_note.set('dur', '4')
+        m_accid = etree.SubElement(m_note, mei.ACCID)
+        m_accid.set('accid', 's')
+        context = {'language': 'italiano'}
+        assert lilypond.note(m_note, context) == "sold'4"
+
     def test_rest_1(self):
         m_rest = etree.Element(mei.REST)
         m_rest.set('dur', '32')
@@ -509,6 +519,7 @@ class TestSection(object):
         ''')
         expected = ''.join([
             '\\version "2.18.2"\n',
+            '\\language "nederlands"\n',
             "\\score {\n",
             "<<\n",
             # clarinet
@@ -535,3 +546,47 @@ class TestSection(object):
             "}\n",
         ])
         assert lilypond.section(m_section) == expected
+
+    def test_language(self):
+        '''
+        Integration test of language -- make sure it gets passed down from <section> all the way
+        down to <note>.
+        '''
+        m_section = etree.fromstring(
+        '''
+        <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+            <mei:scoreDef>
+                <mei:staffGrp>
+                    <mei:staffDef n="1" clef.line="2" clef.shape="G" meter.count="8" meter.unit="8"/>
+                </mei:staffGrp>
+            </mei:scoreDef>
+            <mei:staff n="1">
+                <mei:measure n="1">
+                    <mei:layer n="1">
+                        <mei:note dur="2" oct="2" pname="d" accid.ges="f"/>
+                    </mei:layer>
+                </mei:measure>
+            </mei:staff>
+        </mei:section>
+        ''')
+        context = {'language': 'english'}
+        expected = ''.join([
+            '\\version "2.18.2"\n',
+            '\\language "english"\n',
+            "\\score {\n",
+            "<<\n",
+            # clarinet
+            "\\new Staff {\n",
+            "%{ staff 1 %}\n",
+            '\\set Staff.instrumentName = ""\n',
+            '\\clef "treble"\n',
+            "\n",
+            '\\time 8/8\n',
+            '%{ m.1 %} %{ l.1 %} df,2 |\n',
+            "}\n",
+            #
+            ">>\n",
+            "\\layout { }\n",
+            "}\n",
+        ])
+        assert lilypond.section(m_section, context) == expected

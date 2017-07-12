@@ -487,7 +487,12 @@ class InteractiveSession(object):
                     document=post['document'],
                     changeset=changeset)
 
-            self.write_user_settings(user_settings)
+            # Currently we don't have any need for the outbound converters to write user settings,
+            # but it may be necessary in the future. For some reason, this line causes outbound
+            # converters to overwrite the Lychee settings to a blank XML file with only the root
+            # element. I haven't bothered to figure out why.
+
+            # self.write_user_settings(user_settings)
 
         finally:
             self._cleanup_for_new_action()

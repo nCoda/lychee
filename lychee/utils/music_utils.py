@@ -29,6 +29,9 @@ inbound or outbound conversion formats, although they are useful in converters.
 from lychee import exceptions
 import fractions
 
+
+NOTE_NAMES = ('c', 'd', 'e', 'f', 'g', 'a', 'b')
+
 KEY_SIGNATURES = {
     '7f': {'c': 'f', 'd': 'f', 'e': 'f', 'f': 'f', 'g': 'f', 'a': 'f', 'b': 'f'},
     '6f': {'c': 'f', 'd': 'f', 'e': 'f', 'f': 'n', 'g': 'f', 'a': 'f', 'b': 'f'},
@@ -49,13 +52,13 @@ KEY_SIGNATURES = {
 
 # See http://music-encoding.org/documentation/3.0.0/data.DURATION.cmn/
 DURATIONS = [
-    "long", "breve", "1", "2", "4", "8", "16",
-    "32", "64", "128", "256", "512", "1024", "2048"
+    'long', 'breve', '1', '2', '4', '8', '16',
+    '32', '64', '128', '256', '512', '1024', '2048'
 ]
 
 
 def duration(m_thing):
-    duration = m_thing.get("dur")
+    duration = m_thing.get('dur')
     if duration not in DURATIONS:
         raise exceptions.LycheeMEIError("Unknown duration: '{}'".format(duration))
     negative_log2_duration = DURATIONS.index(duration) - 2
@@ -64,7 +67,7 @@ def duration(m_thing):
     else:
         duration = fractions.Fraction(2 ** -negative_log2_duration, 1)
 
-    dots = m_thing.get("dots")
+    dots = m_thing.get('dots')
     if dots:
         dots = int(dots)
         duration = duration * fractions.Fraction(2 ** (dots + 1) - 1, 2 ** dots)

@@ -207,10 +207,15 @@ def check_version(ly_version, action):
     If the minor version is other than '18' or '19', warns.
     '''
     if ly_version['version']:
+        ly_version_string = '.'.join(ly_version['version'])
         if ly_version['version'][0] != '2':
-            raise RuntimeError('inbound LilyPond parser expects version 2.18.x or 2.19.x')
+            raise RuntimeError(
+                "inbound LilyPond parser expects version 2.18.x or 2.19.x, got '{}'"
+                .format(ly_version_string))
         elif ly_version['version'][1] not in ('18', '19'):
-            action.failure('inbound LilyPond parser expects version 2.18.x or 2.19.x')
+            action.failure(
+                "inbound LilyPond parser expects version 2.18.x or 2.19.x, got '{}'"
+                .format(ly_version_string))
     else:
         action.failure('missing version info')
 

@@ -10,7 +10,7 @@ setup(
     version=versioneer.get_version(),
     packages=find_packages(exclude=['*.tests']),
     install_requires=(
-        'Abjad==2.17',
+        'Abjad==2.20',
         'grako>=3.14,<3.15',
         'lithoxyl==0.4',
         'lxml>3,<4',

@@ -1379,3 +1379,34 @@ class TestIntegration(object):
         with pytest.raises(exceptions.OutboundConversionError) as exc:
             verovio.convert(document)
         assert verovio._ERR_INPUT_NOT_SECTION == exc.value.args[0]
+
+
+class TestRewriteBeamSpans(object):
+
+    def test_rewrite_beam_spans_1(self):
+        '''
+        '''
+        initial = etree.fromstring('''
+            <mei:layer n="1" xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:beamSpan plist="#pestilence #war #famine #death" />
+                <mei:note xml:id="pestilence"/>
+                <mei:note xml:id="war"/>
+                <mei:note xml:id="famine"/>
+                <mei:note xml:id="death"/>
+            </mei:layer>
+            ''')
+        expected = etree.fromstring('''
+            <mei:layer n="1" xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:beam>
+                    <mei:note xml:id="pestilence"/>
+                    <mei:note xml:id="war"/>
+                    <mei:note xml:id="famine"/>
+                    <mei:note xml:id="death"/>
+                </mei:beam>
+            </mei:layer>
+            ''')
+
+        actual = etree.fromstring(etree.tostring(initial))
+        lmei_to_mei.rewrite_beam_spans(actual)
+
+        assert_elements_equal(expected, actual)

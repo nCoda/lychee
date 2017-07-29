@@ -694,6 +694,7 @@ def do_layer(l_layer, m_staff, layer_n, m_staffdef=None, context=None, action=No
     fix_ties_in_layer(m_layer)
     fix_slurs_in_layer(m_layer)
     fix_accidentals_in_layer(m_layer, m_staffdef)
+    music_utils.autobeam(m_layer, m_staffdef)
 
     return m_layer
 

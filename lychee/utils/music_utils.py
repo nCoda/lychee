@@ -26,6 +26,9 @@
 Contains utilities that specifically concern LMEI as music notation. These tools are agnostic to any
 inbound or outbound conversion formats, although they are useful in converters.
 '''
+import random
+from lxml import etree
+from lychee.namespaces import mei, xml
 from lychee import exceptions
 import fractions
 
@@ -58,6 +61,11 @@ DURATIONS = [
 
 
 def duration(m_thing):
+    '''
+    Given an etree.Element, read @dur and @dots attributes and return a fractions.Fraction
+    representing the duration of this object in whole notes. Since this only reads attributes using
+    the 'get' method, you can also just pass in a dict of attributes.
+    '''
     duration = m_thing.get('dur')
     if duration not in DURATIONS:
         raise exceptions.LycheeMEIError("Unknown duration: '{}'".format(duration))
@@ -74,7 +82,108 @@ def duration(m_thing):
     return duration
 
 
+def time_signature(m_staffdef):
+    '''
+    Given an MEI staffDef object, return a tuple of its @meter.count and @meter.unit as integers.
+    You can also pass in a dict of attributes.
+    '''
+    count = int(m_staffdef.get('meter.count', '4'))
+    unit = int(m_staffdef.get('meter.unit', '4'))
+    return count, unit
+
+
 def measure_duration(m_staffdef):
-    numerator = int(m_staffdef.get("meter.count", "4"))
-    denominator = int(m_staffdef.get("meter.unit", "4"))
-    return fractions.Fraction(numerator, denominator)
+    '''
+    Given an MEI staffDef object, find its time signature and return a fractions.Fraction
+    representing its duration in whole notes.
+    '''
+    count, unit = time_signature(m_staffdef)
+    return fractions.Fraction(count, unit)
+
+
+def make_beam(nodes_in_this_beam, m_layer):
+    '''
+    Create an MEI beamSpan across a list of nodes in a layer. The nodes are assumed to be provided
+    from left to right.
+    '''
+    # Reject beams with 0 or 1 note.
+    if len(nodes_in_this_beam) < 2:
+        return
+
+    xml_ids = []
+    for node in nodes_in_this_beam:
+        if not node.get(xml.ID):
+            node.set(xml.ID, 'S-s-m-l-e' + ''.join([str(random.randint(0, 9)) for i in range(8)]))
+        xml_id = node.get(xml.ID)
+        xml_ids.append('#' + xml_id)
+
+    beam_span = etree.Element(mei.BEAM_SPAN)
+    beam_span.attrib.update({
+        'plist': ' '.join(xml_ids),
+        'startid': xml_ids[0],
+        'endid': xml_ids[-1],
+        })
+
+    # Insert the new beamSpan after the last node in it.
+    last_node = nodes_in_this_beam[-1]
+    parent_of_last_node = last_node.getparent()
+    index_of_last_node_in_parent = parent_of_last_node.index(last_node)
+    parent_of_last_node.insert(index_of_last_node_in_parent + 1, beam_span)
+
+
+def get_autobeam_structure(m_layer, m_staffdef):
+    '''
+    Given an MEI layer and a staffDef that has our time signature, return a list of lists describing
+    the beams that should be made. Each list corresponds to a beam, containing a list of MEI nodes.
+    '''
+    if m_staffdef is None:
+        m_staffdef = {}
+    count, unit = time_signature(m_staffdef)
+    unit = fractions.Fraction(1, unit)
+
+    # If the numerator of the time signature is a multiple of 3, and the denominator is smaller
+    # than a quarter note, then the beat size is multiplied by 3.
+    if unit < fractions.Fraction(1, 4) and count % 3 == 0:
+        unit *= 3
+
+    measure_length = measure_duration(m_staffdef)
+
+    nodes_in_this_beam = []
+    beams = []
+
+    beat_phase = 0
+    for m_node in m_layer:
+        if m_node.get('dur'):
+            this_node_is_beamable = (
+                m_node.tag in (mei.NOTE, mei.CHORD) and
+                m_node.get('dur') not in ('long', 'breve', '1', '2', '4'))
+            this_node_breaks_beams = (
+                m_node.tag == mei.REST or (
+                    m_node.tag in (mei.NOTE, mei.CHORD) and
+                    m_node.get('dur') in ('long', 'breve', '1', '2', '4')))
+
+            if this_node_breaks_beams:
+                beams.append(nodes_in_this_beam)
+                nodes_in_this_beam = []
+            if this_node_is_beamable:
+                nodes_in_this_beam.append(m_node)
+
+            beat_phase += duration(m_node)
+            if beat_phase >= unit:
+                beat_phase = beat_phase % unit
+                if beat_phase == 0:
+                    beams.append(nodes_in_this_beam)
+                    nodes_in_this_beam = []
+                    pass
+
+    beams.append(nodes_in_this_beam)
+
+    # Filter out empty beams and length-1 beams.
+    beams = [beam for beam in beams if len(beam) > 1]
+    return beams
+
+
+def autobeam(m_layer, m_staffdef):
+    beams = get_autobeam_structure(m_layer, m_staffdef)
+    for beam in beams:
+        make_beam(beam, m_layer)

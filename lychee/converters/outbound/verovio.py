@@ -92,7 +92,7 @@ def export_for_verovio(document):
     :returns: A string for Verovio.
     :rtype: unicode
     '''
-    document = lmei_to_mei.wrap_section_element(lmei_to_mei.create_measures(document))
+    document = lmei_to_mei.convert_raw(document)
     document = etree.tostring(document, encoding=unicode)
     document = document.replace('mei:', '')
     document = _XML_DECLARATION + document

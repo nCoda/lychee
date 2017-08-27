@@ -45,7 +45,6 @@ from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
 from abjad.tools.scoretools.Skip import Skip
 from abjad.tools.scoretools.NoteHead import NoteHead
-from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
 from abjad.tools.scoretools.Tuplet import Tuplet
 from abjad.tools.durationtools.Multiplier import Multiplier
 from abjad.tools.durationtools.Duration import Duration
@@ -55,7 +54,7 @@ from abjad.tools.scoretools.Score import Score
 from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.durationtools.Duration import Duration
-from abjad.tools.topleveltools.inspect_ import inspect_
+from abjad.tools.topleveltools.inspect import inspect
 from abjad.tools.topleveltools.attach import attach
 
 from lychee import exceptions
@@ -304,14 +303,14 @@ def chord_to_chord(mei_chord):
 
 def tupletspan_element_to_empty_tuplet(mei_tupletspan):
     '''
-    Convert an MEI tupletspan Element into an empty Abjad Tuplet or FixedDurationTuplet.
+    Convert an MEI tupletspan Element into an empty Abjad Tuplet.
     An MEI tupletspan with 'num' and 'numBase' attributes but no duration yields a Tuplet object.
-    A durated MEI tupletspan without 'num' and 'numBase' attributes yields a FixedDurationTuplet object.
+    A durated MEI tupletspan without 'num' and 'numBase' attributes yields a Tuplet object.
 
     :param mei_tupletspan: the MEI tupletspan Element to convert.
     :type mei_tupletspan: :class:`lxml.etree.ElementTree.Element`
-    :returns: the corresponding empty Abjad Tuplet or FixedDurationTuplet.
-    :rtype: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
+    :returns: the corresponding empty Abjad Tuplet.
+    :rtype: :class:`abjad.tools.scoretools.Tuplet.Tuplet`
     '''
     numerator = mei_tupletspan.get('numBase')
     mei_duration = mei_tupletspan.get('dur')
@@ -327,18 +326,18 @@ def tupletspan_element_to_empty_tuplet(mei_tupletspan):
                 dur_string += '.'
         duration = Duration()
         duration = duration.from_lilypond_duration_string(dur_string)
-        return_tuplet = FixedDurationTuplet(duration, [])
+        return_tuplet = Tuplet(duration, [])
         return return_tuplet
 
 
 def setup_outermost_tupletspan(mei_tupletspan):
     '''
-    Generate an Abjad FixedDurationTuplet with a duration taken from an MEI tupletspan Element.
+    Generate an Abjad Tuplet with a duration taken from an MEI tupletspan Element.
 
     :param mei_tupletspan: the MEI tupletspan Element to query for duration.
     :type mei_tupletspan: :class:`lxml.etree.ElementTree.Element`
-    :returns: an Abjad FixedDurationTuplet with mei_tupletspan's duration.
-    :rtype: :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
+    :returns: an Abjad Tuplet with mei_tupletspan's duration.
+    :rtype: :class:`abjad.tools.scoretools.Tuplet.Tuplet`
     '''
     mei_duration = mei_tupletspan.get('dur')
     dots = mei_tupletspan.get('dots')
@@ -348,7 +347,7 @@ def setup_outermost_tupletspan(mei_tupletspan):
             dur_string += '.'
     duration = Duration()
     duration = duration.from_lilypond_duration_string(dur_string)
-    return_tuplet = FixedDurationTuplet(duration, [])
+    return_tuplet = Tuplet(duration, [])
     return return_tuplet
 
 
@@ -361,7 +360,7 @@ def tupletspan_to_tuplet(mei_tupletspan):
     :param mei_tupletspan: the MEI tupletspan to convert.
     :type mei_tupletspan: list or :class:`lxml.etree.ElementTree.Element`
     :returns: corresponding Abjad Tuplet.
-    :rtype: :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
+    :rtype: :class:`abjad.tools.scoretools.Tuplet.Tuplet`
     '''
     if isinstance(mei_tupletspan, list):
         # list beginning with tuplet span and continuing with spanned Elements
@@ -386,7 +385,6 @@ def tupletspan_to_tuplet(mei_tupletspan):
                 tuplet_components.append(mei_element)
                 index += 1
         abjad_outermost_tuplet.extend(tuplet_components)
-        abjad_outermost_tuplet = abjad_outermost_tuplet.to_fixed_duration_tuplet()
         return abjad_outermost_tuplet
     elif hasattr(mei_tupletspan, 'xpath'):
         return tupletspan_element_to_empty_tuplet(mei_tupletspan)

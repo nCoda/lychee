@@ -52,7 +52,7 @@ from abjad.tools.scoretools.Voice import Voice
 from abjad.tools.scoretools.Staff import Staff
 from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.topleveltools.mutate import mutate
-from abjad.tools.topleveltools.inspect_ import inspect
+from abjad.tools.topleveltools.inspect import inspect
 from abjad.tools.topleveltools.attach import attach
 
 import lychee
@@ -286,7 +286,7 @@ def calculate_tuplet_duration(tuplet):
     :param tuplet: the Abjad tuplet to query for duration.
     :type tuplet: :class:`~abjad.tools.scoretools.Tuplet`
     '''
-	return tuplet.multiplied_duration
+    return tuplet.multiplied_duration
 
 
 def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):

@@ -32,6 +32,7 @@ import shutil
 import tempfile
 
 from lxml import etree
+import six
 
 # Mercurial and mercurial-hug are disabled for now.
 # from mercurial import error as hg_error
@@ -352,7 +353,7 @@ class InteractiveSession(object):
             document=doc,
             converted=self._inbound_converted,
             views_info=sect_id)
-        if not isinstance(self._inbound_views_info, str):
+        if not isinstance(self._inbound_views_info, six.string_types):
             raise exceptions.InboundConversionError()
 
         document_pathnames = steps.do_document(

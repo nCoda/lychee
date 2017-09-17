@@ -18,7 +18,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2017, 5, 28, 21, 15, 50, 6)
+__version__ = (2017, 6, 4, 17, 53, 16, 6)
 
 __all__ = [
     'LilyPondParser',
@@ -403,6 +403,8 @@ class LilyPondParser(Parser):
 
     @graken()
     def _chord_note_(self):
+        self._constant('note')
+        self.name_last_node('ly_type')
         self._pitch_name_()
         self.name_last_node('pitch_name')
         self._cut()
@@ -414,12 +416,12 @@ class LilyPondParser(Parser):
             self.name_last_node('accid_force')
 
 
-        def block4():
+        def block5():
             self._post_event_()
-        self._closure(block4)
+        self._closure(block5)
         self.name_last_node('post_events')
         self.ast._define(
-            ['accid_force', 'oct', 'pitch_name', 'post_events'],
+            ['accid_force', 'ly_type', 'oct', 'pitch_name', 'post_events'],
             []
         )
 

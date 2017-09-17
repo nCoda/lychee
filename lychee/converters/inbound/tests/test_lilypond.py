@@ -27,6 +27,8 @@ Tests for the "lilypond" module.
 
 The tests in this file are only for the translator, not the parser. In other words, these tests are
 for the code that translated Grako's parse into Lychee-MEI.
+
+A few of the more complicated tests do use the LilyPond parser to improve readability.
 """
 
 from __future__ import unicode_literals
@@ -35,8 +37,11 @@ from lxml import etree
 import pytest
 
 from lychee.converters.inbound import lilypond
+from lychee.converters.inbound import lilypond_parser
 from lychee import exceptions
 from lychee.namespaces import mei
+
+parser = lilypond_parser.LilyPondParser()
 
 
 class TestScore(object):
@@ -63,7 +68,8 @@ class TestScore(object):
 
     def test_one_staff(self):
         """One staff."""
-        l_score = {'ly_type': 'score',
+        l_score = {
+            'ly_type': 'score',
             'staves': [{
                 'ly_type': 'staff',
                 'initial_settings': [{'ly_type': 'instr_name', 'name': 'Woo'}],
@@ -85,7 +91,8 @@ class TestScore(object):
     def test_three_staves(self):
         """Three staves."""
         # shout-out to 女孩与机器人
-        l_score = {'ly_type': 'score',
+        l_score = {
+            'ly_type': 'score',
             'staves': [
                 {
                     'ly_type': 'staff',
@@ -133,7 +140,8 @@ class TestScore(object):
     def test_language(self):
         """At a distance, make sure that language gets correctly passed down
         all the way to the pitch name converter."""
-        l_score = {'ly_type': 'score',
+        l_score = {
+            'ly_type': 'score',
             'staves': [{
                 'ly_type': 'staff',
                 'initial_settings': [{'ly_type': 'instr_name', 'name': 'Woo'}],
@@ -142,8 +150,8 @@ class TestScore(object):
             }]
         }
         actual = lilypond.do_score(l_score, context={'language': 'english'})
-        note = actual.find('.//{}'.format(mei.NOTE))
-        assert note.attrib.get('accid.ges') == 'x'
+        accid = actual.find('.//{}'.format(mei.ACCID))
+        assert accid.attrib.get('accid') == 'x'
 
 
 class TestClef(object):
@@ -478,8 +486,13 @@ class TestStaves(object):
                         {'dur': '4', 'dots': [], 'ly_type': 'rest'},
                     ],
                 ]},
-                {'layers': [[{'pitch_name': 'bes', 'oct': ',', 'accid_force': None,
-                             'dur': '128', 'dots': [], 'ly_type': 'note'}]],
+                {
+                    'layers': [
+                        [
+                            {'pitch_name': 'bes', 'oct': ',', 'accid_force': None,
+                                'dur': '128', 'dots': [], 'ly_type': 'note'}
+                        ]
+                    ]
                 },
             ],
         }
@@ -546,9 +559,9 @@ class TestLayers(object):
             {'ly_type': 'note', 'pitch_name': 'f', 'oct': "''", 'accid_force': None,
              'dur': '256', 'dots': []},
             {'ly_type': 'chord', 'dur': '2', 'dots': ['.'], 'notes': [
-                {'pitch_name': 'des', 'oct': ',,', 'accid_force': '!'},
-                {'pitch_name': 'fis', 'oct': ',,', 'accid_force': None},
-                {'pitch_name': 'a', 'oct': ',,', 'accid_force': None},
+                {'ly_type': 'note', 'pitch_name': 'des', 'oct': ',,', 'accid_force': '!'},
+                {'ly_type': 'note', 'pitch_name': 'fis', 'oct': ',,', 'accid_force': None},
+                {'ly_type': 'note', 'pitch_name': 'a', 'oct': ',,', 'accid_force': None},
             ]},
         ]
         m_container = etree.Element(mei.STAFF)
@@ -581,125 +594,54 @@ class TestProcessOctave(object):
         assert lilypond.process_octave(None) == lilypond.process_octave('celery')
 
 
-class TestPitchName(object):
+class TestPitch(object):
     """
-    For pitch name handling.
+    For pitch name, accidental, and accidental force handling.
     """
 
     def test_no_accid(self):
         """When there is no accidental."""
-        l_pitch_name = "c"
-        attrib = {}
-        expected = {"pname": "c"}
-        actual = lilypond.process_pitch_name(l_pitch_name, attrib)
+        l_note = {"pitch_name": "c"}
+        attrib, accid_attrib = {}, {}
+        expected = ({"pname": "c"}, {})
+        actual = lilypond.process_pitch(l_note, attrib, accid_attrib)
         assert expected == actual
 
     def test_double_sharp(self):
         """Double sharp."""
-        l_pitch_name = "cisis"
-        attrib = {}
-        expected = {"pname": "c", "accid.ges": "x"}
-        actual = lilypond.process_pitch_name(l_pitch_name, attrib)
+        l_note = {"pitch_name": "cisis"}
+        attrib, accid_attrib = {}, {}
+
+        expected = ({"pname": "c"}, {"accid.ges": "x"})
+        actual = lilypond.process_pitch(l_note, attrib, accid_attrib)
         assert expected == actual
 
     def test_single_flat(self):
         """Single flat."""
-        l_pitch_name = "ees"
-        attrib = {}
-        expected = {"pname": "e", "accid.ges": "f"}
-        actual = lilypond.process_pitch_name(l_pitch_name, attrib)
+        l_note = {"pitch_name": "ees"}
+        attrib, accid_attrib = {}, {}
+        expected = ({"pname": "e"}, {"accid.ges": "f"})
+        actual = lilypond.process_pitch(l_note, attrib, accid_attrib)
         assert expected == actual
 
     def test_language(self):
         """German."""
-        l_pitch_name = "h"
-        attrib = {}
+        l_note = {"pitch_name": "h"}
+        attrib, accid_attrib = {}, {}
         context = {"language": "deutsch"}
-        expected = {"pname": "b"}
-        actual = lilypond.process_pitch_name(l_pitch_name, attrib, context)
+        expected = ({"pname": "b"}, {})
+        actual = lilypond.process_pitch(l_note, attrib, accid_attrib, context)
         assert expected == actual
 
     def test_sharpflat(self):
         """Sharpflat (invalid accidental)."""
-        l_pitch_name = "cises"
-        attrib = {}
+        l_note = {"pitch_name": "cises"}
+        attrib, accid_attrib = {}, {}
         with pytest.raises(exceptions.LilyPondError):
-            lilypond.process_pitch_name(l_pitch_name, attrib)
+            lilypond.process_pitch(l_note, attrib, accid_attrib)
 
 
-class TestForcedAccidentals(object):
-    """
-    For the forced accidental stuff.
-    """
-
-    def test_dont_add_it(self):
-        """The note doesn't have a forced accidental."""
-        l_note = {'accid_force': None}  # this is enough to trick it
-        attrib = {}
-
-        actual = lilypond.process_forced_accid(l_note, attrib)
-
-        assert actual == {}
-
-    def test_add_a_flat(self):
-        """The note has a forced flat."""
-        l_note = {'accid_force': '!'}  # this is enough to trick it
-        attrib = {'accid.ges': 'f'}
-
-        actual = lilypond.process_forced_accid(l_note, attrib)
-
-        assert actual == {'accid.ges': 'f', 'accid': 'f'}
-
-    def test_add_a_natural(self):
-        """The note has a forced natural."""
-        l_note = {'accid_force': '!'}  # this is enough to trick it
-        attrib = {'dur': '4'}  # check it doesn't erase unrelated keys
-
-        actual = lilypond.process_forced_accid(l_note, attrib)
-
-        assert actual == {'dur': '4', 'accid': 'n'}
-
-
-class TestCautionaryAccidentals(object):
-    """
-    For the cautionary accidental garbage.
-    """
-
-    def test_dont_add_it(self):
-        """The note doesn't have a cautionary accidental."""
-        l_note = {'accid_force': None}  # this is enough to trick it
-        m_note = etree.Element(mei.NOTE)
-
-        actual = lilypond.process_caut_accid(l_note, m_note)
-
-        assert len(actual) == 0  # includes child elements only
-
-    def test_add_a_flat(self):
-        """The note has a cautionary flat."""
-        l_note = {'accid_force': '?'}  # this is enough to trick it
-        m_note = etree.Element(mei.NOTE, {'accid.ges': 'f'})
-
-        actual = lilypond.process_caut_accid(l_note, m_note)
-
-        assert len(actual) == 1  # includes child elements only
-        assert actual[0].tag == mei.ACCID
-        assert actual[0].get('accid') == 'f'
-        assert actual[0].get('func') == 'caution'
-
-    def test_add_a_natural(self):
-        """The note has a cautionary natural."""
-        l_note = {'accid_force': '?'}  # this is enough to trick it
-        m_note = etree.Element(mei.NOTE)
-
-        actual = lilypond.process_caut_accid(l_note, m_note)
-
-        assert len(actual) == 1  # includes child elements only
-        assert actual[0].tag == mei.ACCID
-        assert actual[0].get('accid') == 'n'
-        assert actual[0].get('func') == 'caution'
-
-
-class TestProcesssDots(object):
+class TestProcessDots(object):
     """
     For the @dots attribute.
     """
@@ -753,7 +695,7 @@ class TestChord(object):
     def test_one_notehead(self):
         """When the chord has one notehead, with a cautionary accidental."""
         l_chord = {'ly_type': 'chord', 'dur': '2', 'dots': ['.'], 'notes': [
-            {'pitch_name': 'des', 'oct': ',,', 'accid_force': '?'},
+            {'ly_type': 'note', 'pitch_name': 'des', 'oct': ',,', 'accid_force': '?'},
         ]}
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_chord(l_chord, m_layer)
@@ -761,16 +703,16 @@ class TestChord(object):
         assert len(actual) == 1
         assert actual[0].get('pname') == 'd'
         assert actual[0].get('oct') == '1'
-        assert actual[0].get('accid.ges') == 'f'
         assert actual[0][0].tag == mei.ACCID
-        assert actual[0][0].get('accid') == 'f'
+        assert actual[0][0].get('accid.ges') == 'f'
+        assert actual[0][0].get('accid.force') == '?'
 
     def test_three_noteheads(self):
         """When the chord has three noteheads, the first with a forced accidental."""
         l_chord = {'ly_type': 'chord', 'dur': '2', 'dots': ['.'], 'notes': [
-            {'pitch_name': 'des', 'oct': ',,', 'accid_force': '!'},
-            {'pitch_name': 'fis', 'oct': ',,', 'accid_force': None},
-            {'pitch_name': 'a', 'oct': ',,', 'accid_force': None},
+            {'ly_type': 'note', 'pitch_name': 'des', 'oct': ',,', 'accid_force': '!'},
+            {'ly_type': 'note', 'pitch_name': 'fis', 'oct': ',,', 'accid_force': None},
+            {'ly_type': 'note', 'pitch_name': 'a', 'oct': ',,', 'accid_force': None},
         ]}
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_chord(l_chord, m_layer)
@@ -779,25 +721,28 @@ class TestChord(object):
         #
         assert actual[0].get('pname') == 'd'
         assert actual[0].get('oct') == '1'
-        assert actual[0].get('accid.ges') == 'f'
-        assert actual[0].get('accid') == 'f'
+        assert actual[0][0].tag == mei.ACCID
+        assert actual[0][0].get('accid.ges') == 'f'
+        assert actual[0][0].get('accid.force') == '!'
         #
         assert actual[1].get('pname') == 'f'
         assert actual[1].get('oct') == '1'
-        assert actual[1].get('accid.ges') == 's'
-        assert actual[1].get('accid') is None
+        assert actual[1][0].tag == mei.ACCID
+        assert actual[1][0].get('accid.ges') == 's'
+        assert actual[1][0].get('accid.force') is None
         #
         assert actual[2].get('pname') == 'a'
         assert actual[2].get('oct') == '1'
-        assert actual[2].get('accid.ges') is None
-        assert actual[2].get('accid') is None
+        assert actual[2][0].tag == mei.ACCID
+        assert actual[2][0].get('accid.ges') is None
+        assert actual[2][0].get('accid.force') is None
 
     def test_language(self):
         """Italiano."""
         l_chord = {'ly_type': 'chord', 'dur': '2', 'dots': [], 'notes': [
-            {'pitch_name': 'do', 'oct': '', 'accid_force': '!'},
-            {'pitch_name': 'red', 'oct': '', 'accid_force': None},
-            {'pitch_name': 'mibb', 'oct': '', 'accid_force': None},
+            {'ly_type': 'note', 'pitch_name': 'do', 'oct': '', 'accid_force': '!'},
+            {'ly_type': 'note', 'pitch_name': 'red', 'oct': '', 'accid_force': None},
+            {'ly_type': 'note', 'pitch_name': 'mibb', 'oct': '', 'accid_force': None},
         ]}
         m_layer = etree.Element(mei.LAYER)
         context = {'language': 'italiano'}
@@ -807,18 +752,21 @@ class TestChord(object):
         #
         assert actual[0].get('pname') == 'c'
         assert actual[0].get('oct') == '3'
-        assert actual[0].get('accid.ges') is None
-        assert actual[0].get('accid') == 'n'
+        assert actual[0][0].tag == mei.ACCID
+        assert actual[0][0].get('accid.ges') is None
+        assert actual[0][0].get('accid.force') == '!'
         #
         assert actual[1].get('pname') == 'd'
         assert actual[1].get('oct') == '3'
-        assert actual[1].get('accid.ges') == 's'
-        assert actual[1].get('accid') is None
+        assert actual[1][0].tag == mei.ACCID
+        assert actual[1][0].get('accid.ges') == 's'
+        assert actual[1][0].get('accid.force') is None
         #
         assert actual[2].get('pname') == 'e'
         assert actual[2].get('oct') == '3'
-        assert actual[2].get('accid.ges') == 'ff'
-        assert actual[2].get('accid') is None
+        assert actual[2][0].tag == mei.ACCID
+        assert actual[2][0].get('accid.ges') == 'ff'
+        assert actual[2][0].get('accid.force') is None
 
 
 class TestNote(object):
@@ -836,7 +784,7 @@ class TestNote(object):
     def test_basic_attribs(self):
         """Note only has @pname, @oct, and @dur."""
         l_note = {'ly_type': 'note', 'pitch_name': 'f', 'oct': "''", 'accid_force': None,
-            'dur': '256', 'dots': []}
+                  'dur': '256', 'dots': []}
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_note(l_note, m_layer)
 
@@ -849,24 +797,25 @@ class TestNote(object):
     def test_external_attribs(self):
         """Note has attributes handled by process_x() functions before Element creation."""
         l_note = {'ly_type': 'note', 'pitch_name': 'fis', 'oct': "''", 'accid_force': '!',
-            'dur': '256', 'dots': ['.', '.']}
+                  'dur': '256', 'dots': ['.', '.']}
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_note(l_note, m_layer)
 
-        assert actual.get('accid.ges') == 's'
-        assert actual.get('accid') == 's'
         assert actual.get('dots') == '2'
+        assert actual[0].tag == mei.ACCID
+        assert actual[0].get('accid.ges') == 's'
+        assert actual[0].get('accid.force') == '!'
 
     def test_children(self):
         """Note has sub-elements added by process_x() functions after Element creation."""
         l_note = {'ly_type': 'note', 'pitch_name': 'fis', 'oct': "''", 'accid_force': '?',
-            'dur': '256', 'dots': []}
+                  'dur': '256', 'dots': []}
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_note(l_note, m_layer)
 
-        assert actual.get('accid.ges') == 's'
-        assert actual.get('accid') is None
         assert actual[0].tag == mei.ACCID
+        assert actual[0].get('accid.ges') == 's'
+        assert actual[0].get('accid.force') == '?'
 
 
 class TestRestSpacer(object):
@@ -1017,3 +966,217 @@ class TestSlur(object):
         actual = lilypond.do_layer(l_layer, m_layer, 1)
         slur_attributes = [node.get('slur') for node in actual]
         assert slur_attributes == [None, 'i1', 'm1', 't1', None]
+
+
+class TestAccidentalRendering(object):
+
+    def test_basic(self):
+        '''
+        Within a bar, there are five basic cases to consider with accidentals:
+
+        1. C C - non-accidental note followed by a non-accidental note. No accidentals should be
+        produced at all.
+
+        2. C C# - Non-accidental note followed by an accidental note. The second note should produce
+        an accidental, but not the first.
+
+        3. C# C - Accidental note followed by a non-accidental note. The second note should produce
+        a natural.
+
+        4. C# C# - Accidental note followed by the same accidental note. The second note should not
+        display an accidental.
+
+        4. C# Cb - Accidental note followed by a different accidental note. Both notes should
+        display accidentals.
+
+        These five cases multiply even further when combined with considerations of chords, ties
+        accidental forcing, and key signature and time signature changes. Not all possible cases are
+        tested here...
+        '''
+        lilypond_source = '''
+            c2 c2
+            d2 dis2
+            es2 e2
+            fis2 fis2
+            geses2 gis2
+        '''
+        l_layer = parser.parse(lilypond_source, rule_name='unmarked_layer')
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_layer(l_layer, m_layer, 1)
+
+        assert actual[0].find(mei.ACCID) is None
+        assert actual[1].find(mei.ACCID) is None
+
+        assert actual[2].find(mei.ACCID) is None
+        assert actual[3].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[4].find(mei.ACCID).get('accid') == 'f'
+        assert actual[5].find(mei.ACCID).get('accid') == 'n'
+
+        assert actual[6].find(mei.ACCID).get('accid') == 's'
+        assert actual[7].find(mei.ACCID) is None
+
+        assert actual[8].find(mei.ACCID).get('accid') == 'ff'
+        assert actual[9].find(mei.ACCID).get('accid') == 's'
+
+    def test_measure(self):
+        '''
+        The same five cases above, but with a barline between each pair of notes.
+        '''
+        lilypond_source = '''
+            c1 c1
+            d1 dis1
+            es1 e1
+            fis1 fis1
+            geses1 gis1
+        '''
+        l_layer = parser.parse(lilypond_source, rule_name='unmarked_layer')
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_layer(l_layer, m_layer, 1)
+
+        assert actual[0].find(mei.ACCID) is None
+        assert actual[1].find(mei.ACCID) is None
+
+        assert actual[2].find(mei.ACCID) is None
+        assert actual[3].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[4].find(mei.ACCID).get('accid') == 'f'
+        assert actual[5].find(mei.ACCID) is None
+
+        assert actual[6].find(mei.ACCID).get('accid') == 's'
+        assert actual[7].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[8].find(mei.ACCID).get('accid') == 'ff'
+        assert actual[9].find(mei.ACCID).get('accid') == 's'
+
+    def test_chords(self):
+        '''
+        The same five cases above, but each note in a chord.
+        '''
+        lilypond_source = '''
+            <c f>2 <c g b>2
+            <d as>2 <dis e>2
+            <es g>2 <e f>2
+            <fis a>2 <fis g>2
+            <geses c'>2 <gis d>2
+        '''
+        l_layer = parser.parse(lilypond_source, rule_name='unmarked_layer')
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_layer(l_layer, m_layer, 1)
+
+        assert actual[0][0].find(mei.ACCID) is None
+        assert actual[1][0].find(mei.ACCID) is None
+
+        assert actual[2][0].find(mei.ACCID) is None
+        assert actual[3][0].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[4][0].find(mei.ACCID).get('accid') == 'f'
+        assert actual[5][0].find(mei.ACCID).get('accid') == 'n'
+
+        assert actual[6][0].find(mei.ACCID).get('accid') == 's'
+        assert actual[7][0].find(mei.ACCID) is None
+
+        assert actual[8][0].find(mei.ACCID).get('accid') == 'ff'
+        assert actual[9][0].find(mei.ACCID).get('accid') == 's'
+
+    def test_interruption(self):
+        '''
+        The same five cases above, but with another object in between each pair of notes.
+
+        This ensures that rests, spacers, and other notes don't interfere with other notes.
+        '''
+        lilypond_source = '''
+            c4 r4 c2
+            d4 e4 dis2
+            es4 c4 e2
+            fis4 s4 fis2
+            geses4 a4 gis2
+        '''
+        l_layer = parser.parse(lilypond_source, rule_name='unmarked_layer')
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_layer(l_layer, m_layer, 1)
+
+        assert actual[0].find(mei.ACCID) is None
+        assert actual[2].find(mei.ACCID) is None
+
+        assert actual[3].find(mei.ACCID) is None
+        assert actual[5].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[6].find(mei.ACCID).get('accid') == 'f'
+        assert actual[8].find(mei.ACCID).get('accid') == 'n'
+
+        assert actual[9].find(mei.ACCID).get('accid') == 's'
+        assert actual[11].find(mei.ACCID) is None
+
+        assert actual[12].find(mei.ACCID).get('accid') == 'ff'
+        assert actual[14].find(mei.ACCID).get('accid') == 's'
+
+    def test_force(self):
+        '''
+        The same five cases above, but the second accidental in each measure is forced.
+        '''
+        lilypond_source = '''
+            c2 c!2
+            d2 dis!2
+            es2 e!2
+            fis2 fis!2
+            geses2 gis!2
+        '''
+        l_layer = parser.parse(lilypond_source, rule_name='unmarked_layer')
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_layer(l_layer, m_layer, 1)
+
+        assert actual[0].find(mei.ACCID) is None
+        assert actual[1].find(mei.ACCID).get('accid') == 'n'
+
+        assert actual[2].find(mei.ACCID) is None
+        assert actual[3].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[4].find(mei.ACCID).get('accid') == 'f'
+        assert actual[5].find(mei.ACCID).get('accid') == 'n'
+
+        assert actual[6].find(mei.ACCID).get('accid') == 's'
+        assert actual[7].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[8].find(mei.ACCID).get('accid') == 'ff'
+        assert actual[9].find(mei.ACCID).get('accid') == 's'
+
+    def test_tie_across_barline(self):
+        '''
+        The same five cases above, but with the first note tying across a barline. In all five
+        cases, the tied-in note should display no accidental, but it should affect other notes in
+        its bar.
+
+        The exception is case 4, where the note should force an accidental for the next note in the
+        bar.
+        '''
+        lilypond_source = '''
+            c1~ c2 c2
+            d1~ d2 dis2
+            es1~ es2 e2
+            fis1~ fis2 fis2
+            geses1~ geses2 gis2
+        '''
+        l_layer = parser.parse(lilypond_source, rule_name='unmarked_layer')
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_layer(l_layer, m_layer, 1)
+
+        assert actual[0].find(mei.ACCID) is None
+        assert actual[1].find(mei.ACCID) is None
+        assert actual[2].find(mei.ACCID) is None
+
+        assert actual[3].find(mei.ACCID) is None
+        assert actual[4].find(mei.ACCID) is None
+        assert actual[5].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[6].find(mei.ACCID).get('accid') == 'f'
+        assert actual[7].find(mei.ACCID) is None
+        assert actual[8].find(mei.ACCID).get('accid') == 'n'
+
+        assert actual[9].find(mei.ACCID).get('accid') == 's'
+        assert actual[10].find(mei.ACCID) is None
+        assert actual[11].find(mei.ACCID).get('accid') == 's'
+
+        assert actual[12].find(mei.ACCID).get('accid') == 'ff'
+        assert actual[13].find(mei.ACCID) is None
+        assert actual[14].find(mei.ACCID).get('accid') == 's'

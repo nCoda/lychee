@@ -135,6 +135,7 @@ note =
     ;
 
 chord_note =
+    ly_type:`note`
     >notehead
     post_events:{post_event}*
     ;

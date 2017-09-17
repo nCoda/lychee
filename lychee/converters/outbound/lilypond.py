@@ -134,21 +134,17 @@ def slur(m_thing):
     return ''
 
 
-@log.wrap('debug', 'convert pitch name')
-def pitch_name(m_thing):
-    return lilypond_utils.translate_pitch_name(
-        m_thing.get('pname'), m_thing.get('accid.ges', ''))
-
-
 @log.wrap('debug', 'convert note')
 def note(m_note):
     '''
     '''
     check_tag(m_note, mei.NOTE)
-    post = pitch_name(m_note)
+    m_accid = m_note.find(mei.ACCID)
+    accid = m_note.get('accid.ges', '')
+    if m_accid is not None:
+        accid = m_accid.get('accid', '')
+    post = lilypond_utils.translate_pitch_name(m_note.get('pname'), accid)
     post += _OCTAVE_TO_MARK[m_note.get('oct')]
-    if m_note.get('accid'):
-        post += '!'
     post += duration(m_note)
     post += tie(m_note)
     post += slur(m_note)

@@ -132,7 +132,10 @@ class InteractiveSession(object):
         '''
         If this session is using a temporary directory, delete it.
         '''
-        self.unset_repo_dir()
+        try:
+            self.unset_repo_dir()
+        except AttributeError:
+            pass
 
     @property
     def document(self):
@@ -157,15 +160,6 @@ class InteractiveSession(object):
 
         self._doc = document.Document(self._repo_dir)
         return self._doc
-
-    def __del__(self):
-        '''
-        If this session is using a temporary directory, delete it.
-        '''
-        try:
-            self.unset_repo_dir()
-        except AttributeError:
-            pass
 
     @log.wrap('info', 'set the repository directory')
     def set_repo_dir(self, path, run_outbound=False):
@@ -322,7 +316,6 @@ class InteractiveSession(object):
 
         finally:
             self._cleanup_for_new_action()
-
 
     @log.wrap('critical', 'run inbound workflow step')
     def run_inbound(self, dtype, doc, sect_id=None):

@@ -32,7 +32,6 @@ from abjad.tools.scoretools.Chord import Chord
 from abjad.tools.scoretools.Skip import Skip
 from abjad.tools.scoretools.Measure import Measure
 from abjad.tools.scoretools.NoteHead import NoteHead
-from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
 from abjad.tools.scoretools.Tuplet import Tuplet
 from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.durationtools.Multiplier import Multiplier
@@ -40,7 +39,7 @@ from abjad.tools.scoretools.Voice import Voice
 from abjad.tools.scoretools.Staff import Staff
 from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.scoretools.Score import Score
-from abjad.tools.topleveltools.inspect_ import inspect_
+from abjad.tools.topleveltools.inspect import inspect
 from abjad.tools.topleveltools.attach import attach
 from lychee.converters.inbound import abjad as abjad_to_lmei
 from lychee.converters.tests import abjad_test_case
@@ -957,246 +956,246 @@ class TestAbjadToLmeiConversions(abjad_test_case.AbjadTestCase):
             self.assertEqual(mei_section[x].get('n'), str(x))
         self.assertIsNotNone(mei_section.get(xml.ID))
 
-    def test_tuplet_to_tupletspan_empty_fixed(self):
-        '''
-        precondition: empty abjad FixedDuratonTuplet
-        postcondition: list containing mei tupletspan Element with dur attr
-        '''
-        abjad_tuplet = FixedDurationTuplet(Duration(1,4), [])
+    # def test_tuplet_to_tupletspan_empty_fixed(self):
+    #     '''
+    #     precondition: empty abjad Tuplet
+    #     postcondition: list containing mei tupletspan Element with dur attr
+    #     '''
+    #     abjad_tuplet = Tuplet(Duration(1,4), [])
 
-        mei_element = abjad_to_lmei.tuplet_to_tupletspan(abjad_tuplet)
+    #     mei_element = abjad_to_lmei.tuplet_to_tupletspan(abjad_tuplet)
 
-        self.assertTrue(isinstance(mei_element, etree._Element))
-        tupletspan = mei_element
-        self.assertEqual(tupletspan.tag, mei.TUPLET_SPAN)
-        self.assertEqual(tupletspan.get('dur'), '4')
-        self.assertIsNone(tupletspan.get('dots'))
-        self.assertIsNone(tupletspan.get('num'))
-        self.assertIsNone(tupletspan.get('numBase'))
-        self.assertIsNone(tupletspan.get('startid'))
-        self.assertIsNone(tupletspan.get('endid'))
-        self.assertIsNotNone(tupletspan.get(xml.ID))
+    #     self.assertTrue(isinstance(mei_element, etree._Element))
+    #     tupletspan = mei_element
+    #     self.assertEqual(tupletspan.tag, mei.TUPLET_SPAN)
+    #     self.assertEqual(tupletspan.get('dur'), '4')
+    #     self.assertIsNone(tupletspan.get('dots'))
+    #     self.assertIsNone(tupletspan.get('num'))
+    #     self.assertIsNone(tupletspan.get('numBase'))
+    #     self.assertIsNone(tupletspan.get('startid'))
+    #     self.assertIsNone(tupletspan.get('endid'))
+    #     self.assertIsNotNone(tupletspan.get(xml.ID))
 
-    def test_tuplet_to_tupletspan_empty_fixed_dotted(self):
-        '''
-        precondition: empty abjad FixedDuratonTuplet
-        postcondition: list containing mei tupletspan Element with dur attr
-        '''
-        abjad_tuplet = FixedDurationTuplet(Duration(3,8), [])
+    # def test_tuplet_to_tupletspan_empty_fixed_dotted(self):
+    #     '''
+    #     precondition: empty abjad Tuplet
+    #     postcondition: list containing mei tupletspan Element with dur attr
+    #     '''
+    #     abjad_tuplet = Tuplet(Duration(3,8), [])
 
-        mei_element = abjad_to_lmei.tuplet_to_tupletspan(abjad_tuplet)
+    #     mei_element = abjad_to_lmei.tuplet_to_tupletspan(abjad_tuplet)
 
-        self.assertTrue(isinstance(mei_element, etree._Element))
-        tupletspan = mei_element
-        self.assertEqual(tupletspan.tag, mei.TUPLET_SPAN)
-        self.assertEqual(tupletspan.get('dur'), '4')
-        self.assertEqual(tupletspan.get('dots'), '1')
-        self.assertIsNone(tupletspan.get('num'))
-        self.assertIsNone(tupletspan.get('numBase'))
-        self.assertIsNone(tupletspan.get('startid'))
-        self.assertIsNone(tupletspan.get('endid'))
-        self.assertIsNotNone(tupletspan.get(xml.ID))
+    #     self.assertTrue(isinstance(mei_element, etree._Element))
+    #     tupletspan = mei_element
+    #     self.assertEqual(tupletspan.tag, mei.TUPLET_SPAN)
+    #     self.assertEqual(tupletspan.get('dur'), '4')
+    #     self.assertEqual(tupletspan.get('dots'), '1')
+    #     self.assertIsNone(tupletspan.get('num'))
+    #     self.assertIsNone(tupletspan.get('numBase'))
+    #     self.assertIsNone(tupletspan.get('startid'))
+    #     self.assertIsNone(tupletspan.get('endid'))
+    #     self.assertIsNotNone(tupletspan.get(xml.ID))
 
-    def test_tuplet_to_tupletspan_empty(self):
-        '''
-        precondition: empty abjad Tuplet with fixed Multiplier
-        postcondition: list containing mei tupletspan Element with num and numBase attrs
-        '''
-        abjad_tuplet = Tuplet(Multiplier(2,3), [])
+    # def test_tuplet_to_tupletspan_empty(self):
+    #     '''
+    #     precondition: empty abjad Tuplet with fixed Multiplier
+    #     postcondition: list containing mei tupletspan Element with num and numBase attrs
+    #     '''
+    #     abjad_tuplet = Tuplet(Multiplier(2,3), [])
 
-        mei_element = abjad_to_lmei.tuplet_to_tupletspan(abjad_tuplet)
+    #     mei_element = abjad_to_lmei.tuplet_to_tupletspan(abjad_tuplet)
 
-        self.assertTrue(isinstance(mei_element, etree._Element))
-        tupletspan = mei_element
-        self.assertEqual(tupletspan.tag, mei.TUPLET_SPAN)
-        self.assertEqual(tupletspan.get('dur'), None)
-        self.assertEqual(tupletspan.get('dots'), None)
-        self.assertEqual(tupletspan.get('num'), '3')
-        self.assertEqual(tupletspan.get('numBase'), '2')
-        self.assertEqual(tupletspan.get('startid'), None)
-        self.assertEqual(tupletspan.get('endid'), None)
-        self.assertIsNotNone(tupletspan.get(xml.ID))
+    #     self.assertTrue(isinstance(mei_element, etree._Element))
+    #     tupletspan = mei_element
+    #     self.assertEqual(tupletspan.tag, mei.TUPLET_SPAN)
+    #     self.assertEqual(tupletspan.get('dur'), None)
+    #     self.assertEqual(tupletspan.get('dots'), None)
+    #     self.assertEqual(tupletspan.get('num'), '3')
+    #     self.assertEqual(tupletspan.get('numBase'), '2')
+    #     self.assertEqual(tupletspan.get('startid'), None)
+    #     self.assertEqual(tupletspan.get('endid'), None)
+    #     self.assertIsNotNone(tupletspan.get(xml.ID))
 
-    def test_tuplet_to_tupletspan_full(self):
-        '''
-        precondition: abjad Tuplet containing leaves
-        postcondition: list containing mei tupletspan Element followed by leaf Elements
-        '''
-        # returns list containing tupletspan followed by leaf elements
-        abjad_tuplet = Tuplet(Multiplier(2,3), "c'8 c' c'")
+    # def test_tuplet_to_tupletspan_full(self):
+    #     '''
+    #     precondition: abjad Tuplet containing leaves
+    #     postcondition: list containing mei tupletspan Element followed by leaf Elements
+    #     '''
+    #     # returns list containing tupletspan followed by leaf elements
+    #     abjad_tuplet = Tuplet(Multiplier(2,3), "c'8 c' c'")
 
-        mei_elements = abjad_to_lmei.tuplet_to_tupletspan(abjad_tuplet)
+    #     mei_elements = abjad_to_lmei.tuplet_to_tupletspan(abjad_tuplet)
 
-        self.assertTrue(isinstance(mei_elements, list))
-        self.assertEqual(len(mei_elements), 4)
-        self.assertEqual(mei_elements[0].tag, mei.TUPLET_SPAN)
-        self.assertEqual(mei_elements[0].get('dur'), '4')
-        self.assertIsNone(mei_elements[0].get('dots'))
-        self.assertEqual(mei_elements[0].get('num'), '3')
-        self.assertEqual(mei_elements[0].get('numBase'), '2')
-        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
-        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
-        chunked_plist = mei_elements[0].get('plist').split()
-        self.assertEqual(len(chunked_plist), 3)
-        for note_element in mei_elements[1:]:
-            self.assertTrue(note_element.get(xml.ID) in chunked_plist)
+    #     self.assertTrue(isinstance(mei_elements, list))
+    #     self.assertEqual(len(mei_elements), 4)
+    #     self.assertEqual(mei_elements[0].tag, mei.TUPLET_SPAN)
+    #     self.assertEqual(mei_elements[0].get('dur'), '4')
+    #     self.assertIsNone(mei_elements[0].get('dots'))
+    #     self.assertEqual(mei_elements[0].get('num'), '3')
+    #     self.assertEqual(mei_elements[0].get('numBase'), '2')
+    #     self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
+    #     self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
+    #     chunked_plist = mei_elements[0].get('plist').split()
+    #     self.assertEqual(len(chunked_plist), 3)
+    #     for note_element in mei_elements[1:]:
+    #         self.assertTrue(note_element.get(xml.ID) in chunked_plist)
 
-    @mock.patch("lychee.converters.inbound.abjad.leaf_to_element")
-    def test_tuplet_to_tupletspan_full_mock(self, mock_element):
-        '''
-        precondition: abjad Tuplet containing leaves
-        postcondition: list containing mei tupletspan Element followed by leaf Elements
-        '''
-        # returns list containing tupletspan followed by leaf elements
-        abjad_tuplet = Tuplet(Multiplier(2,3), "c'8 c' c'")
-        mock_element.side_effect = lambda x: etree.Element(mei.NOTE, pname='c', octave='4', dur='8')
+    # @mock.patch("lychee.converters.inbound.abjad.leaf_to_element")
+    # def test_tuplet_to_tupletspan_full_mock(self, mock_element):
+    #     '''
+    #     precondition: abjad Tuplet containing leaves
+    #     postcondition: list containing mei tupletspan Element followed by leaf Elements
+    #     '''
+    #     # returns list containing tupletspan followed by leaf elements
+    #     abjad_tuplet = Tuplet(Multiplier(2,3), "c'8 c' c'")
+    #     mock_element.side_effect = lambda x: etree.Element(mei.NOTE, pname='c', octave='4', dur='8')
 
-        mei_elements = abjad_to_lmei.tuplet_to_tupletspan(abjad_tuplet)
+    #     mei_elements = abjad_to_lmei.tuplet_to_tupletspan(abjad_tuplet)
 
-        self.assertTrue(isinstance(mei_elements, list))
-        self.assertEqual(len(mei_elements), 4)
-        self.assertEqual(mei_elements[0].tag, mei.TUPLET_SPAN)
-        self.assertEqual(mei_elements[0].get('dur'), '4')
-        self.assertIsNone(mei_elements[0].get('dots'))
-        self.assertEqual(mei_elements[0].get('num'), '3')
-        self.assertEqual(mei_elements[0].get('numBase'), '2')
-        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
-        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
-        chunked_plist = mei_elements[0].get('plist').split()
-        self.assertEqual(len(chunked_plist), 3)
-        for note_element in mei_elements[1:]:
-            self.assertTrue(note_element.get(xml.ID) in chunked_plist)
+    #     self.assertTrue(isinstance(mei_elements, list))
+    #     self.assertEqual(len(mei_elements), 4)
+    #     self.assertEqual(mei_elements[0].tag, mei.TUPLET_SPAN)
+    #     self.assertEqual(mei_elements[0].get('dur'), '4')
+    #     self.assertIsNone(mei_elements[0].get('dots'))
+    #     self.assertEqual(mei_elements[0].get('num'), '3')
+    #     self.assertEqual(mei_elements[0].get('numBase'), '2')
+    #     self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
+    #     self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
+    #     chunked_plist = mei_elements[0].get('plist').split()
+    #     self.assertEqual(len(chunked_plist), 3)
+    #     for note_element in mei_elements[1:]:
+    #         self.assertTrue(note_element.get(xml.ID) in chunked_plist)
 
-    def test_tuplet_to_tupletspan_full_dotted(self):
-        '''
-        precondition: abjad Tuplet of dotted duration containing leaves
-        postcondition: list containing mei tupletspan Element with dots attr followed by leaf Elements
-        '''
-        abjad_tuplet = Tuplet()
-        abjad_tuplet = abjad_tuplet.from_duration_and_ratio(Duration(3,8), [1] * 5)
+    # def test_tuplet_to_tupletspan_full_dotted(self):
+    #     '''
+    #     precondition: abjad Tuplet of dotted duration containing leaves
+    #     postcondition: list containing mei tupletspan Element with dots attr followed by leaf Elements
+    #     '''
+    #     abjad_tuplet = Tuplet()
+    #     abjad_tuplet = abjad_tuplet.from_duration_and_ratio(Duration(3,8), [1] * 5)
 
-        mei_elements = abjad_to_lmei.tuplet_to_tupletspan(abjad_tuplet)
+    #     mei_elements = abjad_to_lmei.tuplet_to_tupletspan(abjad_tuplet)
 
-        self.assertTrue(isinstance(mei_elements, list))
-        self.assertEqual(len(mei_elements), 6)
-        self.assertEqual(mei_elements[0].tag, mei.TUPLET_SPAN)
-        self.assertEqual(mei_elements[0].get('dur'), '4')
-        self.assertEqual(mei_elements[0].get('dots'), '1')
-        self.assertEqual(mei_elements[0].get('num'), '5')
-        self.assertEqual(mei_elements[0].get('numBase'), '3')
-        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
-        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
-        chunked_plist = mei_elements[0].get('plist').split()
-        self.assertEqual(len(chunked_plist), 5)
-        for note_element in mei_elements[1:]:
-            self.assertTrue(note_element.get(xml.ID) in chunked_plist)
+    #     self.assertTrue(isinstance(mei_elements, list))
+    #     self.assertEqual(len(mei_elements), 6)
+    #     self.assertEqual(mei_elements[0].tag, mei.TUPLET_SPAN)
+    #     self.assertEqual(mei_elements[0].get('dur'), '4')
+    #     self.assertEqual(mei_elements[0].get('dots'), '1')
+    #     self.assertEqual(mei_elements[0].get('num'), '5')
+    #     self.assertEqual(mei_elements[0].get('numBase'), '3')
+    #     self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
+    #     self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
+    #     chunked_plist = mei_elements[0].get('plist').split()
+    #     self.assertEqual(len(chunked_plist), 5)
+    #     for note_element in mei_elements[1:]:
+    #         self.assertTrue(note_element.get(xml.ID) in chunked_plist)
 
-    @mock.patch("lychee.converters.inbound.abjad.leaf_to_element")
-    def test_tuplet_to_tupletspan_full_dotted_mock(self, mock_element):
-        '''
-        precondition: abjad Tuplet of dotted duration containing leaves
-        postcondition: list containing mei tupletspan Element with dots attr followed by leaf Elements
-        '''
-        abjad_tuplet = Tuplet()
-        abjad_tuplet = abjad_tuplet.from_duration_and_ratio(Duration(3,8), [1] * 5)
-        mock_element.side_effect = lambda x: etree.Element(mei.NOTE, pname='c', octave='4', dur='8')
+    # @mock.patch("lychee.converters.inbound.abjad.leaf_to_element")
+    # def test_tuplet_to_tupletspan_full_dotted_mock(self, mock_element):
+    #     '''
+    #     precondition: abjad Tuplet of dotted duration containing leaves
+    #     postcondition: list containing mei tupletspan Element with dots attr followed by leaf Elements
+    #     '''
+    #     abjad_tuplet = Tuplet()
+    #     abjad_tuplet = abjad_tuplet.from_duration_and_ratio(Duration(3,8), [1] * 5)
+    #     mock_element.side_effect = lambda x: etree.Element(mei.NOTE, pname='c', octave='4', dur='8')
 
-        mei_elements = abjad_to_lmei.tuplet_to_tupletspan(abjad_tuplet)
+    #     mei_elements = abjad_to_lmei.tuplet_to_tupletspan(abjad_tuplet)
 
-        self.assertTrue(isinstance(mei_elements, list))
-        self.assertEqual(len(mei_elements), 6)
-        self.assertEqual(mei_elements[0].tag, mei.TUPLET_SPAN)
-        self.assertEqual(mei_elements[0].get('dur'), '4')
-        self.assertEqual(mei_elements[0].get('dots'), '1')
-        self.assertEqual(mei_elements[0].get('num'), '5')
-        self.assertEqual(mei_elements[0].get('numBase'), '3')
-        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
-        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
-        chunked_plist = mei_elements[0].get('plist').split()
-        self.assertEqual(len(chunked_plist), 5)
-        for note_element in mei_elements[1:]:
-            self.assertTrue(note_element.get(xml.ID) in chunked_plist)
+    #     self.assertTrue(isinstance(mei_elements, list))
+    #     self.assertEqual(len(mei_elements), 6)
+    #     self.assertEqual(mei_elements[0].tag, mei.TUPLET_SPAN)
+    #     self.assertEqual(mei_elements[0].get('dur'), '4')
+    #     self.assertEqual(mei_elements[0].get('dots'), '1')
+    #     self.assertEqual(mei_elements[0].get('num'), '5')
+    #     self.assertEqual(mei_elements[0].get('numBase'), '3')
+    #     self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
+    #     self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
+    #     chunked_plist = mei_elements[0].get('plist').split()
+    #     self.assertEqual(len(chunked_plist), 5)
+    #     for note_element in mei_elements[1:]:
+    #         self.assertTrue(note_element.get(xml.ID) in chunked_plist)
 
-    def test_tuplet_to_tupletspan_full_nested(self):
-        '''
-        precondition: Abjad Tuplet containing Leaves and a Tuplet.
-        postcondition: list of mei elements containing tupletspan followed by leaf/tupletspan Elements.
-        '''
-        inner_tuplet = FixedDurationTuplet((1,4), "c'8 c' c'")
-        outer_tuplet = FixedDurationTuplet((3,8), [])
-        outer_tuplet.append(inner_tuplet)
-        outer_tuplet.extend("d'8 d' d'")
+    # def test_tuplet_to_tupletspan_full_nested(self):
+    #     '''
+    #     precondition: Abjad Tuplet containing Leaves and a Tuplet.
+    #     postcondition: list of mei elements containing tupletspan followed by leaf/tupletspan Elements.
+    #     '''
+    #     inner_tuplet = Tuplet((1,4), "c'8 c' c'")
+    #     outer_tuplet = Tuplet((3,8), [])
+    #     outer_tuplet.append(inner_tuplet)
+    #     outer_tuplet.extend("d'8 d' d'")
 
-        mei_elements = abjad_to_lmei.tuplet_to_tupletspan(outer_tuplet)
+    #     mei_elements = abjad_to_lmei.tuplet_to_tupletspan(outer_tuplet)
 
-        self.assertTrue(isinstance(mei_elements, list))
-        self.assertEqual(len(mei_elements), 8)
-        outer_tupletspan = mei_elements[0]
-        inner_tupletspan = mei_elements[1]
-        self.assertEqual(outer_tupletspan.tag, mei.TUPLET_SPAN)
-        self.assertEqual(outer_tupletspan.get('dur'), '4')
-        self.assertEqual(outer_tupletspan.get('dots'), '1')
-        self.assertEqual(outer_tupletspan.get('num'), '5')
-        self.assertEqual(outer_tupletspan.get('numBase'), '3')
-        self.assertEqual(inner_tupletspan.tag, mei.TUPLET_SPAN)
-        self.assertEqual(inner_tupletspan.get('dur'), '4')
-        self.assertIsNone(inner_tupletspan.get('dots'))
-        self.assertEqual(inner_tupletspan.get('num'), '3')
-        self.assertEqual(inner_tupletspan.get('numBase'), '2')
-        for note in mei_elements[2:]:
-            self.assertEqual(note.tag, mei.NOTE)
-        inner_ids = mei_elements[1].get('plist').split()
-        for inner_tuplet_note in mei_elements[2:5]:
-            self.assertTrue(inner_tuplet_note.get(xml.ID) in inner_ids)
-        self.assertEqual(mei_elements[1].get('startid'), mei_elements[2].get(xml.ID))
-        self.assertEqual(mei_elements[1].get('endid'), mei_elements[4].get(xml.ID))
-        outer_ids = mei_elements[0].get('plist').split()
-        for outer_tuplet_element in mei_elements[1:]:
-            self.assertTrue(outer_tuplet_element.get(xml.ID) in outer_ids)
-        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
-        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
-        for note_element in mei_elements[1:]:
-            self.assertTrue(note_element.get(xml.ID) in outer_ids)
+    #     self.assertTrue(isinstance(mei_elements, list))
+    #     self.assertEqual(len(mei_elements), 8)
+    #     outer_tupletspan = mei_elements[0]
+    #     inner_tupletspan = mei_elements[1]
+    #     self.assertEqual(outer_tupletspan.tag, mei.TUPLET_SPAN)
+    #     self.assertEqual(outer_tupletspan.get('dur'), '4')
+    #     self.assertEqual(outer_tupletspan.get('dots'), '1')
+    #     self.assertEqual(outer_tupletspan.get('num'), '5')
+    #     self.assertEqual(outer_tupletspan.get('numBase'), '3')
+    #     self.assertEqual(inner_tupletspan.tag, mei.TUPLET_SPAN)
+    #     self.assertEqual(inner_tupletspan.get('dur'), '4')
+    #     self.assertIsNone(inner_tupletspan.get('dots'))
+    #     self.assertEqual(inner_tupletspan.get('num'), '3')
+    #     self.assertEqual(inner_tupletspan.get('numBase'), '2')
+    #     for note in mei_elements[2:]:
+    #         self.assertEqual(note.tag, mei.NOTE)
+    #     inner_ids = mei_elements[1].get('plist').split()
+    #     for inner_tuplet_note in mei_elements[2:5]:
+    #         self.assertTrue(inner_tuplet_note.get(xml.ID) in inner_ids)
+    #     self.assertEqual(mei_elements[1].get('startid'), mei_elements[2].get(xml.ID))
+    #     self.assertEqual(mei_elements[1].get('endid'), mei_elements[4].get(xml.ID))
+    #     outer_ids = mei_elements[0].get('plist').split()
+    #     for outer_tuplet_element in mei_elements[1:]:
+    #         self.assertTrue(outer_tuplet_element.get(xml.ID) in outer_ids)
+    #     self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
+    #     self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
+    #     for note_element in mei_elements[1:]:
+    #         self.assertTrue(note_element.get(xml.ID) in outer_ids)
 
-    @mock.patch("lychee.converters.inbound.abjad.leaf_to_element")
-    def test_tuplet_to_tupletspan_full_nested_mock(self, mock_element):
-        '''
-        precondition: Abjad Tuplet containing Leaves and a Tuplet.
-        postcondition: list of mei elements containing tupletspan followed by leaf/tupletspan Elements.
-        '''
-        inner_tuplet = FixedDurationTuplet((1,4), "c'8 c' c'")
-        outer_tuplet = FixedDurationTuplet((3,8), [])
-        outer_tuplet.append(inner_tuplet)
-        outer_tuplet.extend("d'8 d' d'")
-        mock_element.side_effect = lambda x: etree.Element(mei.NOTE, pname='c', octave='4', dur='8')
+    # @mock.patch("lychee.converters.inbound.abjad.leaf_to_element")
+    # def test_tuplet_to_tupletspan_full_nested_mock(self, mock_element):
+    #     '''
+    #     precondition: Abjad Tuplet containing Leaves and a Tuplet.
+    #     postcondition: list of mei elements containing tupletspan followed by leaf/tupletspan Elements.
+    #     '''
+    #     inner_tuplet = Tuplet((1,4), "c'8 c' c'")
+    #     outer_tuplet = Tuplet((3,8), [])
+    #     outer_tuplet.append(inner_tuplet)
+    #     outer_tuplet.extend("d'8 d' d'")
+    #     mock_element.side_effect = lambda x: etree.Element(mei.NOTE, pname='c', octave='4', dur='8')
 
-        mei_elements = abjad_to_lmei.tuplet_to_tupletspan(outer_tuplet)
+    #     mei_elements = abjad_to_lmei.tuplet_to_tupletspan(outer_tuplet)
 
-        self.assertTrue(isinstance(mei_elements, list))
-        self.assertEqual(len(mei_elements), 8)
-        outer_tupletspan = mei_elements[0]
-        inner_tupletspan = mei_elements[1]
-        self.assertEqual(outer_tupletspan.tag, mei.TUPLET_SPAN)
-        self.assertEqual(outer_tupletspan.get('dur'), '4')
-        self.assertEqual(outer_tupletspan.get('dots'), '1')
-        self.assertEqual(outer_tupletspan.get('num'), '5')
-        self.assertEqual(outer_tupletspan.get('numBase'), '3')
-        self.assertEqual(inner_tupletspan.tag, mei.TUPLET_SPAN)
-        self.assertEqual(inner_tupletspan.get('dur'), '4')
-        self.assertIsNone(inner_tupletspan.get('dots'))
-        self.assertEqual(inner_tupletspan.get('num'), '3')
-        self.assertEqual(inner_tupletspan.get('numBase'), '2')
-        for note in mei_elements[2:]:
-            self.assertEqual(note.tag, mei.NOTE)
-        inner_ids = mei_elements[1].get('plist').split()
-        for inner_tuplet_note in mei_elements[2:5]:
-            self.assertTrue(inner_tuplet_note.get(xml.ID) in inner_ids)
-        self.assertEqual(mei_elements[1].get('startid'), mei_elements[2].get(xml.ID))
-        self.assertEqual(mei_elements[1].get('endid'), mei_elements[4].get(xml.ID))
-        outer_ids = mei_elements[0].get('plist').split()
-        for outer_tuplet_element in mei_elements[1:]:
-            self.assertTrue(outer_tuplet_element.get(xml.ID) in outer_ids)
-        self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
-        self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
-        for note_element in mei_elements[1:]:
-            self.assertTrue(note_element.get(xml.ID) in outer_ids)
+    #     self.assertTrue(isinstance(mei_elements, list))
+    #     self.assertEqual(len(mei_elements), 8)
+    #     outer_tupletspan = mei_elements[0]
+    #     inner_tupletspan = mei_elements[1]
+    #     self.assertEqual(outer_tupletspan.tag, mei.TUPLET_SPAN)
+    #     self.assertEqual(outer_tupletspan.get('dur'), '4')
+    #     self.assertEqual(outer_tupletspan.get('dots'), '1')
+    #     self.assertEqual(outer_tupletspan.get('num'), '5')
+    #     self.assertEqual(outer_tupletspan.get('numBase'), '3')
+    #     self.assertEqual(inner_tupletspan.tag, mei.TUPLET_SPAN)
+    #     self.assertEqual(inner_tupletspan.get('dur'), '4')
+    #     self.assertIsNone(inner_tupletspan.get('dots'))
+    #     self.assertEqual(inner_tupletspan.get('num'), '3')
+    #     self.assertEqual(inner_tupletspan.get('numBase'), '2')
+    #     for note in mei_elements[2:]:
+    #         self.assertEqual(note.tag, mei.NOTE)
+    #     inner_ids = mei_elements[1].get('plist').split()
+    #     for inner_tuplet_note in mei_elements[2:5]:
+    #         self.assertTrue(inner_tuplet_note.get(xml.ID) in inner_ids)
+    #     self.assertEqual(mei_elements[1].get('startid'), mei_elements[2].get(xml.ID))
+    #     self.assertEqual(mei_elements[1].get('endid'), mei_elements[4].get(xml.ID))
+    #     outer_ids = mei_elements[0].get('plist').split()
+    #     for outer_tuplet_element in mei_elements[1:]:
+    #         self.assertTrue(outer_tuplet_element.get(xml.ID) in outer_ids)
+    #     self.assertEqual(mei_elements[0].get('startid'), mei_elements[1].get(xml.ID))
+    #     self.assertEqual(mei_elements[0].get('endid'), mei_elements[-1].get(xml.ID))
+    #     for note_element in mei_elements[1:]:
+    #         self.assertTrue(note_element.get(xml.ID) in outer_ids)

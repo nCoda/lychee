@@ -28,7 +28,6 @@ from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Chord import Chord
 from abjad.tools.scoretools.Skip import Skip
 from abjad.tools.scoretools.NoteHead import NoteHead
-from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
 from abjad.tools.scoretools.Tuplet import Tuplet
 from abjad.tools.scoretools.Voice import Voice
 from abjad.tools.scoretools.Staff import Staff
@@ -36,7 +35,7 @@ from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.scoretools.Score import Score
 from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.durationtools.Multiplier import Multiplier
-from abjad.tools.topleveltools.inspect_ import inspect_
+from abjad.tools.topleveltools.inspect import inspect
 from abjad.tools.topleveltools.attach import attach
 from lychee.converters.outbound import abjad
 from lychee.converters.tests import abjad_test_case
@@ -510,25 +509,6 @@ class TestLmeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(isinstance(abjad_score[2], Staff), True)
         self.assertEqual(len(abjad_score[1]), 2)
 
-    def test_mei_tuplet_span_to_abjad_tuplet_empty_fixed(self):
-        '''
-        precondition: empty mei tupletspan Element with duration but no multiplier
-        postcondition: empty abjad FixedDurationTuplet object
-        '''
-        mei_tupletspan = ETree.Element(mei.TUPLET_SPAN,dur='4')
-        abjad_tuplet = abjad.tupletspan_to_tuplet(mei_tupletspan)
-        self.assertEqual(len(abjad_tuplet), 0)
-        self.assertEqual(abjad_tuplet.target_duration, Duration(1,4))
-
-    def test_mei_tuplet_span_to_abjad_tuplet_empty_fixed_dotted(self):
-        '''
-        precondition: empty mei tupletspan Element with dotted duration but no multiplier
-        postcondition: empty abjad FixedDurationTuplet object
-        '''
-        mei_tupletspan = ETree.Element(mei.TUPLET_SPAN,dur='4', dots='1')
-        abjad_tuplet = abjad.tupletspan_to_tuplet(mei_tupletspan)
-        self.assertEqual(len(abjad_tuplet), 0)
-        self.assertEqual(abjad_tuplet.target_duration, Duration(3,8))
 
     def test_tupletspan_to_tuplet_empty(self):
         '''
@@ -559,11 +539,11 @@ class TestLmeiToAbjadConversions(abjad_test_case.AbjadTestCase):
 
         self.assertEqual(len(abjad_tuplet), 3)
         self.assertEqual(abjad_tuplet.multiplier, Multiplier(2,3))
-        self.assertEqual(abjad_tuplet.target_duration, Duration(1,4))
+        self.assertEqual(abjad_tuplet.multiplied_duration, Duration(1,4))
         for note in abjad_tuplet:
             self.assertTrue(isinstance(note, Note))
             self.assertEqual(note.written_duration, Duration(1,8))
-            self.assertEqual(inspect_(note).get_duration(), Duration(1,12))
+            self.assertEqual(inspect(note).get_duration(), Duration(1,12))
 
 
     @mock.patch("lychee.converters.outbound.abjad.element_to_leaf")
@@ -587,11 +567,11 @@ class TestLmeiToAbjadConversions(abjad_test_case.AbjadTestCase):
 
         self.assertEqual(len(abjad_tuplet), 3)
         self.assertEqual(abjad_tuplet.multiplier, Multiplier(2,3))
-        self.assertEqual(abjad_tuplet.target_duration, Duration(1,4))
+        self.assertEqual(abjad_tuplet.multiplied_duration, Duration(1,4))
         for note in abjad_tuplet:
             self.assertTrue(isinstance(note, Note))
             self.assertEqual(note.written_duration, Duration(1,8))
-            self.assertEqual(inspect_(note).get_duration(), Duration(1,12))
+            self.assertEqual(inspect(note).get_duration(), Duration(1,12))
 
     def test_tupletspan_to_tuplet_full_dotted(self):
         '''
@@ -611,11 +591,11 @@ class TestLmeiToAbjadConversions(abjad_test_case.AbjadTestCase):
 
         self.assertEqual(len(abjad_tuplet), 5)
         self.assertEqual(abjad_tuplet.multiplier, Multiplier(3,5))
-        self.assertEqual(abjad_tuplet.target_duration, Duration(3,8))
+        self.assertEqual(abjad_tuplet.multiplied_duration, Duration(3,8))
         for note in abjad_tuplet:
             self.assertTrue(isinstance(note, Note))
             self.assertEqual(note.written_duration, Duration(1,8))
-            self.assertEqual(inspect_(note).get_duration(), Duration(3,40))
+            self.assertEqual(inspect(note).get_duration(), Duration(3,40))
 
     @mock.patch("lychee.converters.outbound.abjad.element_to_leaf")
     def test_tupletspan_to_tuplet_full_dotted_mock(self, mock_leaf):
@@ -637,11 +617,11 @@ class TestLmeiToAbjadConversions(abjad_test_case.AbjadTestCase):
 
         self.assertEqual(len(abjad_tuplet), 5)
         self.assertEqual(abjad_tuplet.multiplier, Multiplier(3,5))
-        self.assertEqual(abjad_tuplet.target_duration, Duration(3,8))
+        self.assertEqual(abjad_tuplet.multiplied_duration, Duration(3,8))
         for note in abjad_tuplet:
             self.assertTrue(isinstance(note, Note))
             self.assertEqual(note.written_duration, Duration(1,8))
-            self.assertEqual(inspect_(note).get_duration(), Duration(3,40))
+            self.assertEqual(inspect(note).get_duration(), Duration(3,40))
 
     def test_tupletspan_to_tuplet_full_nested(self):
         '''
@@ -672,16 +652,16 @@ class TestLmeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(len(abjad_tuplet), 4)
         self.assertEqual(abjad_tuplet.multiplier, Multiplier(3,5))
         self.assertEqual(inner_tuplet.multiplier, Multiplier(2,3))
-        self.assertEqual(inspect_(abjad_tuplet).get_duration(), Duration(3,8))
-        self.assertEqual(inspect_(inner_tuplet).get_duration(), Duration(3,20))
+        self.assertEqual(inspect(abjad_tuplet).get_duration(), Duration(3,8))
+        self.assertEqual(inspect(inner_tuplet).get_duration(), Duration(3,20))
         for note in inner_tuplet:
             self.assertTrue(isinstance(note, Note))
             self.assertEqual(note.written_duration, Duration(1,8))
-            self.assertEqual(inspect_(note).get_duration(), Duration(1,20))
+            self.assertEqual(inspect(note).get_duration(), Duration(1,20))
         for note in abjad_tuplet[1:]:
             self.assertTrue(isinstance(note, Note))
             self.assertEqual(note.written_duration, Duration(1,8))
-            self.assertEqual(inspect_(note).get_duration(), Duration(3,40))
+            self.assertEqual(inspect(note).get_duration(), Duration(3,40))
 
     @mock.patch("lychee.converters.outbound.abjad.element_to_leaf")
     def test_tupletspan_to_tuplet_full_nested_mock(self, mock_leaf):
@@ -714,16 +694,16 @@ class TestLmeiToAbjadConversions(abjad_test_case.AbjadTestCase):
         self.assertEqual(len(abjad_tuplet), 4)
         self.assertEqual(abjad_tuplet.multiplier, Multiplier(3,5))
         self.assertEqual(inner_tuplet.multiplier, Multiplier(2,3))
-        self.assertEqual(inspect_(abjad_tuplet).get_duration(), Duration(3,8))
-        self.assertEqual(inspect_(inner_tuplet).get_duration(), Duration(3,20))
+        self.assertEqual(inspect(abjad_tuplet).get_duration(), Duration(3,8))
+        self.assertEqual(inspect(inner_tuplet).get_duration(), Duration(3,20))
         for note in inner_tuplet:
             self.assertTrue(isinstance(note, Note))
             self.assertEqual(note.written_duration, Duration(1,8))
-            self.assertEqual(inspect_(note).get_duration(), Duration(1,20))
+            self.assertEqual(inspect(note).get_duration(), Duration(1,20))
         for note in abjad_tuplet[1:]:
             self.assertTrue(isinstance(note, Note))
             self.assertEqual(note.written_duration, Duration(1,8))
-            self.assertEqual(inspect_(note).get_duration(), Duration(3,40))
+            self.assertEqual(inspect(note).get_duration(), Duration(3,40))
 
     @mock.patch('lychee.converters.outbound.abjad.rest_to_rest')
     @mock.patch('lychee.converters.outbound.abjad.note_to_note')

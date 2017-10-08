@@ -124,7 +124,7 @@ def add_xml_ids(abjad_object, mei_element):
     except UnderfullContainerError:
         abjad_str = 'underfull'
 
-    parentage = inspect_(abjad_object).get_parentage()
+    parentage = inspect(abjad_object).get_parentage()
     id_string = '{0}{1}{2}{3}'.format(abjad_str, parentage.score_index, mei_element.tag, mei_element.get('n', ''))
     hasher = hashlib.new('SHA256', six.b(id_string))
     the_xmlid = 'z{0}'.format(hasher.hexdigest())
@@ -153,9 +153,9 @@ def note_to_note(abjad_note):
     #otherwise, assume a Note came in
         dots = None
         duration = None
-    octave = abjad_note.written_pitch.octave.octave_number
-    pitchname = abjad_note.written_pitch.pitch_class_name[0]
-    accidental = convert_accidental(abjad_note.written_pitch.accidental.abbreviation)
+    octave = abjad_note.written_pitch.octave.number
+    pitchname = abjad_note.written_pitch.pitch_class.name[0]
+    accidental = convert_accidental(str(abjad_note.written_pitch.accidental))
     #cautionary accidental handling
     if hasattr(abjad_note, 'is_cautionary'):
         is_cautionary = abjad_note.is_cautionary
@@ -478,7 +478,7 @@ def set_initial_clef(a_staff, m_staffdef):
 
     If the clef is unset, or a currently-unsupported type, nothing happens.
     '''
-    a_clef = inspect_(a_staff).get_effective(Clef)
+    a_clef = inspect(a_staff).get_effective(Clef)
 
     if a_clef:
         clef_name = a_clef.name.lower()

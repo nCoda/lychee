@@ -330,14 +330,14 @@ def tupletspan_element_to_empty_tuplet(mei_tupletspan):
         return return_tuplet
 
 
-def setup_outermost_tupletspan(mei_tupletspan):
+def get_tuplet_duration(mei_tupletspan):
     '''
-    Generate an Abjad Tuplet with a duration taken from an MEI tupletspan Element.
+    Generate an Abjad Duration by querying information from an MEI tupletspan Element.
 
     :param mei_tupletspan: the MEI tupletspan Element to query for duration.
     :type mei_tupletspan: :class:`lxml.etree.ElementTree.Element`
-    :returns: an Abjad Tuplet with mei_tupletspan's duration.
-    :rtype: :class:`abjad.tools.scoretools.Tuplet.Tuplet`
+    :returns: an Abjad Duration with mei_tupletspan's duration.
+    :rtype: :class:`abjad.tools.scoretools.Duration.Duration`
     '''
     mei_duration = mei_tupletspan.get('dur')
     dots = mei_tupletspan.get('dots')
@@ -347,8 +347,7 @@ def setup_outermost_tupletspan(mei_tupletspan):
             dur_string += '.'
     duration = Duration()
     duration = duration.from_lilypond_duration_string(dur_string)
-    return_tuplet = Tuplet(duration, [])
-    return return_tuplet
+    return duration
 
 
 def tupletspan_to_tuplet(mei_tupletspan):
@@ -365,7 +364,7 @@ def tupletspan_to_tuplet(mei_tupletspan):
     if isinstance(mei_tupletspan, list):
         # list beginning with tuplet span and continuing with spanned Elements
         # set up the outermost tuplet and components list
-        abjad_outermost_tuplet = setup_outermost_tupletspan(mei_tupletspan[0])
+        abjad_tuplet_duration = get_tuplet_duration(mei_tupletspan[0])
         tuplet_components = []
         outermost_tuplet_members = mei_tupletspan[1:]
         index = 0
@@ -384,8 +383,7 @@ def tupletspan_to_tuplet(mei_tupletspan):
                 mei_element = element_to_leaf(element)
                 tuplet_components.append(mei_element)
                 index += 1
-        abjad_outermost_tuplet.extend(tuplet_components)
-        return abjad_outermost_tuplet
+        return Tuplet().from_duration(abjad_tuplet_duration, tuplet_components)
     elif hasattr(mei_tupletspan, 'xpath'):
         return tupletspan_element_to_empty_tuplet(mei_tupletspan)
     else:

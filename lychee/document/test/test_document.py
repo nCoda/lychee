@@ -45,8 +45,6 @@ import six
 
 from lxml import etree
 
-import hug
-
 import lychee
 from lychee import exceptions
 from lychee.document import document

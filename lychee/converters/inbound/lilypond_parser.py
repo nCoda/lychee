@@ -18,7 +18,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS, generic_main  # noqa
 
 
-__version__ = (2017, 6, 4, 17, 53, 16, 6)
+__version__ = (2017, 10, 23, 2, 37, 42, 0)
 
 __all__ = [
     'LilyPondParser',
@@ -26,7 +26,12 @@ __all__ = [
     'main'
 ]
 
-KEYWORDS = set([])
+KEYWORDS = set([
+    'R',
+    'q',
+    'r',
+    's',
+])
 
 
 class LilyPondBuffer(Buffer):
@@ -222,12 +227,8 @@ class LilyPondParser(Parser):
 
     @graken()
     def _pitch_name_(self):
-        with self._choice():
-            with self._option():
-                self._pattern(r'[a-z]{2,}')
-            with self._option():
-                self._pattern(r'[a-pt-z]')
-            self._error('expecting one of: [a-pt-z] [a-z]{2,}')
+        self._pattern(r'[a-z]+')
+        self._check_name()
 
     @graken()
     def _octave_(self):
@@ -554,23 +555,6 @@ class LilyPondParser(Parser):
         )
 
     @graken()
-    def _node_(self):
-        with self._choice():
-            with self._option():
-                self._rest_()
-            with self._option():
-                self._spacer_()
-            with self._option():
-                self._note_()
-            with self._option():
-                self._measure_rest_()
-            with self._option():
-                self._chord_()
-            with self._option():
-                self._staff_setting_()
-            self._error('no available options')
-
-    @graken()
     def _barcheck_(self):
         self._constant('barcheck')
         self.name_last_node('ly_type')
@@ -584,13 +568,17 @@ class LilyPondParser(Parser):
     def _music_node_(self):
         with self._choice():
             with self._option():
+                self._note_()
+            with self._option():
                 self._rest_()
             with self._option():
                 self._spacer_()
             with self._option():
-                self._note_()
+                self._measure_rest_()
             with self._option():
                 self._chord_()
+            with self._option():
+                self._barcheck_()
             self._error('no available options')
 
     @graken()
@@ -601,13 +589,17 @@ class LilyPondParser(Parser):
                 with self._option():
                     with self._choice():
                         with self._option():
+                            self._note_()
+                        with self._option():
                             self._rest_()
                         with self._option():
                             self._spacer_()
                         with self._option():
-                            self._note_()
+                            self._measure_rest_()
                         with self._option():
                             self._chord_()
+                        with self._option():
+                            self._barcheck_()
                         self._error('no available options')
                 with self._option():
                     with self._choice():
@@ -620,8 +612,6 @@ class LilyPondParser(Parser):
                         with self._option():
                             self._instr_name_()
                         self._error('no available options')
-                with self._option():
-                    self._barcheck_()
                 self._error('no available options')
         self._positive_closure(block0)
 
@@ -912,9 +902,6 @@ class LilyPondSemantics(object):
         return ast
 
     def spacer(self, ast):
-        return ast
-
-    def node(self, ast):
         return ast
 
     def barcheck(self, ast):

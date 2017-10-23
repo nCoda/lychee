@@ -35,6 +35,9 @@
 @@left_recursion :: False
 @@parseinfo :: False
 
+# Invalid note names.
+@@keyword :: q r s R
+
 
 start = {top_level_expression}* $;
 
@@ -80,11 +83,8 @@ staff_setting =
 # Nodes: notes, rests, chords, spacers
 ######################################
 
-# Matches all strings comprised of lowercase letters except "q", "r", and "s".
-pitch_name =
-    /[a-z]{2,}/
-    | /[a-pt-z]/
-    ;
+@name
+pitch_name = /[a-z]+/ ;
 
 octave =
     ",," | "," | "'''''" | "''''" | "'''" | "''" | "'"
@@ -161,11 +161,10 @@ spacer =
     ly_type:`spacer` /s/ >duration post_events:{post_event}*
     ;
 
-node = rest | spacer | note | measure_rest | chord | staff_setting ;
 barcheck = ly_type:`barcheck` '|' ;
 
-music_node = rest | spacer | note | chord ;
-nodes = { >music_node | >staff_setting | barcheck }+ ;
+music_node = note | rest | spacer | measure_rest | chord | barcheck ;
+nodes = { >music_node | >staff_setting }+ ;
 
 
 # Layers

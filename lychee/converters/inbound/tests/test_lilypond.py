@@ -26,7 +26,7 @@
 Tests for the "lilypond" module.
 
 The tests in this file are only for the translator, not the parser. In other words, these tests are
-for the code that translated Grako's parse into Lychee-MEI.
+for the code that translated TatSu's parse into Lychee-MEI.
 
 A few of the more complicated tests do use the LilyPond parser to improve readability.
 """

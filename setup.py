@@ -11,7 +11,7 @@ setup(
     packages=find_packages(exclude=['*.tests']),
     install_requires=(
         'Abjad==2.21',
-        'grako>=3.14,<3.15',
+        'tatsu>=4.2',
         'lithoxyl==0.4',
         'lxml>3,<4',
         'signalslot',

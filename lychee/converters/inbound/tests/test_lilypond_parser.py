@@ -309,6 +309,36 @@ class TestNoteChordRestSpacer(object):
         actual = parser.parse(content, rule_name='music_node')
         assert expected == actual
 
+    def test_music_node_5(self):
+        """music_node: sol"""
+        content = 'sol16'
+        expected = {
+            'ly_type': 'note',
+            'pitch_name': 'sol',
+            'dur': '16',
+            'oct': None,
+            'accid_force': None,
+            'dots': [],
+            'post_events': [],
+        }
+        actual = parser.parse(content, rule_name='music_node')
+        assert expected == actual
+
+    def test_music_node_6(self):
+        """music_node: re"""
+        content = 're,4'
+        expected = {
+            'ly_type': 'note',
+            'pitch_name': 're',
+            'dur': '4',
+            'oct': ',',
+            'accid_force': None,
+            'dots': [],
+            'post_events': [],
+        }
+        actual = parser.parse(content, rule_name='music_node')
+        assert expected == actual
+
 
 class TestPostEvents(object):
     """

@@ -48,7 +48,7 @@ def check_tag(m_thing, tag_name):
 
 
 @log.wrap('info', 'convert LMEI to LilyPond')
-def convert(document, **kwargs):
+def convert(document, user_settings=None, **kwargs):
     '''
     Convert an MEI document into a LilyPond document.
 
@@ -67,8 +67,13 @@ def convert(document, **kwargs):
         mei.STAFF: staff,
         mei.SECTION: section,
     }
+    if user_settings is None:
+        user_settings = {}
+    context = {
+        'language': user_settings.get('lilyPondLanguage', 'nederlands')
+    }
     if document.tag in CONV_FUNCS:
-        return CONV_FUNCS[document.tag](document)
+        return CONV_FUNCS[document.tag](document, context=context)
     else:
         raise exceptions.OutboundConversionError('LMEI-to-LilyPond cannot do {0} elements'.format(document.tag))
 
@@ -92,7 +97,7 @@ _VALID_ACCIDENTALS = {
 }
 
 
-def duration(m_thing):
+def duration(m_thing, context=None):
     '''
     Extract the duration of an MEI object -- note, chord, or rest -- as a LilyPond duration string.
     '''
@@ -106,7 +111,7 @@ def duration(m_thing):
     return post
 
 
-def tie(m_thing):
+def tie(m_thing, context=None):
     '''
     Find the LilyPond tie string of an MEI object.
     '''
@@ -115,7 +120,7 @@ def tie(m_thing):
     return ''
 
 
-def slur(m_thing):
+def slur(m_thing, context=None):
     '''
     Find the LilyPond slur string of an MEI object.
     '''
@@ -135,15 +140,20 @@ def slur(m_thing):
 
 
 @log.wrap('debug', 'convert note')
-def note(m_note):
+def note(m_note, context=None):
     '''
     '''
     check_tag(m_note, mei.NOTE)
+    if context is None:
+        context = {}
     m_accid = m_note.find(mei.ACCID)
     accid = m_note.get('accid.ges', '')
     if m_accid is not None:
         accid = m_accid.get('accid', '')
-    post = lilypond_utils.translate_pitch_name(m_note.get('pname'), accid)
+    post = lilypond_utils.translate_pitch_name(
+        m_note.get('pname'),
+        accid,
+        language=context.get("language", "nederlands"))
     post += _OCTAVE_TO_MARK[m_note.get('oct')]
     post += duration(m_note)
     post += tie(m_note)
@@ -152,7 +162,7 @@ def note(m_note):
 
 
 @log.wrap('debug', 'convert rest')
-def rest(m_rest):
+def rest(m_rest, context=None):
     '''
     '''
     check_tag(m_rest, mei.REST)
@@ -162,13 +172,13 @@ def rest(m_rest):
 
 
 @log.wrap('debug', 'convert chord')
-def chord(m_chord):
+def chord(m_chord, context=None):
     '''
     '''
     check_tag(m_chord, mei.CHORD)
     l_notes = []
     for m_note in m_chord.iter(tag=mei.NOTE):
-        l_notes.append(note(m_note))
+        l_notes.append(note(m_note, context))
 
     post = duration(m_chord)
     post += tie(m_chord)
@@ -178,7 +188,7 @@ def chord(m_chord):
     return l_chord
 
 
-def measure_rest(m_measure_rest):
+def measure_rest(m_measure_rest, context=None):
     '''
     '''
     if m_measure_rest.tag != mei.M_REST:
@@ -189,7 +199,7 @@ def measure_rest(m_measure_rest):
 
 
 @log.wrap('debug', 'convert sequential music')
-def sequential_music(m_container):
+def sequential_music(m_container, context=None):
     '''
     Convert the contents of any MEI element, interpreted as a container of
     sequential music, to an array of LilyPond strings to be joined together
@@ -199,15 +209,15 @@ def sequential_music(m_container):
     for elem in m_container.iterchildren('*'):
         with log.debug('convert element in a <{}>'.format(m_container.tag)) as action:
             if elem.tag == mei.NOTE:
-                post.append(note(elem))
+                post.append(note(elem, context))
             elif elem.tag == mei.REST:
-                post.append(rest(elem))
+                post.append(rest(elem, context))
             elif elem.tag == mei.CHORD:
-                post.append(chord(elem))
+                post.append(chord(elem, context))
             elif elem.tag == mei.M_REST:
-                post.append(measure_rest(elem))
+                post.append(measure_rest(elem, context))
             elif elem.tag == mei.STAFF_DEF:
-                l_staff_def = staffdef(elem)
+                l_staff_def = staffdef(elem, context)
                 # staffdef might return an empty string.
                 if l_staff_def:
                     post.append(l_staff_def)
@@ -222,16 +232,16 @@ def sequential_music(m_container):
 
 
 @log.wrap('debug', 'convert layer')
-def layer(m_layer):
+def layer(m_layer, context=None):
     '''Convert an MEI layer element to a LilyPond string.'''
     check_tag(m_layer, mei.LAYER)
     post = ['%{{ l.{} %}}'.format(m_layer.get('n'))]
-    post.extend(sequential_music(m_layer))
+    post.extend(sequential_music(m_layer, context))
     return ' '.join(post)
 
 
 @log.wrap('debug', 'convert parallel music')
-def layers(m_container):
+def layers(m_container, context=None):
     '''
     Convert the contents of any MEI element containing multiple layers,
     interpreted as parallel music, to an array of LilyPond strings to be
@@ -241,7 +251,7 @@ def layers(m_container):
     after_layers = []
     layers = []
     for elem in m_container.iterchildren(tag=mei.LAYER):
-        layers.append(layer(elem))
+        layers.append(layer(elem, context))
 
     if len(layers) > 1:
         before_layers.append('<< {')
@@ -253,18 +263,18 @@ def layers(m_container):
 
 
 @log.wrap('debug', 'convert measure')
-def measure(m_meas):
+def measure(m_meas, context=None):
     '''
     '''
     check_tag(m_meas, mei.MEASURE)
     before = ['%{{ m.{} %}}'.format(m_meas.get('n'))]
     after = ['|\n']
-    post = before + layers(m_meas) + after
+    post = before + layers(m_meas, context) + after
     return ' '.join(post)
 
 
 @log.wrap('debug', 'convert clef')
-def clef(m_staffdef):
+def clef(m_staffdef, context=None):
     '''
     '''
     check_tag(m_staffdef, mei.STAFF_DEF)
@@ -288,7 +298,7 @@ def clef(m_staffdef):
 
 
 @log.wrap('debug', 'convert key signature')
-def key(m_staffdef):
+def key(m_staffdef, context=None):
     '''
     '''
     check_tag(m_staffdef, mei.STAFF_DEF)
@@ -311,10 +321,15 @@ def key(m_staffdef):
     }
     if m_staffdef.get('key.sig'):
         if m_staffdef.get('key.sig') in CONV:
+            if context is None:
+                context = {}
+
             pitch_name, accidental = CONV[m_staffdef.get('key.sig')]
             post = '\\key {0} \\major'.format(
                 lilypond_utils.translate_pitch_name(
-                    pitch_name, accidental))
+                    pitch_name,
+                    accidental,
+                    language=context.get("language", "nederlands")))
             return post
 
         else:
@@ -325,7 +340,7 @@ def key(m_staffdef):
 
 
 @log.wrap('debug', 'convert time signature')
-def meter(m_staffdef):
+def meter(m_staffdef, context=None):
     '''
     '''
     check_tag(m_staffdef, mei.STAFF_DEF)
@@ -336,16 +351,16 @@ def meter(m_staffdef):
 
 
 @log.wrap('info', 'convert inline staffdef')
-def staffdef(m_staffdef):
+def staffdef(m_staffdef, context=None):
     '''
     Convert an "inline" staffDef (one that appears inside a layer) to
     LilyPond code.
     '''
     check_tag(m_staffdef, mei.STAFF_DEF)
     post = []
-    l_clef = clef(m_staffdef)
-    l_key = key(m_staffdef)
-    l_meter = meter(m_staffdef)
+    l_clef = clef(m_staffdef, context)
+    l_key = key(m_staffdef, context)
+    l_meter = meter(m_staffdef, context)
     if l_clef:
         post.append(l_clef)
     if l_key:
@@ -356,7 +371,7 @@ def staffdef(m_staffdef):
 
 
 @log.wrap('info', 'convert staff')
-def staff(m_staff, m_staffdef):
+def staff(m_staff, m_staffdef, context=None):
     '''
     '''
     check_tag(m_staff, mei.STAFF)
@@ -366,18 +381,18 @@ def staff(m_staff, m_staffdef):
         '\\new Staff {\n',
         '%{{ staff {0} %}}\n'.format(m_staff.get('n')),
         '\\set Staff.instrumentName = "{0}"\n'.format(m_staffdef.get('label', '')),
-        clef(m_staffdef) + '\n',
-        key(m_staffdef) + '\n',
-        meter(m_staffdef) + '\n',
+        clef(m_staffdef, context) + '\n',
+        key(m_staffdef, context) + '\n',
+        meter(m_staffdef, context) + '\n',
     ]
 
     there_are_no_measures = True
     for elem in m_staff.iterchildren(tag=mei.MEASURE):
-        post.append(measure(elem))
+        post.append(measure(elem, context))
         there_are_no_measures = False
 
     if there_are_no_measures:
-        post.append(' '.join(layers(m_staff)) + '\n')
+        post.append(' '.join(layers(m_staff, context)) + '\n')
 
     post.append('}\n')
 
@@ -385,20 +400,24 @@ def staff(m_staff, m_staffdef):
 
 
 @log.wrap('info', 'convert section')
-def section(m_section):
+def section(m_section, context=None):
     '''
     '''
     check_tag(m_section, mei.SECTION)
 
+    if context is None:
+        context = {}
+
     post = [
         '\\version "2.18.2"\n',
+        '\\language "{}"\n'.format(context.get("language", "nederlands")),
         '\\score {\n',
         '<<\n',
     ]
 
     for m_staffdef in m_section.iterfind('./{}//{}'.format(mei.SCORE_DEF, mei.STAFF_DEF)):
         query = './/{tag}[@n="{n}"]'.format(tag=mei.STAFF, n=m_staffdef.get('n'))
-        post.append(staff(m_section.find(query), m_staffdef))
+        post.append(staff(m_section.find(query), m_staffdef, context))
 
     post.append('>>\n')
     post.append('\\layout { }\n')

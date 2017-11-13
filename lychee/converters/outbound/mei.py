@@ -62,10 +62,18 @@ def convert(document, **kwargs):
     :raises: :exc:`lychee.exceptions.OutboundConversionError` when there is a forseeable error.
     '''
     if isinstance(document, etree._Element) and mei.SECTION == document.tag:
-        document = create_measures(document)
-        return wrap_section_element(document)
+        return convert_raw(document)
     else:
         raise exceptions.OutboundConversionError(_ERR_INPUT_NOT_SECTION)
+
+
+def convert_raw(document):
+    '''
+    Convert a Lychee-MEI document into an MEI document without verifying that it is an MEI section.
+    '''
+    document = create_measures(document)
+    rewrite_beam_spans(document)
+    return wrap_section_element(document)
 
 
 def wrap_section_element(section):
@@ -232,5 +240,34 @@ def create_measures(lmei_section):
         # update "meas_nums" for next time we hit a <staff> with this @n
         meas_nums[l_staff.get('n')] = highest_meas_num_in_this_staff
 
+    return m_section
+
+
+def rewrite_beam_spans(m_section):
+    '''
+    Modify the given section to replace <beamSpan> with <beam>, because Verovio doesn't support
+    <beamSpan>.
+
+    The element passed in does not actually need to be a section. It can be any parent of the
+    elements we're interested in.
+    '''
+    xml_ids = {}
+    for el in m_section.iterfind('.//*'):
+        if el.get(xml.ID):
+            xml_ids[el.get(xml.ID)] = el
+
+    for m_beamspan in m_section.iterfind('.//' + mei.BEAM_SPAN):
+        beamspan_parent = m_beamspan.getparent()
+        beamspan_parent.remove(m_beamspan)
+
+        plist = m_beamspan.get('plist')
+        nodes = [xml_ids[x[1:]] for x in plist.split()]
+        parent = nodes[0].getparent()
+        insertion_index = parent.index(nodes[0])
+        beam = etree.Element(mei.BEAM)
+        for node in nodes:
+            parent.remove(node)
+            beam.append(node)
+        parent.insert(insertion_index, beam)
 
     return m_section

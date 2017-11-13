@@ -142,7 +142,7 @@ def check(condition, message=None):
         raise exceptions.LilyPondError(message)
 
 
-def convert(document, **kwargs):
+def convert(document, user_settings=None, **kwargs):
     '''
     Convert a LilyPond document into an MEI document. This is the entry point for Lychee conversions.
 
@@ -151,12 +151,12 @@ def convert(document, **kwargs):
     :rtype: :class:`xml.etree.ElementTree.Element` or :class:`xml.etree.ElementTree.ElementTree`
     '''
     inbound.CONVERSION_STARTED.emit()
-    section = convert_no_signals(document)
+    section = convert_no_signals(document, user_settings=user_settings)
     inbound.CONVERSION_FINISH.emit(converted=section)
     return section
 
 
-def convert_no_signals(document):
+def convert_no_signals(document, user_settings=None):
     '''
     It's the convert() function that returns the converted document rather than emitting it with
     the CONVERSION_FINISHED signal. Mostly for testing.
@@ -168,16 +168,18 @@ def convert_no_signals(document):
         parsed = parser.parse(document, filename='file', trace=False)
 
     with log.info('convert LilyPond') as action:
-        converted = do_document(parsed)
+        converted = do_document(parsed, user_settings=user_settings)
 
     return converted
 
 
 @log.wrap('info', 'process document')
-def do_document(l_document):
+def do_document(l_document, user_settings):
     l_score = None
+    if user_settings is None:
+        user_settings = {}
     context = {
-        'language': 'nederlands'
+        'language': 'nederlands',
     }
     for l_top_level_element in l_document:
         if type(l_top_level_element) != list:
@@ -194,6 +196,8 @@ def do_document(l_document):
     if l_score is None:
         raise exceptions.LilyPondError('Empty document')
 
+    user_settings['lilyPondLanguage'] = context['language']
+
     converted = do_score(l_score, context=context)
     return converted
 
@@ -207,10 +211,15 @@ def check_version(ly_version, action):
     If the minor version is other than '18' or '19', warns.
     '''
     if ly_version['version']:
+        ly_version_string = '.'.join(ly_version['version'])
         if ly_version['version'][0] != '2':
-            raise RuntimeError('inbound LilyPond parser expects version 2.18.x or 2.19.x')
+            raise RuntimeError(
+                "inbound LilyPond parser expects version 2.18.x or 2.19.x, got '{}'"
+                .format(ly_version_string))
         elif ly_version['version'][1] not in ('18', '19'):
-            action.failure('inbound LilyPond parser expects version 2.18.x or 2.19.x')
+            action.failure(
+                "inbound LilyPond parser expects version 2.18.x or 2.19.x, got '{}'"
+                .format(ly_version_string))
     else:
         action.failure('missing version info')
 
@@ -685,6 +694,7 @@ def do_layer(l_layer, m_staff, layer_n, m_staffdef=None, context=None, action=No
     fix_ties_in_layer(m_layer)
     fix_slurs_in_layer(m_layer)
     fix_accidentals_in_layer(m_layer, m_staffdef)
+    music_utils.autobeam(m_layer, m_staffdef)
 
     return m_layer
 

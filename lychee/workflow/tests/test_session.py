@@ -746,7 +746,8 @@ class TestRunOutbound(TestInteractiveSession):
         mock_do_out.assert_called_once_with(
             self.session.get_repo_dir(),
             views_info,
-            outbound_dtype)
+            outbound_dtype,
+            mock.ANY)
         mock_out_finished.emit.assert_called_once_with(
             dtype=outbound_dtype,
             placement=mock_do_out.return_value['placement'],
@@ -823,7 +824,7 @@ class TestRunOutbound(TestInteractiveSession):
 
         self.session.run_outbound(views_info=views_info, revision=target_revision)
 
-        mock_do_out.assert_called_with(self.session.get_repo_dir(), views_info, 'mei')
+        mock_do_out.assert_called_with(self.session.get_repo_dir(), views_info, 'mei', mock.ANY)
         assert self.session._cleanup_for_new_action.called
 
 
@@ -854,7 +855,8 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         mock_conv.assert_called_once_with(
             session=self.session,
             dtype=dtype,
-            document=doc)
+            document=doc,
+            user_settings={})
         assert not mock_views.called
         assert not mock_doc.called
         assert not mock_vcs.called
@@ -878,7 +880,8 @@ class TestRunInboundDocVcs(TestInteractiveSession):
         mock_conv.assert_called_once_with(
             session=self.session,
             dtype=dtype,
-            document=doc)
+            document=doc,
+            user_settings={})
 
     @mock.patch('lychee.workflow.steps.do_inbound_conversion')
     @mock.patch('lychee.workflow.steps.do_inbound_views')
@@ -978,3 +981,47 @@ class TestRunInboundDocVcs(TestInteractiveSession):
             session=self.session,
             views_info=self.session._inbound_views_info)
         mock_vcs.assert_called_once_with(session=self.session, pathnames=mock_doc.return_value)
+
+
+class TestUserSettings(TestInteractiveSession):
+    '''
+    Test the helper methods write_user_settings and read_user_settings.
+    '''
+
+    def test_write_read_user_settings(self):
+        '''A dictionary written to and read from user settings is preserved.'''
+        # Necessary to initialize the temporary directory.
+        self.session.set_repo_dir('')
+
+        user_settings = {
+            'heWasA': 'sk8er boi',
+            'sheSaid': 'see you l8er boi',
+            }
+        self.session.write_user_settings(user_settings)
+
+        repo_dir = self.session.get_repo_dir()
+        print(repo_dir)
+        assert os.path.exists(os.path.join(repo_dir, session.USER_SETTINGS_FILE))
+
+        actual_user_settings = self.session.read_user_settings()
+        assert actual_user_settings == user_settings
+
+    def test_inbound_lilypond_language_creates_user_settings(self):
+        '''Integration test of inbound LilyPond language.'''
+        input_ly = r"""\language "deutsch" \new Staff { h'4 }"""
+        self.session.run_inbound(dtype='LilyPond', doc=input_ly)
+
+        user_settings = self.session.read_user_settings()
+        assert user_settings == {'lilyPondLanguage': 'deutsch'}
+
+    def test_lilypond_language(self):
+        '''Integration test of inbound + outbound LilyPond language.'''
+        input_ly = r"""\language "deutsch" \new Staff { h'4 }"""
+        self.session.run_inbound(dtype='LilyPond', doc=input_ly)
+
+        def action(document, **kwargs):
+            assert r'\language "deutsch"' in document
+
+        signals.outbound.REGISTER_FORMAT.emit(dtype="lilypond")
+        signals.outbound.CONVERSION_FINISHED.connect(action)
+        self.session.run_workflow(dtype="LilyPond", doc=input_ly)

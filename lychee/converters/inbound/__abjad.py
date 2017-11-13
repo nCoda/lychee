@@ -46,14 +46,13 @@ from abjad.tools.scoretools.Leaf import Leaf
 from abjad.tools.scoretools.Measure import Measure
 from abjad.tools.scoretools.NoteHead import NoteHead
 from abjad.tools.scoretools.Tuplet import Tuplet
-from abjad.tools.scoretools.FixedDurationTuplet import FixedDurationTuplet
 from abjad.tools.durationtools.Multiplier import Multiplier
 from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.scoretools.Voice import Voice
 from abjad.tools.scoretools.Staff import Staff
 from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.topleveltools.mutate import mutate
-from abjad.tools.topleveltools.inspect_ import inspect_
+from abjad.tools.topleveltools.inspect import inspect
 from abjad.tools.topleveltools.attach import attach
 
 import lychee
@@ -125,7 +124,7 @@ def add_xml_ids(abjad_object, mei_element):
     except UnderfullContainerError:
         abjad_str = 'underfull'
 
-    parentage = inspect_(abjad_object).get_parentage()
+    parentage = inspect(abjad_object).get_parentage()
     id_string = '{0}{1}{2}{3}'.format(abjad_str, parentage.score_index, mei_element.tag, mei_element.get('n', ''))
     hasher = hashlib.new('SHA256', six.b(id_string))
     the_xmlid = 'z{0}'.format(hasher.hexdigest())
@@ -154,9 +153,9 @@ def note_to_note(abjad_note):
     #otherwise, assume a Note came in
         dots = None
         duration = None
-    octave = abjad_note.written_pitch.octave.octave_number
-    pitchname = abjad_note.written_pitch.pitch_class_name[0]
-    accidental = convert_accidental(abjad_note.written_pitch.accidental.abbreviation)
+    octave = abjad_note.written_pitch.octave.number
+    pitchname = abjad_note.written_pitch.pitch_class.name[0]
+    accidental = convert_accidental(str(abjad_note.written_pitch.accidental))
     #cautionary accidental handling
     if hasattr(abjad_note, 'is_cautionary'):
         is_cautionary = abjad_note.is_cautionary
@@ -265,27 +264,17 @@ def chord_to_chord(abjad_chord):
 
 def empty_tuplet_to_tupletspan_element(abjad_tuplet):
     '''
-    Convert an empty Abjad Tuplet or FixedDurationTuplet container to an MEI tupletspan Element.
+    Convert an empty Abjad Tuplet container to an MEI tupletspan Element.
 
     :param abjad_tuplet: the empty Abjad Tuplet container to convert.
-    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
+    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet`
     :returns: The corresponding MEI tupletspan Element.
     :rtype: :class:`lxml.etree.ElementTree.Element`
     '''
-    if isinstance(abjad_tuplet, Tuplet) and not isinstance(abjad_tuplet, FixedDurationTuplet):
+    if isinstance(abjad_tuplet, Tuplet):
         numerator = six.b(str(abjad_tuplet.multiplier.numerator))
         denominator = six.b(str(abjad_tuplet.multiplier.denominator))
         tupletspan = etree.Element(mei.TUPLET_SPAN,num=denominator, numBase=numerator)
-        add_xml_ids(abjad_tuplet, tupletspan)
-        return tupletspan
-    elif isinstance(abjad_tuplet, FixedDurationTuplet):
-        dots = abjad_tuplet.target_duration.dot_count
-        dur = abjad_tuplet.target_duration.lilypond_duration_string
-        tupletspan = etree.Element(mei.TUPLET_SPAN)
-        if dots:
-            dur = dur[:dur.find('.')]
-            tupletspan.set('dots', six.b(str(dots)))
-        tupletspan.set('dur', six.b(str(dur)))
         add_xml_ids(abjad_tuplet, tupletspan)
         return tupletspan
 
@@ -295,12 +284,9 @@ def calculate_tuplet_duration(tuplet):
     Calculate the duration of a tuplet that potentially contains nested tuplets.
 
     :param tuplet: the Abjad tuplet to query for duration.
-    :type tuplet: :class:`~abjad.tools.scoretools.Tuplet` or :class:`~abjad.tools.scoretools.FixedDurationTuplet`
+    :type tuplet: :class:`~abjad.tools.scoretools.Tuplet`
     '''
-    if isinstance(tuplet, FixedDurationTuplet):
-	return tuplet.target_duration
-    else:
-	return tuplet.multiplied_duration
+    return tuplet.multiplied_duration
 
 
 def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
@@ -310,7 +296,7 @@ def setup_outermost_tupletspan(mei_tupletspan, abjad_tuplet):
     :param mei_tupletspan: The MEI tupletspan Element to initialize.
     :type mei_tupletspan: :class:`lxml.etree.ElementTree.Element`
     :param abjad_tuplet: the Abjad Tuplet container from which to initialize.
-    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
+    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet`
     :returns: Abjad Duration.
     :rtype: :class: `abjad.tools.durationtools.Duration.Duration`
     '''
@@ -334,15 +320,13 @@ def tuplet_to_tupletspan(abjad_tuplet):
     element and followed by appropriate conversions of the container's leaves.
 
     :param abjad_tuplet: The Abjad Tuplet container to convert.
-    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet` or :class:`abjad.tools.scoretools.FixedDurationTuplet.FixedDurationTuplet`
+    :type abjad_tuplet: :class:`abjad.tools.scoretools.Tuplet.Tuplet`
     :returns: the corresponding MEI tupletspan Element or list of MEI Elements.
     :rtype: :class:`lxml.etree.ElementTree.Element` or list
     '''
     if len(abjad_tuplet) == 0:
         return empty_tuplet_to_tupletspan_element(abjad_tuplet)
     elif isinstance(abjad_tuplet, Tuplet):
-        if isinstance(abjad_tuplet, Tuplet) and not isinstance(abjad_tuplet, FixedDurationTuplet):
-            abjad_tuplet = abjad_tuplet.to_fixed_duration_tuplet()
         span_n = 1
         component_n = 1
         outermost_span = etree.Element(mei.TUPLET_SPAN)
@@ -494,7 +478,7 @@ def set_initial_clef(a_staff, m_staffdef):
 
     If the clef is unset, or a currently-unsupported type, nothing happens.
     '''
-    a_clef = inspect_(a_staff).get_effective(Clef)
+    a_clef = inspect(a_staff).get_effective(Clef)
 
     if a_clef:
         clef_name = a_clef.name.lower()

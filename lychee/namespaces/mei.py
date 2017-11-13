@@ -45,6 +45,10 @@ AUDIENCE = '{}audience'.format(MEINS)
 'An MEI tag name.'
 AUTHOR = '{}author'.format(MEINS)
 'An MEI tag name.'
+BEAM = '{}beam'.format(MEINS)
+'An MEI tag name.'
+BEAM_SPAN = '{}beamSpan'.format(MEINS)
+'An MEI tag name.'
 BODY = '{}body'.format(MEINS)
 'An MEI tag name.'
 CHORD = '{}chord'.format(MEINS)

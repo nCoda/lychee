@@ -30,6 +30,7 @@ import os
 import os.path
 import shutil
 import tempfile
+import codecs
 
 from lxml import etree
 import six
@@ -50,6 +51,9 @@ _CANNOT_MAKE_HG_DIR = 'Could not create repository directory'
 _FAILURE_DURING_INBOUND = 'Action failed during the inbound steps'
 _UNKNOWN_REVISION = "ACTION_START requested a revision that doesn't exist"
 _VCS_UNSUPPORTED = 'VCS is unsupported'
+
+USER_SETTINGS_DIR = "user"
+USER_SETTINGS_FILE = os.path.join(USER_SETTINGS_DIR, "lychee_settings.xml")
 
 
 @log.wrap('info', 'error signal', 'action')
@@ -248,6 +252,52 @@ class InteractiveSession(object):
             # NOTE: "run_outbound" must be False, in order to avoid a recursion loop
             return self.set_repo_dir('', run_outbound=False)
 
+    def read_user_settings(self):
+        """
+        Read from this repo's user settings XML file.
+        """
+        user_settings = {}
+        if self._repo_dir is None:
+            return user_settings
+
+        settings_file_name = os.path.join(self._repo_dir, USER_SETTINGS_FILE)
+        try:
+            with codecs.open(settings_file_name, encoding='utf-8') as settings_file:
+                user_settings_xml = etree.parse(settings_file)
+        except IOError:
+            return user_settings
+
+        for element in user_settings_xml.getroot():
+            user_settings[element.tag] = element.text
+
+        return user_settings
+
+    def write_user_settings(self, user_settings):
+        """
+        Write to this repo's user settings XML file.
+        """
+        if self._repo_dir is None:
+            return
+
+        settings_file_name = os.path.join(self._repo_dir, USER_SETTINGS_FILE)
+        try:
+            os.makedirs(os.path.join(self._repo_dir, USER_SETTINGS_DIR))
+        except OSError:
+            pass
+
+        user_settings_xml = etree.Element('lycheeSettings')
+        for key in user_settings:
+            element = etree.Element(key)
+            element.text = user_settings[key]
+            user_settings_xml.append(element)
+        user_settings_xml = etree.ElementTree(user_settings_xml)
+
+        try:
+            with codecs.open(settings_file_name, 'w', encoding='utf-8') as settings_file:
+                user_settings_xml.write(settings_file, pretty_print=True)
+        except IOError:
+            pass
+
     @log.wrap('critical', 'run a Lychee action', 'action')
     def _action_start(self, action, **kwargs):
         '''
@@ -333,10 +383,13 @@ class InteractiveSession(object):
         '''
         self._cleanup_for_new_action()
 
+        user_settings = self.read_user_settings()
+
         steps.do_inbound_conversion(
             session=self,
             dtype=dtype,
-            document=doc)
+            document=doc,
+            user_settings=user_settings)
         if not isinstance(self._inbound_converted, (etree._Element, etree._ElementTree)):
             raise exceptions.InboundConversionError()
 
@@ -353,6 +406,8 @@ class InteractiveSession(object):
             converted=self._inbound_converted,
             session=self,
             views_info=self._inbound_views_info)
+
+        self.write_user_settings(user_settings)
 
         steps.do_vcs(session=self, pathnames=document_pathnames)
 
@@ -413,16 +468,25 @@ class InteractiveSession(object):
                 else:
                     changeset = summary['parent']
 
+            user_settings = self.read_user_settings()
+
             # run the outbound conversions
             signals.outbound.STARTED.emit()
             repo_dir = self.get_repo_dir()
             for outbound_dtype in self._registrar.get_registered_formats():
-                post = steps.do_outbound_steps(repo_dir, views_info, outbound_dtype)
+                post = steps.do_outbound_steps(repo_dir, views_info, outbound_dtype, user_settings)
                 signals.outbound.CONVERSION_FINISHED.emit(
                     dtype=outbound_dtype,
                     placement=post['placement'],
                     document=post['document'],
                     changeset=changeset)
+
+            # Currently we don't have any need for the outbound converters to write user settings,
+            # but it may be necessary in the future. For some reason, this line causes outbound
+            # converters to overwrite the Lychee settings to a blank XML file with only the root
+            # element. I haven't bothered to figure out why.
+
+            # self.write_user_settings(user_settings)
 
         finally:
             self._cleanup_for_new_action()

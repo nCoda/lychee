@@ -33,6 +33,7 @@ import tempfile
 import codecs
 
 from lxml import etree
+import six
 
 # Mercurial and mercurial-hug are disabled for now.
 # from mercurial import error as hg_error
@@ -135,7 +136,10 @@ class InteractiveSession(object):
         '''
         If this session is using a temporary directory, delete it.
         '''
-        self.unset_repo_dir()
+        try:
+            self.unset_repo_dir()
+        except AttributeError:
+            pass
 
     @property
     def document(self):
@@ -160,15 +164,6 @@ class InteractiveSession(object):
 
         self._doc = document.Document(self._repo_dir)
         return self._doc
-
-    def __del__(self):
-        '''
-        If this session is using a temporary directory, delete it.
-        '''
-        try:
-            self.unset_repo_dir()
-        except AttributeError:
-            pass
 
     @log.wrap('info', 'set the repository directory')
     def set_repo_dir(self, path, run_outbound=False):
@@ -372,7 +367,6 @@ class InteractiveSession(object):
         finally:
             self._cleanup_for_new_action()
 
-
     @log.wrap('critical', 'run inbound workflow step')
     def run_inbound(self, dtype, doc, sect_id=None):
         '''
@@ -405,7 +399,7 @@ class InteractiveSession(object):
             document=doc,
             converted=self._inbound_converted,
             views_info=sect_id)
-        if not isinstance(self._inbound_views_info, str):
+        if not isinstance(self._inbound_views_info, six.string_types):
             raise exceptions.InboundConversionError()
 
         document_pathnames = steps.do_document(

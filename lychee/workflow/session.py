@@ -302,6 +302,42 @@ class InteractiveSession(object):
         except IOError:
             pass
 
+    @staticmethod
+    def make_save_path(repo_dir, sect_id, dtype):
+        '''
+        Makes the absolute pathname where s "text editor" file should be saved.
+
+        :param str repo_dir: Root directory of the Session's LMEI document.
+        :param str sect_id: The @xml:id of the section data.
+        :param str dtype: Data type of the "doc" argument (e.g., "lilypond"). This should
+            be a "dtype" recognized by :meth:`run_workflow`.
+        :returns: Tuple with the directory name and full pathname for the file.
+        :rtype: str
+        :raises: :exc:`TypeError` if one of the arguments is not a string.
+        :raises: :exc:`ValueError` if we cannot make a valid filesystem path to save.
+        '''
+        if not (isinstance(repo_dir, basestring) and
+                isinstance(sect_id, basestring) and
+                isinstance(dtype, basestring)
+                ):
+            raise TypeError(_SAVE_ERR_BAD_DATA)
+
+        if not (len(repo_dir) > 0 and len(sect_id) > 0 and len(dtype) > 0):
+            raise ValueError(_SAVE_ERR_BAD_DATA)
+
+        sectiddtype = sect_id + dtype  # we should NOT append with os.path.join()
+        if (os.pardir in sectiddtype or
+                os.sep in sectiddtype or
+                os.extsep in sectiddtype or
+                os.pathsep in sectiddtype
+            ):
+            raise ValueError(_SAVE_ERR_BAD_DATA)
+
+        save_dir = os.path.join(repo_dir, SAVE_DIR, sect_id)
+        save_path = os.path.join(save_dir, dtype)
+
+        return save_dir, save_path
+
     @log.wrap('debug', 'save text editor contents')
     def save_text_editor(self, sect_id, dtype, doc):
         '''
@@ -317,28 +353,16 @@ class InteractiveSession(object):
         :raises: :exc:`ValueError` if we cannot make a valid filesystem path to save.
         :raises: :exc:`IOError` if the method cannot save for another reason.
         '''
-        if not (isinstance(sect_id, basestring) and
-                isinstance(dtype, basestring) and
-                isinstance(doc, basestring)
-               ):
+        save_dir, save_path = InteractiveSession.make_save_path(self._repo_dir, sect_id, dtype)
+
+        if not isinstance(doc, basestring):
             raise TypeError(_SAVE_ERR_BAD_DATA)
 
         if isinstance(doc, unicode):
             doc = doc.encode('utf-8')
 
-        if not (len(sect_id) > 0 and len(dtype) > 0 and len(doc) > 0):
+        if len(doc) == 0:
             raise ValueError(_SAVE_ERR_BAD_DATA)
-
-        sectiddtype = sect_id + dtype  # we should NOT append with os.path.join()
-        if (os.pardir in sectiddtype or
-                os.sep in sectiddtype or
-                os.extsep in sectiddtype or
-                os.pathsep in sectiddtype
-           ):
-            raise ValueError(_SAVE_ERR_BAD_DATA)
-
-        save_dir = os.path.join(self._repo_dir, SAVE_DIR, sect_id)
-        save_path = os.path.join(save_dir, dtype)
 
         try:
             os.makedirs(save_dir)

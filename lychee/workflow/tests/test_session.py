@@ -194,21 +194,6 @@ class TestSaveTextEditor(TestInteractiveSession):
         TestInteractiveSession.setUp(self, *args, **kwargs)
         self.session.set_repo_dir('')
 
-    def test_save_path(self):
-        """
-        determines the right path to save the data
-        """
-        sect_id = 'm2-21aa'
-        dtype = '**kern'
-        doc = 'this is fake kern data'
-        expected_save_path = os.path.join(
-            self.session._repo_dir, session.SAVE_DIR, sect_id, dtype
-        )
-
-        save_path = self.session.save_text_editor(sect_id, dtype, doc)
-
-        assert expected_save_path == save_path
-
     def test_correct_contents(self):
         """
         puts the "doc" string into the file
@@ -285,42 +270,6 @@ class TestSaveTextEditor(TestInteractiveSession):
         self.session.save_text_editor(sect_id, dtype, second_doc)
         with open(save_path) as saved_file:
             assert second_doc == saved_file.read()
-
-    def test_args_wrong_type(self):
-        """
-        raises TypeError if args are the wrong type
-        """
-        sect_id = 212
-        dtype = '**kern'
-        doc = 'this is fake kern data'
-
-        with pytest.raises(TypeError) as exc:
-            self.session.save_text_editor(sect_id, dtype, doc)
-        assert exc.match(session._SAVE_ERR_BAD_DATA)
-
-    def test_args_are_empty(self):
-        """
-        raises ValueError if args are empty string
-        """
-        sect_id = ''
-        dtype = '**kern'
-        doc = 'this is fake kern data'
-
-        with pytest.raises(ValueError) as exc:
-            self.session.save_text_editor(sect_id, dtype, doc)
-        assert exc.match(session._SAVE_ERR_BAD_DATA)
-
-    def test_args_invalid_chars(self):
-        """
-        raises ValueError if args contain invalid path characters
-        """
-        sect_id = 'what..ever'
-        dtype = 'buy/some.cheese'
-        doc = 'this is fake kern data'
-
-        with pytest.raises(ValueError) as exc:
-            self.session.save_text_editor(sect_id, dtype, doc)
-        assert exc.match(session._SAVE_ERR_BAD_DATA)
 
 
 class TestRepository(TestInteractiveSession):
@@ -1206,3 +1155,79 @@ class TestUserSettings(TestInteractiveSession):
         signals.outbound.REGISTER_FORMAT.emit(dtype="lilypond")
         signals.outbound.CONVERSION_FINISHED.connect(action)
         self.session.run_workflow(dtype="LilyPond", doc=input_ly)
+
+
+class TestMakeSavePath(object):
+    """
+    Tests for the make_save_path() static method.
+    """
+
+    def test_save_path(self):
+        """
+        determines the right path to save the data
+        """
+        repo_dir = '/home/lychee/awesome_project'
+        sect_id = 'm2-21aa'
+        dtype = '**kern'
+        expected = (
+            os.path.join(repo_dir, session.SAVE_DIR, sect_id),
+            os.path.join(repo_dir, session.SAVE_DIR, sect_id, dtype),
+        )
+
+        save_path = session.InteractiveSession.make_save_path(repo_dir, sect_id, dtype)
+
+        assert expected == save_path
+
+    def test_save_unicode(self):
+        """
+        Saves Unicode file contents.
+
+        (Unicode pathnames aren't a problem, for some reason).
+        """
+        repo_dir = u'/home/lychee/awesome_project'
+        sect_id = u'文件'
+        dtype = u'中文'
+        expected = (
+            os.path.join(repo_dir, session.SAVE_DIR, sect_id),
+            os.path.join(repo_dir, session.SAVE_DIR, sect_id, dtype),
+        )
+
+        save_path = session.InteractiveSession.make_save_path(repo_dir, sect_id, dtype)
+
+        assert expected == save_path
+
+    def test_args_wrong_type(self):
+        """
+        raises TypeError if args are the wrong type
+        """
+        repo_dir = '/home/lychee/awesome_project'
+        sect_id = 212
+        dtype = '**kern'
+
+        with pytest.raises(TypeError) as exc:
+            session.InteractiveSession.make_save_path(repo_dir, sect_id, dtype)
+        assert exc.match(session._SAVE_ERR_BAD_DATA)
+
+    def test_args_are_empty(self):
+        """
+        raises ValueError if args are empty string
+        """
+        repo_dir = '/home/lychee/awesome_project'
+        sect_id = ''
+        dtype = '**kern'
+
+        with pytest.raises(ValueError) as exc:
+            session.InteractiveSession.make_save_path(repo_dir, sect_id, dtype)
+        assert exc.match(session._SAVE_ERR_BAD_DATA)
+
+    def test_args_invalid_chars(self):
+        """
+        raises ValueError if args contain invalid path characters
+        """
+        repo_dir = '/home/lychee/awesome_project'
+        sect_id = 'what..ever'
+        dtype = 'buy/some.cheese'
+
+        with pytest.raises(ValueError) as exc:
+            session.InteractiveSession.make_save_path(repo_dir, sect_id, dtype)
+        assert exc.match(session._SAVE_ERR_BAD_DATA)

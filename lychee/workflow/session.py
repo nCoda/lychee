@@ -434,7 +434,7 @@ class InteractiveSession(object):
         :raises: :exc:`lychee.exceptions.InboundConversionError` when the conversion or views
             processing steps fail.
         '''
-        self._cleanup_for_new_action()
+        self._cleanup_for_new_action(sect_id)
 
         user_settings = self.read_user_settings()
 
@@ -546,17 +546,26 @@ class InteractiveSession(object):
             if initial_revision:
                 self._hug.update(initial_revision)
 
-    def _cleanup_for_new_action(self):
+    def _cleanup_for_new_action(self, sect_id=None):
         '''
         Perform required cleanup before starting a new "action."
 
-        This cleanup should not normally be needed. This method is a cross-check in case a module
-        failed or errored, or otherwise did not clean up after itself.
+        :param str sect_id: If known, the @xml:id of the incoming ``<section>`` to convert.
+            If provided, any saved "text editor" files will be deleted, to guarantee they
+            will not be out-of-sync.
+
+        This method does the following things:
+        - Clear the result of the previous inbound conversion step (including "views").
+        - Resets the selected inbound converter and views functions.
+        - Deletes any saved "text editor" files for the section ID.
         '''
         self._inbound_converted = None
         self._inbound_views_info = None
         steps.flush_inbound_converters()
         steps.flush_inbound_views()
+
+        if sect_id and self._repo_dir:
+            shutil.rmtree(os.path.join(self._repo_dir, SAVE_DIR, str(sect_id)), True)
 
     def _inbound_conversion_finish(self, converted, **kwargs):
         '''

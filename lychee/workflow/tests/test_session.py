@@ -113,19 +113,6 @@ class TestGeneral(TestInteractiveSession):
             session.InteractiveSession(vcs='git')
         # TODO: check the err
 
-    @mock.patch('lychee.workflow.session.steps.flush_inbound_converters')
-    @mock.patch('lychee.workflow.session.steps.flush_inbound_views')
-    def test_cleanup_for_new_action(self, mock_flush_views, mock_flush_conv):
-        '''
-        Make sure cleanup_for_new_action() actually cleans up!
-        '''
-        self.session._inbound_converted = 'five'
-        self.session._cleanup_for_new_action()
-        assert self.session._inbound_converted is None
-        assert self.session._inbound_views_info is None
-        mock_flush_conv.assert_called_once_with()
-        mock_flush_views.assert_called_once_with()
-
     @pytest.mark.xfail
     def test_vcs_property_1(self):
         '''
@@ -140,6 +127,62 @@ class TestGeneral(TestInteractiveSession):
         '''
         actual = session.InteractiveSession(vcs=None)
         assert actual.vcs_enabled is False
+
+
+class TestCleanupForNewAction(TestInteractiveSession):
+    """
+    Tests for cleanup_for_new_action().
+    """
+
+    @mock.patch('lychee.workflow.session.steps.flush_inbound_converters')
+    @mock.patch('lychee.workflow.session.steps.flush_inbound_views')
+    def test_without_section_id(self, mock_flush_views, mock_flush_conv):
+        """
+        When there is no @xml:id of an incoming <section>, everything works.
+        """
+        self.session._inbound_converted = 'five'
+        self.session._cleanup_for_new_action()
+        assert self.session._inbound_converted is None
+        assert self.session._inbound_views_info is None
+        mock_flush_conv.assert_called_once_with()
+        mock_flush_views.assert_called_once_with()
+
+    def test_deletes_existing_section(self):
+        """
+        When given an @xml:id and there are files to delete, they are deleted.
+        """
+        sect_id = 'asdfasdf'
+        dtype = 'qwerqwer'
+        self.session.set_repo_dir('')
+        save_dir = os.path.join(self.session._repo_dir, session.SAVE_DIR, sect_id)
+        self.session.save_text_editor(sect_id, dtype, 'This is a test.')
+        self.session._cleanup_for_new_action(sect_id=sect_id)
+        assert not os.path.exists(save_dir)
+
+    def test_repo_not_set(self):
+        """
+        When given an @xml:id but no repository is set, no exception is raised.
+        """
+        self.session._cleanup_for_new_action(sect_id='asdfasdf')
+
+    def test_nothing_to_delete(self):
+        """
+        When given an @xml:id but there are no files to delete, no exception is raised.
+        """
+        self.session.set_repo_dir('')
+        self.session._cleanup_for_new_action(sect_id='asdfasdf')
+
+    def test_sect_id_is_a_number(self):
+        """
+        When given an @xml:id but it is a number, no exception is raised.
+        """
+        sect_id = '42'
+        dtype = 'qwerqwer'
+        self.session.set_repo_dir('')
+        save_dir = os.path.join(self.session._repo_dir, session.SAVE_DIR, sect_id)
+        self.session.save_text_editor(sect_id, dtype, 'This is a test.')
+        self.session._cleanup_for_new_action(sect_id=int(sect_id))
+        assert not os.path.exists(save_dir)
 
 
 class TestSaveTextEditor(TestInteractiveSession):

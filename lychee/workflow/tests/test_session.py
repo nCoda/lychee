@@ -142,6 +142,144 @@ class TestGeneral(TestInteractiveSession):
         assert actual.vcs_enabled is False
 
 
+class TestSaveTextEditor(TestInteractiveSession):
+    """
+    Tests for save_text_editor().
+    """
+
+    def setUp(self, *args, **kwargs):
+        TestInteractiveSession.setUp(self, *args, **kwargs)
+        self.session.set_repo_dir('')
+
+    def test_save_path(self):
+        """
+        determines the right path to save the data
+        """
+        sect_id = 'm2-21aa'
+        dtype = '**kern'
+        doc = 'this is fake kern data'
+        expected_save_path = os.path.join(
+            self.session._repo_dir, session.SAVE_DIR, sect_id, dtype
+        )
+
+        save_path = self.session.save_text_editor(sect_id, dtype, doc)
+
+        assert expected_save_path == save_path
+
+    def test_correct_contents(self):
+        """
+        puts the "doc" string into the file
+        """
+        sect_id = 'm2-21aa'
+        dtype = '**kern'
+        doc = 'this is fake kern data'
+
+        save_path = self.session.save_text_editor(sect_id, dtype, doc)
+
+        with open(save_path) as saved_file:
+            assert doc == saved_file.read()
+
+    def test_save_unicode(self):
+        """
+        Saves Unicode file contents.
+
+        (Unicode pathnames aren't a problem, for some reason).
+        """
+        sect_id = u'文件'
+        dtype = u'中文'
+        doc = u'我是斯念安'
+
+        save_path = self.session.save_text_editor(sect_id, dtype, doc)
+
+        with open(save_path) as saved_file:
+            assert doc.encode('utf-8') == saved_file.read()
+
+    def test_make_dir(self):
+        """
+        makes the directory if required
+        """
+        sect_id = 'm2-21aa'
+        dtype = '**kern'
+        doc = 'this is fake kern data'
+        expected_dir = os.path.join(
+            self.session._repo_dir, session.SAVE_DIR, sect_id
+        )
+
+        self.session.save_text_editor(sect_id, dtype, doc)
+
+        assert os.path.exists(expected_dir)
+
+    def test_used_existing_dir(self):
+        """
+        uses existing directory if possible
+        """
+        sect_id = 'm2-21aa'
+        dtype = '**kern'
+        doc = 'this is fake kern data'
+        expected_dir = os.path.join(
+            self.session._repo_dir, session.SAVE_DIR, sect_id
+        )
+        os.makedirs(expected_dir)
+
+        save_path = self.session.save_text_editor(sect_id, dtype, doc)
+
+        assert save_path.startswith(expected_dir)
+        assert os.path.exists(save_path)
+
+    def test_overwrite(self):
+        """
+        overwrites existing file
+        """
+        sect_id = 'm2-21aa'
+        dtype = '**kern'
+        first_doc = 'this is fake kern data'
+        second_doc = 'this is real kern data'
+
+        save_path = self.session.save_text_editor(sect_id, dtype, first_doc)
+        with open(save_path) as saved_file:
+            assert first_doc == saved_file.read()
+
+        self.session.save_text_editor(sect_id, dtype, second_doc)
+        with open(save_path) as saved_file:
+            assert second_doc == saved_file.read()
+
+    def test_args_wrong_type(self):
+        """
+        raises TypeError if args are the wrong type
+        """
+        sect_id = 212
+        dtype = '**kern'
+        doc = 'this is fake kern data'
+
+        with pytest.raises(TypeError) as exc:
+            self.session.save_text_editor(sect_id, dtype, doc)
+        assert exc.match(session._SAVE_ERR_BAD_DATA)
+
+    def test_args_are_empty(self):
+        """
+        raises ValueError if args are empty string
+        """
+        sect_id = ''
+        dtype = '**kern'
+        doc = 'this is fake kern data'
+
+        with pytest.raises(ValueError) as exc:
+            self.session.save_text_editor(sect_id, dtype, doc)
+        assert exc.match(session._SAVE_ERR_BAD_DATA)
+
+    def test_args_invalid_chars(self):
+        """
+        raises ValueError if args contain invalid path characters
+        """
+        sect_id = 'what..ever'
+        dtype = 'buy/some.cheese'
+        doc = 'this is fake kern data'
+
+        with pytest.raises(ValueError) as exc:
+            self.session.save_text_editor(sect_id, dtype, doc)
+        assert exc.match(session._SAVE_ERR_BAD_DATA)
+
+
 class TestRepository(TestInteractiveSession):
     '''
     Test functionality related to the repository.

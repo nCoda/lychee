@@ -51,6 +51,10 @@ _CANNOT_MAKE_HG_DIR = 'Could not create repository directory'
 _FAILURE_DURING_INBOUND = 'Action failed during the inbound steps'
 _UNKNOWN_REVISION = "ACTION_START requested a revision that doesn't exist"
 _VCS_UNSUPPORTED = 'VCS is unsupported'
+_SAVE_ERR_BAD_DATA = 'Incorrect data while trying to save.'
+
+# for text editor contents not passed through the workflow
+SAVE_DIR = 'save'
 
 USER_SETTINGS_DIR = "user"
 USER_SETTINGS_FILE = os.path.join(USER_SETTINGS_DIR, "lychee_settings.xml")
@@ -297,6 +301,55 @@ class InteractiveSession(object):
                 user_settings_xml.write(settings_file, pretty_print=True)
         except IOError:
             pass
+
+    @log.wrap('debug', 'save text editor contents')
+    def save_text_editor(self, sect_id, dtype, doc):
+        '''
+        Save the contents of a text editor, in any format, without checking validity.
+
+        :param str sect_id: The @xml:id of the section data.
+        :param str dtype: Data type of the "doc" argument (e.g., "lilypond"). This should
+            be a "dtype" recognized by :meth:`run_workflow`.
+        :param str doc: The text editor's contents to save.
+        :returns: Pathname of the newly saved file.
+        :rtype: str
+        :raises: :exc:`TypeError` if one of the arguments is not a string.
+        :raises: :exc:`ValueError` if we cannot make a valid filesystem path to save.
+        :raises: :exc:`IOError` if the method cannot save for another reason.
+        '''
+        if not (isinstance(sect_id, basestring) and
+                isinstance(dtype, basestring) and
+                isinstance(doc, basestring)
+               ):
+            raise TypeError(_SAVE_ERR_BAD_DATA)
+
+        if isinstance(doc, unicode):
+            doc = doc.encode('utf-8')
+
+        if not (len(sect_id) > 0 and len(dtype) > 0 and len(doc) > 0):
+            raise ValueError(_SAVE_ERR_BAD_DATA)
+
+        sectiddtype = sect_id + dtype  # we should NOT append with os.path.join()
+        if (os.pardir in sectiddtype or
+                os.sep in sectiddtype or
+                os.extsep in sectiddtype or
+                os.pathsep in sectiddtype
+           ):
+            raise ValueError(_SAVE_ERR_BAD_DATA)
+
+        save_dir = os.path.join(self._repo_dir, SAVE_DIR, sect_id)
+        save_path = os.path.join(save_dir, dtype)
+
+        try:
+            os.makedirs(save_dir)
+        except OSError:
+            # raised if the directory exists; all the same to us
+            pass
+
+        with open(save_path, 'w') as save_file:
+            save_file.write(doc)
+
+        return save_path
 
     @log.wrap('critical', 'run a Lychee action', 'action')
     def _action_start(self, action, **kwargs):

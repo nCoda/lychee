@@ -506,6 +506,22 @@ class TestOutboundSteps(object):
         mei_mock.assert_called_once_with(mock_views.return_value['convert'], user_settings=mock.ANY)
         assert expected == actual
 
+    def test_loads_saved_file(self, temp_doc_with_save):
+        '''
+        When a saved version of the file is available, use it.
+        '''
+        expected = {
+            'dtype': temp_doc_with_save['dtype'],
+            'document': temp_doc_with_save['doc'],
+            'placement': temp_doc_with_save['sect_id'],
+        }
+        actual = steps.do_outbound_steps(
+            repo_dir=temp_doc_with_save['repo_dir'],
+            views_info=temp_doc_with_save['sect_id'],
+            dtype=temp_doc_with_save['dtype'],
+        )
+        assert expected == actual
+
     def test_empty_document(self, temp_doc):
         '''
         With an outbound dtype that does require views processing, but there are no sections in the

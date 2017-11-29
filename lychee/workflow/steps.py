@@ -249,6 +249,12 @@ def do_outbound_steps(repo_dir, views_info, dtype, user_settings=None):
     the parameter types are easily serializable, control is not given up between the views and
     conversion steps, and the result is returned rather than provided with a signal.
 
+    **Loading From Save Directory**
+
+    If the "dtype" is in the :const:`DTYPES_CAN_LOAD_FROM_SAVE_DIR` constant, this function tries
+    to load the data from there rather than converting. If the right file is not present, this
+    function automatically falls back to converting.
+
     **Returned Data**
 
     This function returns the data required for the outbound
@@ -256,6 +262,14 @@ def do_outbound_steps(repo_dir, views_info, dtype, user_settings=None):
     dictionary with three keys: `dtype`, `document`, and `placement`. The values are defined in
     that signal's documentation.
     '''
+
+    loaded = _load_saved_file(repo_dir, views_info, dtype)
+    if loaded:
+        return {
+            'dtype': dtype,
+            'document': loaded,
+            'placement': views_info,
+        }
 
     if dtype in ('document', 'vcs'):
         # these dtypes don't have real "views" information, so we'll do them early

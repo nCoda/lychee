@@ -55,6 +55,7 @@ _SAVE_ERR_BAD_DATA = 'Incorrect data while trying to save.'
 
 # for text editor contents not passed through the workflow
 SAVE_DIR = 'save'
+DTYPES_CAN_LOAD_FROM_SAVE_DIR = ('lilypond', 'python')
 
 USER_SETTINGS_DIR = "user"
 USER_SETTINGS_FILE = os.path.join(USER_SETTINGS_DIR, "lychee_settings.xml")

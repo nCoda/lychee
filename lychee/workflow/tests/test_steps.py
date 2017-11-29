@@ -84,6 +84,32 @@ def temp_doc_sec(request, temp_doc):
     return temp_doc
 
 
+@pytest.fixture()
+def temp_doc_with_save(request, temp_doc):
+    '''
+    Uses the "temp_doc" fixture but adds a file in the SAVE_DIR.
+
+    Returns a dictionary with "sect_id", "dtype", "doc", "repo_dir", and "save_path".
+    '''
+    post = {
+        'doc': 'This is what is in the file!',
+        'dtype': session.DTYPES_CAN_LOAD_FROM_SAVE_DIR[0],
+        'repo_dir': temp_doc,
+        'sect_id': 'jkea-334-aaskj-211-ddd',
+    }
+    save_path = session.InteractiveSession.make_save_path(
+        temp_doc,
+        post['sect_id'],
+        post['dtype'],
+    )
+    post['save_dir'] = save_path[0]
+    post['save_path'] = save_path[1]
+    os.makedirs(post['save_dir'])
+    with open(post['save_path'], 'w') as the_file:
+        the_file.write(post['doc'])
+    return post
+
+
 class TestDocumentStep(TestInteractiveSession):
     '''
     Tests for the "document" step.
@@ -535,3 +561,76 @@ class TestOutboundSteps(object):
             steps._do_outbound_views(repo_dir, views_info, dtype)
 
         assert exc.value.args[0] == steps._NO_OUTBOUND_VIEWS.format(dtype)
+
+
+class TestLoadSavedFile(object):
+    '''
+    Tests for _load_saved_file().
+    '''
+
+    def test_can_load_from_savedir(self):
+        '''
+        If this test fails, the rest of the tests in this section cannot be trusted.
+        '''
+        assert len(session.DTYPES_CAN_LOAD_FROM_SAVE_DIR) >= 2
+
+    def test_loads(self, temp_doc_with_save):
+        '''
+        When the saved file is loaded and returned.
+        '''
+        actual = steps._load_saved_file(
+            repo_dir=temp_doc_with_save['repo_dir'],
+            views_info=temp_doc_with_save['sect_id'],
+            dtype=temp_doc_with_save['dtype'],
+        )
+        assert temp_doc_with_save['doc'] == actual
+
+    def test_bad_dtype(self, temp_doc_with_save):
+        '''
+        When the dtype is not "loadable."
+        '''
+        # first we'll save a "decoy" file that might otherwise be loaded
+        decoy_pathname = os.path.join(temp_doc_with_save['save_dir'], 'just_pure_music')
+        with open(decoy_pathname, 'w') as decoy:
+            decoy.write('something or other')
+        actual = steps._load_saved_file(
+            repo_dir=temp_doc_with_save['repo_dir'],
+            views_info=temp_doc_with_save['sect_id'],
+            dtype='just_pure_music',
+        )
+        assert actual == ''
+
+    def test_cannot_make_save_path(self, temp_doc_with_save):
+        '''
+        When make_save_path() raises an exception.
+        '''
+        actual = steps._load_saved_file(
+            repo_dir=temp_doc_with_save['repo_dir'],
+            views_info='',
+            dtype=temp_doc_with_save['dtype'],
+        )
+        assert actual == ''
+
+    def test_file_does_not_exist(self, temp_doc_with_save):
+        '''
+        When the saved file does not exist.
+        '''
+        os.remove(temp_doc_with_save['save_path'])
+        actual = steps._load_saved_file(
+            repo_dir=temp_doc_with_save['repo_dir'],
+            views_info=temp_doc_with_save['sect_id'],
+            dtype=temp_doc_with_save['dtype'],
+        )
+        assert actual == ''
+
+    def test_file_cannot_be_read(self, temp_doc_with_save):
+        '''
+        When the saved file cannot be read.
+        '''
+        os.chmod(temp_doc_with_save['save_path'], 0)
+        actual = steps._load_saved_file(
+            repo_dir=temp_doc_with_save['repo_dir'],
+            views_info=temp_doc_with_save['sect_id'],
+            dtype=temp_doc_with_save['dtype'],
+        )
+        assert actual == ''

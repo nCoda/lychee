@@ -44,6 +44,8 @@ views/conversion steps. The views/conversion steps themselves are likely to happ
 possibly simultaneously, depending on which outbound formats are registered.
 '''
 
+import os.path
+
 from lxml import etree
 
 from lychee import converters
@@ -54,6 +56,7 @@ from lychee.namespaces import mei
 from lychee import signals
 from lychee.views import inbound as views_in
 from lychee.views import outbound as views_out
+import lychee.workflow.session
 
 
 # translatable strings
@@ -181,6 +184,42 @@ def do_vcs(session, pathnames):
     else:
         signals.vcs.VCS_DISABLED.emit()
     signals.vcs.FINISHED.emit()
+
+
+@log.wrap('info', 'try to load "external" file')
+def _load_saved_file(repo_dir, views_info, dtype):
+    '''
+    Try to load an existing "external" file.
+
+    :param str repo_dir: As :func:`do_outbound_steps`.
+    :param str views_info: As :func:`do_outbound_steps`.
+    :param str dtype:  As :func:`do_outbound_steps`.
+    :returns: The "external" file or an empty string.
+    :rtype: str
+
+    If this function cannot load the requested file for any reason,
+    it returns an empty string.
+    '''
+    default_return = ''
+
+    if dtype not in lychee.workflow.session.DTYPES_CAN_LOAD_FROM_SAVE_DIR:
+        return default_return
+
+    try:
+        save_path = lychee.workflow.session.InteractiveSession.make_save_path(
+            repo_dir, views_info, dtype
+        )[1]
+    except (TypeError, ValueError):
+        return default_return
+
+    if not os.path.isfile(save_path):
+        return default_return
+
+    try:
+        with open(save_path) as saved:
+            return saved.read()
+    except IOError:
+        return default_return
 
 
 @log.wrap('info', 'run the "outbound" steps')

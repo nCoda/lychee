@@ -46,6 +46,7 @@ OUTBOUND_CONVERTERS = {'abjad': outbound.abjad.convert,
                        'document': outbound.document.convert,
                        'lilypond': outbound.lilypond.convert,
                        'mei': outbound.mei.convert,
+                       'python': outbound.python.convert,
                        'vcs': outbound.vcs.convert,
                        'verovio': outbound.verovio.convert,
                       }

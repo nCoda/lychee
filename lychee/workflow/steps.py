@@ -271,7 +271,7 @@ def do_outbound_steps(repo_dir, views_info, dtype, user_settings=None):
             'placement': views_info,
         }
 
-    if dtype in ('document', 'vcs'):
+    if dtype in ('document', 'python', 'vcs'):
         # these dtypes don't have real "views" information, so we'll do them early
         converted = converters.OUTBOUND_CONVERTERS[dtype](repo_dir)
         return {'dtype': dtype, 'document': converted, 'placement': None}

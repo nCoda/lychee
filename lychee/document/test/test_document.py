@@ -7,7 +7,7 @@
 # Filename:               document/test/test_document.py
 # Purpose:                Tests for the "lychee.document.document" module.
 #
-# Copyright (C) 2016, 2017 Christopher Antila
+# Copyright (C) 2016, 2017, 2018 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -49,7 +49,6 @@ import lychee
 from lychee import exceptions
 from lychee.document import document
 from lychee.namespaces import mei, xlink, xml, lychee as lyns
-from lychee.workflow import session
 
 
 class DocumentTestCase(unittest.TestCase):
@@ -79,7 +78,7 @@ class DocumentTestCase(unittest.TestCase):
                 else:
                     assert first_list[i].get(key) == second_list[i].get(key)
 
-    def setUp(self):
+    def setUp(self, make_doc=True):
         '''
         Make an empty Document on "self.document" with a temporary directory. The repository
         directory's name is stored in "self.repo_dir." There should already be an "all_files.mei"
@@ -87,31 +86,6 @@ class DocumentTestCase(unittest.TestCase):
         '''
         self.addTypeEqualityFunc(etree._Element, self.assertElementsEqual)
         self.addTypeEqualityFunc(etree._ElementTree, self.assertElementsEqual)
-        self._session = session.InteractiveSession()
-        self.repo_dir = self._session.set_repo_dir('')
-        self.doc = self._session.document
-
-    def tearDown(self):
-        '''
-        In Python before 3.2, we need to clean up the temporary directory ourselves.
-        '''
-        self._session.unset_repo_dir()
-
-
-class TestSmallThings(DocumentTestCase):
-    '''
-    Tests for small helper functions that require few tests:
-    - :func:`_check_xmlid_chars`
-    - :meth:`_set_default`
-    '''
-
-    def setUp(self):
-        '''
-        Make a temporary directory.
-        '''
-        # self.addTypeEqualityFunc(etree._Element, self.assertElementsEqual)
-        # self.addTypeEqualityFunc(etree._ElementTree, self.assertElementsEqual)
-        DocumentTestCase.setUp(self)
         try:
             # Python 3.2+
             self._temp_dir = tempfile.TemporaryDirectory()
@@ -120,15 +94,27 @@ class TestSmallThings(DocumentTestCase):
             # Python Boring
             self._temp_dir = None
             self.repo_dir = tempfile.mkdtemp()
+        if make_doc:
+            self.doc = document.Document(self.repo_dir)
 
     def tearDown(self):
         '''
-        Clean up the temporary directory.
+        In Python before 3.2, we need to clean up the temporary directory ourselves.
         '''
         if self._temp_dir is None:
-            shutil.rmtree(self.repo_dir)
+            try:
+                shutil.rmtree(self.repo_dir)
+            except OSError:
+                # print('OSError')
+                raise
 
-        DocumentTestCase.tearDown(self)
+
+class TestSmallThings(DocumentTestCase):
+    '''
+    Tests for small helper functions that require few tests:
+    - :func:`_check_xmlid_chars`
+    - :meth:`_set_default`
+    '''
 
     def test__check_xmlid_chars_1(self):
         '''
@@ -373,32 +359,9 @@ class TestSaveAndLoad(DocumentTestCase):
     Tests for document._save_out() and document._load_in().
     '''
 
-
     def setUp(self):
-        '''
-        Make a temporary directory.
-        '''
         DocumentTestCase.setUp(self)
         self.path_to_here = os.path.dirname(inspect.getfile(self.__class__))
-        # self.addTypeEqualityFunc(etree._Element, DocumentTestCase.assertElementsEqual)
-        # self.addTypeEqualityFunc(etree._ElementTree, DocumentTestCase.assertElementsEqual)
-        try:
-            # Python 3.2+
-            self._temp_dir = tempfile.TemporaryDirectory()
-            self.repo_dir = self._temp_dir.name
-        except AttributeError:
-            # Python Boring
-            self._temp_dir = None
-            self.repo_dir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        '''
-        Clean up the temporary directory.
-        '''
-        if self._temp_dir is None:
-            shutil.rmtree(self.repo_dir)
-
-        DocumentTestCase.tearDown(self)
 
     def test__save_out_1(self):
         '''
@@ -609,30 +572,16 @@ class TestEnsureScoreOrder(unittest.TestCase):
         self.assertFalse(document._ensure_score_order(score, order))
 
 
-class TestDocumentInit(unittest.TestCase):
+class TestDocumentInit(DocumentTestCase):
     '''
     Tests for document.Document.__init__().
     '''
 
     def setUp(self):
         '''
-        Make a temporary directory.
+        Create the testing repository *without* a default Document instance.
         '''
-        try:
-            # Python 3.2+
-            self._temp_dir = tempfile.TemporaryDirectory()
-            self.repo_dir = self._temp_dir.name
-        except AttributeError:
-            # Python Boring
-            self._temp_dir = None
-            self.repo_dir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        '''
-        Clean up the temporary directory.
-        '''
-        if self._temp_dir is None:
-            shutil.rmtree(self.repo_dir)
+        DocumentTestCase.setUp(self, make_doc=False)
 
     def test_init_1(self):
         '''

@@ -7,7 +7,7 @@
 # Filename:               lychee/converters/lmei_to_mei.py
 # Purpose:                Converts a Lychee-MEI document to a more conventional MEI document.
 #
-# Copyright (C) 2016, 2017 Christopher Antila
+# Copyright (C) 2016, 2017, 2018 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -71,8 +71,9 @@ def convert_raw(document):
     '''
     Convert a Lychee-MEI document into an MEI document without verifying that it is an MEI section.
     '''
-    document = create_measures(document)
-    rewrite_beam_spans(document)
+    if len(document) > 0:
+        document = create_measures(document)
+        rewrite_beam_spans(document)
     return wrap_section_element(document)
 
 

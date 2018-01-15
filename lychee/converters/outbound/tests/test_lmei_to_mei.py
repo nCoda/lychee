@@ -7,7 +7,7 @@
 # Filename:               lychee/converters/test/test_lmei_to_mei.py
 # Purpose:                Tests for "lmei_to_mei.py" and "verovio.py"
 #
-# Copyright (C) 2016, 2017 Christopher Antila
+# Copyright (C) 2016, 2017, 2018 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -86,6 +86,84 @@ class TestToMei(object):
         actual = actual.getchildren()[0]
         assert mei.SECTION == actual.tag
         assert section is actual
+
+    def test_convert_raw_1(self):
+        '''
+        That convert_raw() works when there is stuff in the <section>.
+        '''
+        initial = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:staff n="1">
+                    <mei:layer n="1">
+                        <mei:rest dur="1"/>
+                    </mei:layer>
+                </mei:staff>
+            </mei:section>
+            ''')
+        expected = etree.fromstring('''
+            <mei:mei xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:music>
+                    <mei:body>
+                        <mei:mdiv>
+                            <mei:score>
+            <mei:section>
+                <mei:scoreDef>
+                    <mei:staffGrp symbol="none">
+                        <mei:staffGrp symbol="bracket">
+                            <mei:staffDef lines="5" n="1" meter.count="4" meter.unit="4"/>
+                        </mei:staffGrp>
+                    </mei:staffGrp>
+                </mei:scoreDef>
+                <mei:measure n="1">
+                    <mei:staff n="1">
+                        <mei:layer n="1">
+                            <mei:rest dur="1"/>
+                        </mei:layer>
+                    </mei:staff>
+                </mei:measure>
+            </mei:section>
+                            </mei:score>
+                        </mei:mdiv>
+                    </mei:body>
+                </mei:music>
+            </mei:mei>
+            ''')
+
+        actual = lmei_to_mei.convert_raw(initial)
+
+        assert_elements_equal(expected, actual)
+
+    def test_convert_raw_2(self):
+        '''
+        That convert_raw() works when the <section> is empty.
+        '''
+        initial = etree.fromstring('''
+            <mei:section xmlns:mei="http://www.music-encoding.org/ns/mei" />
+            ''')
+        expected = etree.fromstring('''
+            <mei:mei xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:music>
+                    <mei:body>
+                        <mei:mdiv>
+                            <mei:score>
+                                <mei:section/>
+                            </mei:score>
+                        </mei:mdiv>
+                    </mei:body>
+                </mei:music>
+            </mei:mei>
+            ''')
+
+        actual = lmei_to_mei.convert_raw(initial)
+
+        assert_elements_equal(expected, actual)
 
 
 class TestMeasureCreation(object):
@@ -1248,8 +1326,6 @@ class TestIntegration(object):
         actual = lmei_to_mei.convert(initial)
 
         assert_elements_equal(expected, actual)
-
-
 
     def test_integration_to_mei_2(self):
         '''

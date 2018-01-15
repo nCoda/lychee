@@ -7,7 +7,7 @@
 # Filename:               lychee/workflow/tests/test_session.py
 # Purpose:                Tests for the lychee.workflow.session module.
 #
-# Copyright (C) 2016, 2017 Christopher Antila
+# Copyright (C) 2016, 2017, 2018 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,6 +44,7 @@ from lxml import etree
 import pytest
 import signalslot
 
+from lychee import document
 from lychee import exceptions
 from lychee import signals
 from lychee.workflow import registrar, session, steps
@@ -450,6 +451,20 @@ class TestRepository(TestInteractiveSession):
         assert not os.path.exists(os.path.join(actual, '.hg'))
         assert sess.hug is None
 
+    def test_set_repo_dir_7(self):
+        '''
+        Check that a Document instance is created.
+        '''
+        sess = session.InteractiveSession()
+        actual = sess.set_repo_dir('', run_outbound=False)
+        if sys.platform == 'linux2':
+            assert actual.startswith('/tmp/')
+        elif sys.platform == 'darwin':
+            assert actual.startswith('/var/')
+        else:
+            raise NotImplementedError("This test isn't yet implemented on this platform.")
+        assert isinstance(sess.document, document.Document)
+
     def test_hug_property(self):
         '''
         Make sure InteractiveSession.hug returns InteractiveSession._hug.
@@ -486,13 +501,35 @@ class TestDocument(TestInteractiveSession):
         actual = self.session.document
         assert self.session._repo_dir == actual._repo_path
 
+    def test_makes_a_section(self):
+        '''
+        When the document is empty, it makes one new section.
+        '''
+        actual = session.InteractiveSession()
+        actual._repo_dir = tempfile.mkdtemp()
+        actual._temp_dir = True
+        assert len(actual.document.get_section_ids()) == 1
+
+    def test_uses_existing_section(self):
+        '''
+        When the document already has a section, it does not make a new section.
+        '''
+        first = session.InteractiveSession()
+        first._repo_dir = tempfile.mkdtemp()
+        first._temp_dir = True
+        actual = session.InteractiveSession()
+        actual._repo_dir = first._repo_dir
+        actual._temp_dir = True
+        assert actual.document.get_section_ids() == first.document.get_section_ids()
+
     def test_unset_repo_dir(self):
         '''
         Cross-check that the document instance is deleted when the repo_dir is changed.
         '''
-        self.session.document
+        initial_document = self.session.document
+        assert self.session._doc is initial_document  # pre-check
         self.session.set_repo_dir('')
-        assert self.session._doc is None
+        assert self.session._doc is not initial_document
 
 
 class TestInbound(TestInteractiveSession):
@@ -659,8 +696,6 @@ class TestActionStart(TestInteractiveSession):
         '''
         self.session = session.InteractiveSession()
         input_ly = r"""\new Staff { \clef "treble" a''4 b'16 c''2  | \clef "bass" d?2 e!2  | f,,2 fis,2  | }"""
-        # pre-condition
-        assert not os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
         # unfortunately we need a mock for this, so we can be sure it was called
         finish_mock = make_slot_mock()
         def finish_side_effect(dtype, placement, document, **kwargs):
@@ -751,8 +786,6 @@ class TestRunWorkflow(TestInteractiveSession):
         '''
         self.session = session.InteractiveSession()
         input_ly = r"""\new Staff { \clef "treble" a''4 b'16 c''2  | \clef "bass" d?2 e!2  | f,,2 fis,2  | }"""
-        # pre-condition
-        assert not os.path.exists(os.path.join(self.session.get_repo_dir(), 'all_files.mei'))
         # unfortunately we need a mock for this, so we can be sure it was called
         finish_mock = make_slot_mock()
         def finish_side_effect(dtype, placement, document, **kwargs):

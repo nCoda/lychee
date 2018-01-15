@@ -7,7 +7,7 @@
 # Filename:               lychee/workflow/tests/test_steps.py
 # Purpose:                Tests for the lychee.workflow.steps module.
 #
-# Copyright (C) 2016 Christopher Antila
+# Copyright (C) 2016, 2018 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -119,13 +119,13 @@ class TestDocumentStep(TestInteractiveSession):
         '''
         That do_document() works.
         '''
-        xmlid = 'Sme-s-m-l-e1111111'
+        doc = self.session.document
+        xmlid = doc.get_section_ids()[0]
         section_pathname = os.path.join(self.session.get_repo_dir(), '{}.mei'.format(xmlid))
         converted = etree.Element(mei.SECTION, attrib={xml.ID: xmlid})
         pathnames = steps.do_document(self.session, converted, 'views info')
 
         assert section_pathname in pathnames
-        doc = self.session.document
         assert [xmlid] == doc.get_section_ids()
         assert [xmlid] == doc.get_section_ids(all_sections=True)
         assert os.path.exists(section_pathname)

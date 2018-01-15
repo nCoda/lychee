@@ -7,7 +7,7 @@
 # Filename:               lychee/workflow/session.py
 # Purpose:                Manage a document editing session through several workflow actions.
 #
-# Copyright (C) 2016, 2017 Christopher Antila
+# Copyright (C) 2016, 2017, 2018 Christopher Antila
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ import six
 from lychee.document import document
 from lychee import exceptions
 from lychee.logs import SESSION_LOG as log
+from lychee.namespaces import mei
 from lychee import signals
 from lychee.workflow import registrar, steps
 
@@ -168,6 +169,9 @@ class InteractiveSession(object):
             self.set_repo_dir('')
 
         self._doc = document.Document(self._repo_dir)
+        if len(self._doc.get_section_ids()) == 0:
+            self._doc.move_section_to(self._doc.put_section(etree.Element(mei.SECTION)), 0)
+            self._doc.save_everything()
         return self._doc
 
     @log.wrap('info', 'set the repository directory')
@@ -219,6 +223,9 @@ class InteractiveSession(object):
                 self._hug = hug.Hug(self._repo_dir, safe=True)
             except hg_error.RepoError:
                 raise exceptions.RepositoryError(_CANNOT_SAFELY_HG_INIT)
+
+        # we don't need the Document, but we need to make sure a <section> exists
+        self.document
 
         if run_outbound:
             self.run_outbound()

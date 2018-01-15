@@ -67,12 +67,15 @@ def convert(document, user_settings=None, **kwargs):
         mei.STAFF: staff,
         mei.SECTION: section,
     }
+    CONTAINERS = (mei.LAYER, mei.MEASURE, mei.STAFF, mei.SECTION)
     if user_settings is None:
         user_settings = {}
     context = {
         'language': user_settings.get('lilyPondLanguage', 'nederlands')
     }
     if document.tag in CONV_FUNCS:
+        if document.tag in CONTAINERS and len(document) == 0:
+            return ''
         return CONV_FUNCS[document.tag](document, context=context)
     else:
         raise exceptions.OutboundConversionError('LMEI-to-LilyPond cannot do {0} elements'.format(document.tag))

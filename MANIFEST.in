@@ -1,2 +1,3 @@
-include versioneer.py
 include lychee/_version.py
+include metadata.py
+include versioneer.py

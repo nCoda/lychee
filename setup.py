@@ -12,7 +12,7 @@ setup(
     install_requires=(
         'Abjad==2.21',
         'tatsu>=4.2',
-        'lithoxyl==0.4',
+        'lithoxyl>=0.4',
         'lxml>3,<4',
         'signalslot',
         'six',

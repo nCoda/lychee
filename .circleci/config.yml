@@ -6,12 +6,17 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install dependencies
+          name: Install dependencies.
           command: |
             sudo pip install .
             sudo pip install .[devel]
       - run:
-          name: Run the tests
+          name: Make some modules so the tests run.
+          command: |
+            touch lychee/covnerters/inbound/tests/__init__.py
+            touch lychee/covnerters/outbound/tests/__init__.py
+      - run:
+          name: Run the tests.
           command: py.test --cov=lychee --junit-xml=junit.xml
       - store_test-results:
           path: junit.xml

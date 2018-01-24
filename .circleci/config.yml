@@ -5,6 +5,11 @@ jobs:
       - image: circleci/python:2.7
     steps:
       - checkout
+      - run:
+          name: Set permissions so the cache works.
+          command: |
+            sudo chown -R circleci:circleci /usr/local/bin
+            sudo chown -R circleci:circleci /usr/local/lib/python2.7/site-packages
       - restore_cache:
           key: v1-venv-{{ checksum "setup.py" }}
       - run:

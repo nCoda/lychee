@@ -11,12 +11,13 @@ jobs:
             sudo pip install .
             sudo pip install .[devel]
       - run:
-          name: Make some modules so the tests run.
+          name: Make additional files for the tests.
           command: |
             touch lychee/converters/inbound/tests/__init__.py
             touch lychee/converters/outbound/tests/__init__.py
+            mkdir -p test_results/junit
       - run:
           name: Run the tests.
-          command: py.test --cov=lychee --junit-xml=junit.xml
+          command: py.test --cov=lychee --junit-xml=test_results/junit/junit.xml
       - store_test-results:
-          path: junit.xml
+          path: test_results

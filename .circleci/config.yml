@@ -6,15 +6,10 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Make and activate a virtualenv
-          command: |
-            virtualenv venv
-            source venv/bin/activate
-      - run:
           name: Install dependencies
           command: |
-            pip install .
-            pip install .[devel]
+            sudo pip install .
+            sudo pip install .[devel]
       - run:
           name: Run the tests
           command: py.test --cov=lychee --junit-xml=junit.xml

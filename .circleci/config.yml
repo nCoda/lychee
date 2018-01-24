@@ -1,0 +1,17 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:2.7
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            pip install .
+            pip install .[devel]
+      - run:
+          name: Run the tests
+          command: py.test --cov=lychee --junit-xml=junit.xml
+      - store_test-results:
+          path: junit.xml

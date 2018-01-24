@@ -5,11 +5,20 @@ jobs:
       - image: circleci/python:2.7
     steps:
       - checkout
+      - restore_cache:
+        key: v1-venv-{{ checksum "setup.py" }}
       - run:
           name: Install dependencies.
           command: |
             sudo pip install .
             sudo pip install .[devel]
+      - save_cache:
+          paths:
+            - ".venv"
+            - "/usr/local/bin"
+            - "/usr/local/lib/python2.7/site-packages"
+          key: v1-venv-{{ checksum "setup.py" }}
+          when: on_success
       - run:
           name: Make additional files for the tests.
           command: |

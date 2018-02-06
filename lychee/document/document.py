@@ -58,7 +58,8 @@ _ABJAD_FULL_NAME = 'Abjad API for Formalized Score Control'
 _PLACEHOLDER_TITLE = '(Untitled)'
 _SAVE_OUT_ERROR = 'Could not save an XML file (IOError).'
 _LY_VERSION_MISSING = 'Lychee-MEI file file is missing @ly:version'
-_LY_VERSION_MISMATCH = 'Lychee-MEI file has different version than us'
+_LY_VERSION_NEWER = 'Lychee-MEI file was produced by a newer version of Lychee'
+_LY_VERSION_OLDER = 'Lychee-MEI file was produced by an unsupported version'
 _LY_VERSION_INVALID = 'Lychee-MEI file has invalid @ly:version'
 
 
@@ -218,29 +219,46 @@ def _check_version_attr(lmei, action):
     :type lmei: :class:`lxml.etree.ElementTree`
     :returns: The unmodified LMEI document.
     :rtype: :class:`lxml.etree.ElementTree`
+    :raises: :exc:`exceptions.LycheeMEIError` if the file is too old and not supported.
 
     Currently, this function checks whether the @ly:version attribute is present on the root element
     of the :class:`ElementTree` given, and:
 
     - if @ly:version is missing, prints an "error" log message
     - if @ly:version is not a proper "semantic versioning" string, prints an "error" log message
-    - if @ly:version is different than the version of this Lychee, prints a "warning" log message
     - if @ly:version is the same as the version of this Lychee, continues silently
+
+    In addition, the function checks for incompatible versions:
+
+    - if @ly:version indicates a future version, prints a "warning" log message
+    - if @ly:version is older than 0.6.0, raises a LycheeMEIError
+
+    .. note:: The patch release is ignored for the compatibility check.
     '''
     version = lmei.getroot().get(lyns.VERSION)
     if version is None:
         action.failure(_LY_VERSION_MISSING)
     elif version != lychee.__version__:
-        version_numbers = version.split('.')
-        if len(version_numbers) != 3:
+        file_version = version.split('.')
+        if len(file_version) != 3:
             action.failure(_LY_VERSION_INVALID)
         else:
             try:
-                [int(num) for num in version_numbers]
+                file_version = [int(num) for num in file_version]
             except ValueError:
                 action.failure(_LY_VERSION_INVALID)
-            else:
-                action.failure(_LY_VERSION_MISMATCH)
+
+        our_version = lychee.__version__.split('.')
+        our_version = [int(our_version[0]), int(our_version[1]), 0]
+
+        if file_version[0] > our_version[0]:
+            action.failure(_LY_VERSION_NEWER)
+        elif file_version[0] < our_version[0]:
+            raise exceptions.LycheeMEIError(_LY_VERSION_OLDER)
+        elif file_version[1] > our_version[1]:
+            action.failure(_LY_VERSION_NEWER)
+        elif file_version[1] < 6:
+            raise exceptions.LycheeMEIError(_LY_VERSION_OLDER)
 
     return lmei
 

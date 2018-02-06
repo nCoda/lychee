@@ -312,7 +312,7 @@ class TestSmallThings(DocumentTestCase):
 class TestCheckVersionAttr(unittest.TestCase):
     "Tests for document._check_version_attr()."
 
-    def test_check_version_1(self):
+    def test_version_missing(self):
         '''
         version is missing
         '''
@@ -320,7 +320,7 @@ class TestCheckVersionAttr(unittest.TestCase):
         actual = document._check_version_attr(lmei)
         assert actual is lmei
 
-    def test_check_version_2(self):
+    def test_version_2_numbers(self):
         '''
         the version has only two numbers
         '''
@@ -328,7 +328,7 @@ class TestCheckVersionAttr(unittest.TestCase):
         actual = document._check_version_attr(lmei)
         assert actual is lmei
 
-    def test_check_version_3(self):
+    def test_version_with_letters(self):
         '''
         the version contains letters
         '''
@@ -336,17 +336,47 @@ class TestCheckVersionAttr(unittest.TestCase):
         actual = document._check_version_attr(lmei)
         assert actual is lmei
 
-    def test_check_version_4(self):
+    def test_major_version_too_new(self):
         '''
-        the version is different than the version of this Lychee
+        the major version is newer than the version of this Lychee
         '''
-        lmei = etree.ElementTree(etree.Element(mei.SECTION, {lyns.VERSION: '0.2.1'}))
+        version = lychee.__version__.split('.')
+        version[0] = str(int(version[0]) + 1)
+        version = '.'.join(version)
+        lmei = etree.ElementTree(etree.Element(mei.SECTION, {lyns.VERSION: version}))
         actual = document._check_version_attr(lmei)
         assert actual is lmei
 
-    def test_check_version_5(self):
+    def test_minor_version_too_new(self):
+        '''
+        the minor version is newer than the version of this Lychee
+        '''
+        version = lychee.__version__.split('.')
+        version[1] = str(int(version[1]) + 1)
+        version = '.'.join(version)
+        lmei = etree.ElementTree(etree.Element(mei.SECTION, {lyns.VERSION: version}))
+        actual = document._check_version_attr(lmei)
+        assert actual is lmei
+
+    def test_minor_version_too_old(self):
+        '''
+        the minor version is older than the minimum required
+        '''
+        lmei = etree.ElementTree(etree.Element(mei.SECTION, {lyns.VERSION: '0.5.3'}))
+        with pytest.raises(exceptions.LycheeMEIError):
+            document._check_version_attr(lmei)
+
+    def test_version_correct(self):
         '''
         the version is correct
+        '''
+        lmei = etree.ElementTree(etree.Element(mei.SECTION, {lyns.VERSION: '0.6.0'}))
+        actual = document._check_version_attr(lmei)
+        assert actual is lmei
+
+    def test_version_same(self):
+        '''
+        the version is the same as the current version
         '''
         lmei = etree.ElementTree(etree.Element(mei.SECTION, {lyns.VERSION: lychee.__version__}))
         actual = document._check_version_attr(lmei)

@@ -671,6 +671,18 @@ def do_layer(l_layer, m_staff, layer_n, m_staffdef=None, context=None, action=No
     '''
     m_layer = etree.SubElement(m_staff, mei.LAYER, {'n': str(layer_n)})
 
+    do_sequential_music(l_layer, m_layer, context=context)
+
+    fix_ties_in_layer(m_layer)
+    fix_slurs_in_layer(m_layer)
+    fix_accidentals_in_layer(m_layer, m_staffdef)
+    music_utils.autobeam(m_layer, m_staffdef)
+
+    return m_layer
+
+
+@log.wrap('debug', 'convert sequential music', 'action')
+def do_sequential_music(l_things, m_container, context=None, action=None):
     node_converters = {
         'chord': do_chord,
         'note': do_note,
@@ -679,24 +691,17 @@ def do_layer(l_layer, m_staff, layer_n, m_staffdef=None, context=None, action=No
         'spacer': do_spacer,
     }
 
-    for obj in l_layer:
+    for obj in l_things:
         with log.debug('node conversion') as action:
             if obj['ly_type'] in node_converters:
-                node_converters[obj['ly_type']](obj, m_layer, context=context)
+                node_converters[obj['ly_type']](obj, m_container, context=context)
                 action.success('converted {ly_type}', ly_type=obj['ly_type'])
             elif obj['ly_type'] in _STAFF_SETTINGS_FUNCTIONS:
-                m_staffdef = etree.SubElement(m_layer, mei.STAFF_DEF)
+                m_staffdef = etree.SubElement(m_container, mei.STAFF_DEF)
                 _STAFF_SETTINGS_FUNCTIONS[obj['ly_type']](obj, m_staffdef)
                 # The <staffDef> has no "n" attribute, which we will fix in do_staff.
             else:
                 action.failure('unknown node type: {ly_type}', ly_type=obj['ly_type'])
-
-    fix_ties_in_layer(m_layer)
-    fix_slurs_in_layer(m_layer)
-    fix_accidentals_in_layer(m_layer, m_staffdef)
-    music_utils.autobeam(m_layer, m_staffdef)
-
-    return m_layer
 
 
 @log.wrap('debug', 'process pitch')

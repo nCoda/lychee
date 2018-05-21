@@ -224,6 +224,8 @@ def sequential_music(m_container, context=None):
                 # staffdef might return an empty string.
                 if l_staff_def:
                     post.append(l_staff_def)
+            elif elem.tag == mei.TUPLET:
+                post.append(tuplet(elem, context))
             else:
                 action.failure(
                     'missed a {tag_name} in a <{container_name}>',
@@ -351,6 +353,20 @@ def meter(m_staffdef, context=None):
         return '\\time {0}/{1}'.format(m_staffdef.get('meter.count'), m_staffdef.get('meter.unit'))
     else:
         return ''
+
+
+@log.wrap('debug', 'convert tuplet')
+def tuplet(m_tuplet, context=None):
+    check_tag(m_tuplet, mei.TUPLET)
+    post = []
+    post.append(
+        '\\tuplet {0}/{1}'.format(
+            m_tuplet.get('num'),
+            m_tuplet.get('numbase')))
+    post.append('{')
+    post.extend(sequential_music(m_tuplet, context=context))
+    post.append('}')
+    return ' '.join(post)
 
 
 @log.wrap('info', 'convert inline staffdef')

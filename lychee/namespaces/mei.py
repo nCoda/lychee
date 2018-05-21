@@ -137,6 +137,8 @@ TITLE = '{}title'.format(MEINS)
 'An MEI tag name.'
 TITLE_STMT = '{}titleStmt'.format(MEINS)
 'An MEI tag name.'
+TUPLET = '{}tuplet'.format(MEINS)
+'An MEI tag name.'
 TUPLET_SPAN = '{}tupletSpan'.format(MEINS)
 'An MEI tag name.'
 UNPUB = '{}unpub'.format(MEINS)

@@ -689,6 +689,7 @@ def do_sequential_music(l_things, m_container, context=None, action=None):
         'rest': do_rest,
         'measure_rest': do_measure_rest,
         'spacer': do_spacer,
+        'tuplet': do_tuplet,
     }
 
     for obj in l_things:
@@ -942,6 +943,36 @@ def do_spacer(l_spacer, m_layer, context=None, action=None):
     m_space = etree.SubElement(m_layer, mei.SPACE, attrib)
 
     return m_space
+
+
+@log.wrap('debug', 'convert tuplet', 'action')
+def do_tuplet(l_tuplet, m_layer, context=None, action=None):
+    """
+    Convert a LilyPond tuplet to an LMEI <tuplet>.
+
+    :param dict l_spacer: The LilyPond tuplet from TatSu.
+    :param m_layer: The LMEI <layer> that will hold the tuplet.
+    :type m_layer: :class:`lxml.etree.Element`
+    :returns: The new <tuplet> element.
+    :rtype: :class:`lxml.etree.Element`
+    :raises: :exc:`exceptions.LilyPondError` if ``l_tuplet`` does not contain a TatSu tuplet
+    """
+    check(l_tuplet['ly_type'] == 'tuplet', 'did not receive a tuplet')
+
+    num, numbase = l_tuplet['fraction'].split('/')
+
+    if l_tuplet['tag'] == '\\times':
+        num, numbase = numbase, num
+
+    attrib = {
+        'num': num,
+        'numbase': numbase,
+    }
+
+    m_tuplet = etree.SubElement(m_layer, mei.TUPLET, attrib)
+    do_sequential_music(l_tuplet['nodes'], m_tuplet, context=context)
+
+    return m_tuplet
 
 
 # this is at the bottom so the functions will already be defined

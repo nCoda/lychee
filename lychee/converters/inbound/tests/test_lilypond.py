@@ -1198,7 +1198,7 @@ class TestTuplet(object):
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_tuplet(l_tuplet, m_layer)
 
-        assert actual.tag == 'tuplet'
+        assert actual.tag == mei.TUPLET
         assert actual.get('num') == '3'
         assert actual.get('numbase') == '2'
         assert len(actual) == 3
@@ -1214,7 +1214,7 @@ class TestTuplet(object):
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_tuplet(l_tuplet, m_layer)
 
-        assert actual.tag == 'tuplet'
+        assert actual.tag == mei.TUPLET
         assert actual.get('num') == '3'
         assert actual.get('numbase') == '2'
         assert len(actual) == 3

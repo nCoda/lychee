@@ -1180,3 +1180,41 @@ class TestAccidentalRendering(object):
         assert actual[12].find(mei.ACCID).get('accid') == 'ff'
         assert actual[13].find(mei.ACCID) is None
         assert actual[14].find(mei.ACCID).get('accid') == 's'
+
+
+class TestTuplet(object):
+    """
+    For tuplets.
+    """
+
+    def test_tuplet_1(self):
+        """Basic usage."""
+        l_nodes = [
+            {'ly_type': 'note', 'pitch_name': 'c', 'oct': "'", 'accid_force': None,
+             'dur': '4', 'dots': []},
+        ] * 3
+        l_tuplet = {'ly_type': 'tuplet', 'tag': '\\tuplet', 'fraction': '3/2',
+                    'nodes': l_nodes}
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_tuplet(l_tuplet, m_layer)
+
+        assert actual.tag == 'tuplet'
+        assert actual.get('num') == '3'
+        assert actual.get('numbase') == '2'
+        assert len(actual) == 3
+
+    def test_tuplet_2(self):
+        """Using \\times instead of \\tuplet."""
+        l_nodes = [
+            {'ly_type': 'note', 'pitch_name': 'c', 'oct': "'", 'accid_force': None,
+             'dur': '4', 'dots': []},
+        ] * 3
+        l_tuplet = {'ly_type': 'tuplet', 'tag': '\\times', 'fraction': '2/3',
+                    'nodes': l_nodes}
+        m_layer = etree.Element(mei.LAYER)
+        actual = lilypond.do_tuplet(l_tuplet, m_layer)
+
+        assert actual.tag == 'tuplet'
+        assert actual.get('num') == '3'
+        assert actual.get('numbase') == '2'
+        assert len(actual) == 3

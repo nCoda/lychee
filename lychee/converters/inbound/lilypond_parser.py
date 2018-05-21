@@ -222,6 +222,34 @@ class LilyPondParser(Parser):
             self._error('no available options')
 
     @tatsumasu()
+    def _fraction_(self):  # noqa
+        self._pattern(r'[0-9]+\/[0-9]+')
+
+    @tatsumasu()
+    def _tuplet_(self):  # noqa
+        self._constant('tuplet')
+        self.name_last_node('ly_type')
+        with self._group():
+            with self._choice():
+                with self._option():
+                    self._token('\\tuplet')
+                with self._option():
+                    self._token('\\times')
+                self._error('no available options')
+        self.name_last_node('tag')
+        self._cut()
+        self._fraction_()
+        self.name_last_node('fraction')
+        self._token('{')
+        self._nodes_()
+        self.name_last_node('nodes')
+        self._token('}')
+        self.ast._define(
+            ['fraction', 'ly_type', 'nodes', 'tag'],
+            []
+        )
+
+    @tatsumasu()
     def _pitch_name_(self):  # noqa
         self._pattern(r'[a-z]+')
         self._check_name()
@@ -575,6 +603,8 @@ class LilyPondParser(Parser):
                 self._chord_()
             with self._option():
                 self._barcheck_()
+            with self._option():
+                self._tuplet_()
             self._error('no available options')
 
     @tatsumasu()
@@ -596,6 +626,8 @@ class LilyPondParser(Parser):
                             self._chord_()
                         with self._option():
                             self._barcheck_()
+                        with self._option():
+                            self._tuplet_()
                         self._error('no available options')
                 with self._option():
                     with self._choice():
@@ -850,6 +882,12 @@ class LilyPondSemantics(object):
         return ast
 
     def staff_setting(self, ast):  # noqa
+        return ast
+
+    def fraction(self, ast):  # noqa
+        return ast
+
+    def tuplet(self, ast):  # noqa
         return ast
 
     def pitch_name(self, ast):  # noqa

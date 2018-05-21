@@ -421,6 +421,40 @@ class TestPostEvents(object):
         assert expected == actual
 
 
+class TestTuplets(object):
+    """
+    For tuplets.
+    """
+
+    def test_tuplet_1(self):
+        """Using \\tuplet."""
+        content = r'\tuplet 3/2 { s4 }'
+        expected = {
+            'ly_type': 'tuplet',
+            'tag': '\\tuplet',
+            'fraction': '3/2',
+            'nodes': [
+                {'dur': '4', 'dots': [], 'ly_type': 'spacer', 'post_events': []}
+            ]
+        }
+        actual = parser.parse(content, rule_name='tuplet')
+        assert expected == actual
+
+    def test_tuplet_2(self):
+        """Using \\times."""
+        content = r'\times 2/3 { s4 }'
+        expected = {
+            'ly_type': 'tuplet',
+            'tag': '\\times',
+            'fraction': '2/3',
+            'nodes': [
+                {'dur': '4', 'dots': [], 'ly_type': 'spacer', 'post_events': []}
+            ]
+        }
+        actual = parser.parse(content, rule_name='tuplet')
+        assert expected == actual
+
+
 class TestLayers(object):
     """
     For polyphonic and monophonic layers.

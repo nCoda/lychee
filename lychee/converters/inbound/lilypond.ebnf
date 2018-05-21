@@ -79,6 +79,21 @@ staff_setting =
     clef | key | time | instr_name
     ;
 
+# Tuplets
+######################################
+
+fraction =
+    /[0-9]+\/[0-9]+/
+    ;
+
+tuplet =
+    ly_type:`tuplet`
+    tag:('\\tuplet' | '\\times') ~
+    fraction:fraction
+    '{'
+    nodes:nodes
+    '}'
+    ;
 
 # Nodes: notes, rests, chords, spacers
 ######################################
@@ -163,7 +178,7 @@ spacer =
 
 barcheck = ly_type:`barcheck` '|' ;
 
-music_node = note | rest | spacer | measure_rest | chord | barcheck ;
+music_node = note | rest | spacer | measure_rest | chord | barcheck | tuplet;
 nodes = { >music_node | >staff_setting }+ ;
 
 

@@ -37,6 +37,7 @@ Converts an MEI document to a LilyPond document.
 from lychee import exceptions
 from lychee.logs import OUTBOUND_LOG as log
 from lychee.namespaces import mei
+from lychee.namespaces import xml
 from lychee.utils import lilypond_utils
 
 
@@ -201,6 +202,21 @@ def measure_rest(m_measure_rest, context=None):
     return l_measure_rest
 
 
+@log.wrap('debug', 'convert tuplet span')
+def tuplet_span(m_tuplet_span, context=None):
+    check_tag(m_tuplet_span, mei.TUPLET_SPAN)
+    post = []
+    post.append('\\tuplet')
+    post.append('{num}/{numbase}'.format(**m_tuplet_span.attrib))
+    post.append('{')
+    if not context:
+        context = {}
+    context.setdefault('tuplet_ending_node_ids', [])
+    end_id = m_tuplet_span.get('endid')[1:]
+    context['tuplet_ending_node_ids'].append(end_id)
+    return ' '.join(post)
+
+
 @log.wrap('debug', 'convert sequential music')
 def sequential_music(m_container, context=None):
     '''
@@ -208,6 +224,11 @@ def sequential_music(m_container, context=None):
     sequential music, to an array of LilyPond strings to be joined together
     with whitespace.
     '''
+    if not context:
+        context = {}
+
+    context.setdefault('tuplet_ending_node_ids', [])
+
     post = []
     for elem in m_container.iterchildren('*'):
         with log.debug('convert element in a <{}>'.format(m_container.tag)) as action:
@@ -224,14 +245,20 @@ def sequential_music(m_container, context=None):
                 # staffdef might return an empty string.
                 if l_staff_def:
                     post.append(l_staff_def)
-            elif elem.tag == mei.TUPLET:
-                post.append(tuplet(elem, context))
+            elif elem.tag == mei.TUPLET_SPAN:
+                post.append(tuplet_span(elem, context))
             else:
                 action.failure(
                     'missed a {tag_name} in a <{container_name}>',
                     tag_name=elem.tag,
                     container_name=m_container.tag,
                     )
+
+            tuplet_ending_node_ids = context['tuplet_ending_node_ids']
+            xml_id = elem.get(xml.ID)
+            while xml_id in tuplet_ending_node_ids:
+                post.append('}')
+                tuplet_ending_node_ids.remove(xml_id)
 
     return post
 
@@ -353,20 +380,6 @@ def meter(m_staffdef, context=None):
         return '\\time {0}/{1}'.format(m_staffdef.get('meter.count'), m_staffdef.get('meter.unit'))
     else:
         return ''
-
-
-@log.wrap('debug', 'convert tuplet')
-def tuplet(m_tuplet, context=None):
-    check_tag(m_tuplet, mei.TUPLET)
-    post = []
-    post.append(
-        '\\tuplet {0}/{1}'.format(
-            m_tuplet.get('num'),
-            m_tuplet.get('numbase')))
-    post.append('{')
-    post.extend(sequential_music(m_tuplet, context=context))
-    post.append('}')
-    return ' '.join(post)
 
 
 @log.wrap('info', 'convert inline staffdef')

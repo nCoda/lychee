@@ -238,7 +238,7 @@ class TestAutoBeam:
         beam_span = layer.find(mei.BEAM_SPAN)
         assert beam_span is not None
 
-        assert layer[:] == notes + [beam_span]
+        assert layer[:] == [beam_span] + notes
 
         assert beam_span.get('startid') == '#' + xml_ids[0]
         assert beam_span.get('endid') == '#' + xml_ids[-1]
@@ -276,27 +276,27 @@ class TestAutoBeam:
         assert len(layer) == 8
 
         expected_tags = [
-            mei.NOTE,
-            mei.NOTE,
-            mei.NOTE,
             mei.BEAM_SPAN,
             mei.NOTE,
             mei.NOTE,
             mei.NOTE,
             mei.BEAM_SPAN,
+            mei.NOTE,
+            mei.NOTE,
+            mei.NOTE,
             ]
         assert [element.tag for element in layer] == expected_tags
 
-        beam_span_1 = layer[3]
-        assert beam_span_1.get('startid') == '#' + layer[0].get(xml.ID)
-        assert beam_span_1.get('endid') == '#' + layer[2].get(xml.ID)
+        beam_span_1 = layer[0]
+        assert beam_span_1.get('startid') == '#' + layer[1].get(xml.ID)
+        assert beam_span_1.get('endid') == '#' + layer[3].get(xml.ID)
 
-        plist_1 = ['#' + element.get(xml.ID) for element in layer[0:3]]
+        plist_1 = ['#' + element.get(xml.ID) for element in layer[1:4]]
         assert beam_span_1.get('plist').split() == plist_1
 
-        beam_span_2 = layer[7]
-        assert beam_span_2.get('startid') == '#' + layer[4].get(xml.ID)
-        assert beam_span_2.get('endid') == '#' + layer[6].get(xml.ID)
+        beam_span_2 = layer[4]
+        assert beam_span_2.get('startid') == '#' + layer[5].get(xml.ID)
+        assert beam_span_2.get('endid') == '#' + layer[7].get(xml.ID)
 
-        plist_2 = ['#' + element.get(xml.ID) for element in layer[4:7]]
+        plist_2 = ['#' + element.get(xml.ID) for element in layer[5:8]]
         assert beam_span_2.get('plist').split() == plist_2

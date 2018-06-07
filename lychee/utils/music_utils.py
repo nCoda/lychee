@@ -32,6 +32,12 @@ from lychee.namespaces import mei, xml
 from lychee import exceptions
 import fractions
 
+MEI_LEAF_ELEMENTS = (
+    mei.NOTE,
+    mei.CHORD,
+    mei.REST,
+    mei.SPACE,
+)
 
 NOTE_NAMES = ('c', 'd', 'e', 'f', 'g', 'a', 'b')
 
@@ -101,34 +107,46 @@ def measure_duration(m_staffdef):
     return fractions.Fraction(count, unit)
 
 
-def make_beam(nodes_in_this_beam, m_layer):
+def get_xml_id(node):
     '''
-    Create an MEI beamSpan across a list of nodes in a layer. The nodes are assumed to be provided
-    from left to right.
+    Return the XML ID of the node. If the node doesn't have one assigned, add
+    a randomized XML ID.
     '''
-    # Reject beams with 0 or 1 note.
-    if len(nodes_in_this_beam) < 2:
-        return
+    if not node.get(xml.ID):
+        node.set(xml.ID, 'S-s-m-l-e' + ''.join([str(random.randint(0, 9)) for i in range(8)]))
+    xml_id = node.get(xml.ID)
+    return xml_id
 
+
+def set_span_plist(span, nodes):
     xml_ids = []
-    for node in nodes_in_this_beam:
-        if not node.get(xml.ID):
-            node.set(xml.ID, 'S-s-m-l-e' + ''.join([str(random.randint(0, 9)) for i in range(8)]))
-        xml_id = node.get(xml.ID)
-        xml_ids.append('#' + xml_id)
+    for node in nodes:
+        xml_ids.append('#' + get_xml_id(node))
 
-    beam_span = etree.Element(mei.BEAM_SPAN)
-    beam_span.attrib.update({
+    span.attrib.update({
         'plist': ' '.join(xml_ids),
         'startid': xml_ids[0],
         'endid': xml_ids[-1],
         })
 
-    # Insert the new beamSpan after the last node in it.
-    last_node = nodes_in_this_beam[-1]
-    parent_of_last_node = last_node.getparent()
-    index_of_last_node_in_parent = parent_of_last_node.index(last_node)
-    parent_of_last_node.insert(index_of_last_node_in_parent + 1, beam_span)
+
+def make_beam(nodes, m_layer):
+    '''
+    Create an MEI span element across a list of nodes in a layer. The nodes are
+    assumed to be provided from left to right.
+    '''
+    if len(nodes) < 2:
+        return
+
+    span = etree.Element(mei.BEAM_SPAN)
+    set_span_plist(span, nodes)
+
+    # Insert the new span before its own last node.
+    first_node = nodes[0]
+    parent_of_first_node = first_node.getparent()
+    index_of_first_node_in_parent = parent_of_first_node.index(first_node)
+    parent_of_first_node.insert(index_of_first_node_in_parent, span)
+    return span
 
 
 def get_autobeam_structure(m_layer, m_staffdef):

@@ -40,6 +40,7 @@ from lychee.converters.inbound import lilypond
 from lychee.converters.inbound import lilypond_parser
 from lychee import exceptions
 from lychee.namespaces import mei
+from lychee.namespaces import xml
 
 parser = lilypond_parser.LilyPondParser()
 
@@ -1198,10 +1199,15 @@ class TestTuplet(object):
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_tuplet(l_tuplet, m_layer)
 
-        assert actual.tag == mei.TUPLET
+        assert actual.tag == mei.TUPLET_SPAN
         assert actual.get('num') == '3'
         assert actual.get('numbase') == '2'
-        assert len(actual) == 3
+
+        notes = [note for note in m_layer if note.tag == mei.NOTE]
+        xml_ids = ["#" + note.get(xml.ID) for note in notes]
+        assert actual.get('plist') == ' '.join(xml_ids)
+        assert actual.get('startid') == xml_ids[0]
+        assert actual.get('endid') == xml_ids[-1]
 
     def test_tuplet_2(self):
         """Using \\times instead of \\tuplet."""
@@ -1214,7 +1220,6 @@ class TestTuplet(object):
         m_layer = etree.Element(mei.LAYER)
         actual = lilypond.do_tuplet(l_tuplet, m_layer)
 
-        assert actual.tag == mei.TUPLET
+        assert actual.tag == mei.TUPLET_SPAN
         assert actual.get('num') == '3'
         assert actual.get('numbase') == '2'
-        assert len(actual) == 3

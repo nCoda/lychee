@@ -576,16 +576,18 @@ def fix_ties_in_layer(m_layer, action):
 
     # In the first pass, we remove all unterminated ties and set all ties to initial.
 
-    for i in range(len(m_layer)):
-        node = m_layer[i]
+    # TODO: Probably not most efficient to make this into a list.
+    leaves = m_layer
+    for i in range(len(leaves)):
+        node = leaves[i]
 
         # next_pitches is the set of pitches that can be tied to in the next node.
         # If the next node is a rest, spacer, etc. then next_pitches is empty,
         # meaning that all ties from the current node are unterminated. next_pitches
         # is also empty on the last node in the layer, since it can't tie to anything.
         next_pitches = frozenset()
-        if i != len(m_layer) - 1:
-            next_node = m_layer[i + 1]
+        if i != len(leaves) - 1:
+            next_node = leaves[i + 1]
             if next_node.tag == mei.NOTE:
                 next_pitches = frozenset([note_pitch(next_node)])
             elif next_node.tag == mei.CHORD:
@@ -600,9 +602,9 @@ def fix_ties_in_layer(m_layer, action):
     # In the second pass, we change some initial @ties to medial @ties,
     # and add some final @ties as necessary.
 
-    for i in range(len(m_layer) - 1):
-        node = m_layer[i]
-        next_node = m_layer[i + 1]
+    for i in range(len(leaves) - 1):
+        node = leaves[i]
+        next_node = leaves[i + 1]
 
         # In the first pass, we used a set of pitches. But this time, we need to
         # be able to get the node corresponding to each pitch, so we use a dict
@@ -671,6 +673,14 @@ def do_layer(l_layer, m_staff, layer_n, m_staffdef=None, context=None, action=No
     '''
     m_layer = etree.SubElement(m_staff, mei.LAYER, {'n': str(layer_n)})
 
+    if not context:
+        context = {}
+
+    # The tuplet_spans key in the context dictionary keeps a list of all the
+    # elements in the plist of each tuplet in the nested tuplet hierarchy.
+    # The first element of tuplet_spans is the plist for the outermost tuplet.
+    context['tuplet_spans'] = []
+
     do_sequential_music(l_layer, m_layer, context=context)
 
     fix_ties_in_layer(m_layer)
@@ -695,7 +705,15 @@ def do_sequential_music(l_things, m_container, context=None, action=None):
     for obj in l_things:
         with log.debug('node conversion') as action:
             if obj['ly_type'] in node_converters:
-                node_converters[obj['ly_type']](obj, m_container, context=context)
+                node = node_converters[obj['ly_type']](obj, m_container, context=context)
+
+                # Tuplet spans handle their own addition to the tuplet_spans records
+                # (search for LINKINPARK in this file).
+                # All other leaf nodes are automatically added.
+                if node.tag in (mei.CHORD, mei.NOTE, mei.REST, mei.M_REST, mei.SPACE):
+                    for tuplet_span in context['tuplet_spans']:
+                        tuplet_span.append(node)
+
                 action.success('converted {ly_type}', ly_type=obj['ly_type'])
             elif obj['ly_type'] in _STAFF_SETTINGS_FUNCTIONS:
                 m_staffdef = etree.SubElement(m_container, mei.STAFF_DEF)
@@ -964,15 +982,26 @@ def do_tuplet(l_tuplet, m_layer, context=None, action=None):
     if l_tuplet['tag'] == '\\times':
         num, numbase = numbase, num
 
-    attrib = {
-        'num': num,
-        'numbase': numbase,
-    }
+    attrib = {'num': num, 'numbase': numbase}
 
-    m_tuplet = etree.SubElement(m_layer, mei.TUPLET, attrib)
-    do_sequential_music(l_tuplet['nodes'], m_tuplet, context=context)
+    if not context:
+        context = {}
+    if not context.get('tuplet_spans'):
+        context['tuplet_spans'] = []
 
-    return m_tuplet
+    m_tuplet_span = etree.SubElement(m_layer, mei.TUPLET_SPAN, attrib)
+
+    # Tuplet spans add themselves to tuplet_spans records. All other nodes are
+    # automatically added (search for LINKINPARK in this file).
+    for tuplet_span in context['tuplet_spans']:
+        tuplet_span.append(m_tuplet_span)
+
+    context['tuplet_spans'].append([])
+    do_sequential_music(l_tuplet['nodes'], m_layer, context=context)
+    nodes = context['tuplet_spans'].pop()
+    music_utils.set_span_plist(m_tuplet_span, nodes)
+
+    return m_tuplet_span
 
 
 # this is at the bottom so the functions will already be defined

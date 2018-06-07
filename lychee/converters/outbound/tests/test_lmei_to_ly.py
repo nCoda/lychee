@@ -207,20 +207,18 @@ class TestSlur(object):
         assert lilypond.layer(m_layer) == '%{ l.1 %} c4( d4 e4 f4)'
 
 
-class TestTuplet(object):
-    def test_tuplet(self):
-        m_tuplet = etree.fromstring(
+class TestTupletSpan(object):
+    def test_tuplet_span(self):
+        m_layer = etree.fromstring(
             '''
-            <mei:tuplet num="3" numbase="2" xmlns:mei="http://www.music-encoding.org/ns/mei">
-                <mei:note dur="8" oct="3" pname="c" />
-                <mei:tuplet num="3" numbase="2">
-                    <mei:note dur="8" oct="3" pname="c" />
-                    <mei:note dur="8" oct="3" pname="c" />
-                    <mei:note dur="8" oct="3" pname="c" />
-                </mei:tuplet>
-            </mei:tuplet>
+            <mei:layer n="1" xmlns:mei="http://www.music-encoding.org/ns/mei">
+                <mei:tupletSpan num="3" numbase="2" startid="#P" endid="#T" plist="#P #Y #T" />
+                <mei:note dur="8" oct="3" pname="c" xml:id="P" />
+                <mei:note dur="8" oct="3" pname="c" xml:id="Y" />
+                <mei:note dur="8" oct="3" pname="c" xml:id="T" />
+            </mei:layer>
             ''')
-        assert lilypond.tuplet(m_tuplet) == r"\tuplet 3/2 { c8 \tuplet 3/2 { c8 c8 c8 } }"
+        assert lilypond.layer(m_layer) == r"%{ l.1 %} \tuplet 3/2 { c8 c8 c8 }"
 
 
 class TestLayerMeasure(object):

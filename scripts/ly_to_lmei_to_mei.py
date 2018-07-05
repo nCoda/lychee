@@ -36,8 +36,8 @@ def ly_string_to_lmei_element(lilypond_string):
     return lmei_element
 
 def lmei_element_to_mei_string(lmei_element):
-    mei_element = mei.convert(lmei_element)
-    mei_string = etree.tostring(lmei_element, pretty_print=True)
+    mei_element = mei.create_measures(lmei_element)
+    mei_string = etree.tostring(mei_element, pretty_print=True)
     return mei_string
 
 def ly_string_to_mei_string(lilypond_string):
